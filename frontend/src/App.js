@@ -1,96 +1,91 @@
-// i18n
-import 'src/locales/i18n';
+import React from 'react';
+import { HelmetProvider } from 'react-helmet-async';
 
-// scrollbar
-import 'simplebar-react/dist/simplebar.min.css';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { AuthProvider } from './contexts/auth';
+import { ApiProvider } from './contexts/api';
+import { AuthGuard } from './gaurd/auth-gaurd';
 
-// lightbox
-import 'yet-another-react-lightbox/styles.css';
-import 'yet-another-react-lightbox/plugins/captions.css';
-import 'yet-another-react-lightbox/plugins/thumbnails.css';
-
-// map
-import 'mapbox-gl/dist/mapbox-gl.css';
-
-// editor
-import 'react-quill/dist/quill.snow.css';
-
-// carousel
-import 'slick-carousel/slick/slick.css';
-import 'slick-carousel/slick/slick-theme.css';
-
-// image
-import 'react-lazy-load-image-component/src/effects/blur.css';
-
-// ----------------------------------------------------------------------
-
-// @mui
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-// routes
-import Router from 'src/routes/sections';
 // theme
-import ThemeProvider from 'src/theme';
-// hooks
-import { useScrollToTop } from 'src/hooks/use-scroll-to-top';
+import ThemeProvider from './theme';
 // components
-import ProgressBar from 'src/components/progress-bar';
-import MotionLazy from 'src/components/animate/motion-lazy';
-import SnackbarProvider from 'src/components/snackbar/snackbar-provider';
-import { SettingsProvider, SettingsDrawer } from 'src/components/settings';
-// sections
-import { CheckoutProvider } from 'src/sections/checkout/context';
-// auth
-import { AuthProvider, AuthConsumer } from 'src/auth/context/jwt';
-// import { AuthProvider, AuthConsumer } from 'src/auth/context/auth0';
-// import { AuthProvider, AuthConsumer } from 'src/auth/context/amplify';
-// import { AuthProvider, AuthConsumer } from 'src/auth/context/firebase';
+import ScrollToTop from './components/scroll-to-top';
+// layouts
+import DashboardLayout from './layouts/dashboard';
+import LoginPage from './pages/auth/LoginPage';
 
-// ----------------------------------------------------------------------
+import AllStoresDashboard from './pages/dashboards/store/AllStores';
+import ProductDashboard from './pages/dashboards/product/Product';
 
-export default function App() {
-  const charAt = `
+import ProductGrid from './pages/datagrid/products';
+import StoreGrid from './pages/datagrid/stores';
 
-  ░░░    ░░░
-  ▒▒▒▒  ▒▒▒▒
-  ▒▒ ▒▒▒▒ ▒▒
-  ▓▓  ▓▓  ▓▓
-  ██      ██
+import Account from './pages/account/account';
 
-  `;
-
-  console.info(`%c${charAt}`, 'color: #5BE49B');
-
-  useScrollToTop();
-
+function App() {
   return (
-    <AuthProvider>
-      <LocalizationProvider dateAdapter={AdapterDateFns}>
-        <SettingsProvider
-          defaultSettings={{
-            themeMode: 'light', // 'light' | 'dark'
-            themeDirection: 'ltr', //  'rtl' | 'ltr'
-            themeContrast: 'default', // 'default' | 'bold'
-            themeLayout: 'vertical', // 'vertical' | 'horizontal' | 'mini'
-            themeColorPresets: 'default', // 'default' | 'cyan' | 'purple' | 'blue' | 'orange' | 'red'
-            themeStretch: false,
-          }}
-        >
+    <HelmetProvider>
+        <Router>
           <ThemeProvider>
-            <MotionLazy>
-              <SnackbarProvider>
-                <CheckoutProvider>
-                  <SettingsDrawer />
-                  <ProgressBar />
-                  <AuthConsumer>
-                    <Router />
-                  </AuthConsumer>
-                </CheckoutProvider>
-              </SnackbarProvider>
-            </MotionLazy>
+            <ScrollToTop />
+            <AuthProvider>
+              <ApiProvider>
+                <Routes>
+                  <Route path="/auth/login" element={<LoginPage />} />
+                  <Route 
+                    path="/" 
+                    element={
+                      <AuthGuard>
+                        <DashboardLayout><AllStoresDashboard /> </DashboardLayout>
+                      </AuthGuard>
+                    } 
+                  />
+                  <Route
+                    path="/products/*"
+                    element={
+                      <AuthGuard>
+                        <DashboardLayout>
+                          <Routes>
+                            <Route path="/" element={<ProductGrid />} />
+                            <Route path=":productId" element={<ProductDashboard />} />
+                          </Routes>
+                        </DashboardLayout>
+                      </AuthGuard>
+                    }
+                  />
+                  <Route
+                    path="/stores/*"
+                    element={
+                      <AuthGuard>
+                        <DashboardLayout>
+                          <Routes>
+                            <Route path="/" element={<StoreGrid />} />
+                            <Route path=":storeId" element={<AllStoresDashboard />} />
+                          </Routes>
+                        </DashboardLayout>
+                      </AuthGuard>
+                    }
+                  />
+                  <Route
+                    path="/account/*"
+                    element={
+                      <AuthGuard>
+                        <DashboardLayout>
+                          <Routes>
+                            <Route path="/" element={<Account />} />
+                            <Route path=":accountVar" element={<Account />} />
+                          </Routes>
+                        </DashboardLayout>
+                      </AuthGuard>
+                    }
+                  />
+                </Routes>
+              </ApiProvider>
+            </AuthProvider>
           </ThemeProvider>
-        </SettingsProvider>
-      </LocalizationProvider>
-    </AuthProvider>
+        </Router>
+    </HelmetProvider>
   );
 }
+
+export default App;

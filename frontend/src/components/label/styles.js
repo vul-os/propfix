@@ -1,6 +1,6 @@
 // @mui
 import { alpha, styled } from '@mui/material/styles';
-import Box from '@mui/material/Box';
+import { Box } from '@mui/material';
 
 // ----------------------------------------------------------------------
 
@@ -15,20 +15,15 @@ export const StyledLabel = styled(Box)(({ theme, ownerState }) => {
 
   const defaultStyle = {
     ...(ownerState.color === 'default' && {
-      // FILLED
-      ...(filledVariant && {
-        color: isLight ? theme.palette.common.white : theme.palette.grey[800],
-        backgroundColor: theme.palette.text.primary,
-      }),
       // OUTLINED
       ...(outlinedVariant && {
         backgroundColor: 'transparent',
         color: theme.palette.text.primary,
-        border: `2px solid ${theme.palette.text.primary}`,
+        border: `1px solid ${alpha(theme.palette.grey[500], 0.32)}`,
       }),
       // SOFT
       ...(softVariant && {
-        color: theme.palette.text.secondary,
+        color: isLight ? theme.palette.text.primary : theme.palette.common.white,
         backgroundColor: alpha(theme.palette.grey[500], 0.16),
       }),
     }),
@@ -45,7 +40,7 @@ export const StyledLabel = styled(Box)(({ theme, ownerState }) => {
       ...(outlinedVariant && {
         backgroundColor: 'transparent',
         color: theme.palette[ownerState.color].main,
-        border: `2px solid ${theme.palette[ownerState.color].main}`,
+        border: `1px solid ${theme.palette[ownerState.color].main}`,
       }),
       // SOFT
       ...(softVariant && {
@@ -57,7 +52,7 @@ export const StyledLabel = styled(Box)(({ theme, ownerState }) => {
 
   return {
     height: 24,
-    minWidth: 24,
+    minWidth: 22,
     lineHeight: 0,
     borderRadius: 6,
     cursor: 'default',
@@ -66,13 +61,13 @@ export const StyledLabel = styled(Box)(({ theme, ownerState }) => {
     display: 'inline-flex',
     justifyContent: 'center',
     textTransform: 'capitalize',
-    padding: theme.spacing(0, 0.75),
+    padding: theme.spacing(0, 1),
+    color: theme.palette.grey[800],
     fontSize: theme.typography.pxToRem(12),
+    fontFamily: theme.typography.fontFamily,
+    backgroundColor: theme.palette.grey[300],
     fontWeight: theme.typography.fontWeightBold,
-    transition: theme.transitions.create('all', {
-      duration: theme.transitions.duration.shorter,
-    }),
-    ...defaultStyle,
     ...colorStyle,
+    ...defaultStyle,
   };
 });
