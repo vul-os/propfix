@@ -11,10 +11,7 @@ import {
   ClickAwayListener,
 } from '@mui/material';
 import Iconify from '../../../components/iconify';
-import ProductCard from './ProductSearch';
-import StoreCard from './StoreSearch';
 import config from '../../../config/config';
-import { useApiContext } from '../../../contexts/api';
 
 const HEADER_MOBILE = 64;
 const HEADER_DESKTOP = 92;
@@ -102,17 +99,6 @@ const ScrollableProductContainer = styled(Box)(({ theme }) => ({
   },
 }));
 
-const StyledProductCard = styled(ProductCard)(({ theme }) => ({
-  display: 'flex',
-  flexDirection: 'column',
-  height: '100%',
-}));
-
-const StyledStoreCard = styled(StoreCard)(({ theme }) => ({
-  display: 'flex',
-  flexDirection: 'column',
-  height: '100%',
-}));
 
 export default function Searchbar() {
   const [open, setOpen] = useState(false);
@@ -120,7 +106,6 @@ export default function Searchbar() {
   const [openModal, setOpenModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [selectedStore, setSelectedStore] = useState(null);
-  const { postRequest } = useApiContext();
 
   const searchbarRef = useRef(null);
 
@@ -144,26 +129,12 @@ export default function Searchbar() {
     }
   };
 
-  const debouncedSearch = useCallback(
-    _.debounce(async (value) => {
-      try {
-        const response = await postRequest(config.apiUrl, 'search', { query: value });
-        setItems(response);
-        setOpenModal(true);
-      } catch (error) {
-        console.error('Error:', error);
-      }
-    }, 500),
-    [postRequest]
-  );
-
+  
   const handleChange = (event) => {
     const { value } = event.target;
     if (value.trim() === '') {
       setItems([]);
       setOpenModal(false);
-    } else {
-      debouncedSearch(value);
     }
   };
 
@@ -209,26 +180,6 @@ export default function Searchbar() {
     };
   }, []);
 
-  if (selectedProduct) {
-    return (
-      <ClickAwayListener onClickAway={handleProductDetailsClose}>
-        <div>
-          <StyledProductCard product={selectedProduct} onOpenFile={handleFileOpen} />
-        </div>
-      </ClickAwayListener>
-    );
-  }
-
-  if (selectedStore) {
-    return (
-      <ClickAwayListener onClickAway={handleStoreDetailsClose}>
-        <div>
-          <StyledStoreCard store={selectedStore} onOpenFile={handleFileOpen} />
-        </div>
-      </ClickAwayListener>
-    );
-  }
-
   return (
     <ClickAwayListener onClickAway={handleClose}>
       <div ref={searchbarRef}>
@@ -261,22 +212,6 @@ export default function Searchbar() {
             </EscButtonContainer>
           )}
         </StyledSearchbar>
-        <StyledModal open={openModal} onClose={handleClose}>
-          <StyledContainer>
-            <ScrollableProductContainer>
-              {items &&
-                items.map((item, index) => (
-                  <Box key={index} mb={2}>
-                    {item.ProductIdentifier ? (
-                      <StyledProductCard product={item} onOpenFile={handleFileOpen} />
-                    ) : (
-                      <StyledStoreCard store={item} onOpenFile={handleFileOpen} />
-                    )}
-                  </Box>
-                ))}
-            </ScrollableProductContainer>
-          </StyledContainer>
-        </StyledModal>
       </div>
     </ClickAwayListener>
   );

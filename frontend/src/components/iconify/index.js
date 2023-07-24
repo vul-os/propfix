@@ -1,1 +1,1 @@
-export { default } from './Iconify';
+export { default } from './iconify';

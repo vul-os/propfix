@@ -13,12 +13,12 @@ import {
 
 const firebaseConfig = {
   apiKey: "***REMOVED-FIREBASE-WEB-KEY***",
-  authDomain: "scraping-is-hard.firebaseapp.com",
-  projectId: "scraping-is-hard",
-  storageBucket: "scraping-is-hard.appspot.com",
-  messagingSenderId: "812696434962",
-  appId: "1:812696434962:web:6e32f45d85097bc61bdbcb",
-  measurementId: "G-CWDG9FP0RD"
+  authDomain: "prop-fix.firebaseapp.com",
+  projectId: "prop-fix",
+  storageBucket: "prop-fix.appspot.com",
+  messagingSenderId: "319029773219",
+  appId: "1:319029773219:web:c1a50cb46bb4374bcf1016",
+  measurementId: "G-LE895GYYSC"
 };
 
 const app = initializeApp(firebaseConfig);
