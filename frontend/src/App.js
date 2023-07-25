@@ -14,6 +14,7 @@ import DashboardLayout from './layouts/dashboard';
 import LoginPage from './pages/auth/LoginPage';
 
 import Account from './pages/account/account';
+import { KanbanView } from './pages/kanban/view'
 
 function App() {
   return (
@@ -28,7 +29,7 @@ function App() {
                     path="/" 
                     element={
                       <AuthGuard>
-                        <DashboardLayout><Account /> </DashboardLayout>
+                        <DashboardLayout><KanbanView /> </DashboardLayout>
                       </AuthGuard>
                     } 
                   />
