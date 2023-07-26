@@ -3,7 +3,7 @@ SELECT
   MaxQty,
   Price
 FROM
-  `scrapers.data`
+  `scrapers.datapoint_raw`
 WHERE
   ProductIdentifier = '{{ .ProductIdentifier }}'
 ORDER BY
