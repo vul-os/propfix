@@ -12,11 +12,11 @@ import Tooltip from '@mui/material/Tooltip';
 import TextField from '@mui/material/TextField';
 import IconButton from '@mui/material/IconButton';
 // hooks
-import { useBoolean } from 'src/hooks/use-boolean';
+import { useBoolean } from '../../hooks/use-boolean';
 // components
-import Iconify from 'src/components/iconify';
-import Scrollbar from 'src/components/scrollbar';
-import CustomDateRangePicker, { useDateRangePicker } from 'src/components/custom-date-range-picker';
+import Iconify from '../../components/iconify';
+import Scrollbar from '../../components/scrollbar';
+import CustomDateRangePicker, { useDateRangePicker } from '../../components/custom-date-range-picker';
 //
 import KanbanInputName from './kanban-input-name';
 import KanbanDetailsToolbar from './kanban-details-toolbar';

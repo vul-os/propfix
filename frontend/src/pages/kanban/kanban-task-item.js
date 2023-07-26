@@ -9,11 +9,11 @@ import Typography from '@mui/material/Typography';
 import Paper from '@mui/material/Paper';
 import AvatarGroup, { avatarGroupClasses } from '@mui/material/AvatarGroup';
 // hooks
-import { useBoolean } from 'src/hooks/use-boolean';
+import { useBoolean } from '../../hooks/use-boolean';
 // theme
-import { bgBlur } from 'src/theme/css';
+import { bgBlur } from '../../theme/css';
 // components
-import Iconify from 'src/components/iconify';
+import Iconify from '../../components/iconify';
 //
 import KanbanDetails from './kanban-details';
 

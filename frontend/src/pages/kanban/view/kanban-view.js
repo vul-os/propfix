@@ -4,12 +4,14 @@ import { DragDropContext, Droppable } from '@hello-pangea/dnd';
 import Stack from '@mui/material/Stack';
 import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
-// theme
-import { hideScroll } from 'src/theme/css';
-// api
-import { useGetBoard, moveColumn, moveTask } from 'src/api/kanban';
+
+
 // components
-import EmptyContent from 'src/components/empty-content';
+import EmptyContent from '../../../components/empty-content';
+// api
+import { useGetBoard, moveColumn, moveTask } from '../../../api/kanban';
+// theme
+import { hideScroll } from '../../../theme/css';
 //
 import KanbanColumn from '../kanban-column';
 import KanbanColumnAdd from '../kanban-column-add';

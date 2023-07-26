@@ -22,15 +22,16 @@ export function responsiveFontSizes({ sm, md, lg }) {
   };
 }
 
+const primaryFont = 'Public Sans, sans-serif'; // Google Font
+// const secondaryFont = 'CircularStd, sans-serif'; // Local Font
+
 // ----------------------------------------------------------------------
 
-const FONT_PRIMARY = 'Public Sans, sans-serif'; // Google Font
-// const FONT_SECONDARY = 'CircularStd, sans-serif'; // Local Font
-
-const typography = {
-  fontFamily: FONT_PRIMARY,
+export const typography = {
+  fontFamily: primaryFont,
   fontWeightRegular: 400,
-  fontWeightMedium: 600,
+  fontWeightMedium: 500,
+  fontWeightSemiBold: 600,
   fontWeightBold: 700,
   h1: {
     fontWeight: 800,
@@ -100,8 +101,6 @@ const typography = {
     fontWeight: 700,
     lineHeight: 24 / 14,
     fontSize: pxToRem(14),
-    textTransform: 'capitalize',
+    textTransform: 'unset',
   },
 };
-
-export default typography;

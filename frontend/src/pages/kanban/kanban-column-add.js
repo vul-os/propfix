@@ -6,13 +6,13 @@ import TextField from '@mui/material/TextField';
 import { inputBaseClasses } from '@mui/material/InputBase';
 import ClickAwayListener from '@mui/material/ClickAwayListener';
 // hooks
-import { useBoolean } from 'src/hooks/use-boolean';
+import { useBoolean } from '../../hooks/use-boolean';
 // utils
-import uuidv4 from 'src/utils/uuidv4';
+import uuidv4 from '../../utils/uuidv4';
 // api
-import { createColumn } from 'src/api/kanban';
+import { createColumn } from '../../api/kanban';
 // components
-import Iconify from 'src/components/iconify';
+import Iconify from '../../components/iconify';
 
 // ----------------------------------------------------------------------
 

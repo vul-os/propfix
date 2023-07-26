@@ -1,5 +1,5 @@
 // assets
-import { countries } from 'src/assets/asset';
+import { countries } from '../assets/data';
 //
 import { _mock } from './_mock';
 

@@ -6,7 +6,7 @@ import { Link, Container, Typography, Divider, Stack, Button } from '@mui/materi
 import { useNavigate, useLocation } from 'react-router-dom';
 
 // hooks
-import useResponsive from '../../hooks/useResponsive';
+import { useResponsive } from '../../hooks/use-responsive';
 // components
 import Logo from '../../components/logo';
 import Iconify from '../../components/iconify';

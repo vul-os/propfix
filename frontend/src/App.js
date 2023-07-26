@@ -1,9 +1,14 @@
 import React from 'react';
 import { HelmetProvider } from 'react-helmet-async';
+// @mui
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './contexts/auth';
 import { AuthGuard } from './gaurd/auth-gaurd';
+
+import { SettingsProvider, SettingsDrawer } from './components/settings';
 
 // theme
 import ThemeProvider from './theme';
@@ -20,6 +25,17 @@ function App() {
   return (
     <HelmetProvider>
         <Router>
+        <LocalizationProvider dateAdapter={AdapterDateFns}>
+        <SettingsProvider
+          defaultSettings={{
+            themeMode: 'light', // 'light' | 'dark'
+            themeDirection: 'ltr', //  'rtl' | 'ltr'
+            themeContrast: 'default', // 'default' | 'bold'
+            themeLayout: 'vertical', // 'vertical' | 'horizontal' | 'mini'
+            themeColorPresets: 'default', // 'default' | 'cyan' | 'purple' | 'blue' | 'orange' | 'red'
+            themeStretch: false,
+          }}
+        >
           <ThemeProvider>
             <ScrollToTop />
             <AuthProvider>
@@ -49,6 +65,8 @@ function App() {
                 </Routes>
             </AuthProvider>
           </ThemeProvider>
+          </SettingsProvider>
+      </LocalizationProvider>
         </Router>
     </HelmetProvider>
   );

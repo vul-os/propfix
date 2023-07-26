@@ -7,7 +7,7 @@ import { Box, Link, Button, Drawer, Typography, Avatar, Stack } from '@mui/mater
 import { useAuthContext } from '../../../contexts/auth';
 
 // hooks
-import useResponsive from '../../../hooks/useResponsive';
+import { useResponsive } from '../../../hooks/use-responsive';
 // components
 import Logo from '../../../components/logo';
 import Scrollbar from '../../../components/scrollbar';

@@ -1,44 +1,81 @@
 import PropTypes from 'prop-types';
+import merge from 'lodash/merge';
 import { useMemo } from 'react';
 // @mui
-import { CssBaseline } from '@mui/material';
-import { ThemeProvider as MUIThemeProvider, createTheme, StyledEngineProvider } from '@mui/material/styles';
-//
-import palette from './palette';
-import shadows from './shadows';
-import typography from './typography';
-import GlobalStyles from './globalStyles';
-import customShadows from './customShadows';
-import componentsOverride from './overrides';
+import CssBaseline from '@mui/material/CssBaseline';
+import { createTheme, ThemeProvider as MuiThemeProvider } from '@mui/material/styles';
+// locales
+import { useLocales } from '../locales';
+// components
+import { useSettingsContext } from '../components/settings';
+// system
+import { palette } from './palette';
+import { shadows } from './shadows';
+import { typography } from './typography';
+import { customShadows } from './custom-shadows';
+import { componentsOverrides } from './overrides';
+// options
+import { presets } from './options/presets';
+import { darkMode } from './options/dark-mode';
+import { contrast } from './options/contrast';
 
 // ----------------------------------------------------------------------
 
-ThemeProvider.propTypes = {
-  children: PropTypes.node,
-};
-
 export default function ThemeProvider({ children }) {
-  const themeOptions = useMemo(
+  const { currentLang } = useLocales();
+
+  const settings = useSettingsContext();
+
+  const darkModeOption = darkMode(settings.themeMode);
+
+  const presetsOption = presets(settings.themeColorPresets);
+
+  const contrastOption = contrast(settings.themeContrast === 'bold', settings.themeMode);
+
+  const baseOption = useMemo(
     () => ({
-      palette,
-      shape: { borderRadius: 6 },
+      palette: palette('light'),
+      shadows: shadows('light'),
+      customShadows: customShadows('light'),
       typography,
-      shadows: shadows(),
-      customShadows: customShadows(),
+      shape: { borderRadius: 8 },
     }),
     []
   );
 
-  const theme = createTheme(themeOptions);
-  theme.components = componentsOverride(theme);
+  const memoizedValue = useMemo(
+    () =>
+      merge(
+        // Base
+        baseOption,
+        // Direction: remove if not in use
+        // Dark mode: remove if not in use
+        darkModeOption,
+        // Presets: remove if not in use
+        presetsOption,
+        // Contrast: remove if not in use
+        contrastOption.theme
+      ),
+    [baseOption, darkModeOption, presetsOption, contrastOption.theme]
+  );
+
+  const theme = createTheme(memoizedValue);
+
+  theme.components = merge(componentsOverrides(theme), contrastOption.components);
+
+  const themeWithLocale = useMemo(
+    () => createTheme(theme, currentLang.systemValue),
+    [currentLang.systemValue, theme]
+  );
 
   return (
-    <StyledEngineProvider injectFirst>
-      <MUIThemeProvider theme={theme}>
+    <MuiThemeProvider theme={themeWithLocale}>
         <CssBaseline />
-        <GlobalStyles />
         {children}
-      </MUIThemeProvider>
-    </StyledEngineProvider>
+    </MuiThemeProvider>
   );
 }
+
+ThemeProvider.propTypes = {
+  children: PropTypes.node,
+};

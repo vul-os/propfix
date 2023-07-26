@@ -14,11 +14,11 @@ import DialogContent from '@mui/material/DialogContent';
 import InputAdornment from '@mui/material/InputAdornment';
 import ListItemAvatar from '@mui/material/ListItemAvatar';
 // _mock
-import { _contacts } from 'src/_mock';
+import { _contacts } from '../../_mock';
 // components
-import Iconify from 'src/components/iconify';
-import Scrollbar from 'src/components/scrollbar';
-import SearchNotFound from 'src/components/search-not-found';
+import Iconify from '../../components/iconify';
+import Scrollbar from '../../components/scrollbar';
+import SearchNotFound from '../../components/search-not-found';
 
 // ----------------------------------------------------------------------
 
