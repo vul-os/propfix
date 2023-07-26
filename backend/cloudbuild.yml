@@ -3,7 +3,7 @@ steps:
     args:
       - 'functions'
       - 'deploy'
-      - 'propfix-backend-go'
+      - 'function-backend-go'
       - '--runtime=go120'
       - '--trigger-http'
       - '--region=us-central1'
