@@ -3,7 +3,7 @@ steps:
     args:
       - 'functions'
       - 'deploy'
-      - 'scraper-backend-go'
+      - 'propfix-backend-go'
       - '--runtime=go120'
       - '--trigger-http'
       - '--region=us-central1'

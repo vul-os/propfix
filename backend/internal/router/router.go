@@ -29,11 +29,6 @@ func Router(w http.ResponseWriter, r *http.Request) {
 	// Create a BigQuery processor
 	processor := bi.NewBigQueryProcessor(client)
 
-	bqClient, err := bigquery.NewClient(context.Background(), projectID)
-	if err != nil {
-		panic(err)
-	}
-
 	conf := &firebase.Config{
 		ProjectID: projectID,
 	}

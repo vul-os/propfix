@@ -8,7 +8,7 @@ import (
 	"text/template"
 
 	"cloud.google.com/go/bigquery"
-	scraperAuth "github.com/exolutionza/scraper-backend-go/internal/auth"
+	scraperAuth "github.com/exolutionza/propfix-backend-go/internal/auth"
 )
 
 type BigQueryProcessor struct {
