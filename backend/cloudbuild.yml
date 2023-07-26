@@ -1,0 +1,9 @@
+steps:
+  - name: 'gcr.io/cloud-builders/gcloud'
+    args:
+      - 'functions'
+      - 'deploy'
+      - 'scraper-backend-go'
+      - '--runtime=go120'
+      - '--trigger-http'
+      - '--region=us-central1'
