@@ -1,3 +1,5 @@
+// router.go
+
 package router
 
 import (
@@ -7,11 +9,14 @@ import (
 	"net/http"
 
 	"cloud.google.com/go/bigquery"
-	"github.com/exolutionza/propfix-backend-go/internal/bi"
+
 	"github.com/gorilla/mux"
 
-	"github.com/exolutionza/propfix-backend-go/internal/auth"
 	firebase "firebase.google.com/go/v4"
+	"github.com/exolutionza/propfix-backend-go/internal/auth"
+
+	// Import your custom handlers package that contains CRUD operations for each table
+	"github.com/exolutionza/propfix-backend-go/internal/handlers"
 )
 
 func Router(w http.ResponseWriter, r *http.Request) {
@@ -25,9 +30,6 @@ func Router(w http.ResponseWriter, r *http.Request) {
 		log.Fatalf("Failed to create BigQuery client: %v", err)
 	}
 	defer client.Close()
-
-	// Create a BigQuery processor
-	processor := bi.NewBigQueryProcessor(client)
 
 	conf := &firebase.Config{
 		ProjectID: projectID,
@@ -49,11 +51,40 @@ func Router(w http.ResponseWriter, r *http.Request) {
 	// Define the routes
 	router.HandleFunc("/", helloWorld).Methods("GET")
 
+	// Protected routes using auth middleware
 	protectedRouter := router.PathPrefix("").Subrouter()
 	protectedRouter.Use(auth.IsAuthenticated(authClient))
 
-	protectedRouter.HandleFunc("/execute",
-		processor.TemplateAndExecuteOne).Methods("POST")
+	// Initialize and register the handlers for each table
+	membersHandler := handlers.NewMembersHandler(client)
+	router.HandleFunc("/members/{id}", membersHandler.GetMember).Methods("GET")
+	router.HandleFunc("/members/create", membersHandler.CreateMember).Methods("POST")
+	router.HandleFunc("/members/update", membersHandler.UpdateMember).Methods("POST") // Use POST for update
+	router.HandleFunc("/members/delete", membersHandler.DeleteMember).Methods("POST") // Use POST for delete
+
+	jobsHandler := handlers.NewJobsHandler(client)
+	router.HandleFunc("/jobs/{id}", jobsHandler.GetJob).Methods("GET")
+	router.HandleFunc("/jobs/create", jobsHandler.CreateJob).Methods("POST")
+	router.HandleFunc("/jobs/update", jobsHandler.UpdateJob).Methods("POST") // Use POST for update
+	router.HandleFunc("/jobs/delete", jobsHandler.DeleteJob).Methods("POST") // Use POST for delete
+
+	historyHandler := handlers.NewHistoryHandler(client)
+	router.HandleFunc("/history/{id}", historyHandler.GetHistory).Methods("GET")
+	router.HandleFunc("/history/create", historyHandler.CreateHistory).Methods("POST")
+	router.HandleFunc("/history/update", historyHandler.UpdateHistory).Methods("POST") // Use POST for update
+	router.HandleFunc("/history/delete", historyHandler.DeleteHistory).Methods("POST") // Use POST for delete
+
+	commentsHandler := handlers.NewCommentsHandler(client)
+	router.HandleFunc("/comments/{id}", commentsHandler.GetComment).Methods("GET")
+	router.HandleFunc("/comments/create", commentsHandler.CreateComment).Methods("POST")
+	router.HandleFunc("/comments/update", commentsHandler.UpdateComment).Methods("POST") // Use POST for update
+	router.HandleFunc("/comments/delete", commentsHandler.DeleteComment).Methods("POST") // Use POST for delete
+
+	buildingsHandler := handlers.NewBuildingsHandler(client)
+	router.HandleFunc("/buildings/{id}", buildingsHandler.GetBuilding).Methods("GET")
+	router.HandleFunc("/buildings/create", buildingsHandler.CreateBuilding).Methods("POST")
+	router.HandleFunc("/buildings/update", buildingsHandler.UpdateBuilding).Methods("POST") // Use POST for update
+	router.HandleFunc("/buildings/delete", buildingsHandler.DeleteBuilding).Methods("POST") // Use POST for delete
 
 	// Apply the enableCORS middleware to all routes
 	handler := EnableCORS(router)
