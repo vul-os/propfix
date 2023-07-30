@@ -26,38 +26,24 @@ func NewJobsHandler(client *bigquery.Client) *JobsHandler {
 	}
 }
 
-type JobRequest struct {
-	ID             string   `json:"id"`
-	DueDate        string   `json:"dueDate"`
-	Priority       string   `json:"priority"`
-	Description    string   `json:"description"`
-	ReporterID     string   `json:"reporterId"`
-	AssigneeIDs    []string `json:"assigneeIds"`
-	UnitIdentifier string   `json:"unitIdentifier"`
-	BuildingID     string   `json:"buildingId"`
-	Labels         []string `json:"labels"`
-	AttachmentURLs []string `json:"attachmentUrls"`
-	Cost           float64  `json:"cost"`
-	CreatedAt      string   `json:"createdAt"`
-}
-
-type JobBQ struct {
-	ID             string   `bigquery:"id"`
-	DueDate        string   `bigquery:"dueDate"`
-	Priority       string   `bigquery:"priority"`
-	Description    string   `bigquery:"description"`
-	ReporterID     string   `bigquery:"reporterId"`
-	AssigneeIDs    []string `bigquery:"assigneeIds"`
-	UnitIdentifier string   `bigquery:"unitIdentifier"`
-	BuildingID     string   `bigquery:"buildingId"`
-	Labels         []string `bigquery:"labels"`
-	AttachmentURLs []string `bigquery:"attachmentUrls"`
-	Cost           float64  `bigquery:"cost"`
-	CreatedAt      string   `bigquery:"createdAt"`
+type Job struct {
+	ID             string    `json:"id"`
+	Name           string    `json:"name"`
+	DueDate        time.Time `json:"dueDate"`
+	Priority       string    `json:"priority"`
+	Description    string    `json:"description"`
+	ReporterID     string    `json:"reporterId"`
+	AssigneeIDs    []string  `json:"assigneeIds"`
+	UnitIdentifier string    `json:"unitIdentifier"`
+	BuildingID     string    `json:"buildingId"`
+	Labels         []string  `json:"labels"`
+	AttachmentURLs []string  `json:"attachmentUrls"`
+	Cost           float64   `json:"cost"`
+	CreatedAt      time.Time `json:"createdAt"`
 }
 
 func (h *JobsHandler) CreateJob(w http.ResponseWriter, r *http.Request) {
-	var jobReq JobRequest
+	var jobReq Job
 	err := json.NewDecoder(r.Body).Decode(&jobReq)
 	if err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
@@ -67,14 +53,14 @@ func (h *JobsHandler) CreateJob(w http.ResponseWriter, r *http.Request) {
 	ctx := context.Background()
 
 	// Parse DueDate from the JSON string (format: "02-02-2023")
-	dueDate, err := time.Parse("02-01-2006", jobReq.DueDate)
+	dueDate, err := time.Parse("02-01-2006", jobReq.DueDate.String())
 	if err != nil {
 		http.Error(w, "Invalid DueDate format. Use dd-mm-yyyy", http.StatusBadRequest)
 		return
 	}
 
 	// Parse CreatedAt from the JSON string (format: "02-02-2023")
-	createdAt, err := time.Parse("02-01-2006", jobReq.CreatedAt)
+	createdAt, err := time.Parse("02-01-2006", jobReq.CreatedAt.String())
 	if err != nil {
 		http.Error(w, "Invalid CreatedAt format. Use dd-mm-yyyy", http.StatusBadRequest)
 		return
@@ -132,7 +118,7 @@ func (h *JobsHandler) GetJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var job JobBQ
+	var job Job
 	err = it.Next(&job)
 	if err == iterator.Done {
 		http.Error(w, "Job not found", http.StatusNotFound)
@@ -149,7 +135,7 @@ func (h *JobsHandler) UpdateJob(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	jobID := vars["id"]
 
-	var job JobBQ
+	var job Job
 	err := json.NewDecoder(r.Body).Decode(&job)
 	if err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)

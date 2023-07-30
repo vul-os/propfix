@@ -1,5 +1,3 @@
-// router.go
-
 package router
 
 import (
@@ -9,14 +7,10 @@ import (
 	"net/http"
 
 	"cloud.google.com/go/bigquery"
-
-	"github.com/gorilla/mux"
-
 	firebase "firebase.google.com/go/v4"
 	"github.com/exolutionza/propfix-backend-go/internal/auth"
-
-	// Import your custom handlers package that contains CRUD operations for each table
 	"github.com/exolutionza/propfix-backend-go/internal/handlers"
+	"github.com/gorilla/mux"
 )
 
 func Router(w http.ResponseWriter, r *http.Request) {
@@ -85,6 +79,10 @@ func Router(w http.ResponseWriter, r *http.Request) {
 	router.HandleFunc("/buildings/create", buildingsHandler.CreateBuilding).Methods("POST")
 	router.HandleFunc("/buildings/update", buildingsHandler.UpdateBuilding).Methods("POST") // Use POST for update
 	router.HandleFunc("/buildings/delete", buildingsHandler.DeleteBuilding).Methods("POST") // Use POST for delete
+
+	// Add the route for GetBoard
+	boardHandler := handlers.NewBoardHandler(client)
+	router.HandleFunc("/board", boardHandler.GetBoard).Methods("GET")
 
 	// Apply the enableCORS middleware to all routes
 	handler := EnableCORS(router)
