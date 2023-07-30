@@ -4,25 +4,12 @@ import { alpha } from '@mui/material/styles';
 
 // SETUP COLORS
 
-const GREY = {
-  0: '#FFFFFF',
-  100: '#F9FAFB',
-  200: '#F4F6F8',
-  300: '#DFE3E8',
-  400: '#C4CDD5',
-  500: '#919EAB',
-  600: '#637381',
-  700: '#454F5B',
-  800: '#212B36',
-  900: '#161C24',
-};
-
 const PRIMARY = {
-  lighter: '#C8FAD6',
-  light: '#5BE49B',
-  main: '#00A76F',
-  dark: '#007867',
-  darker: '#004B50',
+  lighter: '#FF1A5B', // Red color
+  light: '#FF1A5B',   // Red color
+  main: '#FF1A5B',    // Red color
+  dark: '#FF1A5B',    // Red color
+  darker: '#FF1A5B',  // Red color
   contrastText: '#FFFFFF',
 };
 
@@ -59,7 +46,7 @@ const WARNING = {
   main: '#FFAB00',
   dark: '#B76E00',
   darker: '#7A4100',
-  contrastText: GREY[800],
+  contrastText: '#000000', // Changed to black to ensure readability
 };
 
 const ERROR = {
@@ -69,6 +56,19 @@ const ERROR = {
   dark: '#B71D18',
   darker: '#7A0916',
   contrastText: '#FFFFFF',
+};
+
+const GREY = {
+  0: '#FFFFFF',
+  100: '#F9FAFB',
+  200: '#F4F6F8',
+  300: '#DFE3E8',
+  400: '#C4CDD5',
+  500: '#919EAB',
+  600: '#637381',
+  700: '#454F5B',
+  800: '#212B36',
+  900: '#161C24',
 };
 
 const COMMON = {

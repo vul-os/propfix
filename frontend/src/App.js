@@ -19,7 +19,8 @@ import DashboardLayout from './layouts/dashboard';
 import LoginPage from './pages/auth/LoginPage';
 
 import Account from './pages/account/account';
-import { KanbanView } from './pages/kanban/view'
+import { KanbanView } from './pages/kanban/view'//
+// import { OrderListView } from './pages/order/view'
 
 function App() {
   return (
@@ -49,6 +50,14 @@ function App() {
                       </AuthGuard>
                     } 
                   />
+                  {/* <Route 
+                    path="/jobs" 
+                    element={
+                      <AuthGuard>
+                        <DashboardLayout><OrderListView /> </DashboardLayout>
+                      </AuthGuard>
+                    } 
+                  /> */}
                   <Route
                     path="/account/*"
                     element={

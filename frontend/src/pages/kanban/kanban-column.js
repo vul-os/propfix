@@ -21,13 +21,14 @@ import {
 import Iconify from '../../components/iconify';
 import { useSnackbar } from '../../components/snackbar';
 //
-import KanbanTaskAdd from './kanban-task-add';
+// import KanbanTaskAdd from './kanban-task-add';
 import KanbanTaskItem from './kanban-task-item';
 import KanbanColumnToolBar from './kanban-column-tool-bar';
 
 // ----------------------------------------------------------------------
 
-export default function KanbanColumn({ column, tasks, index }) {
+export default function KanbanColumn({ column, jobs, index }) {
+  console.log(column, jobs, index)
   const { enqueueSnackbar } = useSnackbar();
 
   const openAddTask = useBoolean();
@@ -105,39 +106,39 @@ export default function KanbanColumn({ column, tasks, index }) {
     [column.id, enqueueSnackbar]
   );
 
-  const renderAddTask = (
-    <Stack
-      spacing={2}
-      sx={{
-        pb: 3,
-      }}
-    >
-      {openAddTask.value && (
-        <KanbanTaskAdd
-          status={column.name}
-          onAddTask={handleAddTask}
-          onCloseAddTask={openAddTask.onFalse}
-        />
-      )}
+  // const renderAddTask = (
+  //   <Stack
+  //     spacing={2}
+  //     sx={{
+  //       pb: 3,
+  //     }}
+  //   >
+  //     {openAddTask.value && (
+  //       <KanbanTaskAdd
+  //         status={column.name}
+  //         onAddTask={handleAddTask}
+  //         onCloseAddTask={openAddTask.onFalse}
+  //       />
+  //     )}
 
-      <Button
-        fullWidth
-        size="large"
-        color="inherit"
-        startIcon={
-          <Iconify
-            icon={openAddTask.value ? 'solar:close-circle-broken' : 'mingcute:add-line'}
-            width={18}
-            sx={{ mr: -0.5 }}
-          />
-        }
-        onClick={openAddTask.onToggle}
-        sx={{ fontSize: 14 }}
-      >
-        {openAddTask.value ? 'Close' : 'Add Task'}
-      </Button>
-    </Stack>
-  );
+  //     <Button
+  //       fullWidth
+  //       size="large"
+  //       color="inherit"
+  //       startIcon={
+  //         <Iconify
+  //           icon={openAddTask.value ? 'solar:close-circle-broken' : 'mingcute:add-line'}
+  //           width={18}
+  //           sx={{ mr: -0.5 }}
+  //         />
+  //       }
+  //       onClick={openAddTask.onToggle}
+  //       sx={{ fontSize: 14 }}
+  //     >
+  //       {openAddTask.value ? 'Close' : 'Add Task'}
+  //     </Button>
+  //   </Stack>
+  // );
 
   return (
     <Draggable draggableId={column.id} index={index}>
@@ -173,11 +174,11 @@ export default function KanbanColumn({ column, tasks, index }) {
                     width: 280,
                   }}
                 >
-                  {column.taskIds.map((taskId, taskIndex) => (
+                  {column.jobids && column.jobids.map((taskId, taskIndex) => (
                     <KanbanTaskItem
                       key={taskId}
                       index={taskIndex}
-                      task={tasks[taskId]}
+                      task={jobs[taskId]}
                       onUpdateTask={handleUpdateTask}
                       onDeleteTask={() => handleDeleteTask(taskId)}
                     />
@@ -187,7 +188,7 @@ export default function KanbanColumn({ column, tasks, index }) {
               )}
             </Droppable>
 
-            {renderAddTask}
+            {/* {renderAddTask} */}
           </Stack>
         </Paper>
       )}
@@ -198,5 +199,5 @@ export default function KanbanColumn({ column, tasks, index }) {
 KanbanColumn.propTypes = {
   column: PropTypes.object,
   index: PropTypes.number,
-  tasks: PropTypes.object,
+  jobs: PropTypes.object,
 };

@@ -2,11 +2,10 @@ import { useMemo } from 'react';
 import useSWR, { mutate } from 'swr';
 // utils
 import { fetcher, endpoints } from '../utils/axios';
-
+import config from '../config/config'
 // ----------------------------------------------------------------------
 
-const URL = endpoints.kanban;
-
+const URL = `${config.apiUrl}/board` 
 const options = {
   revalidateIfStale: false,
   revalidateOnFocus: false,

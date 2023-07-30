@@ -14,7 +14,6 @@ import { useGetBoard, moveColumn, moveTask } from '../../../api/kanban';
 import { hideScroll } from '../../../theme/css';
 //
 import KanbanColumn from '../kanban-column';
-import KanbanColumnAdd from '../kanban-column-add';
 import { KanbanColumnSkeleton } from '../kanban-skeleton';
 
 // ----------------------------------------------------------------------
@@ -51,17 +50,17 @@ export default function KanbanView() {
 
         // Moving task to same list
         if (sourceColumn.id === destinationColumn.id) {
-          const newTaskIds = [...sourceColumn.taskIds];
+          const newjobids = [...sourceColumn.jobids];
 
-          newTaskIds.splice(source.index, 1);
+          newjobids.splice(source.index, 1);
 
-          newTaskIds.splice(destination.index, 0, draggableId);
+          newjobids.splice(destination.index, 0, draggableId);
 
           moveTask({
             ...board?.columns,
             [sourceColumn.id]: {
               ...sourceColumn,
-              taskIds: newTaskIds,
+              jobids: newjobids,
             },
           });
 
@@ -71,25 +70,25 @@ export default function KanbanView() {
         }
 
         // Moving task to different list
-        const sourceTaskIds = [...sourceColumn.taskIds];
+        const sourcejobids = [...sourceColumn.jobids];
 
-        const destinationTaskIds = [...destinationColumn.taskIds];
+        const destinationjobids = [...destinationColumn.jobids];
 
         // Remove from source
-        sourceTaskIds.splice(source.index, 1);
+        sourcejobids.splice(source.index, 1);
 
         // Insert into destination
-        destinationTaskIds.splice(destination.index, 0, draggableId);
+        destinationjobids.splice(destination.index, 0, draggableId);
 
         moveTask({
           ...board?.columns,
           [sourceColumn.id]: {
             ...sourceColumn,
-            taskIds: sourceTaskIds,
+            jobids: sourcejobids,
           },
           [destinationColumn.id]: {
             ...destinationColumn,
-            taskIds: destinationTaskIds,
+            jobids: destinationjobids,
           },
         });
 
@@ -160,13 +159,11 @@ export default function KanbanView() {
                     index={index}
                     key={columnId}
                     column={board?.columns[columnId]}
-                    tasks={board?.tasks}
+                    jobs={board?.jobs}
                   />
                 ))}
 
                 {provided.placeholder}
-
-                <KanbanColumnAdd />
               </Stack>
             )}
           </Droppable>

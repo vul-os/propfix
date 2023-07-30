@@ -27,19 +27,9 @@ export default function KanbanDetailsCommentInput() {
       <Avatar src={user?.photoURL} alt={user?.displayName} />
 
       <Paper variant="outlined" sx={{ p: 1, flexGrow: 1, bgcolor: 'transparent' }}>
-        <InputBase fullWidth multiline rows={2} placeholder="Type a message" sx={{ px: 1 }} />
 
         <Stack direction="row" alignItems="center">
-          <Stack direction="row" flexGrow={1}>
-            <IconButton>
-              <Iconify icon="solar:gallery-add-bold" />
-            </IconButton>
-
-            <IconButton>
-              <Iconify icon="eva:attach-2-fill" />
-            </IconButton>
-          </Stack>
-
+          <InputBase fullWidth multiline rows={2} placeholder="Type a message" sx={{ px: 1 }} />
           <Button variant="contained">Comment</Button>
         </Stack>
       </Paper>

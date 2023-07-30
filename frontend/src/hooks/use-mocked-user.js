@@ -1,4 +1,3 @@
-import { _mock } from '../_mock';
 
 // TO GET THE USER FROM THE AUTHCONTEXT, YOU CAN USE
 
@@ -18,7 +17,7 @@ export function useMockedUser() {
     displayName: 'Jaydon Frankie',
     email: 'demo@minimals.cc',
     password: 'demo1234',
-    photoURL: _mock.image.avatar(24),
+    photoURL: "",
     phoneNumber: '+40 777666555',
     country: 'United States',
     address: '90210 Broadway Blvd',
@@ -28,7 +27,7 @@ export function useMockedUser() {
     about: 'Praesent turpis. Phasellus viverra nulla ut metus varius laoreet. Phasellus tempus.',
     role: 'admin',
     isPublic: true,
-  };
+  };//
 
   return { user };
 }

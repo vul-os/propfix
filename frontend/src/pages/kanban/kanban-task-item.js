@@ -13,7 +13,7 @@ import { useBoolean } from '../../hooks/use-boolean';
 // theme
 import { bgBlur } from '../../theme/css';
 // components
-import Iconify from '../../components/iconify';
+// import Iconify from '../../components/iconify';
 //
 import KanbanDetails from './kanban-details';
 
@@ -21,56 +21,56 @@ import KanbanDetails from './kanban-details';
 
 export default function KanbanTaskItem({ task, index, onDeleteTask, onUpdateTask, sx, ...other }) {
   const theme = useTheme();
-
+  console.log(task)
   const openDetails = useBoolean();
 
-  const renderPriority = (
-    <Iconify
-      icon={
-        (task.priority === 'low' && 'solar:double-alt-arrow-down-bold-duotone') ||
-        (task.priority === 'medium' && 'solar:double-alt-arrow-right-bold-duotone') ||
-        'solar:double-alt-arrow-up-bold-duotone'
-      }
-      sx={{
-        position: 'absolute',
-        top: 4,
-        right: 4,
-        ...(task.priority === 'low' && {
-          color: 'info.main',
-        }),
-        ...(task.priority === 'medium' && {
-          color: 'warning.main',
-        }),
-        ...(task.priority === 'hight' && {
-          color: 'error.main',
-        }),
-      }}
-    />
-  );
+  // const renderPriority = (
+  //   <Iconify
+  //     icon={
+  //       (task.priority === 'low' && 'solar:double-alt-arrow-down-bold-duotone') ||
+  //       (task.priority === 'medium' && 'solar:double-alt-arrow-right-bold-duotone') ||
+  //       'solar:double-alt-arrow-up-bold-duotone'
+  //     }
+  //     sx={{
+  //       position: 'absolute',
+  //       top: 4,
+  //       right: 4,
+  //       ...(task.priority === 'low' && {
+  //         color: 'info.main',
+  //       }),
+  //       ...(task.priority === 'medium' && {
+  //         color: 'warning.main',
+  //       }),
+  //       ...(task.priority === 'hight' && {
+  //         color: 'error.main',
+  //       }),
+  //     }}
+  //   />
+  // );
 
-  const renderImg = (
-    <Box
-      sx={{
-        p: theme.spacing(1, 1, 0, 1),
-      }}
-    >
-      <Box
-        component="img"
-        alt={task.attachments[0]}
-        src={task.attachments[0]}
-        sx={{
-          borderRadius: 1.5,
-          ...(openDetails.value && {
-            opacity: 0.8,
-          }),
-        }}
-      />
-    </Box>
-  );
+  // const renderImg = (
+  //   <Box
+  //     sx={{
+  //       p: theme.spacing(1, 1, 0, 1),
+  //     }}
+  //   >
+  //     <Box
+  //       component="img"
+  //       alt={task.attachments[0]}
+  //       src={task.attachments[0]}
+  //       sx={{
+  //         borderRadius: 1.5,
+  //         ...(openDetails.value && {
+  //           opacity: 0.8,
+  //         }),
+  //       }}
+  //     />
+  //   </Box>
+  // );
 
   const renderInfo = (
     <Stack direction="row" alignItems="center">
-      <Stack
+      {/* <Stack
         flexGrow={1}
         direction="row"
         alignItems="center"
@@ -86,9 +86,9 @@ export default function KanbanTaskItem({ task, index, onDeleteTask, onUpdateTask
 
         <Iconify width={16} icon="eva:attach-2-fill" sx={{ mr: 0.25 }} />
         <Box component="span">{task.attachments.length}</Box>
-      </Stack>
+      </Stack> */}
 
-      <AvatarGroup
+      {/* <AvatarGroup
         sx={{
           [`& .${avatarGroupClasses.avatar}`]: {
             width: 24,
@@ -99,7 +99,7 @@ export default function KanbanTaskItem({ task, index, onDeleteTask, onUpdateTask
         {task.assignee.map((user) => (
           <Avatar key={user.id} alt={user.name} src={user.avatarUrl} />
         ))}
-      </AvatarGroup>
+      </AvatarGroup> */}
     </Stack>
   );
 
@@ -136,10 +136,10 @@ export default function KanbanTaskItem({ task, index, onDeleteTask, onUpdateTask
             }}
             {...other}
           >
-            {!!task.attachments.length && renderImg}
+            {/* {!!task.attachments.length && renderImg} */}
 
             <Stack spacing={2} sx={{ px: 2, py: 2.5, position: 'relative' }}>
-              {renderPriority}
+              {/* {renderPriority} */}
 
               <Typography variant="subtitle2">{task.name}</Typography>
 
