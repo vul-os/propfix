@@ -88,7 +88,7 @@ export default function KanbanTaskItem({ task, index, onDeleteTask, onUpdateTask
         <Box component="span">{task.attachments.length}</Box>
       </Stack> */}
 
-      {/* <AvatarGroup
+      <AvatarGroup
         sx={{
           [`& .${avatarGroupClasses.avatar}`]: {
             width: 24,
@@ -96,10 +96,10 @@ export default function KanbanTaskItem({ task, index, onDeleteTask, onUpdateTask
           },
         }}
       >
-        {task.assignee.map((user) => (
+        {task.assignees && task.assignees.map((user) => (
           <Avatar key={user.id} alt={user.name} src={user.avatarUrl} />
         ))}
-      </AvatarGroup> */}
+      </AvatarGroup>
     </Stack>
   );
 

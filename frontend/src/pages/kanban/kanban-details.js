@@ -114,42 +114,42 @@ export default function KanbanDetails({
     />
   );
 
-  // const renderReporter = (
-  //   <Stack direction="row" alignItems="center">
-  //     <StyledLabel>Reporter</StyledLabel>
-  //     <Avatar alt={task.reporter.name} src={task.reporter.avatarUrl} />
-  //   </Stack>
-  // );
+  const renderReporter = (
+    <Stack direction="row" alignItems="center">
+      <StyledLabel>Reporter</StyledLabel>
+      <Avatar alt={task.reporter.name} src={task.reporter.avatarUrl} />
+    </Stack>
+  );
 
-  // const renderAssignee = (
-  //   <Stack direction="row">
-  //     <StyledLabel sx={{ height: 40, lineHeight: '40px' }}>Assignee</StyledLabel>
+  const renderAssignee = (
+    <Stack direction="row">
+      <StyledLabel sx={{ height: 40, lineHeight: '40px' }}>Assignee</StyledLabel>
 
-  //     <Stack direction="row" flexWrap="wrap" alignItems="center" spacing={1}>
-  //       {task.assignee.map((user) => (
-  //         <Avatar key={user.id} alt={user.name} src={user.avatarUrl} />
-  //       ))}
+      <Stack direction="row" flexWrap="wrap" alignItems="center" spacing={1}>
+        {task.assignees.map((user) => (
+          <Avatar key={user.id} alt={user.name} src={user.avatarUrl} />
+        ))}
 
-  //       <Tooltip title="Add assignee">
-  //         <IconButton
-  //           onClick={contacts.onTrue}
-  //           sx={{
-  //             bgcolor: (theme) => alpha(theme.palette.grey[500], 0.08),
-  //             border: (theme) => `dashed 1px ${theme.palette.divider}`,
-  //           }}
-  //         >
-  //           <Iconify icon="mingcute:add-line" />
-  //         </IconButton>
-  //       </Tooltip>
-
-  //       <KanbanContactsDialog
-  //         assignee={task.assignee}
-  //         open={contacts.value}
-  //         onClose={contacts.onFalse}
-  //       />
-  //     </Stack>
-  //   </Stack>
-  // );
+        <Tooltip title="Add assignee">
+          <IconButton
+            onClick={contacts.onTrue}
+            sx={{
+              bgcolor: (theme) => alpha(theme.palette.grey[500], 0.08),
+              border: (theme) => `dashed 1px ${theme.palette.divider}`,
+            }}
+          >
+            <Iconify icon="mingcute:add-line" />
+          </IconButton>
+        </Tooltip>
+{/* 
+        <KanbanContactsDialog
+          assignee={task.assignee}
+          open={contacts.value}
+          onClose={contacts.onFalse}
+        /> */}
+      </Stack>
+    </Stack>
+  );
 
   const renderLabel = (
     <Stack direction="row">
@@ -253,6 +253,9 @@ export default function KanbanDetails({
           {renderPriority}
           {renderLabel}
           {renderDueDate}
+          {renderReporter}
+          {renderAssignee}
+
           { /*  
 
             */}
