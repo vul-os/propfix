@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { styled } from '@mui/material/styles';
 import Header from './header';
 import Nav from './nav';
-import RouterBreadcrumbs from './breadcrumbs/breadcrumbs';
 import navConfig from './nav/config';
 
 const APP_BAR_MOBILE = 64;
@@ -43,7 +42,6 @@ const DashboardLayout = ({ children }) => {
       <Header onOpenNav={handleOpenNav} />
       <Nav navConfig={navConfig} openNav={openNav} onCloseNav={handleCloseNav} />
       <Main>
-        <RouterBreadcrumbs navConfig={navConfig}/>
         {children}
       </Main>
     </StyledRoot>
