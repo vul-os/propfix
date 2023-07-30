@@ -2,13 +2,13 @@
 // LOOK HERE! Never put a training '/' eg: https://abc.com/ <- dont do that
 function getConfig() {
     const defaultConfig = {
-      apiUrl: 'https://scraper-backend-go-gizrqdvcaq-uc.a.run.app',
+      apiUrl: 'https://us-central1-propfix.cloudfunctions.net/function-backend-go',
     };
   
     const location = window.location.href;
     
     switch (true) {
-      case location.includes('scraping-is-hard'):
+      case location.includes('propfix'):
         return defaultConfig;
       case location.includes('localhost'):
         return {
@@ -16,7 +16,7 @@ function getConfig() {
         };
       case location.includes('gitpod'):
         return {
-          apiUrl: 'https://8080-exolutionte-scraperback-1f6qg47a14l.ws-eu101.gitpod.io',
+          apiUrl: 'https://us-central1-propfix.cloudfunctions.net/function-backend-go',
         };
       default:
         return defaultConfig;
