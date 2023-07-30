@@ -41,23 +41,8 @@ export default function KanbanDetailsCommentList({ comments }) {
                 </Typography>
               </Stack>
 
-              {comment.messageType === 'image' ? (
-                <Image
-                  alt={comment.message}
-                  src={comment.message}
-                  onClick={() => lightbox.onOpen(comment.message)}
-                  sx={{
-                    borderRadius: 1.5,
-                    cursor: 'pointer',
-                    transition: (theme) => theme.transitions.create(['opacity']),
-                    '&:hover': {
-                      opacity: 0.8,
-                    },
-                  }}
-                />
-              ) : (
-                <Typography variant="body2">{comment.message}</Typography>
-              )}
+              <Typography variant="body2">{comment.text}</Typography>
+
             </Stack>
           </Stack>
         ))}

@@ -30,8 +30,8 @@ import KanbanInputName from './kanban-input-name';
 import KanbanDetailsToolbar from './kanban-details-toolbar';
 // import KanbanContactsDialog from './kanban-contacts-dialog';
 import KanbanDetailsPriority from './kanban-details-priority';
-// import KanbanDetailsAttachments from './kanban-details-attachments';
-// import KanbanDetailsCommentList from './kanban-details-comment-list';
+import KanbanDetailsAttachments from './kanban-details-attachments';
+import KanbanDetailsCommentList from './kanban-details-comment-list';
 import KanbanDetailsCommentInput from './kanban-details-comment-input';
 
 dayjs.extend(utc);
@@ -200,14 +200,14 @@ export default function KanbanDetails({
     </Stack>
   );
 
-  // const renderAttachments = (
-  //   <Stack direction="row">
-  //     <StyledLabel>Attachments</StyledLabel>
-  //     <KanbanDetailsAttachments attachments={task.attachments} />
-  //   </Stack>
-  // );
+  const renderAttachments = (
+    <Stack direction="row">
+      <StyledLabel>Attachments</StyledLabel>
+      <KanbanDetailsAttachments attachments={task.attachmenturls} />
+    </Stack>
+  );
 
-  // const renderComments = <KanbanDetailsCommentList comments={task.comments} />;
+  const renderComments = <KanbanDetailsCommentList comments={task.comments} />;
 
   return (
     <Drawer
@@ -256,13 +256,13 @@ export default function KanbanDetails({
           { /*  
 
             */}
-
+          {renderAttachments}
           {renderDescription}
 
-          {/* {renderAttachments} */}
+          {/* {} */}
         </Stack>
 
-        {/* {!!task.comments.length && renderComments} */}
+        {task.comments && !!task.comments.length && renderComments}
       </Scrollbar>
 
       <KanbanDetailsCommentInput />
