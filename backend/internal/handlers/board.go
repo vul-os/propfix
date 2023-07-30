@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"sort"
+	"time"
 
 	"cloud.google.com/go/bigquery"
 	"google.golang.org/api/iterator"
@@ -19,6 +20,30 @@ func NewBoardHandler(client *bigquery.Client) *BoardHandler {
 	return &BoardHandler{
 		client: client,
 	}
+}
+
+type CommentJson struct {
+	ID        string    `json:"id"`
+	Name      string    `json:"name"`
+	CreatedAt time.Time `json:"createdAt"`
+	AvatarURL string    `json:"avatarUrl"`
+	Text      string    `json:"text"`
+}
+type JobJson struct {
+	ID             string        `json:"id"`
+	Name           string        `json:"name"`
+	DueDate        time.Time     `json:"dueDate"`
+	Priority       string        `json:"priority"`
+	Description    string        `json:"description"`
+	ReporterID     string        `json:"reporterId"`
+	AssigneeIDs    []string      `json:"assigneeIds"`
+	UnitIdentifier string        `json:"unitIdentifier"`
+	BuildingID     string        `json:"buildingId"`
+	Labels         []string      `json:"labels"`
+	AttachmentURLs []string      `json:"attachmentUrls"`
+	Cost           float64       `json:"cost"`
+	CreatedAt      time.Time     `json:"createdAt"`
+	Comments       []CommentJson `json:"comments"`
 }
 
 func (h *BoardHandler) GetBoard(w http.ResponseWriter, r *http.Request) {
@@ -67,9 +92,10 @@ func (h *BoardHandler) GetBoard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jobsData := make(map[string]Job)
+	jobsData := make(map[string]JobJson)
+
 	for {
-		var job Job
+		var job JobJson
 		err := jobsIterator.Next(&job)
 		if err == iterator.Done {
 			break
@@ -81,9 +107,39 @@ func (h *BoardHandler) GetBoard(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Assuming the job ID is present in the task, use it as the key
-		jobsData[job.ID] = job
+		// Create a new JobJson object with the comments field
+		jobWithComments := JobJson{
+			ID:             job.ID,
+			Name:           job.Name,
+			DueDate:        job.DueDate,
+			Priority:       job.Priority,
+			Description:    job.Description,
+			ReporterID:     job.ReporterID,
+			AssigneeIDs:    job.AssigneeIDs,
+			UnitIdentifier: job.UnitIdentifier,
+			BuildingID:     job.BuildingID,
+			Labels:         job.Labels,
+			AttachmentURLs: job.AttachmentURLs,
+			Cost:           job.Cost,
+			CreatedAt:      job.CreatedAt,
+		}
+
+		// Fetch comments data for the given job ID and store it in the job data
+		comments, err := getCommentsForJobID(ctx, h.client, job.ID)
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		// Update the jobWithComments with comments data
+		jobWithComments.Comments = comments
+
+		// Add the jobWithComments to jobsData
+		jobsData[job.ID] = jobWithComments
 	}
 
+	// ... (existing code)
+
+	// Marshal jobsData to JSON and send the response
 	response := map[string]interface{}{
 		"board": map[string]interface{}{
 			"columns": columnsData,
@@ -94,4 +150,41 @@ func (h *BoardHandler) GetBoard(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
+}
+
+// Helper function to fetch comments data for a given job ID
+func getCommentsForJobID(ctx context.Context, client *bigquery.Client, jobID string) ([]CommentJson, error) {
+	query := fmt.Sprintf(`
+		SELECT
+			c.id, c.text, c.createdat, c.jobid, c.memberId, m.name, m.email, m.role, m.avatarurl
+		FROM
+			propfix.main.comments AS c
+		JOIN
+			propfix.main.members AS m
+		ON
+			c.memberId = m.id
+		WHERE
+			c.jobid = '%s'
+	`, jobID)
+
+	commentQuery := client.Query(query)
+	commentIterator, err := commentQuery.Read(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var comments []CommentJson
+	for {
+		var comment CommentJson
+		err := commentIterator.Next(&comment)
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+		comments = append(comments, comment)
+	}
+
+	return comments, nil
 }

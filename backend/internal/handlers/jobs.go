@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"strings"
-
+	// "github.com/teris-io/shortid"
 	"cloud.google.com/go/bigquery"
 	"github.com/gorilla/mux"
 	"google.golang.org/api/iterator"

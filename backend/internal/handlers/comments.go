@@ -25,10 +25,11 @@ func NewCommentsHandler(client *bigquery.Client) *CommentsHandler {
 }
 
 type Comment struct {
-	ID        int64     `json:"id"`
-	MemberID  string    `json:"memberId"`
-	Text      string    `json:"text"`
-	CreatedAt time.Time `json:"createdAt"`
+	ID        string    `bigquery:"id"`
+	MemberID  string    `bigquery:"memberId"`
+	Text      string    `bigquery:"text"`
+	CreatedAt time.Time `bigquery:"createdAt"`
+	JobID     string    `bigquery:"jobid"`
 }
 
 func (h *CommentsHandler) CreateComment(w http.ResponseWriter, r *http.Request) {
