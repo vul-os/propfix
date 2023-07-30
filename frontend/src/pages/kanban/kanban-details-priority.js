@@ -25,7 +25,7 @@ export default function KanbanDetailsPriority({ priority, onChangePriority }) {
             textTransform: 'capitalize',
             fontWeight: 'fontWeightBold',
             boxShadow: (theme) => `inset 0 0 0 1px ${alpha(theme.palette.grey[500], 0.24)}`,
-            ...(option === priority && {
+            ...(option === priority.toLowerCase() && {
               boxShadow: (theme) => `inset 0 0 0 2px ${theme.palette.text.primary}`,
             }),
           }}

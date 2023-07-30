@@ -17,8 +17,6 @@ import CustomPopover, { usePopover } from '../../components/custom-popover';
 // ----------------------------------------------------------------------
 
 export default function KanbanDetailsToolbar({
-  liked,
-  onLike,
   taskName,
   onDelete,
   taskStatus,
@@ -67,21 +65,11 @@ export default function KanbanDetailsToolbar({
         </Button>
 
         <Stack direction="row" justifyContent="flex-end" flexGrow={1}>
-          <Tooltip title="Like">
-            <IconButton color={liked ? 'default' : 'primary'} onClick={onLike}>
-              <Iconify icon="ic:round-thumb-up" />
-            </IconButton>
-          </Tooltip>
-
           <Tooltip title="Delete task">
             <IconButton onClick={confirm.onTrue}>
               <Iconify icon="solar:trash-bin-trash-bold" />
             </IconButton>
           </Tooltip>
-
-          <IconButton>
-            <Iconify icon="eva:more-vertical-fill" />
-          </IconButton>
         </Stack>
       </Stack>
 
@@ -124,10 +112,8 @@ export default function KanbanDetailsToolbar({
 }
 
 KanbanDetailsToolbar.propTypes = {
-  liked: PropTypes.bool,
   onCloseDetails: PropTypes.func,
   onDelete: PropTypes.func,
-  onLike: PropTypes.func,
   taskName: PropTypes.string,
   taskStatus: PropTypes.string,
 };

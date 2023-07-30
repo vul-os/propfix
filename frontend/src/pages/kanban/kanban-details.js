@@ -1,5 +1,8 @@
 import PropTypes from 'prop-types';
 import { useState, useCallback } from 'react';
+import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+
 // @mui
 import { styled, alpha } from '@mui/material/styles';
 import Chip from '@mui/material/Chip';
@@ -11,6 +14,11 @@ import Divider from '@mui/material/Divider';
 import Tooltip from '@mui/material/Tooltip';
 import TextField from '@mui/material/TextField';
 import IconButton from '@mui/material/IconButton';
+
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+
 // hooks
 import { useBoolean } from '../../hooks/use-boolean';
 // components
@@ -21,10 +29,12 @@ import CustomDateRangePicker, { useDateRangePicker } from '../../components/cust
 import KanbanInputName from './kanban-input-name';
 import KanbanDetailsToolbar from './kanban-details-toolbar';
 // import KanbanContactsDialog from './kanban-contacts-dialog';
-// import KanbanDetailsPriority from './kanban-details-priority';
+import KanbanDetailsPriority from './kanban-details-priority';
 // import KanbanDetailsAttachments from './kanban-details-attachments';
 // import KanbanDetailsCommentList from './kanban-details-comment-list';
 import KanbanDetailsCommentInput from './kanban-details-comment-input';
+
+dayjs.extend(utc);
 
 // ----------------------------------------------------------------------
 
@@ -46,17 +56,15 @@ export default function KanbanDetails({
   onUpdateTask,
   onDeleteTask,
 }) {
-  // const [priority, setPriority] = useState(task.priority);
+  const [priority, setPriority] = useState(task.priority.toLowerCase());
 
   const [taskName, setTaskName] = useState(task.name);
-
-  const like = useBoolean();
 
   const contacts = useBoolean();
 
   const [taskDescription, setTaskDescription] = useState(task.description);
 
-  // const rangePicker = useDateRangePicker(task.due[0], task.due[1]);
+  const [value, setValue] = useState() // Initialize with today's date
 
   const handleChangeTaskName = useCallback((event) => {
     setTaskName(event.target.value);
@@ -84,15 +92,13 @@ export default function KanbanDetails({
     setTaskDescription(event.target.value);
   }, []);
 
-  // const handleChangePriority = useCallback((newValue) => {
-  //   setPriority(newValue);
-  // }, []);
+  const handleChangePriority = useCallback((newValue) => {
+    setPriority(newValue);
+  }, []);
 
   const renderHead = (
     <KanbanDetailsToolbar
-      liked={like.value}
       taskName={task.name}
-      onLike={like.onToggle}
       onDelete={onDeleteTask}
       taskStatus={task.status}
       onCloseDetails={onCloseDetails}
@@ -145,81 +151,54 @@ export default function KanbanDetails({
   //   </Stack>
   // );
 
-  // const renderLabel = (
-  //   <Stack direction="row">
-  //     <StyledLabel sx={{ height: 24, lineHeight: '24px' }}>Labels</StyledLabel>
+  const renderLabel = (
+    <Stack direction="row">
+      <StyledLabel sx={{ height: 24, lineHeight: '24px' }}>Labels</StyledLabel>
 
-  //     {!!task.labels.length && (
-  //       <Stack direction="row" flexWrap="wrap" alignItems="center" spacing={1}>
-  //         {task.labels.map((label) => (
-  //           <Chip key={label} color="info" label={label} size="small" variant="soft" />
-  //         ))}
-  //       </Stack>
-  //     )}
-  //   </Stack>
-  // );
+      {!!task.labels.length && (
+        <Stack direction="row" flexWrap="wrap" alignItems="center" spacing={1}>
+          {task.labels.map((label) => (
+            <Chip key={label} color="info" label={label} size="small" variant="soft" />
+          ))}
+        </Stack>
+      )}
+    </Stack>
+  );
 
-  // const renderDueDate = (
-  //   <Stack direction="row" alignItems="center">
-  //     <StyledLabel> Due date </StyledLabel>
+  const renderDueDate = (
+    <Stack direction="row" alignItems="center">
+      <StyledLabel> Due date </StyledLabel>
+        <DatePicker
+          value={value}
+          onChange={(newValue) => setValue(newValue)}
+        />
+    </Stack>
+  );
 
-  //     {rangePicker.selected ? (
-  //       <Button size="small" onClick={rangePicker.onOpen}>
-  //         {rangePicker.shortLabel}
-  //       </Button>
-  //     ) : (
-  //       <Tooltip title="Add due date">
-  //         <IconButton
-  //           onClick={rangePicker.onOpen}
-  //           sx={{
-  //             bgcolor: (theme) => alpha(theme.palette.grey[500], 0.08),
-  //             border: (theme) => `dashed 1px ${theme.palette.divider}`,
-  //           }}
-  //         >
-  //           <Iconify icon="mingcute:add-line" />
-  //         </IconButton>
-  //       </Tooltip>
-  //     )}
+  const renderPriority = (
+    <Stack direction="row" alignItems="center">
+      <StyledLabel>Priority</StyledLabel>
 
-  //     <CustomDateRangePicker
-  //       variant="calendar"
-  //       title="Choose due date"
-  //       startDate={rangePicker.startDate}
-  //       endDate={rangePicker.endDate}
-  //       onChangeStartDate={rangePicker.onChangeStartDate}
-  //       onChangeEndDate={rangePicker.onChangeEndDate}
-  //       open={rangePicker.open}
-  //       onClose={rangePicker.onClose}
-  //       selected={rangePicker.selected}
-  //       error={rangePicker.error}
-  //     />
-  //   </Stack>
-  // );
+      <KanbanDetailsPriority priority={priority} onChangePriority={handleChangePriority} />
+    </Stack>
+  );
 
-  // const renderPriority = (
-  //   <Stack direction="row" alignItems="center">
-  //     <StyledLabel>Priority</StyledLabel>
+  const renderDescription = (
+    <Stack direction="row">
+      <StyledLabel> Description </StyledLabel>
 
-  //     <KanbanDetailsPriority priority={priority} onChangePriority={handleChangePriority} />
-  //   </Stack>
-  // );
-
-  // const renderDescription = (
-  //   <Stack direction="row">
-  //     <StyledLabel> Description </StyledLabel>
-
-  //     <TextField
-  //       fullWidth
-  //       multiline
-  //       size="small"
-  //       value={taskDescription}
-  //       onChange={handleChangeTaskDescription}
-  //       InputProps={{
-  //         sx: { typography: 'body2' },
-  //       }}
-  //     />
-  //   </Stack>
-  // );
+      <TextField
+        fullWidth
+        multiline
+        size="small"
+        value={taskDescription}
+        onChange={handleChangeTaskDescription}
+        InputProps={{
+          sx: { typography: 'body2' },
+        }}
+      />
+    </Stack>
+  );
 
   // const renderAttachments = (
   //   <Stack direction="row">
@@ -271,19 +250,16 @@ export default function KanbanDetails({
         >
           {renderName}
 
-          {/* {renderReporter}
-
-          {renderAssignee}
-
-          {renderLabel}
-
-          {renderDueDate}
-
           {renderPriority}
+          {renderLabel}
+          {renderDueDate}
+          { /*  
+
+            */}
 
           {renderDescription}
 
-          {renderAttachments} */}
+          {/* {renderAttachments} */}
         </Stack>
 
         {/* {!!task.comments.length && renderComments} */}
