@@ -49,6 +49,11 @@ func Router(w http.ResponseWriter, r *http.Request) {
 	protectedRouter := router.PathPrefix("").Subrouter()
 	protectedRouter.Use(auth.IsAuthenticated(authClient))
 
+	fileUploadHandler, err := handlers.NewFileUploadHandler("propfix-attachments")
+	if err != nil {
+		log.Fatalf("Failed to initialize Firebase Auth client: %v", err)
+	}
+
 	// Initialize and register the handlers for each table
 	membersHandler := handlers.NewMembersHandler(client)
 	router.HandleFunc("/members/{id}", membersHandler.GetMember).Methods("GET")
@@ -80,6 +85,8 @@ func Router(w http.ResponseWriter, r *http.Request) {
 	router.HandleFunc("/buildings/update", buildingsHandler.UpdateBuilding).Methods("POST") // Use POST for update
 	router.HandleFunc("/buildings/delete", buildingsHandler.DeleteBuilding).Methods("POST") // Use POST for delete
 
+	router.HandleFunc("/file/{jobid}/{filename}", fileUploadHandler.GetFile).Methods("GET")
+	router.HandleFunc("/file/{jobid}/{filename}", fileUploadHandler.UploadFile).Methods("POST")
 	// Add the route for GetBoard
 	boardHandler := handlers.NewBoardHandler(client)
 	router.HandleFunc("/board", boardHandler.GetBoard).Methods("GET")
