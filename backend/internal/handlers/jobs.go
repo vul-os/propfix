@@ -1,5 +1,3 @@
-// handlers/jobs.go
-
 package handlers
 
 import (
@@ -10,9 +8,10 @@ import (
 	"time"
 
 	"strings"
-	// "github.com/teris-io/shortid"
+
 	"cloud.google.com/go/bigquery"
 	"github.com/gorilla/mux"
+	"github.com/teris-io/shortid"
 	"google.golang.org/api/iterator"
 )
 
@@ -52,35 +51,44 @@ func (h *JobsHandler) CreateJob(w http.ResponseWriter, r *http.Request) {
 
 	ctx := context.Background()
 
-	// Parse DueDate from the JSON string (format: "02-02-2023")
-	dueDate, err := time.Parse("02-01-2006", jobReq.DueDate.String())
+	// Generate a unique ID and Name for the job using shortid
+	id, err := shortid.Generate()
 	if err != nil {
-		http.Error(w, "Invalid DueDate format. Use dd-mm-yyyy", http.StatusBadRequest)
+		http.Error(w, "Failed to generate ID", http.StatusInternalServerError)
 		return
 	}
 
-	// Parse CreatedAt from the JSON string (format: "02-02-2023")
-	createdAt, err := time.Parse("02-01-2006", jobReq.CreatedAt.String())
-	if err != nil {
-		http.Error(w, "Invalid CreatedAt format. Use dd-mm-yyyy", http.StatusBadRequest)
-		return
-	}
+	// Set the generated ID and Name to the job
+	jobReq.ID = id
+	jobReq.Name = "Job-" + id // You can modify the prefix as needed
 
-	// Format DueDate in RFC 3339 format for BigQuery
-	dueDateStr := dueDate.Format(time.RFC3339)
+	dueDate := jobReq.DueDate
+	createdAt := jobReq.CreatedAt
 
-	// Format CreatedAt in RFC 3339 format for BigQuery
-	createdAtStr := createdAt.Format(time.RFC3339)
+	// Create the SQL query for insertion using query parameters
+	sqlQuery := `
+		INSERT INTO main.jobs (id, name, dueDate, priority, description, reporterId, assigneeIds, unitIdentifier, buildingId, labels, attachmentUrls, cost, createdAt)
+		VALUES (@id, @name, @dueDate, @priority, @description, @reporterId, @assigneeIds, @unitIdentifier, @buildingId, @labels, @attachmentUrls, @cost, @createdAt)
+	`
 
-	// Create the SQL query for insertion
-	sqlQuery := fmt.Sprintf(`
-		INSERT INTO main.jobs (id, dueDate, priority, description, reporterId, assigneeIds, unitIdentifier, buildingId, labels, attachmentUrls, cost, createdAt)
-		VALUES ('%s', '%s', '%s', '%s', '%s', ARRAY%s, '%s', '%s', ARRAY%s, ARRAY%s, %f, '%s')
-	`, jobReq.ID, dueDateStr, jobReq.Priority, jobReq.Description, jobReq.ReporterID, convertStringArrayToBQArray(jobReq.AssigneeIDs),
-		jobReq.UnitIdentifier, jobReq.BuildingID, convertStringArrayToBQArray(jobReq.Labels), convertStringArrayToBQArray(jobReq.AttachmentURLs), jobReq.Cost, createdAtStr)
-
-	// Execute the query
+	// Execute the query with query parameters
 	q := h.client.Query(sqlQuery)
+	q.Parameters = []bigquery.QueryParameter{
+		{Name: "id", Value: jobReq.ID},
+		{Name: "name", Value: jobReq.Name},
+		{Name: "dueDate", Value: dueDate},
+		{Name: "priority", Value: jobReq.Priority},
+		{Name: "description", Value: jobReq.Description},
+		{Name: "reporterId", Value: jobReq.ReporterID},
+		{Name: "assigneeIds", Value: jobReq.AssigneeIDs},
+		{Name: "unitIdentifier", Value: jobReq.UnitIdentifier},
+		{Name: "buildingId", Value: jobReq.BuildingID},
+		{Name: "labels", Value: jobReq.Labels},
+		{Name: "attachmentUrls", Value: jobReq.AttachmentURLs},
+		{Name: "cost", Value: jobReq.Cost},
+		{Name: "createdAt", Value: createdAt},
+	}
+
 	_, err = q.Run(ctx)
 	if err != nil {
 		fmt.Println(err)
@@ -88,16 +96,13 @@ func (h *JobsHandler) CreateJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusCreated)
+	// Return the created ID in the response
+	json.NewEncoder(w).Encode(map[string]string{"id": jobReq.ID, "name": jobReq.Name})
 }
 
 // Utility function to convert a slice of strings to a string representation suitable for BigQuery array
 func convertStringArrayToBQArray(strArray []string) string {
-	var builder strings.Builder
-	builder.WriteString("['")
-	builder.WriteString(strings.Join(strArray, "','"))
-	builder.WriteString("']")
-	return builder.String()
+	return "['" + strings.Join(strArray, "','") + "']"
 }
 
 func (h *JobsHandler) GetJob(w http.ResponseWriter, r *http.Request) {
@@ -132,9 +137,6 @@ func (h *JobsHandler) GetJob(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *JobsHandler) UpdateJob(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	jobID := vars["id"]
-
 	var job Job
 	err := json.NewDecoder(r.Body).Decode(&job)
 	if err != nil {
@@ -143,15 +145,19 @@ func (h *JobsHandler) UpdateJob(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx := context.Background()
-	q := h.client.Query(fmt.Sprintf(`
-		UPDATE main.Jobs
-		SET dueDate = @dueDate, priority = @priority, description = @description, reporterId = @reporterId, assigneeIds = @assigneeIds, 
-		unitIdentifier = @unitIdentifier, buildingId = @buildingId, labels = @labels, attachmentUrls = @attachmentUrls, 
-		cost = @cost, createdAt = @createdAt
-		WHERE id = @jobID
-	`))
+
+	// Create the SQL query for updating the job
+	sqlQuery := `UPDATE main.jobs
+	SET dueDate = @dueDate, priority = @priority, description = @description, reporterId = @reporterId, assigneeIds = @assigneeIds, 
+	unitIdentifier = @unitIdentifier, buildingId = @buildingId, labels = @labels, attachmentUrls = @attachmentUrls, 
+	cost = @cost, createdAt = @createdAt, name = @name
+	WHERE id = @id`
+
+	// Execute the query with query parameters
+	q := h.client.Query(sqlQuery)
 	q.Parameters = []bigquery.QueryParameter{
-		{Name: "jobID", Value: jobID},
+		{Name: "id", Value: job.ID},
+		{Name: "name", Value: job.Name},
 		{Name: "dueDate", Value: job.DueDate},
 		{Name: "priority", Value: job.Priority},
 		{Name: "description", Value: job.Description},

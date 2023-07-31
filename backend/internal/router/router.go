@@ -57,33 +57,33 @@ func Router(w http.ResponseWriter, r *http.Request) {
 	// Initialize and register the handlers for each table
 	membersHandler := handlers.NewMembersHandler(client)
 	router.HandleFunc("/members/{id}", membersHandler.GetMember).Methods("GET")
+	router.HandleFunc("/members/{id}", membersHandler.DeleteMember).Methods("DELETE")
 	router.HandleFunc("/members/create", membersHandler.CreateMember).Methods("POST")
-	router.HandleFunc("/members/update", membersHandler.UpdateMember).Methods("POST") // Use POST for update
-	router.HandleFunc("/members/delete", membersHandler.DeleteMember).Methods("POST") // Use POST for delete
+	router.HandleFunc("/members/update", membersHandler.UpdateMember).Methods("POST")
 
 	jobsHandler := handlers.NewJobsHandler(client)
 	router.HandleFunc("/jobs/{id}", jobsHandler.GetJob).Methods("GET")
+	router.HandleFunc("/jobs/{id}", jobsHandler.DeleteJob).Methods("DELETE")
 	router.HandleFunc("/jobs/create", jobsHandler.CreateJob).Methods("POST")
-	router.HandleFunc("/jobs/update", jobsHandler.UpdateJob).Methods("POST") // Use POST for update
-	router.HandleFunc("/jobs/delete", jobsHandler.DeleteJob).Methods("POST") // Use POST for delete
+	router.HandleFunc("/jobs/update", jobsHandler.UpdateJob).Methods("POST")
 
 	historyHandler := handlers.NewHistoryHandler(client)
 	router.HandleFunc("/history/{id}", historyHandler.GetHistory).Methods("GET")
 	router.HandleFunc("/history/create", historyHandler.CreateHistory).Methods("POST")
-	router.HandleFunc("/history/update", historyHandler.UpdateHistory).Methods("POST") // Use POST for update
-	router.HandleFunc("/history/delete", historyHandler.DeleteHistory).Methods("POST") // Use POST for delete
+	router.HandleFunc("/history/update", historyHandler.UpdateHistory).Methods("POST")
+	router.HandleFunc("/history/delete", historyHandler.DeleteHistory).Methods("POST")
 
 	commentsHandler := handlers.NewCommentsHandler(client)
 	router.HandleFunc("/comments/{id}", commentsHandler.GetComment).Methods("GET")
 	router.HandleFunc("/comments/create", commentsHandler.CreateComment).Methods("POST")
-	router.HandleFunc("/comments/update", commentsHandler.UpdateComment).Methods("POST") // Use POST for update
-	router.HandleFunc("/comments/delete", commentsHandler.DeleteComment).Methods("POST") // Use POST for delete
+	router.HandleFunc("/comments/update", commentsHandler.UpdateComment).Methods("POST")
+	router.HandleFunc("/comments/delete", commentsHandler.DeleteComment).Methods("POST")
 
 	buildingsHandler := handlers.NewBuildingsHandler(client)
 	router.HandleFunc("/buildings/{id}", buildingsHandler.GetBuilding).Methods("GET")
 	router.HandleFunc("/buildings/create", buildingsHandler.CreateBuilding).Methods("POST")
-	router.HandleFunc("/buildings/update", buildingsHandler.UpdateBuilding).Methods("POST") // Use POST for update
-	router.HandleFunc("/buildings/delete", buildingsHandler.DeleteBuilding).Methods("POST") // Use POST for delete
+	router.HandleFunc("/buildings/update", buildingsHandler.UpdateBuilding).Methods("POST")
+	router.HandleFunc("/buildings/delete", buildingsHandler.DeleteBuilding).Methods("POST")
 
 	router.HandleFunc("/file/{jobid}/{filename}", fileUploadHandler.GetFile).Methods("GET")
 	router.HandleFunc("/file/{jobid}/{filename}", fileUploadHandler.UploadFile).Methods("POST")

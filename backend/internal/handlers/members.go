@@ -24,9 +24,12 @@ func NewMembersHandler(client *bigquery.Client) *MembersHandler {
 }
 
 type Member struct {
-	ID     string `json:"id"`
-	UserID string `json:"userId"`
-	Email  string `json:"email"`
+	ID        string `bigquery:"id"`
+	Email     string `bigquery:"email"`
+	Role      string `bigquery:"role"`
+	UserID    string `bigquery:"userid"`
+	Name      string `bigquery:"name"`
+	AvatarURL string `bigquery:"avatarurl"`
 }
 
 func (h *MembersHandler) CreateMember(w http.ResponseWriter, r *http.Request) {
