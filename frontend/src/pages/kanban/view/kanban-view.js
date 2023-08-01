@@ -1,28 +1,43 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { DragDropContext, Droppable } from '@hello-pangea/dnd';
-// @mui
 import Stack from '@mui/material/Stack';
 import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
 
-
-// components
 import EmptyContent from '../../../components/empty-content';
-// api
-import { useGetBoard, moveColumn, moveTask } from '../../../api/kanban';
-// theme
+import { moveJob } from '../../../api/columns';
+import { fetchBoard } from '../../../api/board';
 import { hideScroll } from '../../../theme/css';
-//
+
 import KanbanColumn from '../kanban-column';
 import { KanbanColumnSkeleton } from '../kanban-skeleton';
-
-// ----------------------------------------------------------------------
+import { useAuthContext } from '../../../contexts/auth'; 
 
 export default function KanbanView() {
-  const { board, boardLoading, boardEmpty } = useGetBoard();
+  const [board, setBoard] = useState(null);
+  const [boardLoading, setBoardLoading] = useState(true);
+  const { getIdToken } = useAuthContext(); 
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const token = await getIdToken(); 
+        const boardData = await fetchBoard(token);
+        setBoard(boardData.board);
+        setBoardLoading(false);
+      } catch (error) {
+        console.error('Error fetching board:', error);
+        setBoard(null);
+        setBoardLoading(false);
+      }
+    }
+
+    fetchData();
+  }, [getIdToken]);
 
   const onDragEnd = useCallback(
     async ({ destination, source, draggableId, type }) => {
+      const token = await getIdToken(); 
       try {
         if (!destination) {
           return;
@@ -32,72 +47,56 @@ export default function KanbanView() {
           return;
         }
 
-        // Moving column
-        if (type === 'COLUMN') {
-          const newOrdered = [...board.ordered];
-
-          newOrdered.splice(source.index, 1);
-
-          newOrdered.splice(destination.index, 0, draggableId);
-
-          moveColumn(newOrdered);
-          return;
-        }
-
         const sourceColumn = board?.columns[source.droppableId];
-
         const destinationColumn = board?.columns[destination.droppableId];
 
-        // Moving task to same list
-        if (sourceColumn.id === destinationColumn.id) {
-          const newjobids = [...sourceColumn.jobids];
-
-          newjobids.splice(source.index, 1);
-
-          newjobids.splice(destination.index, 0, draggableId);
-
-          moveTask({
-            ...board?.columns,
-            [sourceColumn.id]: {
-              ...sourceColumn,
-              jobids: newjobids,
+        if (sourceColumn && destinationColumn) {
+          // Get a copy of job ids from source column
+          const newStartJobIds = Array.from(sourceColumn.jobids || []);
+  
+          // Remove the job id from source column
+          newStartJobIds.splice(source.index, 1);
+  
+          // Get a copy of job ids from destination column
+          const newEndJobIds = Array.from(destinationColumn.jobids || []);
+  
+          // Add the job id to the destination column
+          newEndJobIds.splice(destination.index, 0, draggableId);
+  
+          // Create new board state
+          const newBoardState = {
+            ...board,
+            columns: {
+              ...board.columns,
+              [source.droppableId]: {
+                ...sourceColumn,
+                jobids: newStartJobIds,
+              },
+              [destination.droppableId]: {
+                ...destinationColumn,
+                jobids: newEndJobIds,
+              },
             },
-          });
-
-          console.info('Moving to same list!');
-
-          return;
+          };
+  
+          setBoard(newBoardState);
         }
+  
 
-        // Moving task to different list
-        const sourcejobids = [...sourceColumn.jobids];
+        // actually do api request
+        await moveJob(
+          sourceColumn.jobids[source.index],
+          sourceColumn.id,
+          destinationColumn.id,
+          token 
+        );
 
-        const destinationjobids = [...destinationColumn.jobids];
-
-        // Remove from source
-        sourcejobids.splice(source.index, 1);
-
-        // Insert into destination
-        destinationjobids.splice(destination.index, 0, draggableId);
-
-        moveTask({
-          ...board?.columns,
-          [sourceColumn.id]: {
-            ...sourceColumn,
-            jobids: sourcejobids,
-          },
-          [destinationColumn.id]: {
-            ...destinationColumn,
-            jobids: destinationjobids,
-          },
-        });
-
-        console.info('Moving to different list!');
+        console.info('Moving to a different list!');
       } catch (error) {
         console.error(error);
       }
     },
-    [board?.columns, board?.ordered]
+    [getIdToken] 
   );
 
   const renderSkeleton = (
@@ -126,7 +125,7 @@ export default function KanbanView() {
 
       {boardLoading && renderSkeleton}
 
-      {boardEmpty && (
+      {board?.ordered.length === 0 && (
         <EmptyContent
           filled
           title="No Data"
@@ -154,15 +153,16 @@ export default function KanbanView() {
                   ...hideScroll.x,
                 }}
               >
-                {board?.ordered.map((columnId, index) => (
-                  <KanbanColumn
+                {board?.ordered.map((columnId, index) => {
+                  const column = board?.columns[columnId];
+                  const columnJobs = column && column.jobids && board.jobs ? column.jobids.map(jobId => board.jobs.find(job => job.id === jobId)) : [];
+                  return <KanbanColumn
                     index={index}
                     key={columnId}
-                    column={board?.columns[columnId]}
-                    jobs={board?.jobs}
+                    column={column}
+                    jobs={columnJobs}
                   />
-                ))}
-
+                })}
                 {provided.placeholder}
               </Stack>
             )}
