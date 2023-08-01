@@ -111,7 +111,7 @@ func (h *JobsHandler) GetJob(w http.ResponseWriter, r *http.Request) {
 
 	ctx := context.Background()
 	q := h.client.Query(fmt.Sprintf(`
-		SELECT id, dueDate, priority, description, reporterId, assigneeIds, unitIdentifier, buildingId, labels, attachmentUrls, cost, createdAt
+		SELECT id, name, dueDate, priority, description, reporterId, assigneeIds, unitIdentifier, buildingId, labels, attachmentUrls, cost, createdAt
 		FROM main.jobs
 		WHERE id = @jobID
 	`))
