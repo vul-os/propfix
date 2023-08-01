@@ -1,5 +1,3 @@
-// handlers/comments.go
-
 package handlers
 
 import (
@@ -10,6 +8,7 @@ import (
 	"time"
 
 	"cloud.google.com/go/bigquery"
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"google.golang.org/api/iterator"
 )
@@ -40,15 +39,45 @@ func (h *CommentsHandler) CreateComment(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	// Perform basic validation on the comment data before insertion
+	if comment.MemberID == "" || comment.Text == "" || comment.JobID == "" {
+		http.Error(w, "MemberID, Text, and JobID are required fields", http.StatusBadRequest)
+		return
+	}
+
+	// Generate a UUID and set it as the ID field
+	comment.ID = uuid.New().String()
+
 	ctx := context.Background()
-	inserter := h.client.Dataset("main").Table("Comments").Inserter()
-	err = inserter.Put(ctx, &comment)
+	q := h.client.Query(fmt.Sprintf(`
+		INSERT INTO main.comments (id, memberId, text, createdAt, jobid)
+		VALUES (@id, @memberId, @text, @createdAt, @jobid)
+	`))
+	q.Parameters = []bigquery.QueryParameter{
+		{Name: "id", Value: comment.ID},
+		{Name: "memberId", Value: comment.MemberID},
+		{Name: "text", Value: comment.Text},
+		{Name: "createdAt", Value: comment.CreatedAt},
+		{Name: "jobid", Value: comment.JobID},
+	}
+
+	_, err = q.Run(ctx)
 	if err != nil {
 		http.Error(w, "Failed to create comment", http.StatusInternalServerError)
 		return
 	}
 
+	// Create a response with the generated ID
+	response := struct {
+		ID string `json:"id"`
+	}{
+		ID: comment.ID,
+	}
+
+	// Encode the response to JSON and send it as the HTTP response
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(response)
 }
 
 func (h *CommentsHandler) GetComment(w http.ResponseWriter, r *http.Request) {
@@ -57,8 +86,8 @@ func (h *CommentsHandler) GetComment(w http.ResponseWriter, r *http.Request) {
 
 	ctx := context.Background()
 	q := h.client.Query(fmt.Sprintf(`
-		SELECT id, memberId, text, createdAt
-		FROM main.Comments
+		SELECT id, memberId, text, createdAt, jobid
+		FROM main.comments
 		WHERE id = @commentID
 	`))
 	q.Parameters = []bigquery.QueryParameter{{Name: "commentID", Value: commentID}}
@@ -93,10 +122,16 @@ func (h *CommentsHandler) UpdateComment(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	// Perform basic validation on the comment data before update
+	if comment.MemberID == "" || comment.Text == "" || comment.JobID == "" {
+		http.Error(w, "MemberID, Text, and JobID are required fields", http.StatusBadRequest)
+		return
+	}
+
 	ctx := context.Background()
 	q := h.client.Query(fmt.Sprintf(`
-		UPDATE main.Comments
-		SET memberId = @memberId, text = @text, createdAt = @createdAt
+		UPDATE main.comments
+		SET memberId = @memberId, text = @text, createdAt = @createdAt, jobid = @jobid
 		WHERE id = @commentID
 	`))
 	q.Parameters = []bigquery.QueryParameter{
@@ -104,6 +139,7 @@ func (h *CommentsHandler) UpdateComment(w http.ResponseWriter, r *http.Request) 
 		{Name: "memberId", Value: comment.MemberID},
 		{Name: "text", Value: comment.Text},
 		{Name: "createdAt", Value: comment.CreatedAt},
+		{Name: "jobid", Value: comment.JobID},
 	}
 
 	_, err = q.Run(ctx)
@@ -119,7 +155,7 @@ func (h *CommentsHandler) DeleteComment(w http.ResponseWriter, r *http.Request) 
 
 	ctx := context.Background()
 	q := h.client.Query(fmt.Sprintf(`
-		DELETE FROM main.Comments
+		DELETE FROM main.comments
 		WHERE id = @commentID
 	`))
 	q.Parameters = []bigquery.QueryParameter{{Name: "commentID", Value: commentID}}
@@ -129,6 +165,4 @@ func (h *CommentsHandler) DeleteComment(w http.ResponseWriter, r *http.Request) 
 		http.Error(w, "Failed to delete comment", http.StatusInternalServerError)
 		return
 	}
-
-	w.WriteHeader(http.StatusNoContent)
 }
