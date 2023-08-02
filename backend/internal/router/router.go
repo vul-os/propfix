@@ -86,7 +86,7 @@ func Router(w http.ResponseWriter, r *http.Request) {
 	router.HandleFunc("/buildings/delete", buildingsHandler.DeleteBuilding).Methods("POST")
 
 	router.HandleFunc("/file/{jobid}/{filename}", fileUploadHandler.GetFile).Methods("GET")
-	router.HandleFunc("/file/{jobid}/{filename}", fileUploadHandler.UploadFile).Methods("POST")
+	router.HandleFunc("/file/{jobid}", fileUploadHandler.UploadFile).Methods("POST")
 	// Add the route for GetBoard
 	boardHandler := handlers.NewBoardHandler(client)
 	router.HandleFunc("/board", boardHandler.GetBoard).Methods("GET")
