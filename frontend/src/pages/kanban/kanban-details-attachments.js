@@ -3,48 +3,72 @@ import { useState, useCallback } from 'react';
 // @mui
 import Stack from '@mui/material/Stack';
 // components
-import { MultiFilePreview, UploadBox } from '../../components/upload';
+import { UploadBox } from '../../components/upload';
+import 'regenerator-runtime/runtime';
 
-// ----------------------------------------------------------------------
+// Import the `uploadFile` and `getFile` functions from `fileUploads.js`
+import { uploadFile, getFile } from '../../api/attachments';
 
-export default function KanbanDetailsAttachments({ attachments }) {
-  const [files, setFiles] = useState(attachments);
+export default function KanbanDetailsAttachments({ jobId, attachments }) {
+  const [files, setFiles] = useState(attachments || []); // Initialize with an empty array if attachments is not available
 
   const handleDrop = useCallback(
-    (acceptedFiles) => {
-      const newFiles = acceptedFiles.map((file) =>
-        Object.assign(file, {
-          preview: URL.createObjectURL(file),
-        })
-      );
+    async (acceptedFiles) => {
+      try {
+        // Upload the files using the `uploadFile` function from `fileUploads.js`
+        const uploadPromises = acceptedFiles.map((file) => uploadFile(jobId, file)); // Replace "jobId" with your bucket name
+        await Promise.all(uploadPromises);
 
-      setFiles([...files, ...newFiles]);
+        // After uploading, update the state with the new files
+        const newFiles = acceptedFiles.map((file) =>
+          Object.assign(file, {
+            preview: URL.createObjectURL(file),
+          })
+        );
+        setFiles((prevFiles) => [...prevFiles, ...newFiles]);
+      } catch (error) {
+        console.error('Error uploading files:', error);
+      }
     },
-    [files]
+    [jobId]
   );
 
   const handleRemoveFile = useCallback(
-    (inputFile) => {
-      const filtered = files.filter((file) => file !== inputFile);
-      setFiles(filtered);
+    async (inputFile) => {
+      try {
+        // Remove the file using the `getFile` function from `fileUploads.js`
+        await getFile(jobId, inputFile.name); // Replace "jobId" with your bucket name
+
+        // After removing, update the state with the new files
+        const filtered = files.filter((file) => file !== inputFile);
+        setFiles(filtered);
+      } catch (error) {
+        console.error('Error removing file:', error);
+      }
     },
-    [files]
+    [jobId, files]
   );
 
   return (
     <Stack direction="row" flexWrap="wrap">
-      <MultiFilePreview
-        thumbnail
-        files={files}
-        onRemove={(file) => handleRemoveFile(file)}
-        sx={{ width: 64, height: 64 }}
-      />
+      {/* Display the uploaded images */}
+      {files.map((file) => (
+        <img
+          key={file.name}
+          className="MuiBox-root css-vvjom1"
+          src={file.preview}
+          alt={file.name}
+          style={{ width: 64, height: 64 }}
+        />
+      ))}
 
+      {/* The UploadBox component for uploading new files */}
       <UploadBox onDrop={handleDrop} />
     </Stack>
   );
 }
 
 KanbanDetailsAttachments.propTypes = {
+  jobId: PropTypes.string.isRequired, // Make sure `jobId` is a required prop
   attachments: PropTypes.array,
 };
