@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"firebase.google.com/go/v4/auth"
@@ -23,6 +24,7 @@ func IsAuthenticated(authClient *auth.Client) func(http.Handler) http.Handler {
 
 			token, err := authClient.VerifyIDToken(context.Background(), idToken)
 			if err != nil {
+				fmt.Println(err)
 				http.Error(w, "Unauthorized", http.StatusUnauthorized)
 				return
 			}

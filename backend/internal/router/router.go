@@ -26,7 +26,7 @@ func Router(w http.ResponseWriter, r *http.Request) {
 	defer client.Close()
 
 	conf := &firebase.Config{
-		ProjectID: projectID,
+		ProjectID: "prop-fix",
 	}
 	app, err := firebase.NewApp(context.Background(), conf)
 	if err != nil {
@@ -39,6 +39,10 @@ func Router(w http.ResponseWriter, r *http.Request) {
 		log.Fatalf("Failed to initialize Firebase Auth client: %v", err)
 	}
 
+	fileUploadHandler, err := handlers.NewFileUploadHandler("propfix-attachments")
+	if err != nil {
+		log.Fatalf("Failed to initialize Firebase Auth client: %v", err)
+	}
 	// Create a Gorilla Mux router
 	router := mux.NewRouter()
 
@@ -49,47 +53,48 @@ func Router(w http.ResponseWriter, r *http.Request) {
 	protectedRouter := router.PathPrefix("").Subrouter()
 	protectedRouter.Use(auth.IsAuthenticated(authClient))
 
-	fileUploadHandler, err := handlers.NewFileUploadHandler("propfix-attachments")
-	if err != nil {
-		log.Fatalf("Failed to initialize Firebase Auth client: %v", err)
-	}
-
 	// Initialize and register the handlers for each table
 	membersHandler := handlers.NewMembersHandler(client)
-	router.HandleFunc("/members/{id}", membersHandler.GetMember).Methods("GET")
-	router.HandleFunc("/members/{id}", membersHandler.DeleteMember).Methods("DELETE")
-	router.HandleFunc("/members/create", membersHandler.CreateMember).Methods("POST")
-	router.HandleFunc("/members/update", membersHandler.UpdateMember).Methods("POST")
+	protectedRouter.HandleFunc("/members/{id}", membersHandler.GetMember).Methods("GET")
+	protectedRouter.HandleFunc("/members/{id}", membersHandler.DeleteMember).Methods("DELETE")
+	protectedRouter.HandleFunc("/members", membersHandler.CreateMember).Methods("POST")
+	protectedRouter.HandleFunc("/members", membersHandler.UpdateMember).Methods("PUT")
 
 	jobsHandler := handlers.NewJobsHandler(client)
-	router.HandleFunc("/jobs/{id}", jobsHandler.GetJob).Methods("GET")
-	router.HandleFunc("/jobs/{id}", jobsHandler.DeleteJob).Methods("DELETE")
-	router.HandleFunc("/jobs/create", jobsHandler.CreateJob).Methods("POST")
-	router.HandleFunc("/jobs/update", jobsHandler.UpdateJob).Methods("POST")
+	protectedRouter.HandleFunc("/jobs/{id}", jobsHandler.GetJob).Methods("GET")
+	protectedRouter.HandleFunc("/jobs/{id}", jobsHandler.DeleteJob).Methods("DELETE")
+	protectedRouter.HandleFunc("/jobs", jobsHandler.CreateJob).Methods("POST")
+	protectedRouter.HandleFunc("/jobs", jobsHandler.UpdateJob).Methods("PUT")
 
 	historyHandler := handlers.NewHistoryHandler(client)
-	router.HandleFunc("/history/{id}", historyHandler.GetHistory).Methods("GET")
-	router.HandleFunc("/history/create", historyHandler.CreateHistory).Methods("POST")
-	router.HandleFunc("/history/update", historyHandler.UpdateHistory).Methods("POST")
-	router.HandleFunc("/history/delete", historyHandler.DeleteHistory).Methods("POST")
+	protectedRouter.HandleFunc("/history/{id}", historyHandler.GetHistory).Methods("GET")
+	protectedRouter.HandleFunc("/history", historyHandler.CreateHistory).Methods("POST")
+	protectedRouter.HandleFunc("/history", historyHandler.UpdateHistory).Methods("PUT")
+	protectedRouter.HandleFunc("/history/{id}", historyHandler.DeleteHistory).Methods("DELETE")
 
 	commentsHandler := handlers.NewCommentsHandler(client)
-	router.HandleFunc("/comments/{id}", commentsHandler.GetComment).Methods("GET")
-	router.HandleFunc("/comments/create", commentsHandler.CreateComment).Methods("POST")
-	router.HandleFunc("/comments/update", commentsHandler.UpdateComment).Methods("POST")
-	router.HandleFunc("/comments/delete", commentsHandler.DeleteComment).Methods("POST")
+	protectedRouter.HandleFunc("/comments/{id}", commentsHandler.GetComment).Methods("GET")
+	protectedRouter.HandleFunc("/comments", commentsHandler.CreateComment).Methods("POST")
+	protectedRouter.HandleFunc("/comments", commentsHandler.UpdateComment).Methods("PUT")
+	protectedRouter.HandleFunc("/comments/{id}", commentsHandler.DeleteComment).Methods("DELETE")
 
 	buildingsHandler := handlers.NewBuildingsHandler(client)
-	router.HandleFunc("/buildings/{id}", buildingsHandler.GetBuilding).Methods("GET")
-	router.HandleFunc("/buildings/create", buildingsHandler.CreateBuilding).Methods("POST")
-	router.HandleFunc("/buildings/update", buildingsHandler.UpdateBuilding).Methods("POST")
-	router.HandleFunc("/buildings/delete", buildingsHandler.DeleteBuilding).Methods("POST")
+	protectedRouter.HandleFunc("/buildings/{id}", buildingsHandler.GetBuilding).Methods("GET")
+	protectedRouter.HandleFunc("/buildings", buildingsHandler.CreateBuilding).Methods("POST")
+	protectedRouter.HandleFunc("/buildings", buildingsHandler.UpdateBuilding).Methods("PUT")
+	protectedRouter.HandleFunc("/buildings/{id}", buildingsHandler.DeleteBuilding).Methods("DELETE")
+
+	columnsHandler := handlers.NewColumnsHandler(client)
+	protectedRouter.HandleFunc("/columns/move-job", columnsHandler.MoveJob).Methods("POST")
+
+	protectedRouter.HandleFunc("/file/{jobid}/{filename}", fileUploadHandler.GetFile).Methods("GET")
+	protectedRouter.HandleFunc("/file/{jobid}/{filename}", fileUploadHandler.UploadFile).Methods("POST")
 
 	router.HandleFunc("/file/{jobid}/{filename}", fileUploadHandler.GetFile).Methods("GET")
 	router.HandleFunc("/file/{jobid}", fileUploadHandler.UploadFile).Methods("POST")
 	// Add the route for GetBoard
 	boardHandler := handlers.NewBoardHandler(client)
-	router.HandleFunc("/board", boardHandler.GetBoard).Methods("GET")
+	protectedRouter.HandleFunc("/board", boardHandler.GetBoard).Methods("GET")
 
 	// Apply the enableCORS middleware to all routes
 	handler := EnableCORS(router)
