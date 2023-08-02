@@ -1,14 +1,11 @@
 import PropTypes from 'prop-types';
 import { useCallback } from 'react';
 import { Droppable, Draggable } from '@hello-pangea/dnd';
-// @mui
 import { alpha } from '@mui/material/styles';
 import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
-// hooks
 import { useBoolean } from '../../hooks/use-boolean';
-// api
 import {
   updateColumn,
   clearColumn,
@@ -17,20 +14,13 @@ import {
   updateTask,
   deleteTask,
 } from '../../api/kanban';
-// components
 import Iconify from '../../components/iconify';
 import { useSnackbar } from '../../components/snackbar';
-//
-// import KanbanTaskAdd from './kanban-task-add';
 import KanbanTaskItem from './kanban-task-item';
 import KanbanColumnToolBar from './kanban-column-tool-bar';
 
-// ----------------------------------------------------------------------
-
 export default function KanbanColumn({ column, jobs, index }) {
-  console.log(column, jobs, index)
   const { enqueueSnackbar } = useSnackbar();
-
   const openAddTask = useBoolean();
 
   const handleUpdateColumn = useCallback(
@@ -106,40 +96,6 @@ export default function KanbanColumn({ column, jobs, index }) {
     [column.id, enqueueSnackbar]
   );
 
-  // const renderAddTask = (
-  //   <Stack
-  //     spacing={2}
-  //     sx={{
-  //       pb: 3,
-  //     }}
-  //   >
-  //     {openAddTask.value && (
-  //       <KanbanTaskAdd
-  //         status={column.name}
-  //         onAddTask={handleAddTask}
-  //         onCloseAddTask={openAddTask.onFalse}
-  //       />
-  //     )}
-
-  //     <Button
-  //       fullWidth
-  //       size="large"
-  //       color="inherit"
-  //       startIcon={
-  //         <Iconify
-  //           icon={openAddTask.value ? 'solar:close-circle-broken' : 'mingcute:add-line'}
-  //           width={18}
-  //           sx={{ mr: -0.5 }}
-  //         />
-  //       }
-  //       onClick={openAddTask.onToggle}
-  //       sx={{ fontSize: 14 }}
-  //     >
-  //       {openAddTask.value ? 'Close' : 'Add Task'}
-  //     </Button>
-  //   </Stack>
-  // );
-
   return (
     <Draggable draggableId={column.id} index={index}>
       {(provided, snapshot) => (
@@ -174,21 +130,25 @@ export default function KanbanColumn({ column, jobs, index }) {
                     width: 280,
                   }}
                 >
-                  {column.jobids && column.jobids.map((taskId, taskIndex) => (
-                    <KanbanTaskItem
-                      key={taskId}
-                      index={taskIndex}
-                      task={jobs[taskId]}
-                      onUpdateTask={handleUpdateTask}
-                      onDeleteTask={() => handleDeleteTask(taskId)}
-                    />
-                  ))}
+                  {column.jobids && column.jobids.map((taskId, taskIndex) => {
+                    const task = jobs.find((job) => job && job.id === taskId);
+                    if(task) {  // Check if task is not undefined before rendering
+                      return (
+                        <KanbanTaskItem
+                          key={taskId}
+                          index={taskIndex}
+                          task={task}
+                          onUpdateTask={handleUpdateTask}
+                          onDeleteTask={() => handleDeleteTask(taskId)}
+                        />
+                      );
+                    }
+                    return null;
+                  })}
                   {dropProvided.placeholder}
                 </Stack>
               )}
             </Droppable>
-
-            {/* {renderAddTask} */}
           </Stack>
         </Paper>
       )}
@@ -199,5 +159,5 @@ export default function KanbanColumn({ column, jobs, index }) {
 KanbanColumn.propTypes = {
   column: PropTypes.object,
   index: PropTypes.number,
-  jobs: PropTypes.object,
+  jobs: PropTypes.array,
 };
