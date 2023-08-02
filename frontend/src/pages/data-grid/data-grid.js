@@ -33,28 +33,13 @@ function JobDataGrid() {
 const avatarRenderer = (params) => {
     const assignees = Array.isArray(params.value) ? params.value : [params.value];
     return (
-        <Container
-            maxWidth={false}
-            sx={{
-            height: 1,
-            }}
-        >
-            <Typography
-            variant="h4"
-            sx={{
-                mb: { xs: 3, md: 5 },
-            }}
-            >
-            Kanban
-            </Typography>
-                <Stack direction="row" spacing={2} alignItems="center" justifyContent="center">
-                {assignees.map((assignee) => (
-                <Tooltip key={assignee.ID} title={assignee.Name}>
-                    <Avatar src={assignee.AvatarURL} alt={assignee.Name} />
-                </Tooltip>
-                ))}
-            </Stack>
-        </Container>
+        <Stack direction="row" spacing={2} alignItems="center" justifyContent="center">
+        {assignees.map((assignee) => (
+        <Tooltip key={assignee.ID} title={assignee.Name}>
+            <Avatar src={assignee.AvatarURL} alt={assignee.Name} />
+        </Tooltip>
+        ))}
+        </Stack>
     );
   };
   
@@ -91,23 +76,38 @@ const avatarRenderer = (params) => {
   };
 
   return (
-    <div style={{ height: 500, width: '100%' }}>
-      <DataGrid
-        rows={jobs}
-        columns={columns}
-        pageSize={10}
-        rowsPerPageOptions={[10]}
-        checkboxSelection
-        onRowClick={handleRowClick}
-      />
-      {selectedRow && (
-        <KanbanDetails
-          task={selectedRow}
-          openDetails={selectedRow !== null}
-          onCloseDetails={() => setSelectedRow(null)}
+    <Container
+        maxWidth={false}
+        sx={{
+        height: 1,
+        }}
+    >
+        <Typography
+            variant="h4"
+            sx={{
+                mb: { xs: 3, md: 5 },
+            }}
+        >
+        Jobs
+        </Typography>
+        
+        <DataGrid
+            rows={jobs}
+            columns={columns}
+            pageSize={10}
+            rowsPerPageOptions={[10]}
+            checkboxSelection
+            onRowClick={handleRowClick}
         />
-      )}
-    </div>
+        {selectedRow && (
+            <KanbanDetails
+            task={selectedRow}
+            openDetails={selectedRow !== null}
+            onCloseDetails={() => setSelectedRow(null)}
+            />
+        )}
+    </Container>
+
   );
 }
 
