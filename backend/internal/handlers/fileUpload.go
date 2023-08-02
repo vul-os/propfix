@@ -40,7 +40,7 @@ func (h *FileUploadHandler) UploadFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer file.Close()
-
+	fmt.Println(header.Filename)
 	// Create a new object in the bucket with the desired filename
 	objectName := fmt.Sprintf("%s/%s", jobID, header.Filename)
 	obj := h.client.Bucket(h.bucketName).Object(objectName)
@@ -48,10 +48,12 @@ func (h *FileUploadHandler) UploadFile(w http.ResponseWriter, r *http.Request) {
 
 	// Copy the file data to the object in Cloud Storage
 	if _, err := io.Copy(wc, file); err != nil {
+		fmt.Println(err)
 		http.Error(w, "Failed to upload file to Cloud Storage", http.StatusInternalServerError)
 		return
 	}
 	if err := wc.Close(); err != nil {
+		fmt.Println(err)
 		http.Error(w, "Failed to close Cloud Storage writer", http.StatusInternalServerError)
 		return
 	}
@@ -77,6 +79,7 @@ func (h *FileUploadHandler) GetFile(w http.ResponseWriter, r *http.Request) {
 
 	// Construct the object path in the bucket
 	objectName := fmt.Sprintf("%s/%s", jobID, filename)
+	fmt.Println(filename, jobID)
 
 	// Generate a signed URL for accessing the file
 	signedURL, err := generateV4GetObjectSignedURL(w, h.bucketName, objectName)
@@ -86,8 +89,8 @@ func (h *FileUploadHandler) GetFile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Return the signed URL in the response
-	fmt.Fprintln(w, "Signed URL for accessing the file:")
-	fmt.Fprintln(w, signedURL)
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(signedURL))
 }
 
 // generateV4GetObjectSignedURL generates object signed URL with GET method.
