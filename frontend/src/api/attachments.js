@@ -4,7 +4,7 @@ import config from '../config/config';
 const API_BASE_URL = `${config.apiUrl}`;
 
 // Function to upload a file
-export async function uploadFile(jobId, file) {
+export async function uploadFile(jobId, file, token) {
   try {
     const formData = new FormData();
     formData.append('file', file);
@@ -14,6 +14,7 @@ export async function uploadFile(jobId, file) {
       formData,
       {
         headers: {
+          'Authorization': token,
           'Content-Type': 'multipart/form-data',
         },
       }
@@ -40,5 +41,20 @@ export async function getFile(jobId, filename, idToken) {
   } catch (error) {
     console.error('Error fetching file:', error);
     return null;
+  }
+}
+
+// Function to delete a file
+export async function deleteFile(jobId, filename, idToken) {
+  try {
+    await axios.delete(`${API_BASE_URL}/file/${jobId}/${filename}`, {
+      headers: {
+        Authorization: idToken,
+      },
+    });
+
+    console.log('File deleted successfully!');
+  } catch (error) {
+    console.error('Error deleting file:', error);
   }
 }
