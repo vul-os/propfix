@@ -1,6 +1,4 @@
-// handlers/buildings.go
-
-package handlers
+package buildings
 
 import (
 	"context"
@@ -10,7 +8,6 @@ import (
 	"time"
 
 	"cloud.google.com/go/bigquery"
-	"github.com/gorilla/mux"
 	"google.golang.org/api/iterator"
 )
 
@@ -25,11 +22,11 @@ func NewBuildingsHandler(client *bigquery.Client) *BuildingsHandler {
 }
 
 type Building struct {
-	ID               string    `json:"id"`
-	BuildingName     string    `json:"buildingname"`
-	Address          string    `json:"address"`
-	UnitNumberSystem string    `json:"unitnumbersystem"`
-	CreatedAt        time.Time `json:"createdAt"`
+	ID               string    `bigquery:"id" json:"id"`
+	BuildingName     string    `bigquery:"buildingName" json:"buildingName"`
+	Address          string    `bigquery:"address" json:"address"`
+	UnitNumberSystem string    `bigquery:"unitNumberSystem" json:"unitNumberSystem"`
+	CreatedAt        time.Time `bigquery:"createdAt" json:"createdAt"`
 }
 
 func (h *BuildingsHandler) CreateBuilding(w http.ResponseWriter, r *http.Request) {
@@ -52,12 +49,17 @@ func (h *BuildingsHandler) CreateBuilding(w http.ResponseWriter, r *http.Request
 }
 
 func (h *BuildingsHandler) GetBuilding(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	buildingID := vars["id"]
+	var buildingID string
+	if id, ok := r.URL.Query()["id"]; ok && len(id) > 0 {
+		buildingID = id[0]
+	} else {
+		http.Error(w, "Building ID is required", http.StatusBadRequest)
+		return
+	}
 
 	ctx := context.Background()
 	q := h.client.Query(fmt.Sprintf(`
-		SELECT id, buildingname, address, unitnumbersystem, createdAt
+		SELECT id, buildingName, address, unitNumberSystem, createdAt
 		FROM main.Buildings
 		WHERE id = @buildingID
 	`))
@@ -83,9 +85,6 @@ func (h *BuildingsHandler) GetBuilding(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *BuildingsHandler) UpdateBuilding(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	buildingID := vars["id"]
-
 	var building Building
 	err := json.NewDecoder(r.Body).Decode(&building)
 	if err != nil {
@@ -93,17 +92,23 @@ func (h *BuildingsHandler) UpdateBuilding(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	// Perform basic validation on the building data before update
+	if building.BuildingName == "" || building.Address == "" || building.UnitNumberSystem == "" {
+		http.Error(w, "BuildingName, Address, and UnitNumberSystem are required fields", http.StatusBadRequest)
+		return
+	}
+
 	ctx := context.Background()
 	q := h.client.Query(fmt.Sprintf(`
 		UPDATE main.Buildings
-		SET buildingname = @buildingname, address = @address, unitnumbersystem = @unitnumbersystem, createdAt = @createdAt
+		SET buildingName = @buildingName, address = @address, unitNumberSystem = @unitNumberSystem, createdAt = @createdAt
 		WHERE id = @buildingID
 	`))
 	q.Parameters = []bigquery.QueryParameter{
-		{Name: "buildingID", Value: buildingID},
-		{Name: "buildingname", Value: building.BuildingName},
+		{Name: "buildingID", Value: building.ID},
+		{Name: "buildingName", Value: building.BuildingName},
 		{Name: "address", Value: building.Address},
-		{Name: "unitnumbersystem", Value: building.UnitNumberSystem},
+		{Name: "unitNumberSystem", Value: building.UnitNumberSystem},
 		{Name: "createdAt", Value: building.CreatedAt},
 	}
 
@@ -115,8 +120,13 @@ func (h *BuildingsHandler) UpdateBuilding(w http.ResponseWriter, r *http.Request
 }
 
 func (h *BuildingsHandler) DeleteBuilding(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	buildingID := vars["id"]
+	var buildingID string
+	if id, ok := r.URL.Query()["id"]; ok && len(id) > 0 {
+		buildingID = id[0]
+	} else {
+		http.Error(w, "Building ID is required", http.StatusBadRequest)
+		return
+	}
 
 	ctx := context.Background()
 	q := h.client.Query(fmt.Sprintf(`
