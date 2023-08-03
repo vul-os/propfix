@@ -197,3 +197,69 @@ func (h *JobsHandler) DeleteJob(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusNoContent)
 }
+
+func (h *JobsHandler) GetAllJobs(w http.ResponseWriter, r *http.Request) {
+	ctx := context.Background()
+	// Fetch the jobs
+	query := h.client.Query("SELECT * FROM propfix.main.jobs")
+	jobsIterator, err := query.Read(ctx)
+	if err != nil {
+		http.Error(w, "Failed to fetch jobs", http.StatusInternalServerError)
+		return
+	}
+
+	// Process the jobs and store them in a map by job ID
+	jobMap := make(map[string]JobJson)
+	reporterIDs := make(map[string]bool)
+	assigneeIDs := make(map[string]bool)
+	for {
+		var job JobJson
+
+		err := jobsIterator.Next(&job)
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			http.Error(w, "Failed to read job data", http.StatusInternalServerError)
+			return
+		}
+
+		reporterIDs[job.ReporterID] = true
+		for _, assigneeID := range job.AssigneeIDs {
+			assigneeIDs[assigneeID] = true
+		}
+
+		jobMap[job.ID] = job
+	}
+
+	// Fetch the reporters
+	reporters := fetchMembers(ctx, h.client, reporterIDs)
+	if reporters == nil {
+		http.Error(w, "Failed to fetch reporters", http.StatusInternalServerError)
+		return
+	}
+
+	// Fetch the assignees
+	assignees := fetchMembers(ctx, h.client, assigneeIDs)
+	if assignees == nil {
+		http.Error(w, "Failed to fetch assignees", http.StatusInternalServerError)
+		return
+	}
+
+	// Update the jobs with the reporter and assignee data
+	for jobID, job := range jobMap {
+		job.Reporter = reporters[job.ReporterID]
+		for _, assigneeID := range job.AssigneeIDs {
+			job.Assignees = append(job.Assignees, assignees[assigneeID])
+		}
+		jobMap[jobID] = job
+	}
+
+	// Convert the job map to a slice
+	var jobsData []JobJson
+	for _, job := range jobMap {
+		jobsData = append(jobsData, job)
+	}
+
+	json.NewEncoder(w).Encode(jobsData)
+}

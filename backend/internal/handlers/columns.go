@@ -8,6 +8,7 @@ import (
 
 	"cloud.google.com/go/bigquery"
 	"github.com/gorilla/mux"
+	"google.golang.org/api/iterator"
 )
 
 type ColumnsHandler struct {
@@ -220,4 +221,34 @@ func removeString(slice []string, target string) []string {
 		}
 	}
 	return result
+}
+
+func (h *ColumnsHandler) GetAllColumns(w http.ResponseWriter, r *http.Request) {
+	ctx := context.Background()
+	q := h.client.Query(`
+		SELECT id, name, jobids
+		FROM main.Columns
+	`)
+
+	it, err := q.Read(ctx)
+	if err != nil {
+		http.Error(w, "Failed to fetch columns", http.StatusInternalServerError)
+		return
+	}
+
+	var columns []Column
+	for {
+		var column Column
+		err := it.Next(&column)
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			http.Error(w, "Failed to read columns data", http.StatusInternalServerError)
+			return
+		}
+		columns = append(columns, column)
+	}
+
+	json.NewEncoder(w).Encode(columns)
 }

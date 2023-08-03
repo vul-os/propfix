@@ -61,6 +61,7 @@ func Router(w http.ResponseWriter, r *http.Request) {
 	protectedRouter.HandleFunc("/members", membersHandler.UpdateMember).Methods("PUT")
 
 	jobsHandler := handlers.NewJobsHandler(client)
+	protectedRouter.HandleFunc("/jobs", jobsHandler.GetAllJobs).Methods("GET")
 	protectedRouter.HandleFunc("/jobs/{id}", jobsHandler.GetJob).Methods("GET")
 	protectedRouter.HandleFunc("/jobs/{id}", jobsHandler.DeleteJob).Methods("DELETE")
 	protectedRouter.HandleFunc("/jobs", jobsHandler.CreateJob).Methods("POST")
@@ -85,7 +86,14 @@ func Router(w http.ResponseWriter, r *http.Request) {
 	protectedRouter.HandleFunc("/buildings/{id}", buildingsHandler.DeleteBuilding).Methods("DELETE")
 
 	columnsHandler := handlers.NewColumnsHandler(client)
-	protectedRouter.HandleFunc("/columns/move-job", columnsHandler.MoveJob).Methods("POST")
+
+	// Define routes
+	protectedRouter.HandleFunc("/columns", columnsHandler.GetAllColumns).Methods("GET")
+	protectedRouter.HandleFunc("/columns/{id}", columnsHandler.GetColumn).Methods("GET")
+	protectedRouter.HandleFunc("/columns", columnsHandler.CreateColumn).Methods("POST")
+	protectedRouter.HandleFunc("/columns/{id}", columnsHandler.UpdateColumn).Methods("PUT")
+	protectedRouter.HandleFunc("/columns/{id}", columnsHandler.DeleteColumn).Methods("DELETE")
+	protectedRouter.HandleFunc("/movejob", columnsHandler.MoveJob).Methods("POST")
 
 	protectedRouter.HandleFunc("/file/{jobid}/{filename}", fileUploadHandler.GetFile).Methods("GET")
 	protectedRouter.HandleFunc("/file/{jobid}/{filename}", fileUploadHandler.DeleteFile).Methods("DELETE")
