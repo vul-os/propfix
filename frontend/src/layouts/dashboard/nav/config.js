@@ -16,22 +16,16 @@ const urlIcon = (url) =>
 
 const navConfig = [
   {
-    title: 'Home',
+    title: 'Kanban',
     path: '/',
     breadcrumbsIcon: <HomeIcon />,
     icon: icon('ic_analytics'),
   },
   {
-    title: 'Products',
-    path: '/products',
+    title: 'Jobs',
+    path: '/jobs',
     breadcrumbsIcon: '/assets/icons/navbar/ic_cart.svg',
     icon: icon('ic_cart'),
-  },
-  {
-    title: 'Stores',
-    path: '/stores',
-    breadcrumbsIcon: '/assets/icons/navbar/ic_cart.svg',
-    icon: <StyledNavItemIcon><StoreIcon/></StyledNavItemIcon>,
   },
   // Add more items if needed
 ]

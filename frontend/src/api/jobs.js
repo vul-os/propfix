@@ -48,3 +48,14 @@ export async function deleteJob(jobId, idToken) {
     console.error('Error deleting job:', error);
   }
 }
+
+// Function to fetch all jobs
+export async function fetchAllJobs(idToken) {
+  try {
+    const response = await axios.get(JOBS_URL, { headers: { Authorization: idToken } });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching all jobs:', error);
+    return [];
+  }
+}

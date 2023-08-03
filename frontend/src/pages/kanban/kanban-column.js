@@ -5,6 +5,8 @@ import { alpha } from '@mui/material/styles';
 import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
+import Typography from '@mui/material/Typography';
+
 import { useBoolean } from '../../hooks/use-boolean';
 import {
   updateColumn,
@@ -17,7 +19,6 @@ import {
 import Iconify from '../../components/iconify';
 import { useSnackbar } from '../../components/snackbar';
 import KanbanTaskItem from './kanban-task-item';
-import KanbanColumnToolBar from './kanban-column-tool-bar';
 
 export default function KanbanColumn({ column, jobs, index }) {
   const { enqueueSnackbar } = useSnackbar();
@@ -112,12 +113,33 @@ export default function KanbanColumn({ column, jobs, index }) {
           }}
         >
           <Stack {...provided.dragHandleProps}>
-            <KanbanColumnToolBar
-              columnName={column.name}
-              onUpdateColumn={handleUpdateColumn}
-              onClearColumn={handleClearColumn}
-              onDeleteColumn={handleDeleteColumn}
-            />
+          <Stack
+            spacing={1}
+            direction="row"
+            alignItems="center"
+            justifyContent="space-between"
+            sx={{ pt: 3 }}
+          >
+            <Typography
+                component="div"
+                sx={{
+                  py: 0.75,
+                  borderRadius: 1,
+                  borderWidth: 2,
+                  borderStyle: 'solid',
+                  borderColor: 'transparent',
+                  transition: (theme) => theme.transitions.create(['padding-left', 'border-color']),
+                  '&:focus': {
+                    paddingLeft: 1.5,
+                    borderColor: (theme) => theme.palette.text.primary,
+                  },
+                }}
+              > 
+              {column.name}
+            </Typography>
+
+         
+          </Stack>
 
             <Droppable droppableId={column.id} type="TASK">
               {(dropProvided) => (

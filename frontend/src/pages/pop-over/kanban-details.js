@@ -26,7 +26,7 @@ import Iconify from '../../components/iconify';
 import Scrollbar from '../../components/scrollbar';
 import CustomDateRangePicker, { useDateRangePicker } from '../../components/custom-date-range-picker';
 //
-import KanbanInputName from './kanban-input-name';
+import KanbanInputName from '../kanban/kanban-input-name';
 import KanbanDetailsToolbar from './kanban-details-toolbar';
 // import KanbanContactsDialog from './kanban-contacts-dialog';
 import KanbanDetailsPriority from './kanban-details-priority';

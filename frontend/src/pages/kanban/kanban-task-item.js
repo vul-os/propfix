@@ -15,7 +15,7 @@ import { bgBlur } from '../../theme/css';
 // components
 // import Iconify from '../../components/iconify';
 //
-import KanbanDetails from './kanban-details';
+import KanbanDetails from '../pop-over/kanban-details';
 
 // ----------------------------------------------------------------------
 
