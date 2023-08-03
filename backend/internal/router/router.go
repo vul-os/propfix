@@ -88,10 +88,9 @@ func Router(w http.ResponseWriter, r *http.Request) {
 	protectedRouter.HandleFunc("/columns/move-job", columnsHandler.MoveJob).Methods("POST")
 
 	protectedRouter.HandleFunc("/file/{jobid}/{filename}", fileUploadHandler.GetFile).Methods("GET")
-	protectedRouter.HandleFunc("/file/{jobid}/{filename}", fileUploadHandler.UploadFile).Methods("POST")
+	protectedRouter.HandleFunc("/file/{jobid}/{filename}", fileUploadHandler.DeleteFile).Methods("DELETE")
+	protectedRouter.HandleFunc("/file/{jobid}", fileUploadHandler.UploadFile).Methods("POST")
 
-	router.HandleFunc("/file/{jobid}/{filename}", fileUploadHandler.GetFile).Methods("GET")
-	router.HandleFunc("/file/{jobid}", fileUploadHandler.UploadFile).Methods("POST")
 	// Add the route for GetBoard
 	boardHandler := handlers.NewBoardHandler(client)
 	protectedRouter.HandleFunc("/board", boardHandler.GetBoard).Methods("GET")
