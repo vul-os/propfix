@@ -4,19 +4,23 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"time"
 
 	"cloud.google.com/go/storage"
+	"github.com/exolutionza/propfix-backend-go/internal/events"
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 )
 
 type FileUploadHandler struct {
-	client     *storage.Client
-	bucketName string
+	client      *storage.Client
+	bucketName  string
+	eventsStore *events.EventsStore
 }
 
-func NewFileUploadHandler(bucketName string) (*FileUploadHandler, error) {
+func NewFileUploadHandler(bucketName string, eventsStore *events.EventsStore) (*FileUploadHandler, error) {
 	ctx := context.Background()
 	client, err := storage.NewClient(ctx)
 	if err != nil {
@@ -24,8 +28,9 @@ func NewFileUploadHandler(bucketName string) (*FileUploadHandler, error) {
 	}
 
 	return &FileUploadHandler{
-		client:     client,
-		bucketName: bucketName,
+		client:      client,
+		bucketName:  bucketName,
+		eventsStore: eventsStore,
 	}, nil
 }
 
@@ -61,6 +66,19 @@ func (h *FileUploadHandler) UploadFile(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, "Failed to generate signed URL", http.StatusInternalServerError)
 		return
+	}
+
+	// Create an event for file upload
+	event := events.Event{
+		ID:        uuid.New().String(),
+		Type:      "file_upload",
+		JobID:     jobID,
+		Data:      header.Filename,
+		CreatedAt: time.Now(),
+	}
+	_, err = h.eventsStore.CreateEvent(event)
+	if err != nil {
+		log.Printf("Failed to create event for file upload: %v", err)
 	}
 
 	// Return the signed URL in the response
@@ -123,6 +141,19 @@ func (h *FileUploadHandler) DeleteFile(w http.ResponseWriter, r *http.Request) {
 	if err := h.client.Bucket(h.bucketName).Object(objectName).Delete(r.Context()); err != nil {
 		http.Error(w, "Failed to delete file from Cloud Storage", http.StatusInternalServerError)
 		return
+	}
+
+	// Create an event for file deletion
+	event := events.Event{
+		ID:        uuid.New().String(),
+		Type:      "file_deletion",
+		JobID:     jobID,
+		Data:      filename,
+		CreatedAt: time.Now(),
+	}
+	_, err := h.eventsStore.CreateEvent(event)
+	if err != nil {
+		log.Printf("Failed to create event for file deletion: %v", err)
 	}
 
 	// Return success status in the response

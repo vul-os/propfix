@@ -29,21 +29,20 @@ func NewJobsHandler(client *bigquery.Client, events *events.EventsStore) *JobsHa
 }
 
 type Job struct {
-	ID               string           `bigquery:"id" json:"id"`
-	Name             string           `bigquery:"name" json:"name"`
-	Priority         string           `bigquery:"priority" json:"priority"`
-	Description      string           `bigquery:"description" json:"description"`
-	TenantIdentifier string           `bigquery:"tenantIdentifier" json:"tenantIdentifier"`
-	AssigneeIDs      []string         `bigquery:"assigneeIds" json:"assigneeIds"`
-	UnitIdentifier   string           `bigquery:"unitIdentifier" json:"unitIdentifier"`
-	BuildingID       string           `bigquery:"buildingId" json:"buildingId"`
-	Labels           []string         `bigquery:"labels" json:"labels"`
-	Attachments      []string         `bigquery:"attachments" json:"attachments"`
-	Cost             float64          `bigquery:"cost" json:"cost"`
-	Hours            float64          `bigquery:"hours" json:"hours"`
-	DueDate          time.Time        `bigquery:"dueDate" json:"dueDate"`
-	CreatedAt        time.Time        `bigquery:"createdAt" json:"createdAt"`
-	Assignees        []members.Member `bigquery:"-" json:"assignees"`
+	ID               string    `bigquery:"id" json:"id"`
+	Name             string    `bigquery:"name" json:"name"`
+	Priority         string    `bigquery:"priority" json:"priority"`
+	Description      string    `bigquery:"description" json:"description"`
+	TenantIdentifier string    `bigquery:"tenantIdentifier" json:"tenantIdentifier"`
+	AssigneeIDs      []string  `bigquery:"assigneeIds" json:"assigneeIds"`
+	UnitIdentifier   string    `bigquery:"unitIdentifier" json:"unitIdentifier"`
+	BuildingID       string    `bigquery:"buildingId" json:"buildingId"`
+	Labels           []string  `bigquery:"labels" json:"labels"`
+	Attachments      []string  `bigquery:"attachments" json:"attachments"`
+	Cost             float64   `bigquery:"cost" json:"cost"`
+	Hours            int       `bigquery:"hours" json:"hours"`
+	DueDate          time.Time `bigquery:"dueDate" json:"dueDate"`
+	CreatedAt        time.Time `bigquery:"createdAt" json:"createdAt"`
 }
 
 type JobJson struct {
@@ -59,7 +58,7 @@ type JobJson struct {
 	Labels           []string         `json:"labels"`
 	Attachments      []string         `json:"attachments"`
 	Cost             float64          `json:"cost"`
-	Hours            float64          `json:"hours"`
+	Hours            int              `json:"hours"`
 	CreatedAt        time.Time        `json:"createdAt"`
 	Assignees        []members.Member `json:"assignees"`
 }

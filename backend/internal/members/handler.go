@@ -23,12 +23,11 @@ func NewMembersHandler(client *bigquery.Client) *MembersHandler {
 }
 
 type Member struct {
-	ID        string `bigquery:"id"`
-	Email     string `bigquery:"email"`
-	Role      string `bigquery:"role"`
-	UserID    string `bigquery:"userid"`
-	Name      string `bigquery:"name"`
-	AvatarURL string `bigquery:"avatarurl"`
+	ID     string `bigquery:"id"`
+	Email  string `bigquery:"email"`
+	UserID string `bigquery:"userId"`
+	Name   string `bigquery:"name"`
+	Avatar string `bigquery:"avatar"`
 }
 
 type CreateResponse struct {
@@ -54,16 +53,15 @@ func (h *MembersHandler) CreateMember(w http.ResponseWriter, r *http.Request) {
 
 	ctx := context.Background()
 	q := h.client.Query(fmt.Sprintf(`
-		INSERT INTO main.members (id, userId, email, role, name, avatarurl)
-		VALUES (@id, @userId, @email, @role, @name, @avatarurl)
+		INSERT INTO main.members (id, userId, email, name, avatar)
+		VALUES (@id, @userId, @email, @name, @avatar)
 	`))
 	q.Parameters = []bigquery.QueryParameter{
 		{Name: "id", Value: member.ID},
 		{Name: "userId", Value: member.UserID},
 		{Name: "email", Value: member.Email},
-		{Name: "role", Value: member.Role},
 		{Name: "name", Value: member.Name},
-		{Name: "avatarurl", Value: member.AvatarURL},
+		{Name: "avatar", Value: member.Avatar},
 	}
 
 	_, err = q.Run(ctx)
@@ -89,7 +87,7 @@ func (h *MembersHandler) GetMember(w http.ResponseWriter, r *http.Request) {
 
 	ctx := context.Background()
 	q := h.client.Query(fmt.Sprintf(`
-		SELECT id, userId, email, role, name, avatarurl
+		SELECT id, userId, email, name, avatar
 		FROM main.members
 		WHERE id = @memberID
 	`))
@@ -131,16 +129,15 @@ func (h *MembersHandler) UpdateMember(w http.ResponseWriter, r *http.Request) {
 	ctx := context.Background()
 	q := h.client.Query(fmt.Sprintf(`
 		UPDATE main.members
-		SET userId = @userId, email = @email, role = @role, name = @name, avatarurl = @avatarurl
+		SET userId = @userId, email = @email, name = @name, avatar = @avatar
 		WHERE id = @memberID
 	`))
 	q.Parameters = []bigquery.QueryParameter{
 		{Name: "memberID", Value: member.ID},
 		{Name: "userId", Value: member.UserID},
 		{Name: "email", Value: member.Email},
-		{Name: "role", Value: member.Role},
 		{Name: "name", Value: member.Name},
-		{Name: "avatarurl", Value: member.AvatarURL},
+		{Name: "avatar", Value: member.Avatar},
 	}
 
 	_, err = q.Run(ctx)
