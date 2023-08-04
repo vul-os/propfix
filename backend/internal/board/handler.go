@@ -1,4 +1,4 @@
-package board
+package handlers
 
 import (
 	"context"
@@ -9,7 +9,6 @@ import (
 	"cloud.google.com/go/bigquery"
 	"github.com/exolutionza/propfix-backend-go/internal/columns"
 	"github.com/exolutionza/propfix-backend-go/internal/jobs"
-	"github.com/exolutionza/propfix-backend-go/internal/members"
 
 	"google.golang.org/api/iterator"
 )

@@ -8,6 +8,9 @@ import (
 	"time"
 
 	"cloud.google.com/go/bigquery"
+	"github.com/exolutionza/propfix-backend-go/internal/authz"
+	"github.com/exolutionza/propfix-backend-go/internal/user"
+
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"google.golang.org/api/iterator"
@@ -26,12 +29,14 @@ type Permission struct {
 // PermissionsHandler represents the HTTP handler for permission CRUD operations.
 type PermissionsHandler struct {
 	client *bigquery.Client
+	authz  *authz.Authz // Add the authz.Authorizer field to handle permission checks
 }
 
 // NewPermissionsHandler creates a new instance of the PermissionsHandler.
-func NewPermissionsHandler(client *bigquery.Client) *PermissionsHandler {
+func NewPermissionsHandler(client *bigquery.Client, authz *authz.Authz) *PermissionsHandler {
 	return &PermissionsHandler{
 		client: client,
+		authz:  authz,
 	}
 }
 
@@ -40,6 +45,21 @@ func (h *PermissionsHandler) CreatePermission(w http.ResponseWriter, r *http.Req
 	err := json.NewDecoder(r.Body).Decode(&permission)
 	if err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
+
+	user, ok := r.Context().Value("user").(user.User)
+	if !ok {
+		http.Error(w, "Failed to get user details", http.StatusInternalServerError)
+		return
+	}
+
+	// Check if the user has the permission to create jobs
+	if hasPermission, err := h.authz.CheckPermission(user.ID, "permissions", "create"); err != nil {
+		http.Error(w, "Failed to check permission", http.StatusInternalServerError)
+		return
+	} else if !hasPermission {
+		http.Error(w, "You do not have permission to create permissions", http.StatusForbidden)
 		return
 	}
 
@@ -103,6 +123,21 @@ func (h *PermissionsHandler) UpdatePermission(w http.ResponseWriter, r *http.Req
 		return
 	}
 
+	user, ok := r.Context().Value("user").(user.User)
+	if !ok {
+		http.Error(w, "Failed to get user details", http.StatusInternalServerError)
+		return
+	}
+
+	// Check if the user has the permission to create jobs
+	if hasPermission, err := h.authz.CheckPermission(user.ID, "permissions", "update"); err != nil {
+		http.Error(w, "Failed to check permission", http.StatusInternalServerError)
+		return
+	} else if !hasPermission {
+		http.Error(w, "You do not have permission to update permissions", http.StatusForbidden)
+		return
+	}
+
 	ctx := context.Background()
 	q := h.client.Query(fmt.Sprintf(`
 		UPDATE main.permissions
@@ -127,6 +162,21 @@ func (h *PermissionsHandler) UpdatePermission(w http.ResponseWriter, r *http.Req
 func (h *PermissionsHandler) DeletePermission(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	permissionID := vars["id"]
+
+	user, ok := r.Context().Value("user").(user.User)
+	if !ok {
+		http.Error(w, "Failed to get user details", http.StatusInternalServerError)
+		return
+	}
+
+	// Check if the user has the permission to create jobs
+	if hasPermission, err := h.authz.CheckPermission(user.ID, "permissions", "delete"); err != nil {
+		http.Error(w, "Failed to check permission", http.StatusInternalServerError)
+		return
+	} else if !hasPermission {
+		http.Error(w, "You do not have permission to delete permissions", http.StatusForbidden)
+		return
+	}
 
 	ctx := context.Background()
 	q := h.client.Query(fmt.Sprintf(`

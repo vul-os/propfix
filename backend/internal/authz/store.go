@@ -3,13 +3,22 @@ package authz
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"cloud.google.com/go/bigquery"
-	"github.com/exolutionza/propfix-backend-go/internal/role"
 	"google.golang.org/api/iterator"
 )
 
-// Authz represents the interface for managing permissions in BigQuery.
+// todo: move this to role
+type Role struct {
+	ID          string    `bigquery:"id" json:"id"`
+	Name        string    `bigquery:"name" json:"name"`
+	Description string    `bigquery:"description" json:"description"`
+	UserIDs     []string  `bigquery:"userIds" json:"userIds"`
+	CreatedAt   time.Time `bigquery:"createdAt" json:"createdAt"`
+	// Add more fields as needed
+}
+
 type Authz struct {
 	client *bigquery.Client
 }
@@ -127,7 +136,7 @@ func (s *Authz) GetRoleIDsForUser(userID string) ([]string, error) {
 	}
 
 	var roleIDs []string
-	var role role.Role
+	var role Role
 	for {
 		err := it.Next(&role)
 		if err == iterator.Done {

@@ -43,7 +43,6 @@ func IsAuthenticated(authClient *auth.Client) func(http.Handler) http.Handler {
 			}
 
 			ctx := context.WithValue(r.Context(), "user", user)
-			ctx = context.WithValue(ctx, "claims", claims)
 			r = r.WithContext(ctx)
 
 			next.ServeHTTP(w, r)

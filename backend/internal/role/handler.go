@@ -7,42 +7,50 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/exolutionza/propfix-backend-go/internal/authz"
+	"github.com/exolutionza/propfix-backend-go/internal/user"
+
 	"cloud.google.com/go/bigquery"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"google.golang.org/api/iterator"
 )
 
-// Role represents a role entity in the application.
-type Role struct {
-	ID          string    `bigquery:"id" json:"id"`
-	Name        string    `bigquery:"name" json:"name"`
-	Description string    `bigquery:"description" json:"description"`
-	UserIDs     []string  `bigquery:"userIds" json:"userIds"`
-	CreatedAt   time.Time `bigquery:"createdAt" json:"createdAt"`
-	// Add more fields as needed
-}
-
 // RoleHandler represents the HTTP handler for role CRUD operations.
 type RoleHandler struct {
 	client *bigquery.Client
+	authz  *authz.Authz // Add the authz.Authorizer field to handle permission checks
 }
 
 // NewRoleHandler creates a new instance of the RoleHandler.
-func NewRoleHandler(client *bigquery.Client) *RoleHandler {
+func NewRoleHandler(client *bigquery.Client, authz *authz.Authz) *RoleHandler {
 	return &RoleHandler{
 		client: client,
+		authz:  authz,
 	}
 }
 
 func (h *RoleHandler) CreateRole(w http.ResponseWriter, r *http.Request) {
-	var role Role
+	var role authz.Role
 	err := json.NewDecoder(r.Body).Decode(&role)
 	if err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
 	}
+	user, ok := r.Context().Value("user").(user.User)
+	if !ok {
+		http.Error(w, "Failed to get user details", http.StatusInternalServerError)
+		return
+	}
 
+	// Check if the user has the permission to create jobs
+	if hasPermission, err := h.authz.CheckPermission(user.ID, "role", "create"); err != nil {
+		http.Error(w, "Failed to check permission", http.StatusInternalServerError)
+		return
+	} else if !hasPermission {
+		http.Error(w, "You do not have permission to create role", http.StatusForbidden)
+		return
+	}
 	// Generate a UUID for the role ID
 	role.ID = uuid.New().String()
 	role.CreatedAt = time.Now()
@@ -76,7 +84,7 @@ func (h *RoleHandler) GetRole(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var role Role
+	var role authz.Role
 	err = it.Next(&role)
 	if err == iterator.Done {
 		http.Error(w, "Role not found", http.StatusNotFound)
@@ -90,13 +98,27 @@ func (h *RoleHandler) GetRole(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *RoleHandler) UpdateRole(w http.ResponseWriter, r *http.Request) {
-	var role Role
+	var role authz.Role
 	err := json.NewDecoder(r.Body).Decode(&role)
 	if err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
 	}
 
+	user, ok := r.Context().Value("user").(user.User)
+	if !ok {
+		http.Error(w, "Failed to get user details", http.StatusInternalServerError)
+		return
+	}
+
+	// Check if the user has the permission to create jobs
+	if hasPermission, err := h.authz.CheckPermission(user.ID, "role", "update"); err != nil {
+		http.Error(w, "Failed to check permission", http.StatusInternalServerError)
+		return
+	} else if !hasPermission {
+		http.Error(w, "You do not have permission to update role", http.StatusForbidden)
+		return
+	}
 	// Perform basic validation on the role data before update
 	if role.Name == "" || role.Description == "" {
 		http.Error(w, "Name and Description are required fields", http.StatusBadRequest)
@@ -127,6 +149,20 @@ func (h *RoleHandler) UpdateRole(w http.ResponseWriter, r *http.Request) {
 func (h *RoleHandler) DeleteRole(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	roleID := vars["id"]
+	user, ok := r.Context().Value("user").(user.User)
+	if !ok {
+		http.Error(w, "Failed to get user details", http.StatusInternalServerError)
+		return
+	}
+
+	// Check if the user has the permission to create jobs
+	if hasPermission, err := h.authz.CheckPermission(user.ID, "role", "delete"); err != nil {
+		http.Error(w, "Failed to check permission", http.StatusInternalServerError)
+		return
+	} else if !hasPermission {
+		http.Error(w, "You do not have permission to delete role", http.StatusForbidden)
+		return
+	}
 
 	ctx := context.Background()
 	q := h.client.Query(fmt.Sprintf(`
@@ -148,6 +184,20 @@ func (h *RoleHandler) AddUser(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	roleID := vars["id"]
 
+	user, ok := r.Context().Value("user").(user.User)
+	if !ok {
+		http.Error(w, "Failed to get user details", http.StatusInternalServerError)
+		return
+	}
+
+	// Check if the user has the permission to create jobs
+	if hasPermission, err := h.authz.CheckPermission(user.ID, "role", "adduser"); err != nil {
+		http.Error(w, "Failed to check permission", http.StatusInternalServerError)
+		return
+	} else if !hasPermission {
+		http.Error(w, "You do not have permission to add user to role", http.StatusForbidden)
+		return
+	}
 	// Decode the user ID from the request body
 	var userID string
 	err := json.NewDecoder(r.Body).Decode(&userID)
@@ -170,7 +220,7 @@ func (h *RoleHandler) AddUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var role Role
+	var role authz.Role
 	err = it.Next(&role)
 	if err == iterator.Done {
 		http.Error(w, "Role not found", http.StatusNotFound)
@@ -206,7 +256,20 @@ func (h *RoleHandler) AddUser(w http.ResponseWriter, r *http.Request) {
 func (h *RoleHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	roleID := vars["id"]
+	user, ok := r.Context().Value("user").(user.User)
+	if !ok {
+		http.Error(w, "Failed to get user details", http.StatusInternalServerError)
+		return
+	}
 
+	// Check if the user has the permission to create jobs
+	if hasPermission, err := h.authz.CheckPermission(user.ID, "role", "deleteuser"); err != nil {
+		http.Error(w, "Failed to check permission", http.StatusInternalServerError)
+		return
+	} else if !hasPermission {
+		http.Error(w, "You do not have permission to delete user for role", http.StatusForbidden)
+		return
+	}
 	// Decode the user ID from the request body
 	var userID string
 	err := json.NewDecoder(r.Body).Decode(&userID)
@@ -229,7 +292,7 @@ func (h *RoleHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var role Role
+	var role authz.Role
 	err = it.Next(&role)
 	if err == iterator.Done {
 		http.Error(w, "Role not found", http.StatusNotFound)

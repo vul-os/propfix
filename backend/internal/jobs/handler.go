@@ -7,10 +7,10 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/exolutionza/propfix-backend-go/internal/events"
-	"github.com/exolutionza/propfix-backend-go/internal/members"
-
 	"cloud.google.com/go/bigquery"
+	"github.com/exolutionza/propfix-backend-go/internal/authz"
+	"github.com/exolutionza/propfix-backend-go/internal/events"
+	"github.com/exolutionza/propfix-backend-go/internal/user"
 	"github.com/gorilla/mux"
 	"github.com/teris-io/shortid"
 	"google.golang.org/api/iterator"
@@ -19,12 +19,14 @@ import (
 type JobsHandler struct {
 	client *bigquery.Client
 	events *events.EventsStore
+	authz  *authz.Authz
 }
 
-func NewJobsHandler(client *bigquery.Client, events *events.EventsStore) *JobsHandler {
+func NewJobsHandler(client *bigquery.Client, events *events.EventsStore, authz *authz.Authz) *JobsHandler {
 	return &JobsHandler{
 		client: client,
 		events: events,
+		authz:  authz,
 	}
 }
 
@@ -46,24 +48,27 @@ type Job struct {
 }
 
 type JobJson struct {
-	ID               string           `json:"id"`
-	Name             string           `json:"name"`
-	DueDate          time.Time        `json:"dueDate"`
-	Priority         string           `json:"priority"`
-	Description      string           `json:"description"`
-	TenantIdentifier string           `json:"tenantIdentifier"`
-	AssigneeIDs      []string         `json:"assigneeIds"`
-	UnitIdentifier   string           `json:"unitIdentifier"`
-	BuildingID       string           `json:"buildingId"`
-	Labels           []string         `json:"labels"`
-	Attachments      []string         `json:"attachments"`
-	Cost             float64          `json:"cost"`
-	Hours            int              `json:"hours"`
-	CreatedAt        time.Time        `json:"createdAt"`
-	Assignees        []members.Member `json:"assignees"`
+	ID             string      `json:"id"`
+	Name           string      `json:"name"`
+	DueDate        time.Time   `json:"dueDate"`
+	Priority       string      `json:"priority"`
+	Description    string      `json:"description"`
+	TenantId       string      `json:"tenantId"`
+	AssigneeIDs    []string    `json:"assigneeIds"`
+	UnitIdentifier string      `json:"unitIdentifier"`
+	BuildingID     string      `json:"buildingId"`
+	Labels         []string    `json:"labels"`
+	Attachments    []string    `json:"attachments"`
+	Cost           float64     `json:"cost"`
+	Hours          int         `json:"hours"`
+	CreatedAt      time.Time   `json:"createdAt"`
+	Assignees      []user.User `json:"assignees"`
+	Tenant         user.User   `json:"tenant"`
 }
 
+// Handler to create a new job
 func (h *JobsHandler) CreateJob(w http.ResponseWriter, r *http.Request) {
+	// Parse the request body and decode the job details
 	var jobReq Job
 	err := json.NewDecoder(r.Body).Decode(&jobReq)
 	if err != nil {
@@ -71,7 +76,7 @@ func (h *JobsHandler) CreateJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx := context.Background()
+	ctx := r.Context()
 
 	// Generate a unique ID and Name for the job using shortid
 	id, err := shortid.Generate()
@@ -113,7 +118,6 @@ func (h *JobsHandler) CreateJob(w http.ResponseWriter, r *http.Request) {
 
 	_, err = q.Run(ctx)
 	if err != nil {
-		fmt.Println(err)
 		http.Error(w, "Failed to create job", http.StatusInternalServerError)
 		return
 	}
@@ -160,9 +164,22 @@ func (h *JobsHandler) UpdateJob(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
 	}
+	user, ok := r.Context().Value("user").(user.User)
+	if !ok {
+		http.Error(w, "Failed to get user details", http.StatusInternalServerError)
+		return
+	}
+
+	// Check if the user has the permission to create jobs
+	if hasPermission, err := h.authz.CheckPermission(user.ID, "jobs", "update"); err != nil {
+		http.Error(w, "Failed to check permission", http.StatusInternalServerError)
+		return
+	} else if !hasPermission {
+		http.Error(w, "You do not have permission to update jobs", http.StatusForbidden)
+		return
+	}
 
 	ctx := context.Background()
-
 	// Create the SQL query for updating the job
 	sqlQuery := `UPDATE main.jobs
 	SET name = @name, dueDate = @dueDate, priority = @priority, description = @description, tenantIdentifier = @tenantIdentifier, 
@@ -201,6 +218,20 @@ func (h *JobsHandler) UpdateJob(w http.ResponseWriter, r *http.Request) {
 func (h *JobsHandler) DeleteJob(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	jobID := vars["id"]
+	user, ok := r.Context().Value("user").(user.User)
+	if !ok {
+		http.Error(w, "Failed to get user details", http.StatusInternalServerError)
+		return
+	}
+
+	// Check if the user has the permission to create jobs
+	if hasPermission, err := h.authz.CheckPermission(user.ID, "jobs", "delete"); err != nil {
+		http.Error(w, "Failed to check permission", http.StatusInternalServerError)
+		return
+	} else if !hasPermission {
+		http.Error(w, "You do not have permission to update jobs", http.StatusForbidden)
+		return
+	}
 
 	ctx := context.Background()
 

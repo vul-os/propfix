@@ -24,14 +24,15 @@ type Event struct {
 	ID        string    `bigquery:"id" json:"id"`
 	Type      string    `bigquery:"type" json:"type"`
 	JobID     string    `bigquery:"jobId" json:"jobId"`
+	MemberID  string    `bigquery:"memberId" json:"memberId"`
 	Data      string    `bigquery:"data" json:"data"`
 	CreatedAt time.Time `bigquery:"createdAt" json:"createdAt"`
 }
 
 func (s *EventsStore) CreateEvent(event Event) (string, error) {
 	// Perform basic validation on the event data before insertion
-	if event.Type == "" || event.Data == "" || event.JobID == "" {
-		return "", fmt.Errorf("Type, Data, and JobID are required fields")
+	if event.Type == "" || event.Data == "" || event.JobID == "" || event.MemberID == "" {
+		return "", fmt.Errorf("Type, Data, JobID, and MemberID are required fields")
 	}
 
 	// Generate a UUID and set it as the ID field
@@ -40,13 +41,14 @@ func (s *EventsStore) CreateEvent(event Event) (string, error) {
 
 	ctx := context.Background()
 	q := s.client.Query(fmt.Sprintf(`
-		INSERT INTO main.events (id, type, jobId, data, createdAt)
-		VALUES (@id, @type, @jobId, @data, @createdAt)
+		INSERT INTO main.events (id, type, jobId, memberId, data, createdAt)
+		VALUES (@id, @type, @jobId, @memberId, @data, @createdAt)
 	`))
 	q.Parameters = []bigquery.QueryParameter{
 		{Name: "id", Value: event.ID},
 		{Name: "type", Value: event.Type},
 		{Name: "jobId", Value: event.JobID},
+		{Name: "memberId", Value: event.MemberID},
 		{Name: "data", Value: event.Data},
 		{Name: "createdAt", Value: event.CreatedAt},
 	}
@@ -62,7 +64,7 @@ func (s *EventsStore) CreateEvent(event Event) (string, error) {
 func (s *EventsStore) GetEvent(eventID string) (*Event, error) {
 	ctx := context.Background()
 	q := s.client.Query(fmt.Sprintf(`
-		SELECT id, type, jobId, data, createdAt
+		SELECT id, type, jobId, memberId, data, createdAt
 		FROM main.events
 		WHERE id = @eventID
 	`))
@@ -86,8 +88,8 @@ func (s *EventsStore) GetEvent(eventID string) (*Event, error) {
 
 func (s *EventsStore) UpdateEvent(event Event) error {
 	// Perform basic validation on the event data before update
-	if event.Type == "" || event.Data == "" || event.JobID == "" {
-		return fmt.Errorf("Type, Data, and JobID are required fields")
+	if event.Type == "" || event.Data == "" || event.JobID == "" || event.MemberID == "" {
+		return fmt.Errorf("Type, Data, JobID, and MemberID are required fields")
 	}
 
 	event.CreatedAt = time.Now()
@@ -95,13 +97,14 @@ func (s *EventsStore) UpdateEvent(event Event) error {
 	ctx := context.Background()
 	q := s.client.Query(fmt.Sprintf(`
 		UPDATE main.events
-		SET type = @type, jobId = @jobId, data = @data, createdAt = @createdAt
+		SET type = @type, jobId = @jobId, memberId = @memberId, data = @data, createdAt = @createdAt
 		WHERE id = @eventID
 	`))
 	q.Parameters = []bigquery.QueryParameter{
 		{Name: "eventID", Value: event.ID},
 		{Name: "type", Value: event.Type},
 		{Name: "jobId", Value: event.JobID},
+		{Name: "memberId", Value: event.MemberID},
 		{Name: "data", Value: event.Data},
 		{Name: "createdAt", Value: event.CreatedAt},
 	}
