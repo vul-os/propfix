@@ -1,4 +1,4 @@
-package handlers
+package jobs
 
 import (
 	"context"
@@ -7,7 +7,8 @@ import (
 	"net/http"
 	"time"
 
-	"strings"
+	"github.com/exolutionza/propfix-backend-go/internal/events"
+	"github.com/exolutionza/propfix-backend-go/internal/members"
 
 	"cloud.google.com/go/bigquery"
 	"github.com/gorilla/mux"
@@ -17,28 +18,49 @@ import (
 
 type JobsHandler struct {
 	client *bigquery.Client
+	events *events.EventsStore
 }
 
-func NewJobsHandler(client *bigquery.Client) *JobsHandler {
+func NewJobsHandler(client *bigquery.Client, events *events.EventsStore) *JobsHandler {
 	return &JobsHandler{
 		client: client,
+		events: events,
 	}
 }
 
 type Job struct {
-	ID             string    `json:"id"`
-	Name           string    `json:"name"`
-	DueDate        time.Time `json:"dueDate"`
-	Priority       string    `json:"priority"`
-	Description    string    `json:"description"`
-	ReporterID     string    `json:"reporterId"`
-	AssigneeIDs    []string  `json:"assigneeIds"`
-	UnitIdentifier string    `json:"unitIdentifier"`
-	BuildingID     string    `json:"buildingId"`
-	Labels         []string  `json:"labels"`
-	AttachmentURLs []string  `json:"attachmentUrls"`
-	Cost           float64   `json:"cost"`
-	CreatedAt      time.Time `json:"createdAt"`
+	ID               string    `bigquery:"id" json:"id"`
+	Name             string    `bigquery:"name" json:"name"`
+	Priority         string    `bigquery:"priority" json:"priority"`
+	Description      string    `bigquery:"description" json:"description"`
+	TenantIdentifier string    `bigquery:"tenantIdentifier" json:"tenantIdentifier"`
+	AssigneeIDs      []string  `bigquery:"assigneeIds" json:"assigneeIds"`
+	UnitIdentifier   string    `bigquery:"unitIdentifier" json:"unitIdentifier"`
+	BuildingID       string    `bigquery:"buildingId" json:"buildingId"`
+	Labels           []string  `bigquery:"labels" json:"labels"`
+	Attachments      []string  `bigquery:"attachments" json:"attachments"`
+	Cost             float64   `bigquery:"cost" json:"cost"`
+	Hours            int       `bigquery:"hours" json:"hours"`
+	DueDate          time.Time `bigquery:"dueDate" json:"dueDate"`
+	CreatedAt        time.Time `bigquery:"createdAt" json:"createdAt"`
+}
+
+type JobJson struct {
+	ID               string           `json:"id"`
+	Name             string           `json:"name"`
+	DueDate          time.Time        `json:"dueDate"`
+	Priority         string           `json:"priority"`
+	Description      string           `json:"description"`
+	TenantIdentifier string           `json:"tenantIdentifier"`
+	AssigneeIDs      []string         `json:"assigneeIds"`
+	UnitIdentifier   string           `json:"unitIdentifier"`
+	BuildingID       string           `json:"buildingId"`
+	Labels           []string         `json:"labels"`
+	Attachments      []string         `json:"attachments"`
+	Cost             float64          `json:"cost"`
+	Hours            int              `json:"hours"`
+	CreatedAt        time.Time        `json:"createdAt"`
+	Assignees        []members.Member `json:"assignees"`
 }
 
 func (h *JobsHandler) CreateJob(w http.ResponseWriter, r *http.Request) {
@@ -60,15 +82,14 @@ func (h *JobsHandler) CreateJob(w http.ResponseWriter, r *http.Request) {
 
 	// Set the generated ID and Name to the job
 	jobReq.ID = id
-	jobReq.Name = "Job-" + id // You can modify the prefix as needed
 
 	dueDate := jobReq.DueDate
 	createdAt := jobReq.CreatedAt
 
 	// Create the SQL query for insertion using query parameters
 	sqlQuery := `
-		INSERT INTO main.jobs (id, name, dueDate, priority, description, reporterId, assigneeIds, unitIdentifier, buildingId, labels, attachmentUrls, cost, createdAt)
-		VALUES (@id, @name, @dueDate, @priority, @description, @reporterId, @assigneeIds, @unitIdentifier, @buildingId, @labels, @attachmentUrls, @cost, @createdAt)
+		INSERT INTO main.jobs (id, name, dueDate, priority, description, tenantIdentifier, assigneeIds, unitIdentifier, buildingId, labels, attachments, cost, hours, createdAt)
+		VALUES (@id, @name, @dueDate, @priority, @description, @tenantIdentifier, @assigneeIds, @unitIdentifier, @buildingId, @labels, @attachments, @cost, @hours, @createdAt)
 	`
 
 	// Execute the query with query parameters
@@ -79,13 +100,14 @@ func (h *JobsHandler) CreateJob(w http.ResponseWriter, r *http.Request) {
 		{Name: "dueDate", Value: dueDate},
 		{Name: "priority", Value: jobReq.Priority},
 		{Name: "description", Value: jobReq.Description},
-		{Name: "reporterId", Value: jobReq.ReporterID},
+		{Name: "tenantIdentifier", Value: jobReq.TenantIdentifier},
 		{Name: "assigneeIds", Value: jobReq.AssigneeIDs},
 		{Name: "unitIdentifier", Value: jobReq.UnitIdentifier},
 		{Name: "buildingId", Value: jobReq.BuildingID},
 		{Name: "labels", Value: jobReq.Labels},
-		{Name: "attachmentUrls", Value: jobReq.AttachmentURLs},
+		{Name: "attachments", Value: jobReq.Attachments},
 		{Name: "cost", Value: jobReq.Cost},
+		{Name: "hours", Value: jobReq.Hours},
 		{Name: "createdAt", Value: createdAt},
 	}
 
@@ -100,18 +122,13 @@ func (h *JobsHandler) CreateJob(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{"id": jobReq.ID, "name": jobReq.Name})
 }
 
-// Utility function to convert a slice of strings to a string representation suitable for BigQuery array
-func convertStringArrayToBQArray(strArray []string) string {
-	return "['" + strings.Join(strArray, "','") + "']"
-}
-
 func (h *JobsHandler) GetJob(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	jobID := vars["id"]
 
 	ctx := context.Background()
 	q := h.client.Query(fmt.Sprintf(`
-		SELECT id, name, dueDate, priority, description, reporterId, assigneeIds, unitIdentifier, buildingId, labels, attachmentUrls, cost, createdAt
+		SELECT id, name, dueDate, priority, description, tenantIdentifier, assigneeIds, unitIdentifier, buildingId, labels, attachments, cost, hours, createdAt
 		FROM main.jobs
 		WHERE id = @jobID
 	`))
@@ -123,7 +140,7 @@ func (h *JobsHandler) GetJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var job Job
+	var job JobJson
 	err = it.Next(&job)
 	if err == iterator.Done {
 		http.Error(w, "Job not found", http.StatusNotFound)
@@ -148,9 +165,9 @@ func (h *JobsHandler) UpdateJob(w http.ResponseWriter, r *http.Request) {
 
 	// Create the SQL query for updating the job
 	sqlQuery := `UPDATE main.jobs
-	SET dueDate = @dueDate, priority = @priority, description = @description, reporterId = @reporterId, assigneeIds = @assigneeIds, 
-	unitIdentifier = @unitIdentifier, buildingId = @buildingId, labels = @labels, attachmentUrls = @attachmentUrls, 
-	cost = @cost, createdAt = @createdAt, name = @name
+	SET name = @name, dueDate = @dueDate, priority = @priority, description = @description, tenantIdentifier = @tenantIdentifier, 
+	assigneeIds = @assigneeIds, unitIdentifier = @unitIdentifier, buildingId = @buildingId, labels = @labels, 
+	attachments = @attachments, cost = @cost, hours = @hours, createdAt = @createdAt
 	WHERE id = @id`
 
 	// Execute the query with query parameters
@@ -161,13 +178,14 @@ func (h *JobsHandler) UpdateJob(w http.ResponseWriter, r *http.Request) {
 		{Name: "dueDate", Value: job.DueDate},
 		{Name: "priority", Value: job.Priority},
 		{Name: "description", Value: job.Description},
-		{Name: "reporterId", Value: job.ReporterID},
+		{Name: "tenantIdentifier", Value: job.TenantIdentifier},
 		{Name: "assigneeIds", Value: job.AssigneeIDs},
 		{Name: "unitIdentifier", Value: job.UnitIdentifier},
 		{Name: "buildingId", Value: job.BuildingID},
 		{Name: "labels", Value: job.Labels},
-		{Name: "attachmentUrls", Value: job.AttachmentURLs},
+		{Name: "attachments", Value: job.Attachments},
 		{Name: "cost", Value: job.Cost},
+		{Name: "hours", Value: job.Hours},
 		{Name: "createdAt", Value: job.CreatedAt},
 	}
 
@@ -176,6 +194,8 @@ func (h *JobsHandler) UpdateJob(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to update job", http.StatusInternalServerError)
 		return
 	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (h *JobsHandler) DeleteJob(w http.ResponseWriter, r *http.Request) {
@@ -183,13 +203,22 @@ func (h *JobsHandler) DeleteJob(w http.ResponseWriter, r *http.Request) {
 	jobID := vars["id"]
 
 	ctx := context.Background()
-	q := h.client.Query(fmt.Sprintf(`
-		DELETE FROM main.Jobs
-		WHERE id = @jobID
-	`))
-	q.Parameters = []bigquery.QueryParameter{{Name: "jobID", Value: jobID}}
 
-	_, err := q.Run(ctx)
+	// Delete all events associated with the job ID
+	err := h.events.DeleteAllEventsForJobID(jobID)
+	if err != nil {
+		http.Error(w, "Failed to delete events for job", http.StatusInternalServerError)
+		return
+	}
+
+	// Create the SQL query for deleting the job
+	sqlQuery := `DELETE FROM main.jobs WHERE id = @id`
+
+	// Execute the query with query parameters
+	q := h.client.Query(sqlQuery)
+	q.Parameters = []bigquery.QueryParameter{{Name: "id", Value: jobID}}
+
+	_, err = q.Run(ctx)
 	if err != nil {
 		http.Error(w, "Failed to delete job", http.StatusInternalServerError)
 		return
@@ -200,66 +229,29 @@ func (h *JobsHandler) DeleteJob(w http.ResponseWriter, r *http.Request) {
 
 func (h *JobsHandler) GetAllJobs(w http.ResponseWriter, r *http.Request) {
 	ctx := context.Background()
-	// Fetch the jobs
-	query := h.client.Query("SELECT * FROM propfix.main.jobs")
-	jobsIterator, err := query.Read(ctx)
+	q := h.client.Query(`
+		SELECT id, name, dueDate, priority, description, tenantIdentifier, assigneeIds, unitIdentifier, buildingId, labels, attachments, cost, hours, createdAt
+		FROM main.jobs
+	`)
+
+	it, err := q.Read(ctx)
 	if err != nil {
 		http.Error(w, "Failed to fetch jobs", http.StatusInternalServerError)
 		return
 	}
 
-	// Process the jobs and store them in a map by job ID
-	jobMap := make(map[string]JobJson)
-	reporterIDs := make(map[string]bool)
-	assigneeIDs := make(map[string]bool)
+	var jobs []JobJson
 	for {
 		var job JobJson
-
-		err := jobsIterator.Next(&job)
+		err := it.Next(&job)
 		if err == iterator.Done {
 			break
-		}
-		if err != nil {
+		} else if err != nil {
 			http.Error(w, "Failed to read job data", http.StatusInternalServerError)
 			return
 		}
-
-		reporterIDs[job.ReporterID] = true
-		for _, assigneeID := range job.AssigneeIDs {
-			assigneeIDs[assigneeID] = true
-		}
-
-		jobMap[job.ID] = job
+		jobs = append(jobs, job)
 	}
 
-	// Fetch the reporters
-	reporters := fetchMembers(ctx, h.client, reporterIDs)
-	if reporters == nil {
-		http.Error(w, "Failed to fetch reporters", http.StatusInternalServerError)
-		return
-	}
-
-	// Fetch the assignees
-	assignees := fetchMembers(ctx, h.client, assigneeIDs)
-	if assignees == nil {
-		http.Error(w, "Failed to fetch assignees", http.StatusInternalServerError)
-		return
-	}
-
-	// Update the jobs with the reporter and assignee data
-	for jobID, job := range jobMap {
-		job.Reporter = reporters[job.ReporterID]
-		for _, assigneeID := range job.AssigneeIDs {
-			job.Assignees = append(job.Assignees, assignees[assigneeID])
-		}
-		jobMap[jobID] = job
-	}
-
-	// Convert the job map to a slice
-	var jobsData []JobJson
-	for _, job := range jobMap {
-		jobsData = append(jobsData, job)
-	}
-
-	json.NewEncoder(w).Encode(jobsData)
+	json.NewEncoder(w).Encode(jobs)
 }

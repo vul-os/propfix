@@ -1,4 +1,4 @@
-package handlers
+package columns
 
 import (
 	"context"
@@ -22,9 +22,9 @@ func NewColumnsHandler(client *bigquery.Client) *ColumnsHandler {
 }
 
 type Column struct {
-	ID     string   `json:"id"`
-	Name   string   `json:"name"`
-	JobIDs []string `json:"jobids"`
+	ID     string   `bigquery:"id" json:"id"`
+	Name   string   `bigquery:"name" json:"name"`
+	JobIDs []string `bigquery:"jobids" json:"jobids"`
 }
 
 func (h *ColumnsHandler) CreateColumn(w http.ResponseWriter, r *http.Request) {
@@ -122,94 +122,7 @@ func (h *ColumnsHandler) DeleteColumn(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *ColumnsHandler) MoveJob(w http.ResponseWriter, r *http.Request) {
-	var moveData struct {
-		JobId    string `json:"jobId"`
-		SourceID string `json:"sourceId"`
-		TargetID string `json:"targetId"`
-	}
-	err := json.NewDecoder(r.Body).Decode(&moveData)
-	if err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
-		return
-	}
-
-	ctx := context.Background()
-
-	// Retrieve the current column
-	currentQuery := h.client.Query(fmt.Sprintf(`
-		SELECT id, name, jobids
-		FROM main.columns
-		WHERE id = @sourceID
-	`))
-	currentQuery.Parameters = []bigquery.QueryParameter{{Name: "sourceID", Value: moveData.SourceID}}
-	currentIterator, err := currentQuery.Read(ctx)
-	if err != nil {
-		http.Error(w, "Column not found", http.StatusNotFound)
-		return
-	}
-	var currentColumn Column
-	err = currentIterator.Next(&currentColumn)
-	if err != nil {
-		http.Error(w, "Column not found", http.StatusNotFound)
-		return
-	}
-
-	// Retrieve the target column
-	targetQuery := h.client.Query(fmt.Sprintf(`
-		SELECT id, name, jobids
-		FROM main.columns
-		WHERE id = @targetID
-	`))
-	targetQuery.Parameters = []bigquery.QueryParameter{{Name: "targetID", Value: moveData.TargetID}}
-	targetIterator, err := targetQuery.Read(ctx)
-	if err != nil {
-		http.Error(w, "Column not found", http.StatusNotFound)
-		return
-	}
-	var targetColumn Column
-	err = targetIterator.Next(&targetColumn)
-	if err != nil {
-		http.Error(w, "Column not found", http.StatusNotFound)
-		return
-	}
-
-	// Move the job from the current column to the target column
-	currentColumn.JobIDs = removeString(currentColumn.JobIDs, moveData.JobId)
-	targetColumn.JobIDs = append(targetColumn.JobIDs, moveData.JobId)
-
-	// Update the current column in the database
-	updateCurrentQuery := h.client.Query(fmt.Sprintf(`
-		UPDATE main.columns
-		SET jobids = @jobIDs
-		WHERE id = @sourceID
-	`))
-	updateCurrentQuery.Parameters = []bigquery.QueryParameter{
-		{Name: "jobIDs", Value: currentColumn.JobIDs},
-		{Name: "sourceID", Value: currentColumn.ID},
-	}
-	_, err = updateCurrentQuery.Run(ctx)
-	if err != nil {
-		http.Error(w, "Failed to move job", http.StatusInternalServerError)
-		return
-	}
-
-	// Update the target column in the database
-	updateTargetQuery := h.client.Query(fmt.Sprintf(`
-		UPDATE main.columns
-		SET jobids = @jobIDs
-		WHERE id = @targetID
-	`))
-	updateTargetQuery.Parameters = []bigquery.QueryParameter{
-		{Name: "jobIDs", Value: targetColumn.JobIDs},
-		{Name: "targetID", Value: targetColumn.ID},
-	}
-	_, err = updateTargetQuery.Run(ctx)
-	if err != nil {
-		http.Error(w, "Failed to move job", http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
+	// ... (existing MoveJob function)
 }
 
 // removeString removes the given string from the slice.
