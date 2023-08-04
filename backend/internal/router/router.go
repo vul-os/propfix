@@ -47,15 +47,14 @@ func Router(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Fatalf("Failed to initialize Firebase Auth client: %v", err)
 	}
+	// Create an instance of the EventsStore
+	eventsStore := events.NewEventsStore(client)
 
 	// Create the file upload handler
-	fileUploadHandler, err := attachments.NewFileUploadHandler("propfix-attachments")
+	fileUploadHandler, err := attachments.NewFileUploadHandler("propfix-attachments", eventsStore)
 	if err != nil {
 		log.Fatalf("Failed to initialize File Upload Handler: %v", err)
 	}
-
-	// Create an instance of the EventsStore
-	eventsStore := events.NewEventsStore(client)
 
 	// Create a Gorilla Mux router
 	router := mux.NewRouter()

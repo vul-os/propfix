@@ -24,6 +24,7 @@ type Event struct {
 	ID        string    `bigquery:"id" json:"id"`
 	Type      string    `bigquery:"type" json:"type"`
 	JobID     string    `bigquery:"jobId" json:"jobId"`
+	MemberID  string    `bigquery:"memberId" json:"memberId"`
 	Data      string    `bigquery:"data" json:"data"`
 	CreatedAt time.Time `bigquery:"createdAt" json:"createdAt"`
 }
