@@ -1,5 +1,3 @@
-// router/router.go
-
 package router
 
 import (
@@ -11,7 +9,7 @@ import (
 	"cloud.google.com/go/bigquery"
 	firebase "firebase.google.com/go/v4"
 	"github.com/exolutionza/propfix-backend-go/internal/attachments"
-	"github.com/exolutionza/propfix-backend-go/internal/auth"
+	auth "github.com/exolutionza/propfix-backend-go/internal/auth"
 	"github.com/exolutionza/propfix-backend-go/internal/board"
 	"github.com/exolutionza/propfix-backend-go/internal/buildings"
 	"github.com/exolutionza/propfix-backend-go/internal/columns"
@@ -48,14 +46,20 @@ func Router(w http.ResponseWriter, r *http.Request) {
 		log.Fatalf("Failed to initialize Firebase Auth client: %v", err)
 	}
 
-	// Create the file upload handler
-	fileUploadHandler, err := attachments.NewFileUploadHandler("propfix-attachments")
+	// Create Firebase Admin
+	firebaseAdmin, err := auth.NewFirebaseAdmin(app, authClient)
 	if err != nil {
-		log.Fatalf("Failed to initialize File Upload Handler: %v", err)
+		log.Fatalf("Failed to create Firebase Admin: %v", err)
 	}
 
 	// Create an instance of the EventsStore
 	eventsStore := events.NewEventsStore(client)
+
+	// Create the file upload handler
+	fileUploadHandler, err := attachments.NewFileUploadHandler("propfix-attachments", eventsStore)
+	if err != nil {
+		log.Fatalf("Failed to initialize File Upload Handler: %v", err)
+	}
 
 	// Create a Gorilla Mux router
 	router := mux.NewRouter()
