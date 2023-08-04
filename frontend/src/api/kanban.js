@@ -2,10 +2,9 @@ import { useMemo } from 'react';
 import useSWR, { mutate } from 'swr';
 // utils
 import { fetcher, endpoints } from '../utils/axios';
-import config from '../config/config'
-// ----------------------------------------------------------------------
+import config from '../config/config';
 
-const URL = `${config.apiUrl}/board` 
+const URL = `${config.apiUrl}/board`;
 const options = {
   revalidateIfStale: false,
   revalidateOnFocus: false,
@@ -158,22 +157,22 @@ export async function clearColumn(columnId) {
     (currentData) => {
       const { board } = currentData;
 
-      const { tasks } = board;
+      const { jobs } = board;
 
       // current column
       const column = board.columns[columnId];
 
-      // delete tasks in board.tasks
-      column.taskIds.forEach((key) => {
-        delete tasks[key];
+      // delete jobs in board.jobs
+      column.jobIds.forEach((key) => {
+        delete jobs[key];
       });
 
       const columns = {
         ...board.columns,
         [column.id]: {
           ...column,
-          // delete task in column
-          taskIds: [],
+          // delete job in column
+          jobIds: [],
         },
       };
 
@@ -182,7 +181,7 @@ export async function clearColumn(columnId) {
         board: {
           ...board,
           columns,
-          tasks,
+          jobs,
         },
       };
     },
@@ -207,7 +206,7 @@ export async function deleteColumn(columnId) {
     (currentData) => {
       const { board } = currentData;
 
-      const { columns, tasks } = board;
+      const { columns, jobs } = board;
 
       // current column
       const column = columns[columnId];
@@ -215,9 +214,9 @@ export async function deleteColumn(columnId) {
       // delete column in board.columns
       delete columns[columnId];
 
-      // delete tasks in board.tasks
-      column.taskIds.forEach((key) => {
-        delete tasks[key];
+      // delete jobs in board.jobs
+      column.jobIds.forEach((key) => {
+        delete jobs[key];
       });
 
       // delete column in board.ordered
@@ -228,7 +227,7 @@ export async function deleteColumn(columnId) {
         board: {
           ...board,
           columns,
-          tasks,
+          jobs,
           ordered,
         },
       };
@@ -239,12 +238,12 @@ export async function deleteColumn(columnId) {
 
 // ----------------------------------------------------------------------
 
-export async function createTask(columnId, taskData) {
+export async function createJob(columnId, jobData) {
   /**
    * Work on server
    */
-  // const data = { columnId, taskData };
-  // await axios.post(endpoints.kanban, data, { params: { endpoint: 'create-task' } });
+  // const data = { columnId, jobData };
+  // await axios.post(endpoints.kanban, data, { params: { endpoint: 'create-job' } });
 
   /**
    * Work in local
@@ -261,15 +260,15 @@ export async function createTask(columnId, taskData) {
         ...board.columns,
         [columnId]: {
           ...column,
-          // add task in column
-          taskIds: [...column.taskIds, taskData.id],
+          // add job in column
+          jobIds: [...column.jobIds, jobData.id],
         },
       };
 
-      // add task in board.tasks
-      const tasks = {
-        ...board.tasks,
-        [taskData.id]: taskData,
+      // add job in board.jobs
+      const jobs = {
+        ...board.jobs,
+        [jobData.id]: jobData,
       };
 
       return {
@@ -277,7 +276,7 @@ export async function createTask(columnId, taskData) {
         board: {
           ...board,
           columns,
-          tasks,
+          jobs,
         },
       };
     },
@@ -287,12 +286,12 @@ export async function createTask(columnId, taskData) {
 
 // ----------------------------------------------------------------------
 
-export async function updateTask(taskData) {
+export async function updateJob(jobData) {
   /**
    * Work on server
    */
-  // const data = { taskData };
-  // await axios.post(endpoints.kanban, data, { params: { endpoint: 'update-task' } });
+  // const data = { jobData };
+  // await axios.post(endpoints.kanban, data, { params: { endpoint: 'update-job' } });
 
   /**
    * Work in local
@@ -302,17 +301,17 @@ export async function updateTask(taskData) {
     (currentData) => {
       const { board } = currentData;
 
-      const tasks = {
-        ...board.tasks,
-        // add task in board.tasks
-        [taskData.id]: taskData,
+      const jobs = {
+        ...board.jobs,
+        // add job in board.jobs
+        [jobData.id]: jobData,
       };
 
       return {
         ...currentData,
         board: {
           ...board,
-          tasks,
+          jobs,
         },
       };
     },
@@ -322,7 +321,7 @@ export async function updateTask(taskData) {
 
 // ----------------------------------------------------------------------
 
-export async function moveTask(updateColumns) {
+export async function moveJob(updateColumns) {
   /**
    * Work in local
    */
@@ -349,17 +348,17 @@ export async function moveTask(updateColumns) {
    * Work on server
    */
   // const data = { updateColumns };
-  // await axios.post(endpoints.kanban, data, { params: { endpoint: 'move-task' } });
+  // await axios.post(endpoints.kanban, data, { params: { endpoint: 'move-job' } });
 }
 
 // ----------------------------------------------------------------------
 
-export async function deleteTask(columnId, taskId) {
+export async function deleteJob(columnId, jobId) {
   /**
    * Work on server
    */
-  // const data = { columnId, taskId };
-  // await axios.post(endpoints.kanban, data, { params: { endpoint: 'delete-task' } });
+  // const data = { columnId, jobId };
+  // await axios.post(endpoints.kanban, data, { params: { endpoint: 'delete-job' } });
 
   /**
    * Work in local
@@ -369,7 +368,7 @@ export async function deleteTask(columnId, taskId) {
     (currentData) => {
       const { board } = currentData;
 
-      const { tasks } = board;
+      const { jobs } = board;
 
       // current column
       const column = board.columns[columnId];
@@ -378,20 +377,20 @@ export async function deleteTask(columnId, taskId) {
         ...board.columns,
         [column.id]: {
           ...column,
-          // delete tasks in column
-          taskIds: column.taskIds.filter((id) => id !== taskId),
+          // delete jobs in column
+          jobIds: column.jobIds.filter((id) => id !== jobId),
         },
       };
 
-      // delete tasks in board.tasks
-      delete tasks[taskId];
+      // delete jobs in board.jobs
+      delete jobs[jobId];
 
       return {
         ...currentData,
         board: {
           ...board,
           columns,
-          tasks,
+          jobs,
         },
       };
     },
