@@ -72,7 +72,7 @@ func Router(w http.ResponseWriter, r *http.Request) {
 	protectedRouter.HandleFunc("/file/{jobid}", fileUploadHandler.UploadFile).Methods("POST")
 
 	// Add routes from the board package handlers
-	boardHandler := board.NewBoardHandler(client)
+	boardHandler := board.NewBoardHandler(client, authClient, authorizer)
 	protectedRouter.HandleFunc("/board", boardHandler.GetBoard).Methods("GET")
 
 	// Add routes from the buildings package handlers
@@ -100,7 +100,7 @@ func Router(w http.ResponseWriter, r *http.Request) {
 	protectedRouter.HandleFunc("/jobs", jobsHandler.UpdateJob).Methods("PUT")
 
 	// Add routes from the events package handlers
-	eventsHandler := events.NewEventsHandler(eventsStore)
+	eventsHandler := events.NewEventsHandler(eventsStore, authorizer)
 	protectedRouter.HandleFunc("/events/{id}", eventsHandler.GetEvent).Methods("GET")
 	protectedRouter.HandleFunc("/events", eventsHandler.CreateEvent).Methods("POST")
 	protectedRouter.HandleFunc("/events", eventsHandler.UpdateEvent).Methods("PUT")

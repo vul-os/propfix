@@ -9,6 +9,8 @@ import (
 
 	"cloud.google.com/go/bigquery"
 	"github.com/exolutionza/propfix-backend-go/internal/authz"
+	"github.com/exolutionza/propfix-backend-go/internal/user"
+
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"google.golang.org/api/iterator"
@@ -32,11 +34,12 @@ type Building struct {
 	Address          string    `bigquery:"address" json:"address"`
 	UnitNumberSystem string    `bigquery:"unitNumberSystem" json:"unitNumberSystem"`
 	CreatedAt        time.Time `bigquery:"createdAt" json:"createdAt"`
+	OrganizationID   string    `bigquery:"organizationId" json:"organizationId"`
 }
 
 func (h *BuildingsHandler) CreateBuilding(w http.ResponseWriter, r *http.Request) {
 	// Get the user from the request context
-	user, ok := r.Context().Value("user").(authz.User)
+	user, ok := r.Context().Value("user").(user.User)
 	if !ok {
 		http.Error(w, "Failed to get user details", http.StatusInternalServerError)
 		return
@@ -74,7 +77,7 @@ func (h *BuildingsHandler) CreateBuilding(w http.ResponseWriter, r *http.Request
 
 func (h *BuildingsHandler) GetBuilding(w http.ResponseWriter, r *http.Request) {
 	// Get the user from the request context
-	user, ok := r.Context().Value("user").(authz.User)
+	user, ok := r.Context().Value("user").(user.User)
 	if !ok {
 		http.Error(w, "Failed to get user details", http.StatusInternalServerError)
 		return
@@ -94,7 +97,7 @@ func (h *BuildingsHandler) GetBuilding(w http.ResponseWriter, r *http.Request) {
 
 	ctx := context.Background()
 	q := h.client.Query(fmt.Sprintf(`
-		SELECT id, buildingName, address, unitNumberSystem, createdAt
+		SELECT id, buildingName, address, unitNumberSystem, createdAt, organizationId
 		FROM main.Buildings
 		WHERE id = @buildingID
 	`))
@@ -121,7 +124,7 @@ func (h *BuildingsHandler) GetBuilding(w http.ResponseWriter, r *http.Request) {
 
 func (h *BuildingsHandler) UpdateBuilding(w http.ResponseWriter, r *http.Request) {
 	// Get the user from the request context
-	user, ok := r.Context().Value("user").(authz.User)
+	user, ok := r.Context().Value("user").(user.User)
 	if !ok {
 		http.Error(w, "Failed to get user details", http.StatusInternalServerError)
 		return
@@ -171,7 +174,7 @@ func (h *BuildingsHandler) UpdateBuilding(w http.ResponseWriter, r *http.Request
 
 func (h *BuildingsHandler) DeleteBuilding(w http.ResponseWriter, r *http.Request) {
 	// Get the user from the request context
-	user, ok := r.Context().Value("user").(authz.User)
+	user, ok := r.Context().Value("user").(user.User)
 	if !ok {
 		http.Error(w, "Failed to get user details", http.StatusInternalServerError)
 		return

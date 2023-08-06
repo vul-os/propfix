@@ -12,10 +12,10 @@ import (
 
 type EventsHandler struct {
 	store *EventsStore
-	authz authz.Authz // Replace "Authorization" with the actual type of your authorization mechanism
+	authz *authz.Authz // Replace "Authorization" with the actual type of your authorization mechanism
 }
 
-func NewEventsHandler(store *EventsStore, authz authz.Authz) *EventsHandler {
+func NewEventsHandler(store *EventsStore, authz *authz.Authz) *EventsHandler {
 	return &EventsHandler{
 		store: store,
 		authz: authz,

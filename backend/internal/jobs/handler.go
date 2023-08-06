@@ -39,6 +39,7 @@ type Job struct {
 	AssigneeIDs      []string  `bigquery:"assigneeIds" json:"assigneeIds"`
 	UnitIdentifier   string    `bigquery:"unitIdentifier" json:"unitIdentifier"`
 	BuildingID       string    `bigquery:"buildingId" json:"buildingId"`
+	BoardID          string    `bigquery:"boardId" json:"boardId"` // Add the boardId field
 	Labels           []string  `bigquery:"labels" json:"labels"`
 	Attachments      []string  `bigquery:"attachments" json:"attachments"`
 	Cost             float64   `bigquery:"cost" json:"cost"`
@@ -57,6 +58,7 @@ type JobJson struct {
 	AssigneeIDs    []string    `json:"assigneeIds"`
 	UnitIdentifier string      `json:"unitIdentifier"`
 	BuildingID     string      `json:"buildingId"`
+	BoardID        string      `json:"boardId"` // Add the boardId field
 	Labels         []string    `json:"labels"`
 	Attachments    []string    `json:"attachments"`
 	Cost           float64     `json:"cost"`
@@ -93,8 +95,8 @@ func (h *JobsHandler) CreateJob(w http.ResponseWriter, r *http.Request) {
 
 	// Create the SQL query for insertion using query parameters
 	sqlQuery := `
-		INSERT INTO main.jobs (id, name, dueDate, priority, description, tenantIdentifier, assigneeIds, unitIdentifier, buildingId, labels, attachments, cost, hours, createdAt)
-		VALUES (@id, @name, @dueDate, @priority, @description, @tenantIdentifier, @assigneeIds, @unitIdentifier, @buildingId, @labels, @attachments, @cost, @hours, @createdAt)
+		INSERT INTO main.jobs (id, name, dueDate, priority, description, tenantIdentifier, assigneeIds, unitIdentifier, buildingId, boardId, labels, attachments, cost, hours, createdAt)
+		VALUES (@id, @name, @dueDate, @priority, @description, @tenantIdentifier, @assigneeIds, @unitIdentifier, @buildingId, @boardId, @labels, @attachments, @cost, @hours, @createdAt)
 	`
 
 	// Execute the query with query parameters
@@ -109,6 +111,7 @@ func (h *JobsHandler) CreateJob(w http.ResponseWriter, r *http.Request) {
 		{Name: "assigneeIds", Value: jobReq.AssigneeIDs},
 		{Name: "unitIdentifier", Value: jobReq.UnitIdentifier},
 		{Name: "buildingId", Value: jobReq.BuildingID},
+		{Name: "boardId", Value: jobReq.BoardID}, // Add the boardId parameter
 		{Name: "labels", Value: jobReq.Labels},
 		{Name: "attachments", Value: jobReq.Attachments},
 		{Name: "cost", Value: jobReq.Cost},
@@ -132,7 +135,7 @@ func (h *JobsHandler) GetJob(w http.ResponseWriter, r *http.Request) {
 
 	ctx := context.Background()
 	q := h.client.Query(fmt.Sprintf(`
-		SELECT id, name, dueDate, priority, description, tenantIdentifier, assigneeIds, unitIdentifier, buildingId, labels, attachments, cost, hours, createdAt
+		SELECT id, name, dueDate, priority, description, tenantIdentifier, assigneeIds, unitIdentifier, buildingId, boardId, labels, attachments, cost, hours, createdAt
 		FROM main.jobs
 		WHERE id = @jobID
 	`))
@@ -183,8 +186,8 @@ func (h *JobsHandler) UpdateJob(w http.ResponseWriter, r *http.Request) {
 	// Create the SQL query for updating the job
 	sqlQuery := `UPDATE main.jobs
 	SET name = @name, dueDate = @dueDate, priority = @priority, description = @description, tenantIdentifier = @tenantIdentifier, 
-	assigneeIds = @assigneeIds, unitIdentifier = @unitIdentifier, buildingId = @buildingId, labels = @labels, 
-	attachments = @attachments, cost = @cost, hours = @hours, createdAt = @createdAt
+	assigneeIds = @assigneeIds, unitIdentifier = @unitIdentifier, buildingId = @buildingId,  
+	labels = @labels, attachments = @attachments, cost = @cost, hours = @hours, createdAt = @createdAt
 	WHERE id = @id`
 
 	// Execute the query with query parameters
@@ -261,7 +264,7 @@ func (h *JobsHandler) DeleteJob(w http.ResponseWriter, r *http.Request) {
 func (h *JobsHandler) GetAllJobs(w http.ResponseWriter, r *http.Request) {
 	ctx := context.Background()
 	q := h.client.Query(`
-		SELECT id, name, dueDate, priority, description, tenantIdentifier, assigneeIds, unitIdentifier, buildingId, labels, attachments, cost, hours, createdAt
+		SELECT id, name, dueDate, priority, description, tenantIdentifier, assigneeIds, unitIdentifier, buildingId, boardId, labels, attachments, cost, hours, createdAt
 		FROM main.jobs
 	`)
 

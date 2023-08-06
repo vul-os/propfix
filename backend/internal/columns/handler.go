@@ -27,9 +27,10 @@ func NewColumnsHandler(client *bigquery.Client, authz *authz.Authz) *ColumnsHand
 }
 
 type Column struct {
-	ID     string   `json:"id"`
-	Name   string   `json:"name"`
-	JobIDs []string `json:"jobids"`
+	ID      string   `json:"id"`
+	Name    string   `json:"name"`
+	JobIDs  []string `json:"jobids"`
+	BoardID string   `json:"boardId"`
 }
 
 func (h *ColumnsHandler) CreateColumn(w http.ResponseWriter, r *http.Request) {
@@ -88,7 +89,7 @@ func (h *ColumnsHandler) GetColumn(w http.ResponseWriter, r *http.Request) {
 
 	ctx := context.Background()
 	q := h.client.Query(fmt.Sprintf(`
-		SELECT id, name, jobids
+		SELECT id, name, jobids, boardId
 		FROM main.Columns
 		WHERE id = @columnID
 	`))
@@ -137,13 +138,14 @@ func (h *ColumnsHandler) UpdateColumn(w http.ResponseWriter, r *http.Request) {
 	ctx := context.Background()
 	q := h.client.Query(fmt.Sprintf(`
 		UPDATE main.Columns
-		SET name = @name, jobids = @jobids
+		SET name = @name, jobids = @jobids, boardId = @boardId
 		WHERE id = @columnID
 	`))
 	q.Parameters = []bigquery.QueryParameter{
 		{Name: "columnID", Value: column.ID},
 		{Name: "name", Value: column.Name},
 		{Name: "jobids", Value: column.JobIDs},
+		{Name: "boardId", Value: column.BoardID},
 	}
 
 	_, err = q.Run(ctx)
@@ -208,7 +210,7 @@ func (h *ColumnsHandler) MoveJob(w http.ResponseWriter, r *http.Request) {
 
 	// Retrieve the current column
 	currentQuery := h.client.Query(fmt.Sprintf(`
-		SELECT id, name, jobids
+		SELECT id, name, jobids, boardId
 		FROM main.columns
 		WHERE id = @sourceID
 	`))
@@ -227,7 +229,7 @@ func (h *ColumnsHandler) MoveJob(w http.ResponseWriter, r *http.Request) {
 
 	// Retrieve the target column
 	targetQuery := h.client.Query(fmt.Sprintf(`
-		SELECT id, name, jobids
+		SELECT id, name, jobids, boardId
 		FROM main.columns
 		WHERE id = @targetID
 	`))
@@ -313,7 +315,7 @@ func (h *ColumnsHandler) GetAllColumns(w http.ResponseWriter, r *http.Request) {
 
 	ctx := context.Background()
 	q := h.client.Query(`
-		SELECT id, name, jobids
+		SELECT id, name, jobids, boardId
 		FROM main.Columns
 	`)
 
