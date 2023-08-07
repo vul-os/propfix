@@ -1,5 +1,3 @@
-// router/router.go
-
 package router
 
 import (
@@ -11,13 +9,13 @@ import (
 	"cloud.google.com/go/bigquery"
 	firebase "firebase.google.com/go/v4"
 	"github.com/exolutionza/propfix-backend-go/internal/attachments"
-	"github.com/exolutionza/propfix-backend-go/internal/auth"
+	auth "github.com/exolutionza/propfix-backend-go/internal/auth"
+	"github.com/exolutionza/propfix-backend-go/internal/authz"
 	"github.com/exolutionza/propfix-backend-go/internal/board"
 	"github.com/exolutionza/propfix-backend-go/internal/buildings"
 	"github.com/exolutionza/propfix-backend-go/internal/columns"
 	"github.com/exolutionza/propfix-backend-go/internal/events"
 	"github.com/exolutionza/propfix-backend-go/internal/jobs"
-	"github.com/exolutionza/propfix-backend-go/internal/members"
 
 	"github.com/gorilla/mux"
 )
@@ -47,6 +45,8 @@ func Router(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Fatalf("Failed to initialize Firebase Auth client: %v", err)
 	}
+	authorizer := authz.NewAuthz(client)
+
 	// Create an instance of the EventsStore
 	eventsStore := events.NewEventsStore(client)
 
@@ -72,18 +72,18 @@ func Router(w http.ResponseWriter, r *http.Request) {
 	protectedRouter.HandleFunc("/file/{jobid}", fileUploadHandler.UploadFile).Methods("POST")
 
 	// Add routes from the board package handlers
-	boardHandler := board.NewBoardHandler(client)
+	boardHandler := board.NewBoardHandler(client, authClient, authorizer)
 	protectedRouter.HandleFunc("/board", boardHandler.GetBoard).Methods("GET")
 
 	// Add routes from the buildings package handlers
-	buildingsHandler := buildings.NewBuildingsHandler(client)
+	buildingsHandler := buildings.NewBuildingsHandler(client, authorizer)
 	protectedRouter.HandleFunc("/buildings/{id}", buildingsHandler.GetBuilding).Methods("GET")
 	protectedRouter.HandleFunc("/buildings", buildingsHandler.CreateBuilding).Methods("POST")
 	protectedRouter.HandleFunc("/buildings", buildingsHandler.UpdateBuilding).Methods("PUT")
 	protectedRouter.HandleFunc("/buildings/{id}", buildingsHandler.DeleteBuilding).Methods("DELETE")
 
 	// Add routes from the columns package handlers
-	columnsHandler := columns.NewColumnsHandler(client)
+	columnsHandler := columns.NewColumnsHandler(client, authorizer)
 	protectedRouter.HandleFunc("/columns", columnsHandler.GetAllColumns).Methods("GET")
 	protectedRouter.HandleFunc("/columns/{id}", columnsHandler.GetColumn).Methods("GET")
 	protectedRouter.HandleFunc("/columns", columnsHandler.CreateColumn).Methods("POST")
@@ -92,7 +92,7 @@ func Router(w http.ResponseWriter, r *http.Request) {
 	protectedRouter.HandleFunc("/movejob", columnsHandler.MoveJob).Methods("POST")
 
 	// Add routes from the jobs package handlers
-	jobsHandler := jobs.NewJobsHandler(client, eventsStore)
+	jobsHandler := jobs.NewJobsHandler(client, eventsStore, authorizer)
 	protectedRouter.HandleFunc("/jobs", jobsHandler.GetAllJobs).Methods("GET")
 	protectedRouter.HandleFunc("/jobs/{id}", jobsHandler.GetJob).Methods("GET")
 	protectedRouter.HandleFunc("/jobs/{id}", jobsHandler.DeleteJob).Methods("DELETE")
@@ -100,18 +100,11 @@ func Router(w http.ResponseWriter, r *http.Request) {
 	protectedRouter.HandleFunc("/jobs", jobsHandler.UpdateJob).Methods("PUT")
 
 	// Add routes from the events package handlers
-	eventsHandler := events.NewEventsHandler(eventsStore)
+	eventsHandler := events.NewEventsHandler(eventsStore, authorizer)
 	protectedRouter.HandleFunc("/events/{id}", eventsHandler.GetEvent).Methods("GET")
 	protectedRouter.HandleFunc("/events", eventsHandler.CreateEvent).Methods("POST")
 	protectedRouter.HandleFunc("/events", eventsHandler.UpdateEvent).Methods("PUT")
 	protectedRouter.HandleFunc("/events/{id}", eventsHandler.DeleteEvent).Methods("DELETE")
-
-	// Add routes from the members package handlers
-	membersHandler := members.NewMembersHandler(client)
-	protectedRouter.HandleFunc("/members/{id}", membersHandler.GetMember).Methods("GET")
-	protectedRouter.HandleFunc("/members/{id}", membersHandler.DeleteMember).Methods("DELETE")
-	protectedRouter.HandleFunc("/members", membersHandler.CreateMember).Methods("POST")
-	protectedRouter.HandleFunc("/members", membersHandler.UpdateMember).Methods("PUT")
 
 	// Apply the enableCORS middleware to all routes
 	handler := EnableCORS(router)

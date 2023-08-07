@@ -8,16 +8,23 @@ import (
 	"time"
 
 	"cloud.google.com/go/bigquery"
+	"github.com/exolutionza/propfix-backend-go/internal/authz"
+	"github.com/exolutionza/propfix-backend-go/internal/user"
+
+	"github.com/google/uuid"
+	"github.com/gorilla/mux"
 	"google.golang.org/api/iterator"
 )
 
 type BuildingsHandler struct {
 	client *bigquery.Client
+	authz  *authz.Authz // Add the authz instance to the handler
 }
 
-func NewBuildingsHandler(client *bigquery.Client) *BuildingsHandler {
+func NewBuildingsHandler(client *bigquery.Client, authz *authz.Authz) *BuildingsHandler {
 	return &BuildingsHandler{
 		client: client,
+		authz:  authz, // Assign the authz instance to the handler
 	}
 }
 
@@ -27,15 +34,35 @@ type Building struct {
 	Address          string    `bigquery:"address" json:"address"`
 	UnitNumberSystem string    `bigquery:"unitNumberSystem" json:"unitNumberSystem"`
 	CreatedAt        time.Time `bigquery:"createdAt" json:"createdAt"`
+	OrganizationID   string    `bigquery:"organizationId" json:"organizationId"`
 }
 
 func (h *BuildingsHandler) CreateBuilding(w http.ResponseWriter, r *http.Request) {
+	// Get the user from the request context
+	user, ok := r.Context().Value("user").(user.User)
+	if !ok {
+		http.Error(w, "Failed to get user details", http.StatusInternalServerError)
+		return
+	}
+
+	// Check if the user has the permission to create buildings
+	if hasPermission, err := h.authz.CheckPermission(user.ID, "buildings", "create"); err != nil {
+		http.Error(w, "Failed to check permission", http.StatusInternalServerError)
+		return
+	} else if !hasPermission {
+		http.Error(w, "You do not have permission to create buildings", http.StatusForbidden)
+		return
+	}
+
 	var building Building
 	err := json.NewDecoder(r.Body).Decode(&building)
 	if err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
 	}
+
+	building.ID = uuid.New().String()
+	building.CreatedAt = time.Now()
 
 	ctx := context.Background()
 	inserter := h.client.Dataset("main").Table("Buildings").Inserter()
@@ -49,17 +76,28 @@ func (h *BuildingsHandler) CreateBuilding(w http.ResponseWriter, r *http.Request
 }
 
 func (h *BuildingsHandler) GetBuilding(w http.ResponseWriter, r *http.Request) {
-	var buildingID string
-	if id, ok := r.URL.Query()["id"]; ok && len(id) > 0 {
-		buildingID = id[0]
-	} else {
-		http.Error(w, "Building ID is required", http.StatusBadRequest)
+	// Get the user from the request context
+	user, ok := r.Context().Value("user").(user.User)
+	if !ok {
+		http.Error(w, "Failed to get user details", http.StatusInternalServerError)
 		return
 	}
 
+	// Check if the user has the permission to get buildings
+	if hasPermission, err := h.authz.CheckPermission(user.ID, "buildings", "read"); err != nil {
+		http.Error(w, "Failed to check permission", http.StatusInternalServerError)
+		return
+	} else if !hasPermission {
+		http.Error(w, "You do not have permission to get buildings", http.StatusForbidden)
+		return
+	}
+
+	vars := mux.Vars(r)
+	buildingID := vars["id"]
+
 	ctx := context.Background()
 	q := h.client.Query(fmt.Sprintf(`
-		SELECT id, buildingName, address, unitNumberSystem, createdAt
+		SELECT id, buildingName, address, unitNumberSystem, createdAt, organizationId
 		FROM main.Buildings
 		WHERE id = @buildingID
 	`))
@@ -85,6 +123,22 @@ func (h *BuildingsHandler) GetBuilding(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *BuildingsHandler) UpdateBuilding(w http.ResponseWriter, r *http.Request) {
+	// Get the user from the request context
+	user, ok := r.Context().Value("user").(user.User)
+	if !ok {
+		http.Error(w, "Failed to get user details", http.StatusInternalServerError)
+		return
+	}
+
+	// Check if the user has the permission to update buildings
+	if hasPermission, err := h.authz.CheckPermission(user.ID, "buildings", "update"); err != nil {
+		http.Error(w, "Failed to check permission", http.StatusInternalServerError)
+		return
+	} else if !hasPermission {
+		http.Error(w, "You do not have permission to update buildings", http.StatusForbidden)
+		return
+	}
+
 	var building Building
 	err := json.NewDecoder(r.Body).Decode(&building)
 	if err != nil {
@@ -101,7 +155,7 @@ func (h *BuildingsHandler) UpdateBuilding(w http.ResponseWriter, r *http.Request
 	ctx := context.Background()
 	q := h.client.Query(fmt.Sprintf(`
 		UPDATE main.Buildings
-		SET buildingName = @buildingName, address = @address, unitNumberSystem = @unitNumberSystem, createdAt = @createdAt
+		SET buildingName = @buildingName, address = @address, unitNumberSystem = @unitNumberSystem
 		WHERE id = @buildingID
 	`))
 	q.Parameters = []bigquery.QueryParameter{
@@ -109,7 +163,6 @@ func (h *BuildingsHandler) UpdateBuilding(w http.ResponseWriter, r *http.Request
 		{Name: "buildingName", Value: building.BuildingName},
 		{Name: "address", Value: building.Address},
 		{Name: "unitNumberSystem", Value: building.UnitNumberSystem},
-		{Name: "createdAt", Value: building.CreatedAt},
 	}
 
 	_, err = q.Run(ctx)
@@ -120,13 +173,24 @@ func (h *BuildingsHandler) UpdateBuilding(w http.ResponseWriter, r *http.Request
 }
 
 func (h *BuildingsHandler) DeleteBuilding(w http.ResponseWriter, r *http.Request) {
-	var buildingID string
-	if id, ok := r.URL.Query()["id"]; ok && len(id) > 0 {
-		buildingID = id[0]
-	} else {
-		http.Error(w, "Building ID is required", http.StatusBadRequest)
+	// Get the user from the request context
+	user, ok := r.Context().Value("user").(user.User)
+	if !ok {
+		http.Error(w, "Failed to get user details", http.StatusInternalServerError)
 		return
 	}
+
+	// Check if the user has the permission to delete buildings
+	if hasPermission, err := h.authz.CheckPermission(user.ID, "buildings", "delete"); err != nil {
+		http.Error(w, "Failed to check permission", http.StatusInternalServerError)
+		return
+	} else if !hasPermission {
+		http.Error(w, "You do not have permission to delete buildings", http.StatusForbidden)
+		return
+	}
+
+	vars := mux.Vars(r)
+	buildingID := vars["id"]
 
 	ctx := context.Background()
 	q := h.client.Query(fmt.Sprintf(`

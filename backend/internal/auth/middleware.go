@@ -5,14 +5,15 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/exolutionza/propfix-backend-go/internal/user"
+
 	"firebase.google.com/go/v4/auth"
 )
 
-type User struct {
-	ID    string
-	Email string
-}
+// Claims represents the claims from the ID token.
+type Claims map[string]interface{}
 
+// IsAuthenticated is a middleware that checks if the request is authenticated with a valid Firebase ID token.
 func IsAuthenticated(authClient *auth.Client) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -29,15 +30,16 @@ func IsAuthenticated(authClient *auth.Client) func(http.Handler) http.Handler {
 				return
 			}
 
-			email, ok := token.Claims["email"].(string)
-			if !ok {
-				http.Error(w, "Unauthorized", http.StatusUnauthorized)
-				return
+			claims := make(Claims)
+			for k, v := range token.Claims {
+				claims[k] = v
 			}
 
-			user := User{
-				ID:    token.UID,
-				Email: email,
+			user := user.User{
+				ID:          token.UID,
+				DisplayName: claims["name"].(string),
+				Email:       claims["email"].(string),
+				PhotoURL:    claims["picture"].(string),
 			}
 
 			ctx := context.WithValue(r.Context(), "user", user)
