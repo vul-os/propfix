@@ -1,4 +1,4 @@
-package organizations
+package organisations
 
 import (
 	"context"
@@ -11,11 +11,11 @@ import (
 	"google.golang.org/api/iterator"
 )
 
-type OrganizationHandler struct {
+type OrganisationHandler struct {
 	client *bigquery.Client
 }
 
-type Organization struct {
+type Organisation struct {
 	ID      string   `json:"id"`
 	Name    string   `json:"name"`
 	Members []Member `json:"members"`
@@ -26,14 +26,14 @@ type Member struct {
 	Email  string `json:"email,omitempty"`
 }
 
-func NewOrganizationHandler(client *bigquery.Client) *OrganizationHandler {
-	return &OrganizationHandler{
+func NewOrganizationHandler(client *bigquery.Client) *OrganisationHandler {
+	return &OrganisationHandler{
 		client: client,
 	}
 }
 
-func (h *OrganizationHandler) CreateOrganization(w http.ResponseWriter, r *http.Request) {
-	var org Organization
+func (h *OrganisationHandler) CreateOrganization(w http.ResponseWriter, r *http.Request) {
+	var org Organisation
 	err := json.NewDecoder(r.Body).Decode(&org)
 	if err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
@@ -51,25 +51,25 @@ func (h *OrganizationHandler) CreateOrganization(w http.ResponseWriter, r *http.
 		http.Error(w, "Failed to check organization existence", http.StatusInternalServerError)
 		return
 	}
-	var existingOrg Organization
+	var existingOrg Organisation
 	err = it.Next(&existingOrg)
 	if err != iterator.Done {
-		http.Error(w, "Organization already exists", http.StatusConflict)
+		http.Error(w, "Organisation already exists", http.StatusConflict)
 		return
 	}
 
 	// Insert the organization into the BigQuery table
-	inserter := h.client.Dataset("propfix").Table("Organizations").Inserter()
+	inserter := h.client.Dataset("propfix").Table("Organisations").Inserter()
 	err = inserter.Put(ctx, &org)
 	if err != nil {
-		http.Error(w, "Failed to create organization", http.StatusInternalServerError)
+		http.Error(w, "Failed to create organisation", http.StatusInternalServerError)
 		return
 	}
 
 	w.WriteHeader(http.StatusCreated)
 }
 
-func (h *OrganizationHandler) GetOrganization(w http.ResponseWriter, r *http.Request) {
+func (h *OrganisationHandler) GetOrganisation(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	orgID := vars["id"]
 
@@ -82,10 +82,10 @@ func (h *OrganizationHandler) GetOrganization(w http.ResponseWriter, r *http.Req
 	query.Parameters = []bigquery.QueryParameter{{Name: "orgID", Value: orgID}}
 	it, err := query.Read(ctx)
 	if err != nil {
-		http.Error(w, "Organization not found", http.StatusNotFound)
+		http.Error(w, "Organisation not found", http.StatusNotFound)
 		return
 	}
-	var org Organization
+	var org Organisation
 	err = it.Next(&org)
 	if err != nil {
 		http.Error(w, "Organization not found", http.StatusNotFound)
@@ -96,11 +96,11 @@ func (h *OrganizationHandler) GetOrganization(w http.ResponseWriter, r *http.Req
 	json.NewEncoder(w).Encode(org)
 }
 
-func (h *OrganizationHandler) UpdateOrganization(w http.ResponseWriter, r *http.Request) {
+func (h *OrganisationHandler) UpdateOrganization(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	orgID := vars["id"]
 
-	var org Organization
+	var org Organisation
 	err := json.NewDecoder(r.Body).Decode(&org)
 	if err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
@@ -120,27 +120,27 @@ func (h *OrganizationHandler) UpdateOrganization(w http.ResponseWriter, r *http.
 
 	_, err = query.Run(ctx)
 	if err != nil {
-		http.Error(w, "Failed to update organization", http.StatusInternalServerError)
+		http.Error(w, "Failed to update organisation", http.StatusInternalServerError)
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
 }
 
-func (h *OrganizationHandler) DeleteOrganization(w http.ResponseWriter, r *http.Request) {
+func (h *OrganisationHandler) DeleteOrganization(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	orgID := vars["id"]
 
 	ctx := context.Background()
 	query := h.client.Query(fmt.Sprintf(`
-		DELETE FROM propfix.Organizations
+		DELETE FROM propfix.Organisations
 		WHERE id = @orgID
 	`))
 	query.Parameters = []bigquery.QueryParameter{{Name: "orgID", Value: orgID}}
 
 	_, err := query.Run(ctx)
 	if err != nil {
-		http.Error(w, "Failed to delete organization", http.StatusInternalServerError)
+		http.Error(w, "Failed to delete organisation", http.StatusInternalServerError)
 		return
 	}
 

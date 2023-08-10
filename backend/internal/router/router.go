@@ -16,6 +16,10 @@ import (
 	"github.com/exolutionza/propfix-backend-go/internal/columns"
 	"github.com/exolutionza/propfix-backend-go/internal/events"
 	"github.com/exolutionza/propfix-backend-go/internal/jobs"
+	"github.com/exolutionza/propfix-backend-go/internal/labels"
+	"github.com/exolutionza/propfix-backend-go/internal/organisations"
+	"github.com/exolutionza/propfix-backend-go/internal/permissions"
+	"github.com/exolutionza/propfix-backend-go/internal/role"
 
 	"github.com/gorilla/mux"
 )
@@ -105,6 +109,38 @@ func Router(w http.ResponseWriter, r *http.Request) {
 	protectedRouter.HandleFunc("/events", eventsHandler.CreateEvent).Methods("POST")
 	protectedRouter.HandleFunc("/events", eventsHandler.UpdateEvent).Methods("PUT")
 	protectedRouter.HandleFunc("/events/{id}", eventsHandler.DeleteEvent).Methods("DELETE")
+
+	// Add routes for labels
+	labelsHandler := labels.NewLabelsHandler(client)
+	protectedRouter.HandleFunc("/labels", labelsHandler.GetLabel).Methods("GET")
+	protectedRouter.HandleFunc("/labels/{id}", labelsHandler.GetLabel).Methods("GET")
+	protectedRouter.HandleFunc("/labels", labelsHandler.CreateLabel).Methods("POST")
+	protectedRouter.HandleFunc("/labels/{id}", labelsHandler.UpdateLabel).Methods("PUT")
+	protectedRouter.HandleFunc("/labels/{id}", labelsHandler.DeleteLabel).Methods("DELETE")
+
+	// Add routes for permissions
+	permissionsHandler := permissions.NewPermissionsHandler(client, authorizer)
+	protectedRouter.HandleFunc("/permissions", permissionsHandler.GetPermission).Methods("GET")
+	protectedRouter.HandleFunc("/permissions/{id}", permissionsHandler.GetPermission).Methods("GET")
+	protectedRouter.HandleFunc("/permissions", permissionsHandler.CreatePermission).Methods("POST")
+	protectedRouter.HandleFunc("/permissions/{id}", permissionsHandler.UpdatePermission).Methods("PUT")
+	protectedRouter.HandleFunc("/permissions/{id}", permissionsHandler.DeletePermission).Methods("DELETE")
+
+	// Add routes for organizations
+	organisationsHandler := organisations.NewOrganisationsHandler(client, authorizer)
+	protectedRouter.HandleFunc("/organizations", organisationsHandler.GetOrganisations).Methods("GET")
+	protectedRouter.HandleFunc("/organizations/{id}", organisationsHandler.GetOrganisation).Methods("GET")
+	protectedRouter.HandleFunc("/organizations", organisationsHandler.CreateOrganisation).Methods("POST")
+	protectedRouter.HandleFunc("/organizations/{id}", organisationsHandler.UpdateOrganisation).Methods("PUT")
+	protectedRouter.HandleFunc("/organizations/{id}", organisationsHandler.DeleteOrganisation).Methods("DELETE")
+
+	// Add routes for rolesS
+	rolesHandler := role.NewRoleHandler(client, authorizer)
+	protectedRouter.HandleFunc("/roles", rolesHandler.GetRole).Methods("GET")
+	protectedRouter.HandleFunc("/roles/{id}", rolesHandler.GetRole).Methods("GET")
+	protectedRouter.HandleFunc("/roles", rolesHandler.CreateRole).Methods("POST")
+	protectedRouter.HandleFunc("/roles/{id}", rolesHandler.UpdateRole).Methods("PUT")
+	protectedRouter.HandleFunc("/roles/{id}", rolesHandler.DeleteRole).Methods("DELETE")
 
 	// Apply the enableCORS middleware to all routes
 	handler := EnableCORS(router)
