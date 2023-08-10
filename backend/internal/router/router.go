@@ -17,7 +17,6 @@ import (
 	"github.com/exolutionza/propfix-backend-go/internal/events"
 	"github.com/exolutionza/propfix-backend-go/internal/jobs"
 	"github.com/exolutionza/propfix-backend-go/internal/labels"
-	"github.com/exolutionza/propfix-backend-go/internal/organisations"
 	"github.com/exolutionza/propfix-backend-go/internal/permissions"
 	"github.com/exolutionza/propfix-backend-go/internal/role"
 
@@ -125,14 +124,6 @@ func Router(w http.ResponseWriter, r *http.Request) {
 	protectedRouter.HandleFunc("/permissions", permissionsHandler.CreatePermission).Methods("POST")
 	protectedRouter.HandleFunc("/permissions/{id}", permissionsHandler.UpdatePermission).Methods("PUT")
 	protectedRouter.HandleFunc("/permissions/{id}", permissionsHandler.DeletePermission).Methods("DELETE")
-
-	// Add routes for organizations
-	organisationsHandler := organisations.NewOrganisationsHandler(client, authorizer)
-	protectedRouter.HandleFunc("/organizations", organisationsHandler.GetOrganisations).Methods("GET")
-	protectedRouter.HandleFunc("/organizations/{id}", organisationsHandler.GetOrganisation).Methods("GET")
-	protectedRouter.HandleFunc("/organizations", organisationsHandler.CreateOrganisation).Methods("POST")
-	protectedRouter.HandleFunc("/organizations/{id}", organisationsHandler.UpdateOrganisation).Methods("PUT")
-	protectedRouter.HandleFunc("/organizations/{id}", organisationsHandler.DeleteOrganisation).Methods("DELETE")
 
 	// Add routes for rolesS
 	rolesHandler := role.NewRoleHandler(client, authorizer)
