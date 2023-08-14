@@ -5,6 +5,9 @@ import CardContent from '@mui/material/CardContent';
 import Stack from '@mui/material/Stack';
 
 export default function ReviewSubmitStep({ unitInfo, jobInfo }) {
+  console.log('unitInfo:', unitInfo);
+  console.log('jobInfo:', jobInfo);
+
   return (
     <Stack spacing={2}>
       <Typography variant="h6">Review Your Information</Typography>

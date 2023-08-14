@@ -5,53 +5,49 @@ import Step from '@mui/material/Step';
 import StepLabel from '@mui/material/StepLabel';
 import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
-import Dialog from '@mui/material/Dialog';
-import DialogActions from '@mui/material/DialogActions';
-import DialogContent from '@mui/material/DialogContent';
-import DialogTitle from '@mui/material/DialogTitle';
-import UnitInfoStep from './unitinfo'; 
-import JobInfoStep from './jobinfo'; 
-import ReviewSubmitStep from './reviewsubmit'; // Make sure to import ReviewSubmitStep
+import UnitInfoStep from './unitinfo';
+import JobInfoStep from './jobinfo';
+import ReviewSubmitStep from './reviewsubmit';
 
-const steps = ['Unit Info', 'Job Info', 'Review & Submit'];
+const steps = ['UNIT INFO', 'JOB INFO', 'REVIEW & SUBMIT'];
 
 export default function HorizontalLinearStepper() {
-  const [activeStep, setActiveStep] = useState(0);
-  const [open, setOpen] = useState(false);
-  const [unitInfo, setUnitInfo] = useState({
+  const initialUnitInfo = {
     unitName: '',
-    // Add more unit info fields as needed
-  });
-  const [jobInfo, setJobInfo] = useState({
+    // Initialize other fields as needed
+  };
+
+  const initialJobInfo = {
     title: '',
     description: '',
-    // Add more job info fields as needed
-  });
+    // Initialize other fields as needed
+  };
+
+  const [activeStep, setActiveStep] = useState(0);
+  const [unitInfo, setUnitInfo] = useState(initialUnitInfo);
+  const [jobInfo, setJobInfo] = useState(initialJobInfo);
 
   const handleNext = () => {
-    if (activeStep === steps.length - 1) {
-      setOpen(true); // Open the review and submit dialog
-    } else {
-      setOpen(true); // Open the dialog for the current step
-    }
+    setActiveStep(activeStep + 1);
   };
 
   const handleBack = () => {
-    setActiveStep((prevActiveStep) => prevActiveStep - 1);
-    setOpen(true); // Open the dialog for the previous step
-  };
-
-  const handleDialogClose = () => {
-    setOpen(false);
+    setActiveStep(activeStep - 1);
   };
 
   const handleSubmit = () => {
-    setOpen(false);
-    setActiveStep((prevActiveStep) => prevActiveStep + 1);
-  };
+    if (activeStep === steps.length - 1) {
+      // Process the form data and submit
 
-  const handleReset = () => {
-    setActiveStep(0);
+      // Reset the state to initial values
+      setUnitInfo(initialUnitInfo);
+      setJobInfo(initialJobInfo);
+
+      // Reset the active step to the first step
+      setActiveStep(0);
+    } else {
+      handleNext();
+    }
   };
 
   const handleUnitInfoChange = (newUnitInfo) => {
@@ -62,20 +58,25 @@ export default function HorizontalLinearStepper() {
     setJobInfo(newJobInfo);
   };
 
+  const isStepValid = () => {
+    switch (activeStep) {
+      case 0:
+        return unitInfo.unitName !== ''; // Validate other fields as needed
+      case 1:
+        return jobInfo.title !== '' && jobInfo.description !== ''; // Validate other fields as needed
+      default:
+        return true;
+    }
+  };
+
   const getStepContent = (step) => {
     switch (step) {
       case 0:
-        return (
-          <UnitInfoStep unitInfo={unitInfo} handleUnitInfoChange={handleUnitInfoChange} />
-        );
+        return <UnitInfoStep unitInfo={unitInfo} handleUnitInfoChange={handleUnitInfoChange} />;
       case 1:
-        return (
-          <JobInfoStep jobInfo={jobInfo} handleJobInfoChange={handleJobInfoChange} />
-        );
+        return <JobInfoStep jobInfo={jobInfo} handleJobInfoChange={handleJobInfoChange} />;
       case 2:
-        return (
-          <ReviewSubmitStep unitInfo={unitInfo} jobInfo={jobInfo} />
-        );
+        return <ReviewSubmitStep unitInfo={unitInfo} jobInfo={jobInfo} />;
       default:
         return 'Unknown step';
     }
@@ -85,16 +86,9 @@ export default function HorizontalLinearStepper() {
     <Box sx={{ width: '100%' }}>
       <Stepper activeStep={activeStep}>
         {steps.map((label, index) => {
-          const stepProps = {};
-          const labelProps = {};
           return (
-            <Step key={label} {...stepProps}>
-              <StepLabel
-                {...labelProps}
-                onClick={handleNext} // Open the dialog for the clicked step
-              >
-                {label}
-              </StepLabel>
+            <Step key={label}>
+              <StepLabel>{label}</StepLabel>
             </Step>
           );
         })}
@@ -107,13 +101,14 @@ export default function HorizontalLinearStepper() {
           </Typography>
           <Box sx={{ display: 'flex', flexDirection: 'row', pt: 2 }}>
             <Box sx={{ flex: '1 1 auto' }} />
-            <Button onClick={handleReset}>Reset</Button>
+            <Button onClick={() => setActiveStep(0)}>Reset</Button>
           </Box>
         </>
       ) : (
         // Render step content and navigation buttons
         <>
           <Typography sx={{ mt: 2, mb: 1 }}>Step {activeStep + 1}</Typography>
+          {getStepContent(activeStep)}
           <Box sx={{ display: 'flex', flexDirection: 'row', pt: 2 }}>
             <Button
               color="inherit"
@@ -124,23 +119,15 @@ export default function HorizontalLinearStepper() {
               Back
             </Button>
             <Box sx={{ flex: '1 1 auto' }} />
-            <Button onClick={handleNext}>
+            <Button
+              onClick={handleSubmit}
+              disabled={!isStepValid()}
+            >
               {activeStep === steps.length - 1 ? 'Finish' : 'Next'}
             </Button>
           </Box>
         </>
       )}
-      {/* Pop-up dialog for step content */}
-      <Dialog open={open} onClose={handleDialogClose}>
-        <DialogTitle>{steps[activeStep]}</DialogTitle>
-        <DialogContent>
-          {getStepContent(activeStep)}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleDialogClose}>Cancel</Button>
-          <Button onClick={handleSubmit}>Next</Button>
-        </DialogActions>
-      </Dialog>
     </Box>
   );
 }
