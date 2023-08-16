@@ -14,6 +14,9 @@ const steps = ['UNIT INFO', 'JOB INFO', 'REVIEW & SUBMIT'];
 export default function HorizontalLinearStepper() {
   const initialUnitInfo = {
     unitName: '',
+    tenantIdentifier: '',
+    unitIdentifier: '',
+    buildingId: '',
     // Initialize other fields as needed
   };
 
@@ -61,9 +64,13 @@ export default function HorizontalLinearStepper() {
   const isStepValid = () => {
     switch (activeStep) {
       case 0:
-        return unitInfo.unitName !== ''; // Validate other fields as needed
+        return unitInfo.unitName !== '' &&
+               unitInfo.tenantIdentifier !== '' &&
+               unitInfo.unitIdentifier !== '' &&
+               unitInfo.buildingId !== ''; // Validate other fields as needed
       case 1:
-        return jobInfo.title !== '' && jobInfo.description !== ''; // Validate other fields as needed
+        return jobInfo.title !== '' &&
+               jobInfo.description !== ''; // Validate other fields as needed
       default:
         return true;
     }

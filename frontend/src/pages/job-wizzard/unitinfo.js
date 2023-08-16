@@ -1,25 +1,38 @@
 import React from 'react';
 import TextField from '@mui/material/TextField';
 
-const UnitInfoStep = ({ unitInfo, handleUnitInfoChange }) => {
-  const handleUnitNameChange = (event) => {
-    handleUnitInfoChange({ ...unitInfo, unitName: event.target.value });
-  };
-
-  // Add similar handlers for other unit info fields as needed
-
+export default function UnitInfoStep({ unitInfo, handleUnitInfoChange }) {
   return (
     <div>
       <TextField
-        label="Unit Name"
+        label="Name"
         value={unitInfo.unitName}
-        onChange={handleUnitNameChange}
+        onChange={(e) => handleUnitInfoChange({ ...unitInfo, unitName: e.target.value })}
         fullWidth
-        margin="normal"
+        style={{ marginBottom: '16px' }}
       />
-      {/* Add more input fields for unit info as needed */}
+      <TextField
+        label="Tenant Identifier"
+        value={unitInfo.tenantIdentifier}
+        onChange={(e) => handleUnitInfoChange({ ...unitInfo, tenantIdentifier: e.target.value })}
+        fullWidth
+        style={{ marginBottom: '16px' }}
+      />
+      <TextField
+        label="Unit Identifier"
+        value={unitInfo.unitIdentifier}
+        onChange={(e) => handleUnitInfoChange({ ...unitInfo, unitIdentifier: e.target.value })}
+        fullWidth
+        style={{ marginBottom: '16px' }}
+      />
+      <TextField
+        label="Building ID"
+        value={unitInfo.buildingId}
+        onChange={(e) => handleUnitInfoChange({ ...unitInfo, buildingId: e.target.value })}
+        fullWidth
+        style={{ marginBottom: '16px' }}
+      />
+      {/* Add other fields here */}
     </div>
   );
-};
-
-export default UnitInfoStep;
+}

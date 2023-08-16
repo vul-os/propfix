@@ -1,36 +1,24 @@
 import React from 'react';
 import TextField from '@mui/material/TextField';
 
-const JobInfoStep = ({ jobInfo, handleJobInfoChange }) => {
-  const handleTitleChange = (event) => {
-    handleJobInfoChange({ ...jobInfo, title: event.target.value });
-  };
-
-  const handleDescriptionChange = (event) => {
-    handleJobInfoChange({ ...jobInfo, description: event.target.value });
-  };
-
+export default function JobInfoStep({ jobInfo, handleJobInfoChange }) {
   return (
     <div>
       <TextField
-        label="Job Title"
+        label="Description"
         value={jobInfo.title}
-        onChange={handleTitleChange}
+        onChange={(e) => handleJobInfoChange({ ...jobInfo, title: e.target.value })}
         fullWidth
-        margin="normal"
+        style={{ marginBottom: '16px' }}
       />
       <TextField
-        label="Job Description"
+        label="Priority"
         value={jobInfo.description}
-        onChange={handleDescriptionChange}
+        onChange={(e) => handleJobInfoChange({ ...jobInfo, description: e.target.value })}
         fullWidth
-        margin="normal"
-        multiline
-        rows={4}
+        style={{ marginBottom: '16px' }}
       />
-      {/* Add more input fields for job info as needed */}
+      {/* Add other fields here */}
     </div>
   );
-};
-
-export default JobInfoStep;
+}
