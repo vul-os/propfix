@@ -201,4 +201,3 @@ AuthProvider.propTypes = {
 export const AuthConsumer = AuthContext.Consumer;
 
 export const useAuthContext = () => useContext(AuthContext);
-
