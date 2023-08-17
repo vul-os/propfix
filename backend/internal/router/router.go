@@ -17,9 +17,9 @@ import (
 	"github.com/exolutionza/propfix-backend-go/internal/events"
 	"github.com/exolutionza/propfix-backend-go/internal/jobs"
 	"github.com/exolutionza/propfix-backend-go/internal/labels"
+	"github.com/exolutionza/propfix-backend-go/internal/organizations"
 	"github.com/exolutionza/propfix-backend-go/internal/permissions"
 	"github.com/exolutionza/propfix-backend-go/internal/role"
-
 	"github.com/gorilla/mux"
 )
 
@@ -116,6 +116,12 @@ func Router(w http.ResponseWriter, r *http.Request) {
 	protectedRouter.HandleFunc("/labels", labelsHandler.CreateLabel).Methods("POST")
 	protectedRouter.HandleFunc("/labels/{id}", labelsHandler.UpdateLabel).Methods("PUT")
 	protectedRouter.HandleFunc("/labels/{id}", labelsHandler.DeleteLabel).Methods("DELETE")
+
+	organizationHandler := organizations.NewOrganizationHandler(client)
+	protectedRouter.HandleFunc("/organizations", organizationHandler.CreateOrganisation).Methods("POST")
+	protectedRouter.HandleFunc("/organizations/{id}", organizationHandler.GetOrganization).Methods("GET")
+	protectedRouter.HandleFunc("/organizations/{id}", organizationHandler.UpdateOrganization).Methods("PUT")
+	protectedRouter.HandleFunc("/organizations/{id}", organizationHandler.DeleteOrganization).Methods("DELETE")
 
 	// Add routes for permissions
 	permissionsHandler := permissions.NewPermissionsHandler(client, authorizer)
