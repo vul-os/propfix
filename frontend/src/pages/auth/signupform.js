@@ -38,14 +38,14 @@ export default function SignUpForm() {
 
   return (
     <div>
-      <TextField
-        label="Email"
+        <TextField
+          label="Email"
         fullWidth
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
         variant="outlined"
         margin="normal"
-      />
+        />
       <FormControl fullWidth variant="outlined" margin="normal">
         <InputLabel>Password</InputLabel>
         <OutlinedInput
@@ -79,8 +79,8 @@ export default function SignUpForm() {
         fullWidth
         onClick={handleSignUp}
       >
-        Sign Up
-      </Button>
+          Sign Up
+        </Button>
     </div>
   );
 }

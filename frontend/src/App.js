@@ -14,6 +14,9 @@ import { SettingsProvider, SettingsDrawer } from './components/settings';
 import ThemeProvider from './theme';
 // components
 import ScrollToTop from './components/scroll-to-top';
+import SignUpPage from './pages/auth/SignupPage'; // Update the path accordingly
+import ForgotPasswordPage from './pages/auth/Forgot-passwordPage'; // Update the path accordingly
+
 // layouts
 import DashboardLayout from './layouts/dashboard';
 import LoginPage from './pages/auth/LoginPage';
@@ -26,23 +29,25 @@ import JobDataGrid from './pages/data-grid/data-grid'
 function App() {
   return (
     <HelmetProvider>
-        <Router>
+      <Router>
         <LocalizationProvider dateAdapter={AdapterDateFns}>
-        <SettingsProvider
-          defaultSettings={{
+          <SettingsProvider
+            defaultSettings={{
             themeMode: 'light', // 'light' | 'dark'
             themeDirection: 'ltr', //  'rtl' | 'ltr'
             themeContrast: 'default', // 'default' | 'bold'
             themeLayout: 'vertical', // 'vertical' | 'horizontal' | 'mini'
             themeColorPresets: 'default', // 'default' | 'cyan' | 'purple' | 'blue' | 'orange' | 'red'
-            themeStretch: false,
-          }}
-        >
-          <ThemeProvider>
-            <ScrollToTop />
-            <AuthProvider>
+              themeStretch: false,
+            }}
+          >
+            <ThemeProvider>
+              <ScrollToTop />
+              <AuthProvider>
                 <Routes>
                   <Route path="/auth/login" element={<LoginPage />} />
+                  <Route path="/auth/signup" element={<SignUpPage />} /> {/* New route */}
+                  <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} /> {/* New route */}
                   <Route 
                     path="/" 
                     element={
@@ -73,11 +78,11 @@ function App() {
                     }
                   />
                 </Routes>
-            </AuthProvider>
-          </ThemeProvider>
+              </AuthProvider>
+            </ThemeProvider>
           </SettingsProvider>
-      </LocalizationProvider>
-        </Router>
+        </LocalizationProvider>
+      </Router>
     </HelmetProvider>
   );
 }
