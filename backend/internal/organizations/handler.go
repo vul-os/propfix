@@ -1,4 +1,4 @@
-package organizations
+package Organizations
 
 import (
 	"context"
