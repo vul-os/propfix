@@ -34,12 +34,21 @@ func IsAuthenticated(authClient *auth.Client) func(http.Handler) http.Handler {
 			for k, v := range token.Claims {
 				claims[k] = v
 			}
-
+			fmt.Println(claims)
 			user := user.User{
-				ID:          token.UID,
-				DisplayName: claims["name"].(string),
-				Email:       claims["email"].(string),
-				PhotoURL:    claims["picture"].(string),
+				ID: token.UID,
+			}
+
+			if name, ok := claims["name"].(string); ok {
+				user.DisplayName = name
+			}
+
+			if email, ok := claims["email"].(string); ok {
+				user.Email = email
+			}
+
+			if picture, ok := claims["picture"].(string); ok {
+				user.PhotoURL = picture
 			}
 
 			ctx := context.WithValue(r.Context(), "user", user)

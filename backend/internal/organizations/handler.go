@@ -8,7 +8,7 @@ import (
 
 	"cloud.google.com/go/bigquery"
 	"github.com/gorilla/mux"
-	"google.golang.org/api/iterator"
+	// "google.golang.org/api/iterator"
 )
 
 type OrganizationHandler struct {
@@ -36,6 +36,7 @@ func (h *OrganizationHandler) CreateOrganisation(w http.ResponseWriter, r *http.
 	var org Organization
 	err := json.NewDecoder(r.Body).Decode(&org)
 	if err != nil {
+		fmt.Println(err)
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
 	}
@@ -51,10 +52,10 @@ func (h *OrganizationHandler) CreateOrganisation(w http.ResponseWriter, r *http.
 		http.Error(w, "Failed to check organization existence", http.StatusInternalServerError)
 		return
 	}
+
 	var existingOrg Organization
-	err = it.Next(&existingOrg)
-	if err != iterator.Done {
-		http.Error(w, "Organisation already exists", http.StatusConflict)
+	if err := it.Next(&existingOrg); err == nil {
+		http.Error(w, "Organization already exists", http.StatusConflict)
 		return
 	}
 
