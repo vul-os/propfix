@@ -12,7 +12,7 @@ import (
 
 type EventsHandler struct {
 	store *EventsStore
-	authz *authz.Authz // Replace "Authorization" with the actual type of your authorization mechanism
+	authz *authz.Authz // Replace with your authorization mechanism
 }
 
 func NewEventsHandler(store *EventsStore, authz *authz.Authz) *EventsHandler {
@@ -36,14 +36,12 @@ func (h *EventsHandler) CreateEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Create a response with the generated ID
 	response := struct {
 		ID string `json:"id"`
 	}{
 		ID: eventID,
 	}
 
-	// Encode the response to JSON and send it as the HTTP response
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(response)
@@ -71,13 +69,12 @@ func (h *EventsHandler) UpdateEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, ok := r.Context().Value("user").(user.User) // Replace "user.User" with the actual user type from your authentication mechanism
+	user, ok := r.Context().Value("user").(user.User)
 	if !ok {
 		http.Error(w, "Failed to get user details", http.StatusInternalServerError)
 		return
 	}
 
-	// Check if the user has the permission to update events
 	if hasPermission, err := h.authz.CheckPermission(user.ID, "events", "update"); err != nil {
 		http.Error(w, "Failed to check permission", http.StatusInternalServerError)
 		return
@@ -97,13 +94,12 @@ func (h *EventsHandler) DeleteEvent(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	eventID := vars["id"]
 
-	user, ok := r.Context().Value("user").(user.User) // Replace "user.User" with the actual user type from your authentication mechanism
+	user, ok := r.Context().Value("user").(user.User)
 	if !ok {
 		http.Error(w, "Failed to get user details", http.StatusInternalServerError)
 		return
 	}
 
-	// Check if the user has the permission to delete events
 	if hasPermission, err := h.authz.CheckPermission(user.ID, "events", "delete"); err != nil {
 		http.Error(w, "Failed to check permission", http.StatusInternalServerError)
 		return

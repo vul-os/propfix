@@ -3,40 +3,38 @@ package permissions
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"time"
 
-	"cloud.google.com/go/bigquery"
 	"github.com/exolutionza/propfix-backend-go/internal/authz"
 	"github.com/exolutionza/propfix-backend-go/internal/user"
 
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
-	"google.golang.org/api/iterator"
+	"github.com/jackc/pgx/v4/pgxpool"
 )
 
 // Permission represents a permission entity in the application.
 type Permission struct {
-	ID         string    `bigquery:"id" json:"id"`
-	Resource   string    `bigquery:"resource" json:"resource"`
-	Permission string    `bigquery:"permission" json:"permission"`
-	Identifier string    `bigquery:"identifier" json:"identifier"`
-	CreatedAt  time.Time `bigquery:"createdAt" json:"createdAt"`
+	ID         string    `json:"id"`
+	Resource   string    `json:"resource"`
+	Permission string    `json:"permission"`
+	Identifier string    `json:"identifier"`
+	CreatedAt  time.Time `json:"createdAt"`
 	// Add more fields as needed
 }
 
 // PermissionsHandler represents the HTTP handler for permission CRUD operations.
 type PermissionsHandler struct {
-	client *bigquery.Client
-	authz  *authz.Authz // Add the authz.Authorizer field to handle permission checks
+	pool  *pgxpool.Pool
+	authz *authz.Authz // Add the authz.Authorizer field to handle permission checks
 }
 
 // NewPermissionsHandler creates a new instance of the PermissionsHandler.
-func NewPermissionsHandler(client *bigquery.Client, authz *authz.Authz) *PermissionsHandler {
+func NewPermissionsHandler(pool *pgxpool.Pool, authz *authz.Authz) *PermissionsHandler {
 	return &PermissionsHandler{
-		client: client,
-		authz:  authz,
+		pool:  pool,
+		authz: authz,
 	}
 }
 
@@ -54,7 +52,7 @@ func (h *PermissionsHandler) CreatePermission(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	// Check if the user has the permission to create jobs
+	// Check if the user has the permission to create permissions
 	if hasPermission, err := h.authz.CheckPermission(user.ID, "permissions", "create"); err != nil {
 		http.Error(w, "Failed to check permission", http.StatusInternalServerError)
 		return
@@ -68,8 +66,12 @@ func (h *PermissionsHandler) CreatePermission(w http.ResponseWriter, r *http.Req
 	permission.CreatedAt = time.Now()
 
 	ctx := context.Background()
-	inserter := h.client.Dataset("main").Table("permissions").Inserter()
-	err = inserter.Put(ctx, &permission)
+	query := `
+		INSERT INTO permissions (id, resource, permission, identifier, created_at)
+		VALUES ($1, $2, $3, $4, $5)
+	`
+
+	_, err = h.pool.Exec(ctx, query, permission.ID, permission.Resource, permission.Permission, permission.Identifier, permission.CreatedAt)
 	if err != nil {
 		http.Error(w, "Failed to create permission", http.StatusInternalServerError)
 		return
@@ -83,26 +85,16 @@ func (h *PermissionsHandler) GetPermission(w http.ResponseWriter, r *http.Reques
 	permissionID := vars["id"]
 
 	ctx := context.Background()
-	q := h.client.Query(fmt.Sprintf(`
-		SELECT id, resource, permission, userID, roleID, createdAt
-		FROM main.permissions
-		WHERE id = @permissionID
-	`))
-	q.Parameters = []bigquery.QueryParameter{{Name: "permissionID", Value: permissionID}}
-
-	it, err := q.Read(ctx)
-	if err != nil {
-		http.Error(w, "Permission not found", http.StatusNotFound)
-		return
-	}
+	query := `
+		SELECT id, resource, permission, identifier, created_at
+		FROM permissions
+		WHERE id = $1
+	`
 
 	var permission Permission
-	err = it.Next(&permission)
-	if err == iterator.Done {
+	err := h.pool.QueryRow(ctx, query, permissionID).Scan(&permission.ID, &permission.Resource, &permission.Permission, &permission.Identifier, &permission.CreatedAt)
+	if err != nil {
 		http.Error(w, "Permission not found", http.StatusNotFound)
-		return
-	} else if err != nil {
-		http.Error(w, "Failed to read permission data", http.StatusInternalServerError)
 		return
 	}
 
@@ -118,8 +110,8 @@ func (h *PermissionsHandler) UpdatePermission(w http.ResponseWriter, r *http.Req
 	}
 
 	// Perform basic validation on the permission data before update
-	if permission.Resource == "" || permission.Permission == "" || (permission.Identifier == "") {
-		http.Error(w, "Resource, Permission, and either UserID or RoleID are required fields", http.StatusBadRequest)
+	if permission.Resource == "" || permission.Permission == "" || permission.Identifier == "" {
+		http.Error(w, "Resource, Permission, and Identifier are required fields", http.StatusBadRequest)
 		return
 	}
 
@@ -129,7 +121,7 @@ func (h *PermissionsHandler) UpdatePermission(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	// Check if the user has the permission to create jobs
+	// Check if the user has the permission to update permissions
 	if hasPermission, err := h.authz.CheckPermission(user.ID, "permissions", "update"); err != nil {
 		http.Error(w, "Failed to check permission", http.StatusInternalServerError)
 		return
@@ -139,24 +131,19 @@ func (h *PermissionsHandler) UpdatePermission(w http.ResponseWriter, r *http.Req
 	}
 
 	ctx := context.Background()
-	q := h.client.Query(fmt.Sprintf(`
-		UPDATE main.permissions
-		SET resource = @resource, permission = @permission, identifier = @identifier, roleID = @roleID, createdAt = @createdAt
-		WHERE id = @permissionID
-	`))
-	q.Parameters = []bigquery.QueryParameter{
-		{Name: "permissionID", Value: permission.ID},
-		{Name: "resource", Value: permission.Resource},
-		{Name: "permission", Value: permission.Permission},
-		{Name: "identifier", Value: permission.Identifier},
-		{Name: "createdAt", Value: permission.CreatedAt},
-	}
+	query := `
+		UPDATE permissions
+		SET resource = $1, permission = $2, identifier = $3, created_at = $4
+		WHERE id = $5
+	`
 
-	_, err = q.Run(ctx)
+	_, err = h.pool.Exec(ctx, query, permission.Resource, permission.Permission, permission.Identifier, permission.CreatedAt, permission.ID)
 	if err != nil {
 		http.Error(w, "Failed to update permission", http.StatusInternalServerError)
 		return
 	}
+
+	w.WriteHeader(http.StatusOK)
 }
 
 func (h *PermissionsHandler) DeletePermission(w http.ResponseWriter, r *http.Request) {
@@ -169,7 +156,7 @@ func (h *PermissionsHandler) DeletePermission(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	// Check if the user has the permission to create jobs
+	// Check if the user has the permission to delete permissions
 	if hasPermission, err := h.authz.CheckPermission(user.ID, "permissions", "delete"); err != nil {
 		http.Error(w, "Failed to check permission", http.StatusInternalServerError)
 		return
@@ -179,13 +166,12 @@ func (h *PermissionsHandler) DeletePermission(w http.ResponseWriter, r *http.Req
 	}
 
 	ctx := context.Background()
-	q := h.client.Query(fmt.Sprintf(`
-		DELETE FROM main.permissions
-		WHERE id = @permissionID
-	`))
-	q.Parameters = []bigquery.QueryParameter{{Name: "permissionID", Value: permissionID}}
+	query := `
+		DELETE FROM permissions
+		WHERE id = $1
+	`
 
-	_, err := q.Run(ctx)
+	_, err := h.pool.Exec(ctx, query, permissionID)
 	if err != nil {
 		http.Error(w, "Failed to delete permission", http.StatusInternalServerError)
 		return

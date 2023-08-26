@@ -1,4 +1,4 @@
-package Organizations
+package organizations
 
 import (
 	"context"
@@ -6,33 +6,52 @@ import (
 	"fmt"
 	"net/http"
 
-	"cloud.google.com/go/bigquery"
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
-	// "google.golang.org/api/iterator"
+	"github.com/jackc/pgx/v4/pgxpool"
 )
 
 type OrganizationHandler struct {
-	client *bigquery.Client
+	pool *pgxpool.Pool
 }
 
 type Organization struct {
-	ID      string   `json:"id"`
-	Name    string   `json:"name"`
-	Members []Member `json:"members"`
+	ID      string `json:"id"`
+	Name    string `json:"name"`
+	Members interface{} `json:"members"`
 }
 
-type Member struct {
-	UserID string `json:"userId,omitempty"`
-	Email  string `json:"email,omitempty"`
-}
-
-func NewOrganizationHandler(client *bigquery.Client) *OrganizationHandler {
+func NewOrganizationHandler(pool *pgxpool.Pool) *OrganizationHandler {
 	return &OrganizationHandler{
-		client: client,
+		pool: pool,
 	}
 }
 
-func (h *OrganizationHandler) CreateOrganisation(w http.ResponseWriter, r *http.Request) {
+func (h *OrganizationHandler) GetOrganization(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	orgID := vars["id"]
+	fmt.Println(orgID)
+
+	ctx := context.Background()
+	query := `
+		SELECT id, name, members
+		FROM organizations
+		WHERE id = $1
+	`
+
+	var org Organization
+	err := h.pool.QueryRow(ctx, query, orgID).Scan(&org.ID, &org.Name, &org.Members)
+	if err != nil {
+		http.Error(w, "Organization not found", http.StatusNotFound)
+		return
+	}
+
+	json.NewEncoder(w).Encode(org)
+}
+
+func (h *OrganizationHandler) CreateOrganization(w http.ResponseWriter, r *http.Request) {
+	ctx := context.Background()
+
 	var org Organization
 	err := json.NewDecoder(r.Body).Decode(&org)
 	if err != nil {
@@ -41,28 +60,16 @@ func (h *OrganizationHandler) CreateOrganisation(w http.ResponseWriter, r *http.
 		return
 	}
 
-	// Check if organization already exists
-	ctx := context.Background()
-	query := h.client.Query(fmt.Sprintf(`
-		SELECT id FROM propfix.Organizations WHERE id = @orgID
-	`))
-	query.Parameters = []bigquery.QueryParameter{{Name: "orgID", Value: org.ID}}
-	it, err := query.Read(ctx)
-	if err != nil {
-		http.Error(w, "Failed to check organization existence", http.StatusInternalServerError)
-		return
-	}
+	org.ID = uuid.New().String()
 
-	var existingOrg Organization
-	if err := it.Next(&existingOrg); err == nil {
-		http.Error(w, "Organization already exists", http.StatusConflict)
-		return
-	}
+	query := `
+		INSERT INTO organizations (id, name, members)
+		VALUES ($1, $2, $3)
+	`
 
-	// Insert the organization into the BigQuery table
-	inserter := h.client.Dataset("propfix").Table("Organizations").Inserter()
-	err = inserter.Put(ctx, &org)
+	_, err = h.pool.Exec(ctx, query, org.ID, org.Name, org.Members)
 	if err != nil {
+		fmt.Println("Error creating organization:", err)
 		http.Error(w, "Failed to create organization", http.StatusInternalServerError)
 		return
 	}
@@ -70,37 +77,7 @@ func (h *OrganizationHandler) CreateOrganisation(w http.ResponseWriter, r *http.
 	w.WriteHeader(http.StatusCreated)
 }
 
-func (h *OrganizationHandler) GetOrganization(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	orgID := vars["id"]
-
-	ctx := context.Background()
-	query := h.client.Query(fmt.Sprintf(`
-		SELECT id, name, members
-		FROM propfix.Organizations
-		WHERE id = @orgID
-	`))
-	query.Parameters = []bigquery.QueryParameter{{Name: "orgID", Value: orgID}}
-	it, err := query.Read(ctx)
-	if err != nil {
-		http.Error(w, "Organization not found", http.StatusNotFound)
-		return
-	}
-	var org Organization
-	err = it.Next(&org)
-	if err != nil {
-		http.Error(w, "Organization not found", http.StatusNotFound)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(org)
-}
-
 func (h *OrganizationHandler) UpdateOrganization(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	orgID := vars["id"]
-
 	var org Organization
 	err := json.NewDecoder(r.Body).Decode(&org)
 	if err != nil {
@@ -109,17 +86,13 @@ func (h *OrganizationHandler) UpdateOrganization(w http.ResponseWriter, r *http.
 	}
 
 	ctx := context.Background()
-	query := h.client.Query(fmt.Sprintf(`
-		UPDATE propfix.Organizations
-		SET name = @name
-		WHERE id = @orgID
-	`))
-	query.Parameters = []bigquery.QueryParameter{
-		{Name: "name", Value: org.Name},
-		{Name: "orgID", Value: orgID},
-	}
+	query := `
+		UPDATE organizations
+		SET name = $1
+		WHERE id = $2
+	`
 
-	_, err = query.Run(ctx)
+	_, err = h.pool.Exec(ctx, query, org.Name, org.ID)
 	if err != nil {
 		http.Error(w, "Failed to update organization", http.StatusInternalServerError)
 		return
@@ -133,17 +106,17 @@ func (h *OrganizationHandler) DeleteOrganization(w http.ResponseWriter, r *http.
 	orgID := vars["id"]
 
 	ctx := context.Background()
-	query := h.client.Query(fmt.Sprintf(`
-		DELETE FROM propfix.Organizations
-		WHERE id = @orgID
-	`))
-	query.Parameters = []bigquery.QueryParameter{{Name: "orgID", Value: orgID}}
+	query := `
+		DELETE FROM organizations
+		WHERE id = $1
+	`
 
-	_, err := query.Run(ctx)
+	_, err := h.pool.Exec(ctx, query, orgID)
 	if err != nil {
+		fmt.Println("Error deleting organization:", err)
 		http.Error(w, "Failed to delete organization", http.StatusInternalServerError)
 		return
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	w.WriteHeader(http.StatusOK)
 }

@@ -3,25 +3,22 @@ package columns
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 
-	"cloud.google.com/go/bigquery"
 	"github.com/exolutionza/propfix-backend-go/internal/authz"
 	"github.com/exolutionza/propfix-backend-go/internal/user"
-
 	"github.com/gorilla/mux"
-	"google.golang.org/api/iterator"
+	"github.com/jackc/pgx/v4/pgxpool"
 )
 
 type ColumnsHandler struct {
-	client *bigquery.Client
+	dbpool *pgxpool.Pool
 	authz  *authz.Authz // Add the authz instance to the handler
 }
 
-func NewColumnsHandler(client *bigquery.Client, authz *authz.Authz) *ColumnsHandler {
+func NewColumnsHandler(dbpool *pgxpool.Pool, authz *authz.Authz) *ColumnsHandler {
 	return &ColumnsHandler{
-		client: client,
+		dbpool: dbpool,
 		authz:  authz, // Assign the authz instance to the handler
 	}
 }
@@ -41,6 +38,7 @@ func (h *ColumnsHandler) CreateColumn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Check permission using authz
 	if hasPermission, err := h.authz.CheckPermission(user.ID, "columns", "create"); err != nil {
 		http.Error(w, "Failed to check permission", http.StatusInternalServerError)
 		return
@@ -57,8 +55,11 @@ func (h *ColumnsHandler) CreateColumn(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx := context.Background()
-	inserter := h.client.Dataset("main").Table("Columns").Inserter()
-	err = inserter.Put(ctx, &column)
+	query := `
+		INSERT INTO columns (id, name, jobids, boardid)
+		VALUES ($1, $2, $3, $4)
+	`
+	_, err = h.dbpool.Exec(ctx, query, column.ID, column.Name, column.JobIDs, column.BoardID)
 	if err != nil {
 		http.Error(w, "Failed to create column", http.StatusInternalServerError)
 		return
@@ -88,21 +89,15 @@ func (h *ColumnsHandler) GetColumn(w http.ResponseWriter, r *http.Request) {
 	columnID := vars["id"]
 
 	ctx := context.Background()
-	q := h.client.Query(fmt.Sprintf(`
-		SELECT id, name, jobids, boardId
-		FROM main.Columns
-		WHERE id = @columnID
-	`))
-	q.Parameters = []bigquery.QueryParameter{{Name: "columnID", Value: columnID}}
-
-	it, err := q.Read(ctx)
-	if err != nil {
-		http.Error(w, "Column not found", http.StatusNotFound)
-		return
-	}
+	query := `
+		SELECT id, name, jobids, boardid
+		FROM columns
+		WHERE id = $1
+	`
+	row := h.dbpool.QueryRow(ctx, query, columnID)
 
 	var column Column
-	err = it.Next(&column)
+	err := row.Scan(&column.ID, &column.Name, &column.JobIDs, &column.BoardID)
 	if err != nil {
 		http.Error(w, "Column not found", http.StatusNotFound)
 		return
@@ -136,19 +131,12 @@ func (h *ColumnsHandler) UpdateColumn(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx := context.Background()
-	q := h.client.Query(fmt.Sprintf(`
-		UPDATE main.Columns
-		SET name = @name, jobids = @jobids, boardId = @boardId
-		WHERE id = @columnID
-	`))
-	q.Parameters = []bigquery.QueryParameter{
-		{Name: "columnID", Value: column.ID},
-		{Name: "name", Value: column.Name},
-		{Name: "jobids", Value: column.JobIDs},
-		{Name: "boardId", Value: column.BoardID},
-	}
-
-	_, err = q.Run(ctx)
+	query := `
+		UPDATE columns
+		SET name = $2, jobids = $3, boardid = $4
+		WHERE id = $1
+	`
+	_, err = h.dbpool.Exec(ctx, query, column.ID, column.Name, column.JobIDs, column.BoardID)
 	if err != nil {
 		http.Error(w, "Failed to update column", http.StatusInternalServerError)
 		return
@@ -176,13 +164,11 @@ func (h *ColumnsHandler) DeleteColumn(w http.ResponseWriter, r *http.Request) {
 	columnID := vars["id"]
 
 	ctx := context.Background()
-	q := h.client.Query(fmt.Sprintf(`
-		DELETE FROM main.Columns
-		WHERE id = @columnID
-	`))
-	q.Parameters = []bigquery.QueryParameter{{Name: "columnID", Value: columnID}}
-
-	_, err := q.Run(ctx)
+	query := `
+		DELETE FROM columns
+		WHERE id = $1
+	`
+	_, err := h.dbpool.Exec(ctx, query, columnID)
 	if err != nil {
 		http.Error(w, "Failed to delete column", http.StatusInternalServerError)
 		return
@@ -209,38 +195,28 @@ func (h *ColumnsHandler) MoveJob(w http.ResponseWriter, r *http.Request) {
 	ctx := context.Background()
 
 	// Retrieve the current column
-	currentQuery := h.client.Query(fmt.Sprintf(`
-		SELECT id, name, jobids, boardId
-		FROM main.columns
-		WHERE id = @sourceID
-	`))
-	currentQuery.Parameters = []bigquery.QueryParameter{{Name: "sourceID", Value: moveData.SourceID}}
-	currentIterator, err := currentQuery.Read(ctx)
-	if err != nil {
-		http.Error(w, "Column not found", http.StatusNotFound)
-		return
-	}
+	currentQuery := `
+		SELECT id, name, jobids, boardid
+		FROM columns
+		WHERE id = $1
+	`
+	row := h.dbpool.QueryRow(ctx, currentQuery, moveData.SourceID)
 	var currentColumn Column
-	err = currentIterator.Next(&currentColumn)
+	err = row.Scan(&currentColumn.ID, &currentColumn.Name, &currentColumn.JobIDs, &currentColumn.BoardID)
 	if err != nil {
 		http.Error(w, "Column not found", http.StatusNotFound)
 		return
 	}
 
 	// Retrieve the target column
-	targetQuery := h.client.Query(fmt.Sprintf(`
-		SELECT id, name, jobids, boardId
-		FROM main.columns
-		WHERE id = @targetID
-	`))
-	targetQuery.Parameters = []bigquery.QueryParameter{{Name: "targetID", Value: moveData.TargetID}}
-	targetIterator, err := targetQuery.Read(ctx)
-	if err != nil {
-		http.Error(w, "Column not found", http.StatusNotFound)
-		return
-	}
+	targetQuery := `
+		SELECT id, name, jobids, boardid
+		FROM columns
+		WHERE id = $1
+	`
+	row = h.dbpool.QueryRow(ctx, targetQuery, moveData.TargetID)
 	var targetColumn Column
-	err = targetIterator.Next(&targetColumn)
+	err = row.Scan(&targetColumn.ID, &targetColumn.Name, &targetColumn.JobIDs, &targetColumn.BoardID)
 	if err != nil {
 		http.Error(w, "Column not found", http.StatusNotFound)
 		return
@@ -251,32 +227,24 @@ func (h *ColumnsHandler) MoveJob(w http.ResponseWriter, r *http.Request) {
 	targetColumn.JobIDs = append(targetColumn.JobIDs, moveData.JobId)
 
 	// Update the current column in the database
-	updateCurrentQuery := h.client.Query(fmt.Sprintf(`
-		UPDATE main.columns
-		SET jobids = @jobIDs
-		WHERE id = @sourceID
-	`))
-	updateCurrentQuery.Parameters = []bigquery.QueryParameter{
-		{Name: "jobIDs", Value: currentColumn.JobIDs},
-		{Name: "sourceID", Value: currentColumn.ID},
-	}
-	_, err = updateCurrentQuery.Run(ctx)
+	updateCurrentQuery := `
+		UPDATE columns
+		SET jobids = $2
+		WHERE id = $1
+	`
+	_, err = h.dbpool.Exec(ctx, updateCurrentQuery, currentColumn.ID, currentColumn.JobIDs)
 	if err != nil {
 		http.Error(w, "Failed to move job", http.StatusInternalServerError)
 		return
 	}
 
 	// Update the target column in the database
-	updateTargetQuery := h.client.Query(fmt.Sprintf(`
-		UPDATE main.columns
-		SET jobids = @jobIDs
-		WHERE id = @targetID
-	`))
-	updateTargetQuery.Parameters = []bigquery.QueryParameter{
-		{Name: "jobIDs", Value: targetColumn.JobIDs},
-		{Name: "targetID", Value: targetColumn.ID},
-	}
-	_, err = updateTargetQuery.Run(ctx)
+	updateTargetQuery := `
+		UPDATE columns
+		SET jobids = $2
+		WHERE id = $1
+	`
+	_, err = h.dbpool.Exec(ctx, updateTargetQuery, targetColumn.ID, targetColumn.JobIDs)
 	if err != nil {
 		http.Error(w, "Failed to move job", http.StatusInternalServerError)
 		return
@@ -314,24 +282,21 @@ func (h *ColumnsHandler) GetAllColumns(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx := context.Background()
-	q := h.client.Query(`
-		SELECT id, name, jobids, boardId
-		FROM main.Columns
-	`)
-
-	it, err := q.Read(ctx)
+	query := `
+		SELECT id, name, jobids, boardid
+		FROM columns
+	`
+	rows, err := h.dbpool.Query(ctx, query)
 	if err != nil {
 		http.Error(w, "Failed to fetch columns", http.StatusInternalServerError)
 		return
 	}
+	defer rows.Close()
 
 	var columns []Column
-	for {
+	for rows.Next() {
 		var column Column
-		err := it.Next(&column)
-		if err == iterator.Done {
-			break
-		}
+		err := rows.Scan(&column.ID, &column.Name, &column.JobIDs, &column.BoardID)
 		if err != nil {
 			http.Error(w, "Failed to read columns data", http.StatusInternalServerError)
 			return

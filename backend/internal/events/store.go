@@ -5,28 +5,27 @@ import (
 	"fmt"
 	"time"
 
-	"cloud.google.com/go/bigquery"
 	"github.com/google/uuid"
-	"google.golang.org/api/iterator"
+	"github.com/jackc/pgx/v4/pgxpool"
 )
 
 type EventsStore struct {
-	client *bigquery.Client
+	pool *pgxpool.Pool
 }
 
-func NewEventsStore(client *bigquery.Client) *EventsStore {
+func NewEventsStore(pool *pgxpool.Pool) *EventsStore {
 	return &EventsStore{
-		client: client,
+		pool: pool,
 	}
 }
 
 type Event struct {
-	ID        string    `bigquery:"id" json:"id"`
-	Type      string    `bigquery:"type" json:"type"`
-	JobID     string    `bigquery:"jobId" json:"jobId"`
-	MemberID  string    `bigquery:"memberId" json:"memberId"`
-	Data      string    `bigquery:"data" json:"data"`
-	CreatedAt time.Time `bigquery:"createdAt" json:"createdAt"`
+	ID        string    `json:"id"`
+	Type      string    `json:"type"`
+	JobID     string    `json:"jobId"`
+	MemberID  string    `json:"memberId"`
+	Data      string    `json:"data"`
+	CreatedAt time.Time `json:"createdAt"`
 }
 
 func (s *EventsStore) CreateEvent(event Event) (string, error) {
@@ -40,20 +39,12 @@ func (s *EventsStore) CreateEvent(event Event) (string, error) {
 	event.CreatedAt = time.Now()
 
 	ctx := context.Background()
-	q := s.client.Query(fmt.Sprintf(`
-		INSERT INTO main.events (id, type, jobId, memberId, data, createdAt)
-		VALUES (@id, @type, @jobId, @memberId, @data, @createdAt)
-	`))
-	q.Parameters = []bigquery.QueryParameter{
-		{Name: "id", Value: event.ID},
-		{Name: "type", Value: event.Type},
-		{Name: "jobId", Value: event.JobID},
-		{Name: "memberId", Value: event.MemberID},
-		{Name: "data", Value: event.Data},
-		{Name: "createdAt", Value: event.CreatedAt},
-	}
+	query := `
+		INSERT INTO events (id, type, jobId, memberId, data, createdAt)
+		VALUES ($1, $2, $3, $4, $5, $6)
+	`
 
-	_, err := q.Run(ctx)
+	_, err := s.pool.Exec(ctx, query, event.ID, event.Type, event.JobID, event.MemberID, event.Data, event.CreatedAt)
 	if err != nil {
 		return "", fmt.Errorf("Failed to create event: %v", err)
 	}
@@ -63,24 +54,16 @@ func (s *EventsStore) CreateEvent(event Event) (string, error) {
 
 func (s *EventsStore) GetEvent(eventID string) (*Event, error) {
 	ctx := context.Background()
-	q := s.client.Query(fmt.Sprintf(`
+	query := `
 		SELECT id, type, jobId, memberId, data, createdAt
-		FROM main.events
-		WHERE id = @eventID
-	`))
-	q.Parameters = []bigquery.QueryParameter{{Name: "eventID", Value: eventID}}
-
-	it, err := q.Read(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("Event not found")
-	}
+		FROM events
+		WHERE id = $1
+	`
 
 	var event Event
-	err = it.Next(&event)
-	if err == iterator.Done {
+	err := s.pool.QueryRow(ctx, query, eventID).Scan(&event.ID, &event.Type, &event.JobID, &event.MemberID, &event.Data, &event.CreatedAt)
+	if err != nil {
 		return nil, fmt.Errorf("Event not found")
-	} else if err != nil {
-		return nil, fmt.Errorf("Failed to read event data: %v", err)
 	}
 
 	return &event, nil
@@ -95,21 +78,13 @@ func (s *EventsStore) UpdateEvent(event Event) error {
 	event.CreatedAt = time.Now()
 
 	ctx := context.Background()
-	q := s.client.Query(fmt.Sprintf(`
-		UPDATE main.events
-		SET type = @type, jobId = @jobId, memberId = @memberId, data = @data, createdAt = @createdAt
-		WHERE id = @eventID
-	`))
-	q.Parameters = []bigquery.QueryParameter{
-		{Name: "eventID", Value: event.ID},
-		{Name: "type", Value: event.Type},
-		{Name: "jobId", Value: event.JobID},
-		{Name: "memberId", Value: event.MemberID},
-		{Name: "data", Value: event.Data},
-		{Name: "createdAt", Value: event.CreatedAt},
-	}
+	query := `
+		UPDATE events
+		SET type = $1, jobId = $2, memberId = $3, data = $4, createdAt = $5
+		WHERE id = $6
+	`
 
-	_, err := q.Run(ctx)
+	_, err := s.pool.Exec(ctx, query, event.Type, event.JobID, event.MemberID, event.Data, event.CreatedAt, event.ID)
 	if err != nil {
 		return fmt.Errorf("Failed to update event: %v", err)
 	}
@@ -119,13 +94,12 @@ func (s *EventsStore) UpdateEvent(event Event) error {
 
 func (s *EventsStore) DeleteEvent(eventID string) error {
 	ctx := context.Background()
-	q := s.client.Query(fmt.Sprintf(`
-		DELETE FROM main.events
-		WHERE id = @eventID
-	`))
-	q.Parameters = []bigquery.QueryParameter{{Name: "eventID", Value: eventID}}
+	query := `
+		DELETE FROM events
+		WHERE id = $1
+	`
 
-	_, err := q.Run(ctx)
+	_, err := s.pool.Exec(ctx, query, eventID)
 	if err != nil {
 		return fmt.Errorf("Failed to delete event: %v", err)
 	}
@@ -135,13 +109,12 @@ func (s *EventsStore) DeleteEvent(eventID string) error {
 
 func (s *EventsStore) DeleteAllEventsForJobID(jobID string) error {
 	ctx := context.Background()
-	q := s.client.Query(fmt.Sprintf(`
-		DELETE FROM main.events
-		WHERE jobId = @jobID
-	`))
-	q.Parameters = []bigquery.QueryParameter{{Name: "jobID", Value: jobID}}
+	query := `
+		DELETE FROM events
+		WHERE jobId = $1
+	`
 
-	_, err := q.Run(ctx)
+	_, err := s.pool.Exec(ctx, query, jobID)
 	if err != nil {
 		return fmt.Errorf("Failed to delete events for job: %v", err)
 	}

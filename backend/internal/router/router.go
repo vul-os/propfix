@@ -6,7 +6,6 @@ import (
 	"log"
 	"net/http"
 
-	"cloud.google.com/go/bigquery"
 	firebase "firebase.google.com/go/v4"
 	"github.com/exolutionza/propfix-backend-go/internal/attachments"
 	auth "github.com/exolutionza/propfix-backend-go/internal/auth"
@@ -17,23 +16,30 @@ import (
 	"github.com/exolutionza/propfix-backend-go/internal/events"
 	"github.com/exolutionza/propfix-backend-go/internal/jobs"
 	"github.com/exolutionza/propfix-backend-go/internal/labels"
-	Organizations "github.com/exolutionza/propfix-backend-go/internal/organizations"
+	organizations "github.com/exolutionza/propfix-backend-go/internal/organizations"
 	"github.com/exolutionza/propfix-backend-go/internal/permissions"
 	"github.com/exolutionza/propfix-backend-go/internal/role"
 	"github.com/gorilla/mux"
+	"github.com/jackc/pgx/v4/pgxpool"
 )
 
 func Router(w http.ResponseWriter, r *http.Request) {
-	projectID := "propfix"
+	// Set your PostgreSQL credentials here
+	pgHost := "postgresql-141986-0.cloudclusters.net"
+	pgPort := "18850"
+	pgDatabase := "propfix"
+	pgUser := "propfixadmin"
+	pgPassword := "happy123"
 
-	// Create a BigQuery client
-	ctx := context.Background()
+	pgConnString := fmt.Sprintf("user=%s password=%s host=%s port=%s dbname=%s sslmode=disable",
+		pgUser, pgPassword, pgHost, pgPort, pgDatabase)
 
-	client, err := bigquery.NewClient(ctx, projectID)
+	// Create a PostgreSQL connection pool
+	dbpool, err := pgxpool.Connect(context.Background(), pgConnString)
 	if err != nil {
-		log.Fatalf("Failed to create BigQuery client: %v", err)
+		log.Fatalf("Failed to connect to PostgreSQL: %v", err)
 	}
-	defer client.Close()
+	defer dbpool.Close()
 
 	conf := &firebase.Config{
 		ProjectID: "prop-fix",
@@ -48,10 +54,10 @@ func Router(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Fatalf("Failed to initialize Firebase Auth client: %v", err)
 	}
-	authorizer := authz.NewAuthz(client)
+	authorizer := authz.NewAuthz(dbpool)
 
 	// Create an instance of the EventsStore
-	eventsStore := events.NewEventsStore(client)
+	eventsStore := events.NewEventsStore(dbpool)
 
 	// Create the file upload handler
 	fileUploadHandler, err := attachments.NewFileUploadHandler("propfix-attachments", eventsStore)
@@ -75,18 +81,18 @@ func Router(w http.ResponseWriter, r *http.Request) {
 	protectedRouter.HandleFunc("/file/{jobid}", fileUploadHandler.UploadFile).Methods("POST")
 
 	// Add routes from the board package handlers
-	boardHandler := board.NewBoardHandler(client, authClient, authorizer)
+	boardHandler := board.NewBoardsHandler(dbpool, authorizer)
 	protectedRouter.HandleFunc("/board", boardHandler.GetBoard).Methods("GET")
 
 	// Add routes from the buildings package handlers
-	buildingsHandler := buildings.NewBuildingsHandler(client, authorizer)
+	buildingsHandler := buildings.NewBuildingsHandler(dbpool, authorizer)
 	protectedRouter.HandleFunc("/buildings/{id}", buildingsHandler.GetBuilding).Methods("GET")
 	protectedRouter.HandleFunc("/buildings", buildingsHandler.CreateBuilding).Methods("POST")
 	protectedRouter.HandleFunc("/buildings", buildingsHandler.UpdateBuilding).Methods("PUT")
 	protectedRouter.HandleFunc("/buildings/{id}", buildingsHandler.DeleteBuilding).Methods("DELETE")
 
 	// Add routes from the columns package handlers
-	columnsHandler := columns.NewColumnsHandler(client, authorizer)
+	columnsHandler := columns.NewColumnsHandler(dbpool, authorizer)
 	protectedRouter.HandleFunc("/columns", columnsHandler.GetAllColumns).Methods("GET")
 	protectedRouter.HandleFunc("/columns/{id}", columnsHandler.GetColumn).Methods("GET")
 	protectedRouter.HandleFunc("/columns", columnsHandler.CreateColumn).Methods("POST")
@@ -95,7 +101,7 @@ func Router(w http.ResponseWriter, r *http.Request) {
 	protectedRouter.HandleFunc("/movejob", columnsHandler.MoveJob).Methods("POST")
 
 	// Add routes from the jobs package handlers
-	jobsHandler := jobs.NewJobsHandler(client, eventsStore, authorizer)
+	jobsHandler := jobs.NewJobsHandler(dbpool, eventsStore, authorizer)
 	protectedRouter.HandleFunc("/jobs", jobsHandler.GetAllJobs).Methods("GET")
 	protectedRouter.HandleFunc("/jobs/{id}", jobsHandler.GetJob).Methods("GET")
 	protectedRouter.HandleFunc("/jobs/{id}", jobsHandler.DeleteJob).Methods("DELETE")
@@ -110,29 +116,29 @@ func Router(w http.ResponseWriter, r *http.Request) {
 	protectedRouter.HandleFunc("/events/{id}", eventsHandler.DeleteEvent).Methods("DELETE")
 
 	// Add routes for labels
-	labelsHandler := labels.NewLabelsHandler(client)
+	labelsHandler := labels.NewLabelsHandler(dbpool)
 	protectedRouter.HandleFunc("/labels", labelsHandler.GetLabel).Methods("GET")
 	protectedRouter.HandleFunc("/labels/{id}", labelsHandler.GetLabel).Methods("GET")
 	protectedRouter.HandleFunc("/labels", labelsHandler.CreateLabel).Methods("POST")
 	protectedRouter.HandleFunc("/labels/{id}", labelsHandler.UpdateLabel).Methods("PUT")
 	protectedRouter.HandleFunc("/labels/{id}", labelsHandler.DeleteLabel).Methods("DELETE")
 
-	organizationHandler := Organizations.NewOrganizationHandler(client)
-	protectedRouter.HandleFunc("/organizations", organizationHandler.CreateOrganisation).Methods("POST")
+	organizationHandler := organizations.NewOrganizationHandler(dbpool)
+	protectedRouter.HandleFunc("/organizations", organizationHandler.CreateOrganization).Methods("POST")
 	protectedRouter.HandleFunc("/organizations/{id}", organizationHandler.GetOrganization).Methods("GET")
-	protectedRouter.HandleFunc("/organizations/{id}", organizationHandler.UpdateOrganization).Methods("PUT")
+	protectedRouter.HandleFunc("/organizations", organizationHandler.UpdateOrganization).Methods("PUT")
 	protectedRouter.HandleFunc("/organizations/{id}", organizationHandler.DeleteOrganization).Methods("DELETE")
 
 	// Add routes for permissions
-	permissionsHandler := permissions.NewPermissionsHandler(client, authorizer)
+	permissionsHandler := permissions.NewPermissionsHandler(dbpool, authorizer)
 	protectedRouter.HandleFunc("/permissions", permissionsHandler.GetPermission).Methods("GET")
 	protectedRouter.HandleFunc("/permissions/{id}", permissionsHandler.GetPermission).Methods("GET")
 	protectedRouter.HandleFunc("/permissions", permissionsHandler.CreatePermission).Methods("POST")
 	protectedRouter.HandleFunc("/permissions/{id}", permissionsHandler.UpdatePermission).Methods("PUT")
 	protectedRouter.HandleFunc("/permissions/{id}", permissionsHandler.DeletePermission).Methods("DELETE")
 
-	// Add routes for rolesS
-	rolesHandler := role.NewRoleHandler(client, authorizer)
+	// Add routes for roles
+	rolesHandler := role.NewRoleHandler(dbpool, authorizer)
 	protectedRouter.HandleFunc("/roles", rolesHandler.GetRole).Methods("GET")
 	protectedRouter.HandleFunc("/roles/{id}", rolesHandler.GetRole).Methods("GET")
 	protectedRouter.HandleFunc("/roles", rolesHandler.CreateRole).Methods("POST")

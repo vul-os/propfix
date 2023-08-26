@@ -3,32 +3,30 @@ package labels
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 
-	"cloud.google.com/go/bigquery"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
-	"google.golang.org/api/iterator"
+	"github.com/jackc/pgx/v4/pgxpool"
 )
 
 // Label represents a label entity in the application.
 type Label struct {
-	ID    string `bigquery:"id" json:"id"`
-	Name  string `bigquery:"name" json:"name"`
-	Color string `bigquery:"color" json:"color"`
+	ID    string `json:"id"`
+	Name  string `json:"name"`
+	Color string `json:"color"`
 	// Add more fields as needed
 }
 
 // LabelsHandler represents the HTTP handler for label CRUD operations.
 type LabelsHandler struct {
-	client *bigquery.Client
+	pool *pgxpool.Pool
 }
 
 // NewLabelsHandler creates a new instance of the LabelsHandler.
-func NewLabelsHandler(client *bigquery.Client) *LabelsHandler {
+func NewLabelsHandler(pool *pgxpool.Pool) *LabelsHandler {
 	return &LabelsHandler{
-		client: client,
+		pool: pool,
 	}
 }
 
@@ -49,17 +47,12 @@ func (h *LabelsHandler) CreateLabel(w http.ResponseWriter, r *http.Request) {
 	label.ID = uuid.New().String()
 
 	ctx := context.Background()
-	q := h.client.Query(fmt.Sprintf(`
-		INSERT INTO main.labels (id, name, color)
-		VALUES (@id, @name, @color)
-	`))
-	q.Parameters = []bigquery.QueryParameter{
-		{Name: "id", Value: label.ID},
-		{Name: "name", Value: label.Name},
-		{Name: "color", Value: label.Color},
-	}
+	query := `
+		INSERT INTO labels (id, name, color)
+		VALUES ($1, $2, $3)
+	`
 
-	_, err = q.Run(ctx)
+	_, err = h.pool.Exec(ctx, query, label.ID, label.Name, label.Color)
 	if err != nil {
 		http.Error(w, "Failed to create label", http.StatusInternalServerError)
 		return
@@ -75,26 +68,16 @@ func (h *LabelsHandler) GetLabel(w http.ResponseWriter, r *http.Request) {
 	labelID := vars["id"]
 
 	ctx := context.Background()
-	q := h.client.Query(fmt.Sprintf(`
+	query := `
 		SELECT id, name, color
-		FROM main.labels
-		WHERE id = @labelID
-	`))
-	q.Parameters = []bigquery.QueryParameter{{Name: "labelID", Value: labelID}}
-
-	it, err := q.Read(ctx)
-	if err != nil {
-		http.Error(w, "Label not found", http.StatusNotFound)
-		return
-	}
+		FROM labels
+		WHERE id = $1
+	`
 
 	var label Label
-	err = it.Next(&label)
-	if err == iterator.Done {
+	err := h.pool.QueryRow(ctx, query, labelID).Scan(&label.ID, &label.Name, &label.Color)
+	if err != nil {
 		http.Error(w, "Label not found", http.StatusNotFound)
-		return
-	} else if err != nil {
-		http.Error(w, "Failed to read label data", http.StatusInternalServerError)
 		return
 	}
 
@@ -117,18 +100,13 @@ func (h *LabelsHandler) UpdateLabel(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx := context.Background()
-	q := h.client.Query(fmt.Sprintf(`
-		UPDATE main.labels
-		SET name = @name, color = @color
-		WHERE id = @labelID
-	`))
-	q.Parameters = []bigquery.QueryParameter{
-		{Name: "labelID", Value: label.ID},
-		{Name: "name", Value: label.Name},
-		{Name: "color", Value: label.Color},
-	}
+	query := `
+		UPDATE labels
+		SET name = $1, color = $2
+		WHERE id = $3
+	`
 
-	_, err = q.Run(ctx)
+	_, err = h.pool.Exec(ctx, query, label.Name, label.Color, label.ID)
 	if err != nil {
 		http.Error(w, "Failed to update label", http.StatusInternalServerError)
 		return
@@ -142,13 +120,12 @@ func (h *LabelsHandler) DeleteLabel(w http.ResponseWriter, r *http.Request) {
 	labelID := vars["id"]
 
 	ctx := context.Background()
-	q := h.client.Query(fmt.Sprintf(`
-		DELETE FROM main.labels
-		WHERE id = @labelID
-	`))
-	q.Parameters = []bigquery.QueryParameter{{Name: "labelID", Value: labelID}}
+	query := `
+		DELETE FROM labels
+		WHERE id = $1
+	`
 
-	_, err := q.Run(ctx)
+	_, err := h.pool.Exec(ctx, query, labelID)
 	if err != nil {
 		http.Error(w, "Failed to delete label", http.StatusInternalServerError)
 		return
@@ -159,24 +136,23 @@ func (h *LabelsHandler) DeleteLabel(w http.ResponseWriter, r *http.Request) {
 
 func (h *LabelsHandler) GetAllLabels(w http.ResponseWriter, r *http.Request) {
 	ctx := context.Background()
-	q := h.client.Query(`
+	query := `
 		SELECT id, name, color
-		FROM main.labels
-	`)
+		FROM labels
+	`
 
-	it, err := q.Read(ctx)
+	rows, err := h.pool.Query(ctx, query)
 	if err != nil {
 		http.Error(w, "Failed to fetch labels", http.StatusInternalServerError)
 		return
 	}
+	defer rows.Close()
 
 	var labels []Label
-	for {
+	for rows.Next() {
 		var label Label
-		err := it.Next(&label)
-		if err == iterator.Done {
-			break
-		} else if err != nil {
+		err := rows.Scan(&label.ID, &label.Name, &label.Color)
+		if err != nil {
 			http.Error(w, "Failed to read label data", http.StatusInternalServerError)
 			return
 		}
