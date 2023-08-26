@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useReducer, useRef } from 'react';
+import React, { createContext, useContext, useEffect, useReducer, useRef } from 'react';
 import PropTypes from 'prop-types';
 import { initializeApp } from 'firebase/app';
 import {
@@ -8,9 +8,11 @@ import {
   createUserWithEmailAndPassword,
   signOut as firebaseSignOut,
   signInWithPopup,
-  GoogleAuthProvider
+  GoogleAuthProvider,
+  sendPasswordResetEmail
 } from 'firebase/auth';
 
+// Initialize Firebase with your configuration
 const firebaseConfig = {
   apiKey: "***REMOVED-FIREBASE-WEB-KEY***",
   authDomain: "prop-fix.firebaseapp.com",
@@ -28,16 +30,25 @@ const HANDLERS = {
   INITIALIZE: 'INITIALIZE',
   SIGN_IN: 'SIGN_IN',
   SIGN_OUT: 'SIGN_OUT',
-  SIGN_IN_WITH_GOOGLE: 'SIGN_IN_WITH_GOOGLE'
+  SIGN_IN_WITH_GOOGLE: 'SIGN_IN_WITH_GOOGLE',
+  SIGN_UP: 'SIGN_UP',
+  FORGOT_PASSWORD: 'FORGOT_PASSWORD'
 };
 
 const initialState = {
   isAuthenticated: false,
   isLoading: true,
-  user: null
+  user: null,
+  passwordResetSent: false
 };
 
 const handlers = {
+  [HANDLERS.FORGOT_PASSWORD]: (state) => {
+    return {
+      ...state,
+      passwordResetSent: true
+    };
+  },
   [HANDLERS.INITIALIZE]: (state, action) => {
     const user = action.payload;
     return {
@@ -69,6 +80,14 @@ const handlers = {
     };
   },
   [HANDLERS.SIGN_IN_WITH_GOOGLE]: (state, action) => {
+    const user = action.payload;
+    return {
+      ...state,
+      isAuthenticated: true,
+      user
+    };
+  },
+  [HANDLERS.SIGN_UP]: (state, action) => {
     const user = action.payload;
     return {
       ...state,
@@ -164,6 +183,39 @@ export const AuthProvider = (props) => {
     });
   };
 
+  const signUp = async (email, password) => {
+    try {
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+
+      const user = userCredential.user;
+
+      dispatch({
+        type: HANDLERS.SIGN_UP,
+        payload: user
+      });
+    } catch (err) {
+      console.error(err);
+      throw new Error('Error signing up. Please check your input.');
+    }
+  };
+
+  const sendPasswordResetLink = async (email) => {
+    try {
+      await sendPasswordResetEmail(auth, email);
+
+      dispatch({
+        type: HANDLERS.FORGOT_PASSWORD
+      });
+    } catch (err) {
+      console.error(err);
+      throw new Error('Error sending password reset link. Please check your email.');
+    }
+  };
+
   const getIdToken = async () => {
     try {
       const currentUser = auth.currentUser;
@@ -185,6 +237,8 @@ export const AuthProvider = (props) => {
         signIn,
         signInWithGoogle,
         signOut,
+        signUp,
+        sendPasswordResetLink,
         getIdToken
       }}
     >

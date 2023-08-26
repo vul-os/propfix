@@ -14,8 +14,8 @@ import { SettingsProvider, SettingsDrawer } from './components/settings';
 import ThemeProvider from './theme';
 // components
 import ScrollToTop from './components/scroll-to-top';
-import SignUpPage from './pages/auth/SignupPage'; // Update the path accordingly
-import ForgotPasswordPage from './pages/auth/Forgot-passwordPage'; // Update the path accordingly
+import SignUpPage from './pages/auth/signup-page'; // Update the path accordingly
+import ForgotPasswordPage from './pages/auth/forgot-password-page'; // Update the path accordingly
 
 // layouts
 import DashboardLayout from './layouts/dashboard';

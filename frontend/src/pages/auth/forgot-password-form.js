@@ -1,25 +1,21 @@
-import { useState } from 'react';
-import { Link as RouterLink } from 'react-router-dom';
-import {
-  Link,
-  Stack,
-  TextField,
-  Typography,
-  Button,
-  Snackbar,
-} from '@mui/material';
-import { Alert } from '@mui/material';
+import React, { useState } from 'react';
+import { TextField, Button, Stack, Typography, Snackbar, Alert } from '@mui/material';
 import { useAuthContext } from '../../contexts/auth';
 
-export default function ForgotPasswordPage() {
-  const { resetPassword } = useAuthContext();
+export default function ForgotPasswordForm() {
+  const { sendPasswordResetLink } = useAuthContext();
   const [email, setEmail] = useState('');
   const [resetSent, setResetSent] = useState(false);
   const [error, setError] = useState(null);
 
   const handleResetPassword = async () => {
+    if (email.trim() === '') {
+      setError('Please enter your email address.');
+      return;
+    }
+
     try {
-      await resetPassword(email);
+      await sendPasswordResetLink(email);
       setResetSent(true);
       setError(null);
     } catch (err) {
@@ -53,10 +49,6 @@ export default function ForgotPasswordPage() {
       >
         Send Reset Link
       </Button>
-
-      <Link component={RouterLink} to="/login" variant="subtitle2">
-        Return to Login
-      </Link>
 
       <Snackbar
         open={error !== null}

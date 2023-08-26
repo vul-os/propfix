@@ -11,10 +11,12 @@ import {
   FormHelperText,
 } from '@mui/material';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom'; // Import the useNavigate hook
 import { useAuthContext } from '../../contexts/auth';
 
 export default function SignUpForm() {
   const { signUp } = useAuthContext();
+  const navigate = useNavigate(); // react-router-dom's useNavigate hook
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -25,8 +27,8 @@ export default function SignUpForm() {
     try {
       await signUp(email, password);
       setError(null);
-      // Redirect the user after successful sign-up
-      // You can use React Router or any other routing mechanism here
+      // Navigate to login page after successful sign-up
+      navigate('/auth/login'); // Change '/login' to 
     } catch (err) {
       setError('Error signing up. Please check your details.');
     }
@@ -38,14 +40,14 @@ export default function SignUpForm() {
 
   return (
     <div>
-        <TextField
-          label="Email"
+      <TextField
+        label="Email"
         fullWidth
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
         variant="outlined"
         margin="normal"
-        />
+      />
       <FormControl fullWidth variant="outlined" margin="normal">
         <InputLabel>Password</InputLabel>
         <OutlinedInput
@@ -79,8 +81,8 @@ export default function SignUpForm() {
         fullWidth
         onClick={handleSignUp}
       >
-          Sign Up
-        </Button>
+        Sign Up
+      </Button>
     </div>
   );
 }
