@@ -107,7 +107,6 @@ export const AuthProvider = (props) => {
       }
     });
 
-    // Restoration of authentication state from browser storage (e.g., localStorage)
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
       dispatch({
