@@ -4,13 +4,11 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"time"
 
 	"cloud.google.com/go/storage"
 	"github.com/exolutionza/propfix-backend-go/internal/events"
-	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 )
 
@@ -68,18 +66,18 @@ func (h *FileUploadHandler) UploadFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Create an event for file upload
-	event := events.Event{
-		ID:        uuid.New().String(),
-		Type:      "file_upload",
-		JobID:     jobID,
-		Data:      header.Filename,
-		CreatedAt: time.Now(),
-	}
-	_, err = h.eventsStore.CreateEvent(event)
-	if err != nil {
-		log.Printf("Failed to create event for file upload: %v", err)
-	}
+	// // Create an event for file upload
+	// event := events.Event{
+	// 	ID:        uuid.New().String(),
+	// 	Type:      "file_upload",
+	// 	JobID:     jobID,
+	// 	Data:      header.Filename,
+	// 	CreatedAt: time.Now(),
+	// }
+	// _, err = h.eventsStore.CreateEvent(event)
+	// if err != nil {
+	// 	log.Printf("Failed to create event for file upload: %v", err)
+	// }
 
 	// Return the signed URL in the response
 	w.WriteHeader(http.StatusCreated)
@@ -143,18 +141,18 @@ func (h *FileUploadHandler) DeleteFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Create an event for file deletion
-	event := events.Event{
-		ID:        uuid.New().String(),
-		Type:      "file_deletion",
-		JobID:     jobID,
-		Data:      filename,
-		CreatedAt: time.Now(),
-	}
-	_, err := h.eventsStore.CreateEvent(event)
-	if err != nil {
-		log.Printf("Failed to create event for file deletion: %v", err)
-	}
+	// // Create an event for file deletion
+	// event := events.Event{
+	// 	ID:        uuid.New().String(),
+	// 	Type:      "file_deletion",
+	// 	JobID:     jobID,
+	// 	Data:      filename,
+	// 	CreatedAt: time.Now(),
+	// }
+	// _, err := h.eventsStore.CreateEvent(event)
+	// if err != nil {
+	// 	log.Printf("Failed to create event for file deletion: %v", err)
+	// }
 
 	// Return success status in the response
 	w.WriteHeader(http.StatusOK)

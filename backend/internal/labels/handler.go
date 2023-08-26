@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-
+	"fmt"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v4/pgxpool"
@@ -13,6 +13,7 @@ import (
 // Label represents a label entity in the application.
 type Label struct {
 	ID    string `json:"id"`
+	BoardID string `json:"boardId"`
 	Name  string `json:"name"`
 	Color string `json:"color"`
 	// Add more fields as needed
@@ -48,19 +49,21 @@ func (h *LabelsHandler) CreateLabel(w http.ResponseWriter, r *http.Request) {
 
 	ctx := context.Background()
 	query := `
-		INSERT INTO labels (id, name, color)
-		VALUES ($1, $2, $3)
+		INSERT INTO labels (id, name, color, board_id)
+		VALUES ($1, $2, $3, $4)
 	`
 
-	_, err = h.pool.Exec(ctx, query, label.ID, label.Name, label.Color)
+	_, err = h.pool.Exec(ctx, query, label.ID, label.Name, label.Color, label.BoardID)
 	if err != nil {
+		fmt.Println(err)
 		http.Error(w, "Failed to create label", http.StatusInternalServerError)
 		return
 	}
 
+	// Return the created ID in the response
+	response := map[string]string{"id": label.ID}
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(label)
+	json.NewEncoder(w).Encode(response)
 }
 
 func (h *LabelsHandler) GetLabel(w http.ResponseWriter, r *http.Request) {
@@ -69,13 +72,13 @@ func (h *LabelsHandler) GetLabel(w http.ResponseWriter, r *http.Request) {
 
 	ctx := context.Background()
 	query := `
-		SELECT id, name, color
+		SELECT id, name, color, board_id
 		FROM labels
 		WHERE id = $1
 	`
 
 	var label Label
-	err := h.pool.QueryRow(ctx, query, labelID).Scan(&label.ID, &label.Name, &label.Color)
+	err := h.pool.QueryRow(ctx, query, labelID).Scan(&label.ID, &label.Name, &label.Color, &label.BoardID)
 	if err != nil {
 		http.Error(w, "Label not found", http.StatusNotFound)
 		return

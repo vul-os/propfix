@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"github.com/google/uuid"
+	"fmt"
 
 	"github.com/exolutionza/propfix-backend-go/internal/authz"
 	// "github.com/exolutionza/propfix-backend-go/internal/user"
@@ -26,27 +28,11 @@ func NewColumnsHandler(dbpool *pgxpool.Pool, authz *authz.Authz) *ColumnsHandler
 type Column struct {
 	ID      string   `json:"id"`
 	Name    string   `json:"name"`
-	JobIDs  []string `json:"jobids"`
+	JobIDs  []string `json:"jobIds"`
 	BoardID string   `json:"boardId"`
 }
 
 func (h *ColumnsHandler) CreateColumn(w http.ResponseWriter, r *http.Request) {
-	// Get the user from the request context
-	// user, ok := r.Context().Value("user").(user.User)
-	// if !ok {
-	// 	http.Error(w, "Failed to get user details", http.StatusInternalServerError)
-	// 	return
-	// }
-
-	// // Check permission using authz
-	// if hasPermission, err := h.authz.CheckPermission(user.ID, "columns", "create"); err != nil {
-	// 	http.Error(w, "Failed to check permission", http.StatusInternalServerError)
-	// 	return
-	// } else if !hasPermission {
-	// 	http.Error(w, "You do not have permission to update columns", http.StatusForbidden)
-	// 	return
-	// }
-
 	var column Column
 	err := json.NewDecoder(r.Body).Decode(&column)
 	if err != nil {
@@ -54,19 +40,28 @@ func (h *ColumnsHandler) CreateColumn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Generate a new UUID for the column ID
+	column.ID = uuid.New().String()
+
 	ctx := context.Background()
 	query := `
-		INSERT INTO columns (id, name, jobids, boardid)
+		INSERT INTO columns (id, name, job_ids, board_id)
 		VALUES ($1, $2, $3, $4)
+		RETURNING id -- Return the newly created ID
 	`
-	_, err = h.dbpool.Exec(ctx, query, column.ID, column.Name, column.JobIDs, column.BoardID)
+	var createdID string
+	err = h.dbpool.QueryRow(ctx, query, column.ID, column.Name, column.JobIDs, column.BoardID).Scan(&createdID)
 	if err != nil {
 		http.Error(w, "Failed to create column", http.StatusInternalServerError)
 		return
 	}
 
-	w.WriteHeader(http.StatusCreated)
+	// Return the created ID in the response
+	response := map[string]string{"id": createdID}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
 }
+
 
 func (h *ColumnsHandler) GetColumn(w http.ResponseWriter, r *http.Request) {
 	// // Get the user from the request context
@@ -90,7 +85,7 @@ func (h *ColumnsHandler) GetColumn(w http.ResponseWriter, r *http.Request) {
 
 	ctx := context.Background()
 	query := `
-		SELECT id, name, jobids, boardid
+		SELECT id, name, job_ids, board_id
 		FROM columns
 		WHERE id = $1
 	`
@@ -196,7 +191,7 @@ func (h *ColumnsHandler) MoveJob(w http.ResponseWriter, r *http.Request) {
 
 	// Retrieve the current column
 	currentQuery := `
-		SELECT id, name, jobids, boardid
+		SELECT id, name, job_ids, board_id
 		FROM columns
 		WHERE id = $1
 	`
@@ -204,13 +199,14 @@ func (h *ColumnsHandler) MoveJob(w http.ResponseWriter, r *http.Request) {
 	var currentColumn Column
 	err = row.Scan(&currentColumn.ID, &currentColumn.Name, &currentColumn.JobIDs, &currentColumn.BoardID)
 	if err != nil {
+		fmt.Println(err)
 		http.Error(w, "Column not found", http.StatusNotFound)
 		return
 	}
 
 	// Retrieve the target column
 	targetQuery := `
-		SELECT id, name, jobids, boardid
+		SELECT id, name, job_ids, board_id
 		FROM columns
 		WHERE id = $1
 	`
@@ -218,6 +214,8 @@ func (h *ColumnsHandler) MoveJob(w http.ResponseWriter, r *http.Request) {
 	var targetColumn Column
 	err = row.Scan(&targetColumn.ID, &targetColumn.Name, &targetColumn.JobIDs, &targetColumn.BoardID)
 	if err != nil {
+		fmt.Println(err)
+
 		http.Error(w, "Column not found", http.StatusNotFound)
 		return
 	}
@@ -229,7 +227,7 @@ func (h *ColumnsHandler) MoveJob(w http.ResponseWriter, r *http.Request) {
 	// Update the current column in the database
 	updateCurrentQuery := `
 		UPDATE columns
-		SET jobids = $2
+		SET job_ids = $2
 		WHERE id = $1
 	`
 	_, err = h.dbpool.Exec(ctx, updateCurrentQuery, currentColumn.ID, currentColumn.JobIDs)
@@ -241,7 +239,7 @@ func (h *ColumnsHandler) MoveJob(w http.ResponseWriter, r *http.Request) {
 	// Update the target column in the database
 	updateTargetQuery := `
 		UPDATE columns
-		SET jobids = $2
+		SET job_ids = $2
 		WHERE id = $1
 	`
 	_, err = h.dbpool.Exec(ctx, updateTargetQuery, targetColumn.ID, targetColumn.JobIDs)

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"time"
+	"encoding/json"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v4/pgxpool"
@@ -24,13 +25,13 @@ type Event struct {
 	Type      string    `json:"type"`
 	JobID     string    `json:"jobId"`
 	MemberID  string    `json:"memberId"`
-	Data      string    `json:"data"`
+	Data      json.RawMessage    `json:"data"`
 	CreatedAt time.Time `json:"createdAt"`
 }
 
 func (s *EventsStore) CreateEvent(event Event) (string, error) {
 	// Perform basic validation on the event data before insertion
-	if event.Type == "" || event.Data == "" || event.JobID == "" || event.MemberID == "" {
+	if event.Type == "" || event.JobID == "" || event.MemberID == "" {
 		return "", fmt.Errorf("Type, Data, JobID, and MemberID are required fields")
 	}
 
@@ -40,7 +41,7 @@ func (s *EventsStore) CreateEvent(event Event) (string, error) {
 
 	ctx := context.Background()
 	query := `
-		INSERT INTO events (id, type, jobId, memberId, data, createdAt)
+		INSERT INTO events (id, type, job_id, member_id, data, created_at)
 		VALUES ($1, $2, $3, $4, $5, $6)
 	`
 
@@ -55,7 +56,7 @@ func (s *EventsStore) CreateEvent(event Event) (string, error) {
 func (s *EventsStore) GetEvent(eventID string) (*Event, error) {
 	ctx := context.Background()
 	query := `
-		SELECT id, type, jobId, memberId, data, createdAt
+		SELECT id, type, job_id, member_id, data, created_at
 		FROM events
 		WHERE id = $1
 	`
@@ -71,7 +72,7 @@ func (s *EventsStore) GetEvent(eventID string) (*Event, error) {
 
 func (s *EventsStore) UpdateEvent(event Event) error {
 	// Perform basic validation on the event data before update
-	if event.Type == "" || event.Data == "" || event.JobID == "" || event.MemberID == "" {
+	if event.Type == "" || event.JobID == "" || event.MemberID == "" {
 		return fmt.Errorf("Type, Data, JobID, and MemberID are required fields")
 	}
 
@@ -80,7 +81,7 @@ func (s *EventsStore) UpdateEvent(event Event) error {
 	ctx := context.Background()
 	query := `
 		UPDATE events
-		SET type = $1, jobId = $2, memberId = $3, data = $4, createdAt = $5
+		SET type = $1, job_id = $2, member_id = $3, data = $4, created_at = $5
 		WHERE id = $6
 	`
 
@@ -111,7 +112,7 @@ func (s *EventsStore) DeleteAllEventsForJobID(jobID string) error {
 	ctx := context.Background()
 	query := `
 		DELETE FROM events
-		WHERE jobId = $1
+		WHERE job_id = $1
 	`
 
 	_, err := s.pool.Exec(ctx, query, jobID)

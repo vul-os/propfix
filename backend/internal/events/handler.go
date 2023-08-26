@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	"github.com/exolutionza/propfix-backend-go/internal/authz"
-	"github.com/exolutionza/propfix-backend-go/internal/user"
 	"github.com/gorilla/mux"
 )
 
@@ -69,19 +68,19 @@ func (h *EventsHandler) UpdateEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, ok := r.Context().Value("user").(user.User)
-	if !ok {
-		http.Error(w, "Failed to get user details", http.StatusInternalServerError)
-		return
-	}
+	// user, ok := r.Context().Value("user").(user.User)
+	// if !ok {
+	// 	http.Error(w, "Failed to get user details", http.StatusInternalServerError)
+	// 	return
+	// }
 
-	if hasPermission, err := h.authz.CheckPermission(user.ID, "events", "update"); err != nil {
-		http.Error(w, "Failed to check permission", http.StatusInternalServerError)
-		return
-	} else if !hasPermission {
-		http.Error(w, "You do not have permission to update events", http.StatusForbidden)
-		return
-	}
+	// if hasPermission, err := h.authz.CheckPermission(user.ID, "events", "update"); err != nil {
+	// 	http.Error(w, "Failed to check permission", http.StatusInternalServerError)
+	// 	return
+	// } else if !hasPermission {
+	// 	http.Error(w, "You do not have permission to update events", http.StatusForbidden)
+	// 	return
+	// }
 
 	err = h.store.UpdateEvent(event)
 	if err != nil {
@@ -94,19 +93,19 @@ func (h *EventsHandler) DeleteEvent(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	eventID := vars["id"]
 
-	user, ok := r.Context().Value("user").(user.User)
-	if !ok {
-		http.Error(w, "Failed to get user details", http.StatusInternalServerError)
-		return
-	}
+	// user, ok := r.Context().Value("user").(user.User)
+	// if !ok {
+	// 	http.Error(w, "Failed to get user details", http.StatusInternalServerError)
+	// 	return
+	// }
 
-	if hasPermission, err := h.authz.CheckPermission(user.ID, "events", "delete"); err != nil {
-		http.Error(w, "Failed to check permission", http.StatusInternalServerError)
-		return
-	} else if !hasPermission {
-		http.Error(w, "You do not have permission to delete events", http.StatusForbidden)
-		return
-	}
+	// if hasPermission, err := h.authz.CheckPermission(user.ID, "events", "delete"); err != nil {
+	// 	http.Error(w, "Failed to check permission", http.StatusInternalServerError)
+	// 	return
+	// } else if !hasPermission {
+	// 	http.Error(w, "You do not have permission to delete events", http.StatusForbidden)
+	// 	return
+	// }
 
 	err := h.store.DeleteEvent(eventID)
 	if err != nil {

@@ -121,10 +121,9 @@ func Router(w http.ResponseWriter, r *http.Request) {
 
 	// Add routes for labels
 	labelsHandler := labels.NewLabelsHandler(dbpool)
-	protectedRouter.HandleFunc("/labels", labelsHandler.GetLabel).Methods("GET")
 	protectedRouter.HandleFunc("/labels/{id}", labelsHandler.GetLabel).Methods("GET")
 	protectedRouter.HandleFunc("/labels", labelsHandler.CreateLabel).Methods("POST")
-	protectedRouter.HandleFunc("/labels/{id}", labelsHandler.UpdateLabel).Methods("PUT")
+	protectedRouter.HandleFunc("/labels", labelsHandler.UpdateLabel).Methods("PUT")
 	protectedRouter.HandleFunc("/labels/{id}", labelsHandler.DeleteLabel).Methods("DELETE")
 
 	organizationHandler := organizations.NewOrganizationHandler(dbpool)
@@ -135,18 +134,16 @@ func Router(w http.ResponseWriter, r *http.Request) {
 
 	// Add routes for permissions
 	permissionsHandler := permissions.NewPermissionsHandler(dbpool, authorizer)
-	protectedRouter.HandleFunc("/permissions", permissionsHandler.GetPermission).Methods("GET")
 	protectedRouter.HandleFunc("/permissions/{id}", permissionsHandler.GetPermission).Methods("GET")
 	protectedRouter.HandleFunc("/permissions", permissionsHandler.CreatePermission).Methods("POST")
-	protectedRouter.HandleFunc("/permissions/{id}", permissionsHandler.UpdatePermission).Methods("PUT")
+	protectedRouter.HandleFunc("/permissions", permissionsHandler.UpdatePermission).Methods("PUT")
 	protectedRouter.HandleFunc("/permissions/{id}", permissionsHandler.DeletePermission).Methods("DELETE")
 
 	// Add routes for roles
 	rolesHandler := role.NewRoleHandler(dbpool, authorizer)
-	protectedRouter.HandleFunc("/roles", rolesHandler.GetRole).Methods("GET")
 	protectedRouter.HandleFunc("/roles/{id}", rolesHandler.GetRole).Methods("GET")
 	protectedRouter.HandleFunc("/roles", rolesHandler.CreateRole).Methods("POST")
-	protectedRouter.HandleFunc("/roles/{id}", rolesHandler.UpdateRole).Methods("PUT")
+	protectedRouter.HandleFunc("/roles", rolesHandler.UpdateRole).Methods("PUT")
 	protectedRouter.HandleFunc("/roles/{id}", rolesHandler.DeleteRole).Methods("DELETE")
 
 	// Apply the enableCORS middleware to all routes

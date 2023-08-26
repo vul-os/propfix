@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/exolutionza/propfix-backend-go/internal/authz"
-	"github.com/exolutionza/propfix-backend-go/internal/user"
+	// "github.com/exolutionza/propfix-backend-go/internal/user"
 
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
@@ -46,20 +46,20 @@ func (h *PermissionsHandler) CreatePermission(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	user, ok := r.Context().Value("user").(user.User)
-	if !ok {
-		http.Error(w, "Failed to get user details", http.StatusInternalServerError)
-		return
-	}
+	// user, ok := r.Context().Value("user").(user.User)
+	// if !ok {
+	// 	http.Error(w, "Failed to get user details", http.StatusInternalServerError)
+	// 	return
+	// }
 
-	// Check if the user has the permission to create permissions
-	if hasPermission, err := h.authz.CheckPermission(user.ID, "permissions", "create"); err != nil {
-		http.Error(w, "Failed to check permission", http.StatusInternalServerError)
-		return
-	} else if !hasPermission {
-		http.Error(w, "You do not have permission to create permissions", http.StatusForbidden)
-		return
-	}
+	// // Check if the user has the permission to create permissions
+	// if hasPermission, err := h.authz.CheckPermission(user.ID, "permissions", "create"); err != nil {
+	// 	http.Error(w, "Failed to check permission", http.StatusInternalServerError)
+	// 	return
+	// } else if !hasPermission {
+	// 	http.Error(w, "You do not have permission to create permissions", http.StatusForbidden)
+	// 	return
+	// }
 
 	// Generate a UUID for the permission ID
 	permission.ID = uuid.New().String()
@@ -69,16 +69,27 @@ func (h *PermissionsHandler) CreatePermission(w http.ResponseWriter, r *http.Req
 	query := `
 		INSERT INTO permissions (id, resource, permission, identifier, created_at)
 		VALUES ($1, $2, $3, $4, $5)
+		RETURNING id
 	`
 
-	_, err = h.pool.Exec(ctx, query, permission.ID, permission.Resource, permission.Permission, permission.Identifier, permission.CreatedAt)
+	var createdID string
+	err = h.pool.QueryRow(ctx, query, permission.ID, permission.Resource, permission.Permission, permission.Identifier, permission.CreatedAt).Scan(&createdID)
 	if err != nil {
 		http.Error(w, "Failed to create permission", http.StatusInternalServerError)
 		return
 	}
 
+	response := struct {
+		ID string `json:"id"`
+	}{
+		ID: createdID,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(response)
 }
+
 
 func (h *PermissionsHandler) GetPermission(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
@@ -115,20 +126,20 @@ func (h *PermissionsHandler) UpdatePermission(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	user, ok := r.Context().Value("user").(user.User)
-	if !ok {
-		http.Error(w, "Failed to get user details", http.StatusInternalServerError)
-		return
-	}
+	// user, ok := r.Context().Value("user").(user.User)
+	// if !ok {
+	// 	http.Error(w, "Failed to get user details", http.StatusInternalServerError)
+	// 	return
+	// }
 
-	// Check if the user has the permission to update permissions
-	if hasPermission, err := h.authz.CheckPermission(user.ID, "permissions", "update"); err != nil {
-		http.Error(w, "Failed to check permission", http.StatusInternalServerError)
-		return
-	} else if !hasPermission {
-		http.Error(w, "You do not have permission to update permissions", http.StatusForbidden)
-		return
-	}
+	// // Check if the user has the permission to update permissions
+	// if hasPermission, err := h.authz.CheckPermission(user.ID, "permissions", "update"); err != nil {
+	// 	http.Error(w, "Failed to check permission", http.StatusInternalServerError)
+	// 	return
+	// } else if !hasPermission {
+	// 	http.Error(w, "You do not have permission to update permissions", http.StatusForbidden)
+	// 	return
+	// }
 
 	ctx := context.Background()
 	query := `
@@ -150,20 +161,20 @@ func (h *PermissionsHandler) DeletePermission(w http.ResponseWriter, r *http.Req
 	vars := mux.Vars(r)
 	permissionID := vars["id"]
 
-	user, ok := r.Context().Value("user").(user.User)
-	if !ok {
-		http.Error(w, "Failed to get user details", http.StatusInternalServerError)
-		return
-	}
+	// user, ok := r.Context().Value("user").(user.User)
+	// if !ok {
+	// 	http.Error(w, "Failed to get user details", http.StatusInternalServerError)
+	// 	return
+	// }
 
-	// Check if the user has the permission to delete permissions
-	if hasPermission, err := h.authz.CheckPermission(user.ID, "permissions", "delete"); err != nil {
-		http.Error(w, "Failed to check permission", http.StatusInternalServerError)
-		return
-	} else if !hasPermission {
-		http.Error(w, "You do not have permission to delete permissions", http.StatusForbidden)
-		return
-	}
+	// // Check if the user has the permission to delete permissions
+	// if hasPermission, err := h.authz.CheckPermission(user.ID, "permissions", "delete"); err != nil {
+	// 	http.Error(w, "Failed to check permission", http.StatusInternalServerError)
+	// 	return
+	// } else if !hasPermission {
+	// 	http.Error(w, "You do not have permission to delete permissions", http.StatusForbidden)
+	// 	return
+	// }
 
 	ctx := context.Background()
 	query := `

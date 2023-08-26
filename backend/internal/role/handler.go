@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/exolutionza/propfix-backend-go/internal/authz"
-	"github.com/exolutionza/propfix-backend-go/internal/user"
+	// "github.com/exolutionza/propfix-backend-go/internal/user"
 
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
@@ -35,20 +35,6 @@ func (h *RoleHandler) CreateRole(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
 	}
-	user, ok := r.Context().Value("user").(user.User)
-	if !ok {
-		http.Error(w, "Failed to get user details", http.StatusInternalServerError)
-		return
-	}
-
-	// Check if the user has the permission to create roles
-	if hasPermission, err := h.authz.CheckPermission(user.ID, "role", "create"); err != nil {
-		http.Error(w, "Failed to check permission", http.StatusInternalServerError)
-		return
-	} else if !hasPermission {
-		http.Error(w, "You do not have permission to create role", http.StatusForbidden)
-		return
-	}
 
 	// Generate a UUID for the role ID
 	role.ID = uuid.New().String()
@@ -58,16 +44,27 @@ func (h *RoleHandler) CreateRole(w http.ResponseWriter, r *http.Request) {
 	query := `
 		INSERT INTO roles (id, name, description, user_ids, created_at)
 		VALUES ($1, $2, $3, $4, $5)
+		RETURNING id
 	`
 
-	_, err = h.pool.Exec(ctx, query, role.ID, role.Name, role.Description, role.UserIDs, role.CreatedAt)
+	var createdID string
+	err = h.pool.QueryRow(ctx, query, role.ID, role.Name, role.Description, role.UserIDs, role.CreatedAt).Scan(&createdID)
 	if err != nil {
 		http.Error(w, "Failed to create role", http.StatusInternalServerError)
 		return
 	}
 
+	response := struct {
+		ID string `json:"id"`
+	}{
+		ID: createdID,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(response)
 }
+
 
 func (h *RoleHandler) GetRole(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
@@ -98,20 +95,20 @@ func (h *RoleHandler) UpdateRole(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, ok := r.Context().Value("user").(user.User)
-	if !ok {
-		http.Error(w, "Failed to get user details", http.StatusInternalServerError)
-		return
-	}
+	// user, ok := r.Context().Value("user").(user.User)
+	// if !ok {
+	// 	http.Error(w, "Failed to get user details", http.StatusInternalServerError)
+	// 	return
+	// }
 
-	// Check if the user has the permission to update roles
-	if hasPermission, err := h.authz.CheckPermission(user.ID, "role", "update"); err != nil {
-		http.Error(w, "Failed to check permission", http.StatusInternalServerError)
-		return
-	} else if !hasPermission {
-		http.Error(w, "You do not have permission to update role", http.StatusForbidden)
-		return
-	}
+	// // Check if the user has the permission to update roles
+	// if hasPermission, err := h.authz.CheckPermission(user.ID, "role", "update"); err != nil {
+	// 	http.Error(w, "Failed to check permission", http.StatusInternalServerError)
+	// 	return
+	// } else if !hasPermission {
+	// 	http.Error(w, "You do not have permission to update role", http.StatusForbidden)
+	// 	return
+	// }
 
 	// Perform basic validation on the role data before update
 	if role.Name == "" || role.Description == "" {
@@ -138,20 +135,20 @@ func (h *RoleHandler) UpdateRole(w http.ResponseWriter, r *http.Request) {
 func (h *RoleHandler) DeleteRole(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	roleID := vars["id"]
-	user, ok := r.Context().Value("user").(user.User)
-	if !ok {
-		http.Error(w, "Failed to get user details", http.StatusInternalServerError)
-		return
-	}
+	// user, ok := r.Context().Value("user").(user.User)
+	// if !ok {
+	// 	http.Error(w, "Failed to get user details", http.StatusInternalServerError)
+	// 	return
+	// }
 
-	// Check if the user has the permission to delete roles
-	if hasPermission, err := h.authz.CheckPermission(user.ID, "role", "delete"); err != nil {
-		http.Error(w, "Failed to check permission", http.StatusInternalServerError)
-		return
-	} else if !hasPermission {
-		http.Error(w, "You do not have permission to delete role", http.StatusForbidden)
-		return
-	}
+	// // Check if the user has the permission to delete roles
+	// if hasPermission, err := h.authz.CheckPermission(user.ID, "role", "delete"); err != nil {
+	// 	http.Error(w, "Failed to check permission", http.StatusInternalServerError)
+	// 	return
+	// } else if !hasPermission {
+	// 	http.Error(w, "You do not have permission to delete role", http.StatusForbidden)
+	// 	return
+	// }
 
 	ctx := context.Background()
 	query := `
@@ -172,20 +169,20 @@ func (h *RoleHandler) AddUser(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	roleID := vars["id"]
 
-	user, ok := r.Context().Value("user").(user.User)
-	if !ok {
-		http.Error(w, "Failed to get user details", http.StatusInternalServerError)
-		return
-	}
+	// user, ok := r.Context().Value("user").(user.User)
+	// if !ok {
+	// 	http.Error(w, "Failed to get user details", http.StatusInternalServerError)
+	// 	return
+	// }
 
-	// Check if the user has the permission to add users to roles
-	if hasPermission, err := h.authz.CheckPermission(user.ID, "role", "adduser"); err != nil {
-		http.Error(w, "Failed to check permission", http.StatusInternalServerError)
-		return
-	} else if !hasPermission {
-		http.Error(w, "You do not have permission to add user to role", http.StatusForbidden)
-		return
-	}
+	// // Check if the user has the permission to add users to roles
+	// if hasPermission, err := h.authz.CheckPermission(user.ID, "role", "adduser"); err != nil {
+	// 	http.Error(w, "Failed to check permission", http.StatusInternalServerError)
+	// 	return
+	// } else if !hasPermission {
+	// 	http.Error(w, "You do not have permission to add user to role", http.StatusForbidden)
+	// 	return
+	// }
 
 	// Decode the user ID from the request body
 	var userID string
@@ -214,20 +211,20 @@ func (h *RoleHandler) AddUser(w http.ResponseWriter, r *http.Request) {
 func (h *RoleHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	roleID := vars["id"]
-	user, ok := r.Context().Value("user").(user.User)
-	if !ok {
-		http.Error(w, "Failed to get user details", http.StatusInternalServerError)
-		return
-	}
+	// user, ok := r.Context().Value("user").(user.User)
+	// if !ok {
+	// 	http.Error(w, "Failed to get user details", http.StatusInternalServerError)
+	// 	return
+	// }
 
-	// Check if the user has the permission to delete users from roles
-	if hasPermission, err := h.authz.CheckPermission(user.ID, "role", "deleteuser"); err != nil {
-		http.Error(w, "Failed to check permission", http.StatusInternalServerError)
-		return
-	} else if !hasPermission {
-		http.Error(w, "You do not have permission to delete user for role", http.StatusForbidden)
-		return
-	}
+	// // Check if the user has the permission to delete users from roles
+	// if hasPermission, err := h.authz.CheckPermission(user.ID, "role", "deleteuser"); err != nil {
+	// 	http.Error(w, "Failed to check permission", http.StatusInternalServerError)
+	// 	return
+	// } else if !hasPermission {
+	// 	http.Error(w, "You do not have permission to delete user for role", http.StatusForbidden)
+	// 	return
+	// }
 
 	// Decode the user ID from the request body
 	var userID string
