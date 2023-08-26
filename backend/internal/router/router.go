@@ -133,7 +133,7 @@ func Router(w http.ResponseWriter, r *http.Request) {
 	protectedRouter.HandleFunc("/organizations/{id}", organizationHandler.DeleteOrganization).Methods("DELETE")
 
 	// Add routes for permissions
-	permissionsHandler := permissions.NewPermissionsHandler(dbpool, authorizer)
+	permissionsHandler := permissions.NewPermissionsHandler(dbpool)
 	protectedRouter.HandleFunc("/permissions/{id}", permissionsHandler.GetPermission).Methods("GET")
 	protectedRouter.HandleFunc("/permissions", permissionsHandler.CreatePermission).Methods("POST")
 	protectedRouter.HandleFunc("/permissions", permissionsHandler.UpdatePermission).Methods("PUT")
