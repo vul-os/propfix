@@ -32,14 +32,11 @@ func createBuildingsTable(dbpool *pgxpool.Pool) error {
 	_, err := dbpool.Exec(ctx, `
 		CREATE TABLE IF NOT EXISTS buildings (
 			id TEXT PRIMARY KEY,
-			name TEXT NOT NULL,
+			building_name TEXT NOT NULL,
 			address TEXT,
-			city TEXT,
-			state TEXT,
-			zip_code TEXT,
-			country TEXT,
-			extra_data JSONB,
-			created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+			unit_number_system TEXT,
+			created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			organization_id TEXT
 		)
 	`)
 	if err != nil {
@@ -123,7 +120,7 @@ func createBoardTable(dbpool *pgxpool.Pool) error {
 	ctx := context.Background()
 
 	_, err := dbpool.Exec(ctx, `
-		CREATE TABLE IF NOT EXISTS board (
+		CREATE TABLE IF NOT EXISTS boards (
 			id TEXT PRIMARY KEY,
 			name TEXT NOT NULL,
 			organization_id TEXT NOT NULL
@@ -169,6 +166,7 @@ func createLabelsTable(dbpool *pgxpool.Pool) error {
 	_, err := dbpool.Exec(ctx, `
 		CREATE TABLE IF NOT EXISTS labels (
 			id TEXT PRIMARY KEY,
+			board_id TEXT NOT NULL,
 			name TEXT NOT NULL,
 			color TEXT
 		)

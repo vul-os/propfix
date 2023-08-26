@@ -4,9 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-
+	"fmt"
 	"github.com/exolutionza/propfix-backend-go/internal/authz"
 	"github.com/gorilla/mux"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
@@ -29,7 +30,6 @@ type Board struct {
 }
 
 func (h *BoardsHandler) CreateBoard(w http.ResponseWriter, r *http.Request) {
-
 	var board Board
 	err := json.NewDecoder(r.Body).Decode(&board)
 	if err != nil {
@@ -37,18 +37,27 @@ func (h *BoardsHandler) CreateBoard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	board.ID = uuid.New().String()
+
 	ctx := context.Background()
 	query := `
-		INSERT INTO boards (id, name, organizationid)
+		INSERT INTO boards (id, name, organization_id)
 		VALUES ($1, $2, $3)
+		RETURNING id
 	`
-	_, err = h.dbpool.Exec(ctx, query, board.ID, board.Name, board.OrganizationID)
+	err = h.dbpool.QueryRow(ctx, query, board.ID, board.Name, board.OrganizationID).Scan(&board.ID)
 	if err != nil {
+		fmt.Println(err)
 		http.Error(w, "Failed to create board", http.StatusInternalServerError)
 		return
 	}
 
+	// Return the created ID as a JSON response
+	responseJSON := map[string]string{"id": board.ID}
+	responseData, _ := json.Marshal(responseJSON)
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
+	w.Write(responseData)
 }
 
 func (h *BoardsHandler) GetBoard(w http.ResponseWriter, r *http.Request) {
@@ -58,7 +67,7 @@ func (h *BoardsHandler) GetBoard(w http.ResponseWriter, r *http.Request) {
 
 	ctx := context.Background()
 	query := `
-		SELECT id, name, organizationid
+		SELECT id, name, organization_id
 		FROM boards
 		WHERE id = $1
 	`
@@ -67,6 +76,7 @@ func (h *BoardsHandler) GetBoard(w http.ResponseWriter, r *http.Request) {
 	var board Board
 	err := row.Scan(&board.ID, &board.Name, &board.OrganizationID)
 	if err != nil {
+		fmt.Println (err)
 		http.Error(w, "Board not found", http.StatusNotFound)
 		return
 	}

@@ -82,7 +82,11 @@ func Router(w http.ResponseWriter, r *http.Request) {
 
 	// Add routes from the board package handlers
 	boardHandler := board.NewBoardsHandler(dbpool, authorizer)
-	protectedRouter.HandleFunc("/board", boardHandler.GetBoard).Methods("GET")
+	protectedRouter.HandleFunc("/boards", boardHandler.CreateBoard).Methods("POST")
+	protectedRouter.HandleFunc("/boards/{id}", boardHandler.GetBoard).Methods("GET")
+	protectedRouter.HandleFunc("/boards", boardHandler.UpdateBoard).Methods("PUT")
+	protectedRouter.HandleFunc("/boards/{id}", boardHandler.DeleteBoard).Methods("DELETE")
+ 
 
 	// Add routes from the buildings package handlers
 	buildingsHandler := buildings.NewBuildingsHandler(dbpool, authorizer)

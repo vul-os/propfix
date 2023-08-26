@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"time"
-
+	"fmt"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 
@@ -69,7 +69,7 @@ func (h *JobsHandler) CreateJob(w http.ResponseWriter, r *http.Request) {
 	createdAt := jobReq.CreatedAt
 
 	sqlQuery := `
-		INSERT INTO main.jobs (id, name, due_date, priority, description, tenant_identifier, assignee_ids, unit_identifier, building_id, board_id, labels, attachments, cost, hours, created_at)
+		INSERT INTO jobs (id, name, due_date, priority, description, tenant_identifier, assignee_ids, unit_identifier, building_id, board_id, labels, attachments, cost, hours, created_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
 	`
 
@@ -79,6 +79,7 @@ func (h *JobsHandler) CreateJob(w http.ResponseWriter, r *http.Request) {
 		jobReq.Attachments, jobReq.Cost, jobReq.Hours, createdAt)
 
 	if err != nil {
+		fmt.Println(err)
 		http.Error(w, "Failed to create job", http.StatusInternalServerError)
 		return
 	}
@@ -94,7 +95,7 @@ func (h *JobsHandler) GetJob(w http.ResponseWriter, r *http.Request) {
 
 	sqlQuery := `
 		SELECT id, name, due_date, priority, description, tenant_identifier, assignee_ids, unit_identifier, building_id, board_id, labels, attachments, cost, hours, created_at
-		FROM main.jobs
+		FROM jobs
 		WHERE id = $1
 	`
 
@@ -112,6 +113,7 @@ func (h *JobsHandler) GetJob(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Job not found", http.StatusNotFound)
 		return
 	} else if err != nil {
+		fmt.Println(err)
 		http.Error(w, "Failed to fetch job", http.StatusInternalServerError)
 		return
 	}
@@ -144,7 +146,7 @@ func (h *JobsHandler) UpdateJob(w http.ResponseWriter, r *http.Request) {
 	ctx := context.Background()
 
 	sqlQuery := `
-        UPDATE main.jobs
+        UPDATE jobs
         SET name = $1, due_date = $2, priority = $3, description = $4, tenant_identifier = $5,
         assignee_ids = $6, unit_identifier = $7, building_id = $8, board_id = $9,
         labels = $10, attachments = $11, cost = $12, hours = $13, created_at = $14
@@ -186,16 +188,16 @@ func (h *JobsHandler) DeleteJob(w http.ResponseWriter, r *http.Request) {
 
 	ctx := context.Background()
 
-	// Delete all events associated with the job ID
-	err := h.events.DeleteAllEventsForJobID(jobID)
-	if err != nil {
-		http.Error(w, "Failed to delete events for job", http.StatusInternalServerError)
-		return
-	}
+	// // Delete all events associated with the job ID
+	// err := h.events.DeleteAllEventsForJobID(jobID)
+	// if err != nil {
+	// 	http.Error(w, "Failed to delete events for job", http.StatusInternalServerError)
+	// 	return
+	// }
 
-	sqlQuery := `DELETE FROM main.jobs WHERE id = $1`
+	sqlQuery := `DELETE FROM jobs WHERE id = $1`
 
-	_, err = h.pool.Exec(ctx, sqlQuery, jobID)
+	_, err := h.pool.Exec(ctx, sqlQuery, jobID)
 	if err != nil {
 		http.Error(w, "Failed to delete job", http.StatusInternalServerError)
 		return
@@ -209,7 +211,7 @@ func (h *JobsHandler) GetAllJobs(w http.ResponseWriter, r *http.Request) {
 
 	sqlQuery := `
         SELECT id, name, due_date, priority, description, tenant_identifier, assignee_ids, unit_identifier, building_id, board_id, labels, attachments, cost, hours, created_at
-        FROM main.jobs
+        FROM jobs
     `
 
 	rows, err := h.pool.Query(ctx, sqlQuery)

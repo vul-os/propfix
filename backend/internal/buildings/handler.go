@@ -46,17 +46,20 @@ func (h *BuildingsHandler) CreateBuilding(w http.ResponseWriter, r *http.Request
 
 	ctx := context.Background()
 	query := `
-		INSERT INTO buildings (id, buildingname, address, unitnumbersystem, createdat, organizationid)
+		INSERT INTO buildings (id, building_name, address, unit_number_system, created_at, organization_id)
 		VALUES ($1, $2, $3, $4, $5, $6)
+		RETURNING id
 	`
-	_, err = h.dbpool.Exec(ctx, query, building.ID, building.BuildingName, building.Address, building.UnitNumberSystem, building.CreatedAt, building.OrganizationID)
-	if err != nil {
+	row := h.dbpool.QueryRow(ctx, query, building.ID, building.BuildingName, building.Address, building.UnitNumberSystem, building.CreatedAt, building.OrganizationID)
+	if err := row.Scan(&building.ID); err != nil {
 		http.Error(w, "Failed to create building", http.StatusInternalServerError)
 		return
 	}
 
-	w.WriteHeader(http.StatusCreated)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"id": building.ID})
 }
+
 
 func (h *BuildingsHandler) GetBuilding(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
@@ -64,7 +67,7 @@ func (h *BuildingsHandler) GetBuilding(w http.ResponseWriter, r *http.Request) {
 
 	ctx := context.Background()
 	query := `
-		SELECT id, buildingname, address, unitnumbersystem, createdat, organizationid
+		SELECT id, building_name, address, unit_number_system, created_at, organization_id
 		FROM buildings
 		WHERE id = $1
 	`
@@ -97,7 +100,7 @@ func (h *BuildingsHandler) UpdateBuilding(w http.ResponseWriter, r *http.Request
 	ctx := context.Background()
 	query := `
 		UPDATE buildings
-		SET buildingname = $2, address = $3, unitnumbersystem = $4
+		SET building_name = $2, address = $3, unit_number_system = $4
 		WHERE id = $1
 	`
 	_, err = h.dbpool.Exec(ctx, query, building.ID, building.BuildingName, building.Address, building.UnitNumberSystem)
@@ -124,3 +127,4 @@ func (h *BuildingsHandler) DeleteBuilding(w http.ResponseWriter, r *http.Request
 
 	w.WriteHeader(http.StatusNoContent)
 }
+
