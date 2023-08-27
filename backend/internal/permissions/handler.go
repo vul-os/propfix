@@ -6,39 +6,47 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/exolutionza/propfix-backend-go/internal/authz"
+	"github.com/exolutionza/propfix-backend-go/internal/utils"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
 type Permission struct {
-	ID           string    `json:"id"`
-	OrganizationID string    `json:"organizationId"`
-	Resource     string    `json:"resource"`
-	Permission   string    `json:"permission"`
-	Identifier   string    `json:"identifier"`
-	CreatedAt    time.Time `json:"createdAt"`
+	ID         string    `json:"id"`
+	Resource   string    `json:"resource"`
+	Permission string    `json:"permission"`
+	Identifier string    `json:"identifier"`
+	CreatedAt  time.Time `json:"createdAt"`
 }
 
 type PermissionsHandler struct {
-	pool *pgxpool.Pool
+	pool  *pgxpool.Pool
+	authz *authz.Authz
 }
 
-func NewPermissionsHandler(pool *pgxpool.Pool) *PermissionsHandler {
+func NewPermissionsHandler(pool *pgxpool.Pool, authz *authz.Authz) *PermissionsHandler {
 	return &PermissionsHandler{
-		pool: pool,
+		pool:  pool,
+		authz: authz,
 	}
 }
 
 func (h *PermissionsHandler) CreatePermission(w http.ResponseWriter, r *http.Request) {
+	ok, err := utils.CheckPermissionAndExecute(w, r, h.authz, "permissions", "create")
+	if err != nil || !ok {
+		return
+	}
+
 	var permission Permission
-	err := json.NewDecoder(r.Body).Decode(&permission)
+	err = json.NewDecoder(r.Body).Decode(&permission)
 	if err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
 	}
 
-	if permission.OrganizationID == "" || permission.Resource == "" || permission.Permission == "" || permission.Identifier == "" {
+	if permission.Resource == "" || permission.Permission == "" || permission.Identifier == "" {
 		http.Error(w, "OrganizationID, Resource, Permission, and Identifier are required fields", http.StatusBadRequest)
 		return
 	}
@@ -48,13 +56,13 @@ func (h *PermissionsHandler) CreatePermission(w http.ResponseWriter, r *http.Req
 
 	ctx := context.Background()
 	query := `
-		INSERT INTO permissions (id, organization_id, resource, permission, identifier, created_at)
-		VALUES ($1, $2, $3, $4, $5, $6)
+		INSERT INTO permissions (id, resource, permission, identifier, created_at)
+		VALUES ($1, $2, $3, $4, $5)
 		RETURNING id
 	`
 
 	var createdID string
-	err = h.pool.QueryRow(ctx, query, permission.ID, permission.OrganizationID, permission.Resource, permission.Permission, permission.Identifier, permission.CreatedAt).Scan(&createdID)
+	err = h.pool.QueryRow(ctx, query, permission.ID, permission.Resource, permission.Permission, permission.Identifier, permission.CreatedAt).Scan(&createdID)
 	if err != nil {
 		http.Error(w, "Failed to create permission", http.StatusInternalServerError)
 		return
@@ -83,7 +91,7 @@ func (h *PermissionsHandler) GetPermission(w http.ResponseWriter, r *http.Reques
 	`
 
 	var permission Permission
-	err := h.pool.QueryRow(ctx, query, permissionID).Scan(&permission.ID, &permission.OrganizationID, &permission.Resource, &permission.Permission, &permission.Identifier, &permission.CreatedAt)
+	err := h.pool.QueryRow(ctx, query, permissionID).Scan(&permission.ID, &permission.Resource, &permission.Permission, &permission.Identifier, &permission.CreatedAt)
 	if err != nil {
 		http.Error(w, "Permission not found", http.StatusNotFound)
 		return
@@ -93,14 +101,19 @@ func (h *PermissionsHandler) GetPermission(w http.ResponseWriter, r *http.Reques
 }
 
 func (h *PermissionsHandler) UpdatePermission(w http.ResponseWriter, r *http.Request) {
+	ok, err := utils.CheckPermissionAndExecute(w, r, h.authz, "permisions", "update")
+	if err != nil || !ok {
+		return
+	}
+
 	var permission Permission
-	err := json.NewDecoder(r.Body).Decode(&permission)
+	err = json.NewDecoder(r.Body).Decode(&permission)
 	if err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
 	}
 
-	if permission.OrganizationID == "" || permission.Resource == "" || permission.Permission == "" || permission.Identifier == "" {
+	if permission.Resource == "" || permission.Permission == "" || permission.Identifier == "" {
 		http.Error(w, "OrganizationID, Resource, Permission, and Identifier are required fields", http.StatusBadRequest)
 		return
 	}
@@ -114,7 +127,7 @@ func (h *PermissionsHandler) UpdatePermission(w http.ResponseWriter, r *http.Req
 		WHERE id = $6
 	`
 
-	_, err = h.pool.Exec(ctx, query, permission.OrganizationID, permission.Resource, permission.Permission, permission.Identifier, permission.CreatedAt, permission.ID)
+	_, err = h.pool.Exec(ctx, query, permission.Resource, permission.Permission, permission.Identifier, permission.CreatedAt, permission.ID)
 	if err != nil {
 		http.Error(w, "Failed to update permission", http.StatusInternalServerError)
 		return
@@ -124,6 +137,11 @@ func (h *PermissionsHandler) UpdatePermission(w http.ResponseWriter, r *http.Req
 }
 
 func (h *PermissionsHandler) DeletePermission(w http.ResponseWriter, r *http.Request) {
+	ok, err := utils.CheckPermissionAndExecute(w, r, h.authz, "permisions", "delete")
+	if err != nil || !ok {
+		return
+	}
+
 	vars := mux.Vars(r)
 	permissionID := vars["id"]
 
@@ -133,7 +151,7 @@ func (h *PermissionsHandler) DeletePermission(w http.ResponseWriter, r *http.Req
 		WHERE id = $1
 	`
 
-	_, err := h.pool.Exec(ctx, query, permissionID)
+	_, err = h.pool.Exec(ctx, query, permissionID)
 	if err != nil {
 		http.Error(w, "Failed to delete permission", http.StatusInternalServerError)
 		return

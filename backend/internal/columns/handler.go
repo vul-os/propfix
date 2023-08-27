@@ -3,12 +3,13 @@ package columns
 import (
 	"context"
 	"encoding/json"
-	"net/http"
-	"github.com/google/uuid"
 	"fmt"
+	"net/http"
+
+	"github.com/google/uuid"
 
 	"github.com/exolutionza/propfix-backend-go/internal/authz"
-	// "github.com/exolutionza/propfix-backend-go/internal/user"
+	"github.com/exolutionza/propfix-backend-go/internal/utils"
 	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
@@ -33,8 +34,13 @@ type Column struct {
 }
 
 func (h *ColumnsHandler) CreateColumn(w http.ResponseWriter, r *http.Request) {
+	ok, err := utils.CheckPermissionAndExecute(w, r, h.authz, "columns", "create")
+	if err != nil || !ok {
+		return
+	}
+
 	var column Column
-	err := json.NewDecoder(r.Body).Decode(&column)
+	err = json.NewDecoder(r.Body).Decode(&column)
 	if err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
@@ -62,24 +68,7 @@ func (h *ColumnsHandler) CreateColumn(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
-
 func (h *ColumnsHandler) GetColumn(w http.ResponseWriter, r *http.Request) {
-	// // Get the user from the request context
-	// user, ok := r.Context().Value("user").(user.User)
-	// if !ok {
-	// 	http.Error(w, "Failed to get user details", http.StatusInternalServerError)
-	// 	return
-	// }
-
-	// // Check if the user has the permission to get columns
-	// if hasPermission, err := h.authz.CheckPermission(user.ID, "columns", "read"); err != nil {
-	// 	http.Error(w, "Failed to check permission", http.StatusInternalServerError)
-	// 	return
-	// } else if !hasPermission {
-	// 	http.Error(w, "You do not have permission to get columns", http.StatusForbidden)
-	// 	return
-	// }
-
 	vars := mux.Vars(r)
 	columnID := vars["id"]
 
@@ -102,24 +91,13 @@ func (h *ColumnsHandler) GetColumn(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *ColumnsHandler) UpdateColumn(w http.ResponseWriter, r *http.Request) {
-	// // Get the user from the request context
-	// user, ok := r.Context().Value("user").(user.User)
-	// if !ok {
-	// 	http.Error(w, "Failed to get user details", http.StatusInternalServerError)
-	// 	return
-	// }
-
-	// // Check if the user has the permission to update columns
-	// if hasPermission, err := h.authz.CheckPermission(user.ID, "columns", "update"); err != nil {
-	// 	http.Error(w, "Failed to check permission", http.StatusInternalServerError)
-	// 	return
-	// } else if !hasPermission {
-	// 	http.Error(w, "You do not have permission to update columns", http.StatusForbidden)
-	// 	return
-	// }
+	ok, err := utils.CheckPermissionAndExecute(w, r, h.authz, "columns", "update")
+	if err != nil || !ok {
+		return
+	}
 
 	var column Column
-	err := json.NewDecoder(r.Body).Decode(&column)
+	err = json.NewDecoder(r.Body).Decode(&column)
 	if err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
@@ -139,21 +117,10 @@ func (h *ColumnsHandler) UpdateColumn(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *ColumnsHandler) DeleteColumn(w http.ResponseWriter, r *http.Request) {
-	// // Get the user from the request context
-	// user, ok := r.Context().Value("user").(user.User)
-	// if !ok {
-	// 	http.Error(w, "Failed to get user details", http.StatusInternalServerError)
-	// 	return
-	// }
-
-	// // Check if the user has the permission to delete columns
-	// if hasPermission, err := h.authz.CheckPermission(user.ID, "columns", "delete"); err != nil {
-	// 	http.Error(w, "Failed to check permission", http.StatusInternalServerError)
-	// 	return
-	// } else if !hasPermission {
-	// 	http.Error(w, "You do not have permission to delete columns", http.StatusForbidden)
-	// 	return
-	// }
+	ok, err := utils.CheckPermissionAndExecute(w, r, h.authz, "columns", "delete")
+	if err != nil || !ok {
+		return
+	}
 
 	vars := mux.Vars(r)
 	columnID := vars["id"]
@@ -163,7 +130,7 @@ func (h *ColumnsHandler) DeleteColumn(w http.ResponseWriter, r *http.Request) {
 		DELETE FROM columns
 		WHERE id = $1
 	`
-	_, err := h.dbpool.Exec(ctx, query, columnID)
+	_, err = h.dbpool.Exec(ctx, query, columnID)
 	if err != nil {
 		http.Error(w, "Failed to delete column", http.StatusInternalServerError)
 		return
@@ -263,21 +230,6 @@ func removeString(slice []string, target string) []string {
 }
 
 func (h *ColumnsHandler) GetAllColumns(w http.ResponseWriter, r *http.Request) {
-	// // Get the user from the request context
-	// user, ok := r.Context().Value("user").(user.User)
-	// if !ok {
-	// 	http.Error(w, "Failed to get user details", http.StatusInternalServerError)
-	// 	return
-	// }
-
-	// // Check if the user has the permission to get columns
-	// if hasPermission, err := h.authz.CheckPermission(user.ID, "columns", "read"); err != nil {
-	// 	http.Error(w, "Failed to check permission", http.StatusInternalServerError)
-	// 	return
-	// } else if !hasPermission {
-	// 	http.Error(w, "You do not have permission to get columns", http.StatusForbidden)
-	// 	return
-	// }
 
 	ctx := context.Background()
 	query := `

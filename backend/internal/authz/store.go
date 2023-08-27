@@ -27,42 +27,32 @@ func NewAuthz(dbpool *pgxpool.Pool) *Authz {
 	}
 }
 
-func (s *Authz) CheckPermission(identifier, resource, permission string) (bool, error) {
+func (s *Authz) CheckPermission(userID, resource, permission string) (bool, error) {
 	ctx := context.Background()
 
-	sqlQuery := fmt.Sprintf(`
-		SELECT %s 
+	roleIDs, err := s.GetRoleIDsForUser(userID)
+	if err != nil {
+		fmt.Println(err)
+		return false, err
+	}
+	fmt.Println(userID, roleIDs)
+	sqlQuery := `
+	SELECT EXISTS (
+		SELECT 1
 		FROM permissions 
-		WHERE (identifier = $1 OR $1 = ANY(userIds)) AND resource = $2
+		WHERE (identifier = $1 OR identifier = ANY($2)) AND resource = $3 AND (permission = $4 OR permission = 'all')
 		LIMIT 1
-	`, permission)
-
-	row := s.dbpool.QueryRow(ctx, sqlQuery, identifier, resource)
+	)
+	`
 
 	var hasPermission bool
-	err := row.Scan(&hasPermission)
+	err = s.dbpool.QueryRow(ctx, sqlQuery, userID, roleIDs, resource, permission).Scan(&hasPermission)
 	if err != nil {
+		fmt.Println(err)
 		return false, err
 	}
 
-	if hasPermission {
-		return true, nil
-	}
-
-	roleIDs, err := s.GetRoleIDsForUser(identifier)
-	if err != nil {
-		return false, err
-	}
-
-	for _, roleID := range roleIDs {
-		if hasRole, err := s.CheckRolePermission(roleID, resource, permission); err != nil {
-			return false, err
-		} else if hasRole {
-			return true, nil
-		}
-	}
-
-	return false, nil
+	return hasPermission, nil
 }
 
 func (s *Authz) CheckRolePermission(roleID, resource, permission string) (bool, error) {
@@ -92,7 +82,7 @@ func (s *Authz) GetRoleIDsForUser(userID string) ([]string, error) {
 	sqlQuery := `
 		SELECT id
 		FROM roles
-		WHERE $1 = ANY(userIds)
+		WHERE $1 = ANY(user_ids)
 	`
 
 	rows, err := s.dbpool.Query(ctx, sqlQuery, userID)

@@ -58,7 +58,7 @@ func Router(w http.ResponseWriter, r *http.Request) {
 
 	// Create an instance of the EventsStore
 	eventsStore := events.NewEventsStore(dbpool)
-
+	orgStore := organizations.NewOrganizationStore(dbpool)
 	// Create the file upload handler
 	fileUploadHandler, err := attachments.NewFileUploadHandler("propfix-attachments", eventsStore)
 	if err != nil {
@@ -73,7 +73,7 @@ func Router(w http.ResponseWriter, r *http.Request) {
 
 	// Protected routes using auth middleware
 	protectedRouter := router.PathPrefix("").Subrouter()
-	protectedRouter.Use(auth.IsAuthenticated(authClient))
+	protectedRouter.Use(auth.IsAuthenticated(authClient, *orgStore))
 
 	// Add routes from the attachments package handlers
 	protectedRouter.HandleFunc("/file/{jobid}/{filename}", fileUploadHandler.GetFile).Methods("GET")
@@ -86,7 +86,6 @@ func Router(w http.ResponseWriter, r *http.Request) {
 	protectedRouter.HandleFunc("/boards/{id}", boardHandler.GetBoard).Methods("GET")
 	protectedRouter.HandleFunc("/boards", boardHandler.UpdateBoard).Methods("PUT")
 	protectedRouter.HandleFunc("/boards/{id}", boardHandler.DeleteBoard).Methods("DELETE")
- 
 
 	// Add routes from the buildings package handlers
 	buildingsHandler := buildings.NewBuildingsHandler(dbpool, authorizer)
@@ -120,20 +119,23 @@ func Router(w http.ResponseWriter, r *http.Request) {
 	protectedRouter.HandleFunc("/events/{id}", eventsHandler.DeleteEvent).Methods("DELETE")
 
 	// Add routes for labels
-	labelsHandler := labels.NewLabelsHandler(dbpool)
+	labelsHandler := labels.NewLabelsHandler(dbpool, authorizer)
 	protectedRouter.HandleFunc("/labels/{id}", labelsHandler.GetLabel).Methods("GET")
 	protectedRouter.HandleFunc("/labels", labelsHandler.CreateLabel).Methods("POST")
 	protectedRouter.HandleFunc("/labels", labelsHandler.UpdateLabel).Methods("PUT")
 	protectedRouter.HandleFunc("/labels/{id}", labelsHandler.DeleteLabel).Methods("DELETE")
 
-	organizationHandler := organizations.NewOrganizationHandler(dbpool)
+	organizationHandler := organizations.NewOrganizationHandler(orgStore, authorizer)
 	protectedRouter.HandleFunc("/organizations", organizationHandler.CreateOrganization).Methods("POST")
 	protectedRouter.HandleFunc("/organizations/{id}", organizationHandler.GetOrganization).Methods("GET")
 	protectedRouter.HandleFunc("/organizations", organizationHandler.UpdateOrganization).Methods("PUT")
 	protectedRouter.HandleFunc("/organizations/{id}", organizationHandler.DeleteOrganization).Methods("DELETE")
+	// Add routes for AddMember and RemoveMember handlers
+	protectedRouter.HandleFunc("/organizations/add-member", organizationHandler.AddMember).Methods("POST")
+	protectedRouter.HandleFunc("/organizations/remove-member", organizationHandler.RemoveMember).Methods("POST")
 
 	// Add routes for permissions
-	permissionsHandler := permissions.NewPermissionsHandler(dbpool)
+	permissionsHandler := permissions.NewPermissionsHandler(dbpool, authorizer)
 	protectedRouter.HandleFunc("/permissions/{id}", permissionsHandler.GetPermission).Methods("GET")
 	protectedRouter.HandleFunc("/permissions", permissionsHandler.CreatePermission).Methods("POST")
 	protectedRouter.HandleFunc("/permissions", permissionsHandler.UpdatePermission).Methods("PUT")

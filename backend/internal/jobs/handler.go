@@ -3,14 +3,16 @@ package jobs
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
-	"fmt"
+
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 
 	"github.com/exolutionza/propfix-backend-go/internal/authz"
 	"github.com/exolutionza/propfix-backend-go/internal/events"
+	"github.com/exolutionza/propfix-backend-go/internal/utils"
 	"github.com/gorilla/mux"
 	"github.com/teris-io/shortid"
 )
@@ -48,8 +50,13 @@ type Job struct {
 }
 
 func (h *JobsHandler) CreateJob(w http.ResponseWriter, r *http.Request) {
+	ok, err := utils.CheckPermissionAndExecute(w, r, h.authz, "jobs", "create")
+	if err != nil || !ok {
+		return
+	}
+
 	var jobReq Job
-	err := json.NewDecoder(r.Body).Decode(&jobReq)
+	err = json.NewDecoder(r.Body).Decode(&jobReq)
 	if err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
@@ -122,8 +129,12 @@ func (h *JobsHandler) GetJob(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *JobsHandler) UpdateJob(w http.ResponseWriter, r *http.Request) {
+	ok, err := utils.CheckPermissionAndExecute(w, r, h.authz, "jobs", "update")
+	if err != nil || !ok {
+		return
+	}
 	var jobReq Job
-	err := json.NewDecoder(r.Body).Decode(&jobReq)
+	err = json.NewDecoder(r.Body).Decode(&jobReq)
 	if err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
@@ -169,22 +180,12 @@ func (h *JobsHandler) UpdateJob(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *JobsHandler) DeleteJob(w http.ResponseWriter, r *http.Request) {
+	ok, err := utils.CheckPermissionAndExecute(w, r, h.authz, "jobs", "delete")
+	if err != nil || !ok {
+		return
+	}
 	vars := mux.Vars(r)
 	jobID := vars["id"]
-
-	// user, ok := r.Context().Value("user").(user.User)
-	// if !ok {
-	//     http.Error(w, "Failed to get user details", http.StatusInternalServerError)
-	//     return
-	// }
-
-	// if hasPermission, err := h.authz.CheckPermission(user.ID, "jobs", "delete"); err != nil {
-	//     http.Error(w, "Failed to check permission", http.StatusInternalServerError)
-	//     return
-	// } else if !hasPermission {
-	//     http.Error(w, "You do not have permission to delete jobs", http.StatusForbidden)
-	//     return
-	// }
 
 	ctx := context.Background()
 
@@ -197,7 +198,7 @@ func (h *JobsHandler) DeleteJob(w http.ResponseWriter, r *http.Request) {
 
 	sqlQuery := `DELETE FROM jobs WHERE id = $1`
 
-	_, err := h.pool.Exec(ctx, sqlQuery, jobID)
+	_, err = h.pool.Exec(ctx, sqlQuery, jobID)
 	if err != nil {
 		http.Error(w, "Failed to delete job", http.StatusInternalServerError)
 		return

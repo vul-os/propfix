@@ -3,11 +3,13 @@ package board
 import (
 	"context"
 	"encoding/json"
-	"net/http"
 	"fmt"
+	"net/http"
+
 	"github.com/exolutionza/propfix-backend-go/internal/authz"
-	"github.com/gorilla/mux"
+	"github.com/exolutionza/propfix-backend-go/internal/utils"
 	"github.com/google/uuid"
+	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
@@ -34,6 +36,11 @@ func (h *BoardsHandler) CreateBoard(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(&board)
 	if err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
+
+	ok, err := utils.CheckPermissionAndOrgs(w, r, h.authz, "boards", "create", board.OrganizationID)
+	if err != nil || !ok {
 		return
 	}
 
@@ -76,7 +83,7 @@ func (h *BoardsHandler) GetBoard(w http.ResponseWriter, r *http.Request) {
 	var board Board
 	err := row.Scan(&board.ID, &board.Name, &board.OrganizationID)
 	if err != nil {
-		fmt.Println (err)
+		fmt.Println(err)
 		http.Error(w, "Board not found", http.StatusNotFound)
 		return
 	}
@@ -85,11 +92,14 @@ func (h *BoardsHandler) GetBoard(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *BoardsHandler) UpdateBoard(w http.ResponseWriter, r *http.Request) {
-
 	var board Board
 	err := json.NewDecoder(r.Body).Decode(&board)
 	if err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
+	ok, err := utils.CheckPermissionAndOrgs(w, r, h.authz, "boards", "update", board.OrganizationID)
+	if err != nil || !ok {
 		return
 	}
 
@@ -107,6 +117,10 @@ func (h *BoardsHandler) UpdateBoard(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *BoardsHandler) DeleteBoard(w http.ResponseWriter, r *http.Request) {
+	ok, err := utils.CheckPermissionAndExecute(w, r, h.authz, "boards", "delete")
+	if err != nil || !ok {
+		return
+	}
 
 	vars := mux.Vars(r)
 	boardID := vars["id"]
@@ -116,7 +130,7 @@ func (h *BoardsHandler) DeleteBoard(w http.ResponseWriter, r *http.Request) {
 		DELETE FROM boards
 		WHERE id = $1
 	`
-	_, err := h.dbpool.Exec(ctx, query, boardID)
+	_, err = h.dbpool.Exec(ctx, query, boardID)
 	if err != nil {
 		http.Error(w, "Failed to delete board", http.StatusInternalServerError)
 		return
@@ -126,7 +140,10 @@ func (h *BoardsHandler) DeleteBoard(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *BoardsHandler) GetAllBoards(w http.ResponseWriter, r *http.Request) {
-
+	ok, err := utils.CheckPermissionAndExecute(w, r, h.authz, "boards", "delete")
+	if err != nil || !ok {
+		return
+	}
 	ctx := context.Background()
 	query := `
 		SELECT id, name, organizationid

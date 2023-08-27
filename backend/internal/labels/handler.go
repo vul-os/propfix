@@ -3,8 +3,11 @@ package labels
 import (
 	"context"
 	"encoding/json"
-	"net/http"
 	"fmt"
+	"net/http"
+
+	"github.com/exolutionza/propfix-backend-go/internal/authz"
+	"github.com/exolutionza/propfix-backend-go/internal/utils"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v4/pgxpool"
@@ -12,28 +15,34 @@ import (
 
 // Label represents a label entity in the application.
 type Label struct {
-	ID    string `json:"id"`
+	ID      string `json:"id"`
 	BoardID string `json:"boardId"`
-	Name  string `json:"name"`
-	Color string `json:"color"`
+	Name    string `json:"name"`
+	Color   string `json:"color"`
 	// Add more fields as needed
 }
 
 // LabelsHandler represents the HTTP handler for label CRUD operations.
 type LabelsHandler struct {
-	pool *pgxpool.Pool
+	pool  *pgxpool.Pool
+	authz *authz.Authz
 }
 
 // NewLabelsHandler creates a new instance of the LabelsHandler.
-func NewLabelsHandler(pool *pgxpool.Pool) *LabelsHandler {
+func NewLabelsHandler(pool *pgxpool.Pool, authz *authz.Authz) *LabelsHandler {
 	return &LabelsHandler{
-		pool: pool,
+		pool:  pool,
+		authz: authz,
 	}
 }
 
 func (h *LabelsHandler) CreateLabel(w http.ResponseWriter, r *http.Request) {
+	ok, err := utils.CheckPermissionAndExecute(w, r, h.authz, "labels", "create")
+	if err != nil || !ok {
+		return
+	}
+
 	var label Label
-	err := json.NewDecoder(r.Body).Decode(&label)
 	if err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
@@ -89,8 +98,13 @@ func (h *LabelsHandler) GetLabel(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *LabelsHandler) UpdateLabel(w http.ResponseWriter, r *http.Request) {
+	ok, err := utils.CheckPermissionAndExecute(w, r, h.authz, "labels", "update")
+	if err != nil || !ok {
+		return
+	}
+
 	var label Label
-	err := json.NewDecoder(r.Body).Decode(&label)
+	err = json.NewDecoder(r.Body).Decode(&label)
 	if err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
@@ -119,6 +133,11 @@ func (h *LabelsHandler) UpdateLabel(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *LabelsHandler) DeleteLabel(w http.ResponseWriter, r *http.Request) {
+	ok, err := utils.CheckPermissionAndExecute(w, r, h.authz, "labels", "delete")
+	if err != nil || !ok {
+		return
+	}
+
 	vars := mux.Vars(r)
 	labelID := vars["id"]
 
@@ -128,7 +147,7 @@ func (h *LabelsHandler) DeleteLabel(w http.ResponseWriter, r *http.Request) {
 		WHERE id = $1
 	`
 
-	_, err := h.pool.Exec(ctx, query, labelID)
+	_, err = h.pool.Exec(ctx, query, labelID)
 	if err != nil {
 		http.Error(w, "Failed to delete label", http.StatusInternalServerError)
 		return

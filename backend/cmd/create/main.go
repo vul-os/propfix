@@ -89,7 +89,7 @@ func createOrganizationsTable(dbpool *pgxpool.Pool) error {
 			id TEXT PRIMARY KEY,
 			name TEXT NOT NULL,
 			created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-			members JSON
+			members TEXT[]
 		)
 	`)
 	if err != nil {
@@ -105,7 +105,6 @@ func createPermissionsTable(dbpool *pgxpool.Pool) error {
 		CREATE TABLE IF NOT EXISTS permissions (
 			id TEXT PRIMARY KEY,
 			resource TEXT NOT NULL,
-			organization_id TEXT NOT NULL,
 			permission TEXT NOT NULL,
 			identifier TEXT NOT NULL,
 			created_at TIMESTAMP

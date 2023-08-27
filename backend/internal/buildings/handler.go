@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/exolutionza/propfix-backend-go/internal/authz"
+	"github.com/exolutionza/propfix-backend-go/internal/utils"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v4/pgxpool"
@@ -34,8 +35,13 @@ type Building struct {
 }
 
 func (h *BuildingsHandler) CreateBuilding(w http.ResponseWriter, r *http.Request) {
+	ok, err := utils.CheckPermissionAndExecute(w, r, h.authz, "buildings", "create")
+	if err != nil || !ok {
+		return
+	}
+
 	var building Building
-	err := json.NewDecoder(r.Body).Decode(&building)
+	err = json.NewDecoder(r.Body).Decode(&building)
 	if err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
@@ -60,7 +66,6 @@ func (h *BuildingsHandler) CreateBuilding(w http.ResponseWriter, r *http.Request
 	json.NewEncoder(w).Encode(map[string]string{"id": building.ID})
 }
 
-
 func (h *BuildingsHandler) GetBuilding(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	buildingID := vars["id"]
@@ -84,8 +89,13 @@ func (h *BuildingsHandler) GetBuilding(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *BuildingsHandler) UpdateBuilding(w http.ResponseWriter, r *http.Request) {
+	ok, err := utils.CheckPermissionAndExecute(w, r, h.authz, "buildings", "update")
+	if err != nil || !ok {
+		return
+	}
+
 	var building Building
-	err := json.NewDecoder(r.Body).Decode(&building)
+	err = json.NewDecoder(r.Body).Decode(&building)
 	if err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
@@ -111,6 +121,11 @@ func (h *BuildingsHandler) UpdateBuilding(w http.ResponseWriter, r *http.Request
 }
 
 func (h *BuildingsHandler) DeleteBuilding(w http.ResponseWriter, r *http.Request) {
+	ok, err := utils.CheckPermissionAndExecute(w, r, h.authz, "buildings", "delete")
+	if err != nil || !ok {
+		return
+	}
+
 	vars := mux.Vars(r)
 	buildingID := vars["id"]
 
@@ -119,7 +134,7 @@ func (h *BuildingsHandler) DeleteBuilding(w http.ResponseWriter, r *http.Request
 		DELETE FROM buildings
 		WHERE id = $1
 	`
-	_, err := h.dbpool.Exec(ctx, query, buildingID)
+	_, err = h.dbpool.Exec(ctx, query, buildingID)
 	if err != nil {
 		http.Error(w, "Failed to delete building", http.StatusInternalServerError)
 		return
@@ -127,4 +142,3 @@ func (h *BuildingsHandler) DeleteBuilding(w http.ResponseWriter, r *http.Request
 
 	w.WriteHeader(http.StatusNoContent)
 }
-
