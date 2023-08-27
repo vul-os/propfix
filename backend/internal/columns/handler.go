@@ -3,13 +3,11 @@ package columns
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
-
-	"github.com/google/uuid"
 
 	"github.com/exolutionza/propfix-backend-go/internal/authz"
 	"github.com/exolutionza/propfix-backend-go/internal/utils"
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
@@ -33,126 +31,127 @@ type Column struct {
 	BoardID string   `json:"boardId"`
 }
 
-func (h *ColumnsHandler) CreateColumn(w http.ResponseWriter, r *http.Request) {
-	ok, err := utils.CheckPermissionAndExecute(w, r, h.authz, "columns", "create")
+// JSON-RPC request for creating a column
+type CreateColumnRequest struct {
+	Column Column `json:"column"`
+}
+
+// JSON-RPC response for creating a column
+type CreateColumnResponse struct {
+	ID string `json:"id"`
+}
+
+func (h *ColumnsHandler) CreateColumn(r *http.Request, args *CreateColumnRequest, result *CreateColumnResponse) error {
+	ok, err := utils.CheckPermissionAndExecuteResponse(r, h.authz, "columns", "create")
 	if err != nil || !ok {
-		return
+		return err
 	}
 
-	var column Column
-	err = json.NewDecoder(r.Body).Decode(&column)
-	if err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
-		return
-	}
-
-	// Generate a new UUID for the column ID
-	column.ID = uuid.New().String()
+	args.Column.ID = uuid.New().String()
 
 	ctx := context.Background()
 	query := `
 		INSERT INTO columns (id, name, job_ids, board_id)
 		VALUES ($1, $2, $3, $4)
-		RETURNING id -- Return the newly created ID
+		RETURNING id
 	`
-	var createdID string
-	err = h.dbpool.QueryRow(ctx, query, column.ID, column.Name, column.JobIDs, column.BoardID).Scan(&createdID)
-	if err != nil {
-		http.Error(w, "Failed to create column", http.StatusInternalServerError)
-		return
+	row := h.dbpool.QueryRow(ctx, query, args.Column.ID, args.Column.Name, args.Column.JobIDs, args.Column.BoardID)
+	if err := row.Scan(&args.Column.ID); err != nil {
+		return err
 	}
 
-	// Return the created ID in the response
-	response := map[string]string{"id": createdID}
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+	result.ID = args.Column.ID
+	return nil
 }
 
-func (h *ColumnsHandler) GetColumn(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	columnID := vars["id"]
+// JSON-RPC request for getting a column
+type GetColumnRequest struct {
+	ID string `json:"id"`
+}
 
+// JSON-RPC response for getting a column
+type GetColumnResponse struct {
+	Column Column `json:"column"`
+}
+
+func (h *ColumnsHandler) GetColumn(r *http.Request, args *GetColumnRequest, result *GetColumnResponse) error {
 	ctx := context.Background()
 	query := `
 		SELECT id, name, job_ids, board_id
 		FROM columns
 		WHERE id = $1
 	`
-	row := h.dbpool.QueryRow(ctx, query, columnID)
+	row := h.dbpool.QueryRow(ctx, query, args.ID)
 
 	var column Column
 	err := row.Scan(&column.ID, &column.Name, &column.JobIDs, &column.BoardID)
 	if err != nil {
-		http.Error(w, "Column not found", http.StatusNotFound)
-		return
+		return err
 	}
 
-	json.NewEncoder(w).Encode(column)
+	result.Column = column
+	return nil
 }
 
-func (h *ColumnsHandler) UpdateColumn(w http.ResponseWriter, r *http.Request) {
-	ok, err := utils.CheckPermissionAndExecute(w, r, h.authz, "columns", "update")
-	if err != nil || !ok {
-		return
-	}
+// JSON-RPC request for updating a column
+type UpdateColumnRequest struct {
+	Column Column `json:"column"`
+}
 
-	var column Column
-	err = json.NewDecoder(r.Body).Decode(&column)
-	if err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
-		return
+func (h *ColumnsHandler) UpdateColumn(r *http.Request, args *UpdateColumnRequest, result *utils.EmptyResponse) error {
+	ok, err := utils.CheckPermissionAndExecuteResponse(r, h.authz, "columns", "update")
+	if err != nil || !ok {
+		return err
 	}
 
 	ctx := context.Background()
 	query := `
 		UPDATE columns
-		SET name = $2, jobids = $3, boardid = $4
+		SET name = $2, job_ids = $3, board_id = $4
 		WHERE id = $1
 	`
-	_, err = h.dbpool.Exec(ctx, query, column.ID, column.Name, column.JobIDs, column.BoardID)
+	_, err = h.dbpool.Exec(ctx, query, args.Column.ID, args.Column.Name, args.Column.JobIDs, args.Column.BoardID)
 	if err != nil {
-		http.Error(w, "Failed to update column", http.StatusInternalServerError)
-		return
+		return err
 	}
+
+	return nil
 }
 
-func (h *ColumnsHandler) DeleteColumn(w http.ResponseWriter, r *http.Request) {
-	ok, err := utils.CheckPermissionAndExecute(w, r, h.authz, "columns", "delete")
-	if err != nil || !ok {
-		return
-	}
+// JSON-RPC request for deleting a column
+type DeleteColumnRequest struct {
+	ID string `json:"id"`
+}
 
-	vars := mux.Vars(r)
-	columnID := vars["id"]
+func (h *ColumnsHandler) DeleteColumn(r *http.Request, args *DeleteColumnRequest, result *utils.EmptyResponse) error {
+	ok, err := utils.CheckPermissionAndExecuteResponse(r, h.authz, "columns", "delete")
+	if err != nil || !ok {
+		return err
+	}
 
 	ctx := context.Background()
 	query := `
 		DELETE FROM columns
 		WHERE id = $1
 	`
-	_, err = h.dbpool.Exec(ctx, query, columnID)
+	_, err = h.dbpool.Exec(ctx, query, args.ID)
 	if err != nil {
-		http.Error(w, "Failed to delete column", http.StatusInternalServerError)
-		return
+		return err
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	return nil
 }
 
-func (h *ColumnsHandler) MoveJob(w http.ResponseWriter, r *http.Request) {
+// JSON-RPC request for moving a job between columns
+type MoveJobRequest struct {
+	JobID    string `json:"jobId"`
+	SourceID string `json:"sourceId"`
+	TargetID string `json:"targetId"`
+}
+
+func (h *ColumnsHandler) MoveJob(r *http.Request, args *MoveJobRequest, result *utils.EmptyResponse) error {
 	// Permission check for MoveJob endpoint is not necessary as it's based on specific source and target columns
 	// and the user's permissions on those columns are already checked in GetColumn and UpdateColumn endpoints.
-
-	var moveData struct {
-		JobId    string `json:"jobId"`
-		SourceID string `json:"sourceId"`
-		TargetID string `json:"targetId"`
-	}
-	err := json.NewDecoder(r.Body).Decode(&moveData)
-	if err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
-		return
-	}
 
 	ctx := context.Background()
 
@@ -162,13 +161,11 @@ func (h *ColumnsHandler) MoveJob(w http.ResponseWriter, r *http.Request) {
 		FROM columns
 		WHERE id = $1
 	`
-	row := h.dbpool.QueryRow(ctx, currentQuery, moveData.SourceID)
+	row := h.dbpool.QueryRow(ctx, currentQuery, args.SourceID)
 	var currentColumn Column
-	err = row.Scan(&currentColumn.ID, &currentColumn.Name, &currentColumn.JobIDs, &currentColumn.BoardID)
+	err := row.Scan(&currentColumn.ID, &currentColumn.Name, &currentColumn.JobIDs, &currentColumn.BoardID)
 	if err != nil {
-		fmt.Println(err)
-		http.Error(w, "Column not found", http.StatusNotFound)
-		return
+		return err
 	}
 
 	// Retrieve the target column
@@ -177,19 +174,16 @@ func (h *ColumnsHandler) MoveJob(w http.ResponseWriter, r *http.Request) {
 		FROM columns
 		WHERE id = $1
 	`
-	row = h.dbpool.QueryRow(ctx, targetQuery, moveData.TargetID)
+	row = h.dbpool.QueryRow(ctx, targetQuery, args.TargetID)
 	var targetColumn Column
 	err = row.Scan(&targetColumn.ID, &targetColumn.Name, &targetColumn.JobIDs, &targetColumn.BoardID)
 	if err != nil {
-		fmt.Println(err)
-
-		http.Error(w, "Column not found", http.StatusNotFound)
-		return
+		return err
 	}
 
 	// Move the job from the current column to the target column
-	currentColumn.JobIDs = removeString(currentColumn.JobIDs, moveData.JobId)
-	targetColumn.JobIDs = append(targetColumn.JobIDs, moveData.JobId)
+	currentColumn.JobIDs = removeString(currentColumn.JobIDs, args.JobID)
+	targetColumn.JobIDs = append(targetColumn.JobIDs, args.JobID)
 
 	// Update the current column in the database
 	updateCurrentQuery := `
@@ -199,8 +193,7 @@ func (h *ColumnsHandler) MoveJob(w http.ResponseWriter, r *http.Request) {
 	`
 	_, err = h.dbpool.Exec(ctx, updateCurrentQuery, currentColumn.ID, currentColumn.JobIDs)
 	if err != nil {
-		http.Error(w, "Failed to move job", http.StatusInternalServerError)
-		return
+		return err
 	}
 
 	// Update the target column in the database
@@ -211,11 +204,10 @@ func (h *ColumnsHandler) MoveJob(w http.ResponseWriter, r *http.Request) {
 	`
 	_, err = h.dbpool.Exec(ctx, updateTargetQuery, targetColumn.ID, targetColumn.JobIDs)
 	if err != nil {
-		http.Error(w, "Failed to move job", http.StatusInternalServerError)
-		return
+		return err
 	}
 
-	w.WriteHeader(http.StatusOK)
+	return nil
 }
 
 // removeString removes the given string from the slice.
@@ -229,17 +221,15 @@ func removeString(slice []string, target string) []string {
 	return result
 }
 
-func (h *ColumnsHandler) GetAllColumns(w http.ResponseWriter, r *http.Request) {
-
+func (h *ColumnsHandler) GetAllColumns(r *http.Request, args *utils.EmptyRequest, result *[]Column) error {
 	ctx := context.Background()
 	query := `
-		SELECT id, name, jobids, boardid
+		SELECT id, name, job_ids, board_id
 		FROM columns
 	`
 	rows, err := h.dbpool.Query(ctx, query)
 	if err != nil {
-		http.Error(w, "Failed to fetch columns", http.StatusInternalServerError)
-		return
+		return err
 	}
 	defer rows.Close()
 
@@ -248,11 +238,11 @@ func (h *ColumnsHandler) GetAllColumns(w http.ResponseWriter, r *http.Request) {
 		var column Column
 		err := rows.Scan(&column.ID, &column.Name, &column.JobIDs, &column.BoardID)
 		if err != nil {
-			http.Error(w, "Failed to read columns data", http.StatusInternalServerError)
-			return
+			return err
 		}
 		columns = append(columns, column)
 	}
 
-	json.NewEncoder(w).Encode(columns)
+	*result = columns
+	return nil
 }

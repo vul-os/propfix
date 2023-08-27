@@ -34,21 +34,24 @@ type Building struct {
 	OrganizationID   string    `json:"organizationId"`
 }
 
-func (h *BuildingsHandler) CreateBuilding(w http.ResponseWriter, r *http.Request) {
-	ok, err := utils.CheckPermissionAndExecute(w, r, h.authz, "buildings", "create")
+// JSON-RPC request for creating a building
+type CreateBuildingRequest struct {
+	Building Building `json:"building"`
+}
+
+// JSON-RPC response for creating a building
+type CreateBuildingResponse struct {
+	ID string `json:"id"`
+}
+
+func (h *BuildingsHandler) CreateBuilding(r *http.Request, args *CreateBuildingRequest, result *CreateBuildingResponse) error {
+	ok, err := utils.CheckPermissionAndExecuteResponse(r, h.authz, "buildings", "create", args.Building.OrganizationID)
 	if err != nil || !ok {
-		return
+		return err
 	}
 
-	var building Building
-	err = json.NewDecoder(r.Body).Decode(&building)
-	if err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
-		return
-	}
-
-	building.ID = uuid.New().String()
-	building.CreatedAt = time.Now()
+	args.Building.ID = uuid.New().String()
+	args.Building.CreatedAt = time.Now()
 
 	ctx := context.Background()
 	query := `
@@ -56,19 +59,31 @@ func (h *BuildingsHandler) CreateBuilding(w http.ResponseWriter, r *http.Request
 		VALUES ($1, $2, $3, $4, $5, $6)
 		RETURNING id
 	`
-	row := h.dbpool.QueryRow(ctx, query, building.ID, building.BuildingName, building.Address, building.UnitNumberSystem, building.CreatedAt, building.OrganizationID)
-	if err := row.Scan(&building.ID); err != nil {
-		http.Error(w, "Failed to create building", http.StatusInternalServerError)
-		return
+	row := h.dbpool.QueryRow(ctx, query, args.Building.ID, args.Building.BuildingName, args.Building.Address, args.Building.UnitNumberSystem, args.Building.CreatedAt, args.Building.OrganizationID)
+	if err := row.Scan(&args.Building.ID); err != nil {
+		return err
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{"id": building.ID})
+	result.ID = args.Building.ID
+	return nil
 }
 
-func (h *BuildingsHandler) GetBuilding(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	buildingID := vars["id"]
+// JSON-RPC request for getting a building
+type GetBuildingRequest struct {
+	ID             string `json:"id"`
+	OrganizationID string `json:"organizationId"`
+}
+
+// JSON-RPC response for getting a building
+type GetBuildingResponse struct {
+	Building Building `json:"building"`
+}
+
+func (h *BuildingsHandler) GetBuilding(r *http.Request, args *GetBuildingRequest, result *GetBuildingResponse) error {
+	ok, err := utils.CheckPermissionAndOrgsResponse(r, h.authz, "buildings", "read", args.OrganizationID)
+	if err != nil || !ok {
+		return err
+	}
 
 	ctx := context.Background()
 	query := `
@@ -76,35 +91,32 @@ func (h *BuildingsHandler) GetBuilding(w http.ResponseWriter, r *http.Request) {
 		FROM buildings
 		WHERE id = $1
 	`
-	row := h.dbpool.QueryRow(ctx, query, buildingID)
+	row := h.dbpool.QueryRow(ctx, query, args.ID)
 
 	var building Building
-	err := row.Scan(&building.ID, &building.BuildingName, &building.Address, &building.UnitNumberSystem, &building.CreatedAt, &building.OrganizationID)
+	err = row.Scan(&building.ID, &building.BuildingName, &building.Address, &building.UnitNumberSystem, &building.CreatedAt, &building.OrganizationID)
 	if err != nil {
-		http.Error(w, "Building not found", http.StatusNotFound)
-		return
+		return err
 	}
 
-	json.NewEncoder(w).Encode(building)
+	result.Building = building
+	return nil
 }
 
-func (h *BuildingsHandler) UpdateBuilding(w http.ResponseWriter, r *http.Request) {
-	ok, err := utils.CheckPermissionAndExecute(w, r, h.authz, "buildings", "update")
-	if err != nil || !ok {
-		return
-	}
+// JSON-RPC request for updating a building
+type UpdateBuildingRequest struct {
+	Building Building `json:"building"`
+}
 
-	var building Building
-	err = json.NewDecoder(r.Body).Decode(&building)
-	if err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
-		return
+func (h *BuildingsHandler) UpdateBuilding(r *http.Request, args *UpdateBuildingRequest, result *utils.EmptyResponse) error {
+	ok, err := utils.CheckPermissionAndExecuteResponse(r, h.authz, "buildings", "update", args.Building.OrganizationID)
+	if err != nil || !ok {
+		return err
 	}
 
 	// Perform basic validation on the building data before update
-	if building.BuildingName == "" || building.Address == "" || building.UnitNumberSystem == "" {
-		http.Error(w, "BuildingName, Address, and UnitNumberSystem are required fields", http.StatusBadRequest)
-		return
+	if args.Building.BuildingName == "" || args.Building.Address == "" || args.Building.UnitNumberSystem == "" {
+		return utils.NewBadRequestError("BuildingName, Address, and UnitNumberSystem are required fields")
 	}
 
 	ctx := context.Background()
@@ -113,32 +125,35 @@ func (h *BuildingsHandler) UpdateBuilding(w http.ResponseWriter, r *http.Request
 		SET building_name = $2, address = $3, unit_number_system = $4
 		WHERE id = $1
 	`
-	_, err = h.dbpool.Exec(ctx, query, building.ID, building.BuildingName, building.Address, building.UnitNumberSystem)
+	_, err = h.dbpool.Exec(ctx, query, args.Building.ID, args.Building.BuildingName, args.Building.Address, args.Building.UnitNumberSystem)
 	if err != nil {
-		http.Error(w, "Failed to update building", http.StatusInternalServerError)
-		return
+		return err
 	}
+
+	return nil
 }
 
-func (h *BuildingsHandler) DeleteBuilding(w http.ResponseWriter, r *http.Request) {
-	ok, err := utils.CheckPermissionAndExecute(w, r, h.authz, "buildings", "delete")
-	if err != nil || !ok {
-		return
-	}
+// JSON-RPC request for deleting a building
+type DeleteBuildingRequest struct {
+	ID             string `json:"id"`
+	OrganizationID string `json:"organizationId"`
+}
 
-	vars := mux.Vars(r)
-	buildingID := vars["id"]
+func (h *BuildingsHandler) DeleteBuilding(r *http.Request, args *DeleteBuildingRequest, result *utils.EmptyResponse) error {
+	ok, err := utils.CheckPermissionAndOrgsResponse(r, h.authz, "buildings", "delete", args.OrganizationID)
+	if err != nil || !ok {
+		return err
+	}
 
 	ctx := context.Background()
 	query := `
 		DELETE FROM buildings
 		WHERE id = $1
 	`
-	_, err = h.dbpool.Exec(ctx, query, buildingID)
+	_, err = h.dbpool.Exec(ctx, query, args.ID)
 	if err != nil {
-		http.Error(w, "Failed to delete building", http.StatusInternalServerError)
-		return
+		return err
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	return nil
 }

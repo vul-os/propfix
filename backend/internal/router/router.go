@@ -3,12 +3,10 @@ package router
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 
 	firebase "firebase.google.com/go/v4"
-	"github.com/exolutionza/propfix-backend-go/internal/attachments"
-	auth "github.com/exolutionza/propfix-backend-go/internal/auth"
+	"github.com/exolutionza/propfix-backend-go/internal/auth"
 	"github.com/exolutionza/propfix-backend-go/internal/authz"
 	"github.com/exolutionza/propfix-backend-go/internal/board"
 	"github.com/exolutionza/propfix-backend-go/internal/buildings"
@@ -20,6 +18,8 @@ import (
 	"github.com/exolutionza/propfix-backend-go/internal/permissions"
 	"github.com/exolutionza/propfix-backend-go/internal/role"
 	"github.com/gorilla/mux"
+	"github.com/gorilla/rpc/v2"
+	"github.com/gorilla/rpc/v2/json2"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
@@ -37,7 +37,8 @@ func Router(w http.ResponseWriter, r *http.Request) {
 	// Create a PostgreSQL connection pool
 	dbpool, err := pgxpool.Connect(context.Background(), pgConnString)
 	if err != nil {
-		log.Fatalf("Failed to connect to PostgreSQL: %v", err)
+		http.Error(w, "Failed to connect to PostgreSQL", http.StatusInternalServerError)
+		return
 	}
 	defer dbpool.Close()
 
@@ -46,24 +47,35 @@ func Router(w http.ResponseWriter, r *http.Request) {
 	}
 	app, err := firebase.NewApp(context.Background(), conf)
 	if err != nil {
-		log.Fatalf("Failed to initialize Firebase app: %v", err)
+		http.Error(w, "Failed to initialize Firebase app", http.StatusInternalServerError)
+		return
 	}
 
 	// Initialize Firebase Auth client
 	authClient, err := app.Auth(context.Background())
 	if err != nil {
-		log.Fatalf("Failed to initialize Firebase Auth client: %v", err)
+		http.Error(w, "Failed to initialize Firebase Auth client", http.StatusInternalServerError)
+		return
 	}
 	authorizer := authz.NewAuthz(dbpool)
 
 	// Create an instance of the EventsStore
 	eventsStore := events.NewEventsStore(dbpool)
 	orgStore := organizations.NewOrganizationStore(dbpool)
-	// Create the file upload handler
-	fileUploadHandler, err := attachments.NewFileUploadHandler("propfix-attachments", eventsStore)
+
+	// Create a new RoleHandler instance
+	roleHandler := NewRoleHandler(dbpool, authorizer)
+
+	// Create a new RPC server
+	rpcServer := rpc.NewServer()
+
+	// Register the RoleHandler for RPC methods
+	err = rpcServer.RegisterCodec(json2.NewCodec(), "application/json")
 	if err != nil {
-		log.Fatalf("Failed to initialize File Upload Handler: %v", err)
+		http.Error(w, "Failed to register JSON codec", http.StatusInternalServerError)
+		return
 	}
+	rpcServer.RegisterService(roleHandler, "Role")
 
 	// Create a Gorilla Mux router
 	router := mux.NewRouter()
@@ -75,78 +87,30 @@ func Router(w http.ResponseWriter, r *http.Request) {
 	protectedRouter := router.PathPrefix("").Subrouter()
 	protectedRouter.Use(auth.IsAuthenticated(authClient, *orgStore))
 
-	// Add routes from the attachments package handlers
-	protectedRouter.HandleFunc("/file/{jobid}/{filename}", fileUploadHandler.GetFile).Methods("GET")
-	protectedRouter.HandleFunc("/file/{jobid}/{filename}", fileUploadHandler.DeleteFile).Methods("DELETE")
-	protectedRouter.HandleFunc("/file/{jobid}", fileUploadHandler.UploadFile).Methods("POST")
-
-	// Add routes from the board package handlers
+	// Create a new BoardHandler instance
 	boardHandler := board.NewBoardsHandler(dbpool, authorizer)
-	protectedRouter.HandleFunc("/boards", boardHandler.CreateBoard).Methods("POST")
-	protectedRouter.HandleFunc("/boards/{id}", boardHandler.GetBoard).Methods("GET")
-	protectedRouter.HandleFunc("/boards", boardHandler.UpdateBoard).Methods("PUT")
-	protectedRouter.HandleFunc("/boards/{id}", boardHandler.DeleteBoard).Methods("DELETE")
 
-	// Add routes from the buildings package handlers
+	// Create a new BuildingsHandler instance
 	buildingsHandler := buildings.NewBuildingsHandler(dbpool, authorizer)
-	protectedRouter.HandleFunc("/buildings/{id}", buildingsHandler.GetBuilding).Methods("GET")
-	protectedRouter.HandleFunc("/buildings", buildingsHandler.CreateBuilding).Methods("POST")
-	protectedRouter.HandleFunc("/buildings", buildingsHandler.UpdateBuilding).Methods("PUT")
-	protectedRouter.HandleFunc("/buildings/{id}", buildingsHandler.DeleteBuilding).Methods("DELETE")
 
-	// Add routes from the columns package handlers
+	// Create a new ColumnsHandler instance
 	columnsHandler := columns.NewColumnsHandler(dbpool, authorizer)
-	protectedRouter.HandleFunc("/columns", columnsHandler.GetAllColumns).Methods("GET")
-	protectedRouter.HandleFunc("/columns/{id}", columnsHandler.GetColumn).Methods("GET")
-	protectedRouter.HandleFunc("/columns", columnsHandler.CreateColumn).Methods("POST")
-	protectedRouter.HandleFunc("/columns/{id}", columnsHandler.UpdateColumn).Methods("PUT")
-	protectedRouter.HandleFunc("/columns/{id}", columnsHandler.DeleteColumn).Methods("DELETE")
-	protectedRouter.HandleFunc("/movejob", columnsHandler.MoveJob).Methods("POST")
 
-	// Add routes from the jobs package handlers
+	// Create a new JobsHandler instance
 	jobsHandler := jobs.NewJobsHandler(dbpool, eventsStore, authorizer)
-	protectedRouter.HandleFunc("/jobs", jobsHandler.GetAllJobs).Methods("GET")
-	protectedRouter.HandleFunc("/jobs/{id}", jobsHandler.GetJob).Methods("GET")
-	protectedRouter.HandleFunc("/jobs/{id}", jobsHandler.DeleteJob).Methods("DELETE")
-	protectedRouter.HandleFunc("/jobs", jobsHandler.CreateJob).Methods("POST")
-	protectedRouter.HandleFunc("/jobs", jobsHandler.UpdateJob).Methods("PUT")
 
-	// Add routes from the events package handlers
+	// Create a new EventsHandler instance
 	eventsHandler := events.NewEventsHandler(eventsStore, authorizer)
-	protectedRouter.HandleFunc("/events/{id}", eventsHandler.GetEvent).Methods("GET")
-	protectedRouter.HandleFunc("/events", eventsHandler.CreateEvent).Methods("POST")
-	protectedRouter.HandleFunc("/events", eventsHandler.UpdateEvent).Methods("PUT")
-	protectedRouter.HandleFunc("/events/{id}", eventsHandler.DeleteEvent).Methods("DELETE")
 
-	// Add routes for labels
+	// Create a new LabelsHandler instance
 	labelsHandler := labels.NewLabelsHandler(dbpool, authorizer)
-	protectedRouter.HandleFunc("/labels/{id}", labelsHandler.GetLabel).Methods("GET")
-	protectedRouter.HandleFunc("/labels", labelsHandler.CreateLabel).Methods("POST")
-	protectedRouter.HandleFunc("/labels", labelsHandler.UpdateLabel).Methods("PUT")
-	protectedRouter.HandleFunc("/labels/{id}", labelsHandler.DeleteLabel).Methods("DELETE")
 
+	// Create a new OrganizationHandler instance
 	organizationHandler := organizations.NewOrganizationHandler(orgStore, authorizer)
-	protectedRouter.HandleFunc("/organizations", organizationHandler.CreateOrganization).Methods("POST")
-	protectedRouter.HandleFunc("/organizations/{id}", organizationHandler.GetOrganization).Methods("GET")
-	protectedRouter.HandleFunc("/organizations", organizationHandler.UpdateOrganization).Methods("PUT")
-	protectedRouter.HandleFunc("/organizations/{id}", organizationHandler.DeleteOrganization).Methods("DELETE")
-	// Add routes for AddMember and RemoveMember handlers
-	protectedRouter.HandleFunc("/organizations/add-member", organizationHandler.AddMember).Methods("POST")
-	protectedRouter.HandleFunc("/organizations/remove-member", organizationHandler.RemoveMember).Methods("POST")
 
-	// Add routes for permissions
+	// Create a new PermissionsHandler instance
 	permissionsHandler := permissions.NewPermissionsHandler(dbpool, authorizer)
-	protectedRouter.HandleFunc("/permissions/{id}", permissionsHandler.GetPermission).Methods("GET")
-	protectedRouter.HandleFunc("/permissions", permissionsHandler.CreatePermission).Methods("POST")
-	protectedRouter.HandleFunc("/permissions", permissionsHandler.UpdatePermission).Methods("PUT")
-	protectedRouter.HandleFunc("/permissions/{id}", permissionsHandler.DeletePermission).Methods("DELETE")
 
-	// Add routes for roles
-	rolesHandler := role.NewRoleHandler(dbpool, authorizer)
-	protectedRouter.HandleFunc("/roles/{id}", rolesHandler.GetRole).Methods("GET")
-	protectedRouter.HandleFunc("/roles", rolesHandler.CreateRole).Methods("POST")
-	protectedRouter.HandleFunc("/roles", rolesHandler.UpdateRole).Methods("PUT")
-	protectedRouter.HandleFunc("/roles/{id}", rolesHandler.DeleteRole).Methods("DELETE")
 
 	// Apply the enableCORS middleware to all routes
 	handler := EnableCORS(router)
@@ -155,7 +119,6 @@ func Router(w http.ResponseWriter, r *http.Request) {
 	handler.ServeHTTP(w, r)
 }
 
-// helloWorld writes "Hello, World!" to the HTTP response.
 func helloWorld(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "Hello, World!")
 }

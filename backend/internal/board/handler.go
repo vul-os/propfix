@@ -2,49 +2,41 @@ package board
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"net/http"
-
 	"github.com/exolutionza/propfix-backend-go/internal/authz"
 	"github.com/exolutionza/propfix-backend-go/internal/utils"
 	"github.com/google/uuid"
-	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
 type BoardsHandler struct {
 	dbpool *pgxpool.Pool
-	authz  *authz.Authz // Add the authz instance to the handler
+	authz  *authz.Authz
 }
 
 func NewBoardsHandler(dbpool *pgxpool.Pool, authz *authz.Authz) *BoardsHandler {
 	return &BoardsHandler{
 		dbpool: dbpool,
-		authz:  authz, // Assign the authz instance to the handler
+		authz:  authz,
 	}
 }
 
-type Board struct {
-	ID             string `json:"id"`
+type CreateBoardRequest struct {
 	Name           string `json:"name"`
 	OrganizationID string `json:"organizationId"`
 }
 
-func (h *BoardsHandler) CreateBoard(w http.ResponseWriter, r *http.Request) {
-	var board Board
-	err := json.NewDecoder(r.Body).Decode(&board)
-	if err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
-		return
-	}
+type CreateBoardResponse struct {
+	ID string `json:"id"`
+}
 
-	ok, err := utils.CheckPermissionAndOrgs(w, r, h.authz, "boards", "create", board.OrganizationID)
+func (h *BoardsHandler) CreateBoard(args *CreateBoardRequest, result *CreateBoardResponse) error {
+	ok, err := utils.CheckPermissionAndOrgs(nil, nil, h.authz, "boards", "create", args.OrganizationID)
 	if err != nil || !ok {
-		return
+		return err
 	}
 
-	board.ID = uuid.New().String()
+	boardID := uuid.New().String()
 
 	ctx := context.Background()
 	query := `
@@ -52,25 +44,32 @@ func (h *BoardsHandler) CreateBoard(w http.ResponseWriter, r *http.Request) {
 		VALUES ($1, $2, $3)
 		RETURNING id
 	`
-	err = h.dbpool.QueryRow(ctx, query, board.ID, board.Name, board.OrganizationID).Scan(&board.ID)
+	err = h.dbpool.QueryRow(ctx, query, boardID, args.Name, args.OrganizationID).Scan(&boardID)
 	if err != nil {
-		fmt.Println(err)
-		http.Error(w, "Failed to create board", http.StatusInternalServerError)
-		return
+		return fmt.Errorf("Failed to create board: %v", err)
 	}
 
-	// Return the created ID as a JSON response
-	responseJSON := map[string]string{"id": board.ID}
-	responseData, _ := json.Marshal(responseJSON)
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	w.Write(responseData)
+	result.ID = boardID
+	return nil
 }
 
-func (h *BoardsHandler) GetBoard(w http.ResponseWriter, r *http.Request) {
+// GetBoardRequest defines the request parameters for the GetBoard method.
+type GetBoardRequest struct {
+	ID             string `json:"id"`
+	OrganizationID string `json:"organizationId"`
+}
 
-	vars := mux.Vars(r)
-	boardID := vars["id"]
+// GetBoardResponse defines the response structure for the GetBoard method.
+type GetBoardResponse struct {
+	Board Board `json:"board"`
+}
+
+// GetBoard retrieves a board by its ID.
+func (h *BoardsHandler) GetBoard(args *GetBoardRequest, result *GetBoardResponse) error {
+	ok, err := utils.CheckPermissionAndOrgs(nil, nil, h.authz, "boards", "read", args.OrganizationID)
+	if err != nil || !ok {
+		return err
+	}
 
 	ctx := context.Background()
 	query := `
@@ -78,95 +77,107 @@ func (h *BoardsHandler) GetBoard(w http.ResponseWriter, r *http.Request) {
 		FROM boards
 		WHERE id = $1
 	`
-	row := h.dbpool.QueryRow(ctx, query, boardID)
+	row := h.dbpool.QueryRow(ctx, query, args.ID)
 
 	var board Board
-	err := row.Scan(&board.ID, &board.Name, &board.OrganizationID)
+	err = row.Scan(&board.ID, &board.Name, &board.OrganizationID)
 	if err != nil {
-		fmt.Println(err)
-		http.Error(w, "Board not found", http.StatusNotFound)
-		return
+		return fmt.Errorf("Board not found: %v", err)
 	}
 
-	json.NewEncoder(w).Encode(board)
+	result.Board = board
+	return nil
 }
 
-func (h *BoardsHandler) UpdateBoard(w http.ResponseWriter, r *http.Request) {
-	var board Board
-	err := json.NewDecoder(r.Body).Decode(&board)
-	if err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
-		return
+package board
+
+import (
+	"context"
+	"fmt"
+	"github.com/exolutionza/propfix-backend-go/internal/authz"
+	"github.com/exolutionza/propfix-backend-go/internal/utils"
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v4/pgxpool"
+)
+
+type BoardsHandler struct {
+	dbpool *pgxpool.Pool
+	authz  *authz.Authz
+}
+
+func NewBoardsHandler(dbpool *pgxpool.Pool, authz *authz.Authz) *BoardsHandler {
+	return &BoardsHandler{
+		dbpool: dbpool,
+		authz:  authz,
 	}
-	ok, err := utils.CheckPermissionAndOrgs(w, r, h.authz, "boards", "update", board.OrganizationID)
+}
+
+type CreateBoardRequest struct {
+	Name           string `json:"name"`
+	OrganizationID string `json:"organizationId"`
+}
+
+type CreateBoardResponse struct {
+	ID string `json:"id"`
+}
+
+func (h *BoardsHandler) CreateBoard(args *CreateBoardRequest, result *CreateBoardResponse) error {
+	ok, err := utils.CheckPermissionAndOrgs(nil, nil, h.authz, "boards", "create", args.OrganizationID)
 	if err != nil || !ok {
-		return
+		return err
 	}
+
+	boardID := uuid.New().String()
 
 	ctx := context.Background()
 	query := `
-		UPDATE boards
-		SET name = $2
-		WHERE id = $1
+		INSERT INTO boards (id, name, organization_id)
+		VALUES ($1, $2, $3)
+		RETURNING id
 	`
-	_, err = h.dbpool.Exec(ctx, query, board.ID, board.Name)
+	err = h.dbpool.QueryRow(ctx, query, boardID, args.Name, args.OrganizationID).Scan(&boardID)
 	if err != nil {
-		http.Error(w, "Failed to update board", http.StatusInternalServerError)
-		return
+		return fmt.Errorf("Failed to create board: %v", err)
 	}
+
+	result.ID = boardID
+	return nil
 }
 
-func (h *BoardsHandler) DeleteBoard(w http.ResponseWriter, r *http.Request) {
-	ok, err := utils.CheckPermissionAndExecute(w, r, h.authz, "boards", "delete")
-	if err != nil || !ok {
-		return
-	}
+// GetBoardRequest defines the request parameters for the GetBoard method.
+type GetBoardRequest struct {
+	ID             string `json:"id"`
+	OrganizationID string `json:"organizationId"`
+}
 
-	vars := mux.Vars(r)
-	boardID := vars["id"]
+// GetBoardResponse defines the response structure for the GetBoard method.
+type GetBoardResponse struct {
+	Board Board `json:"board"`
+}
+
+// GetBoard retrieves a board by its ID.
+func (h *BoardsHandler) GetBoard(args *GetBoardRequest, result *GetBoardResponse) error {
+	ok, err := utils.CheckPermissionAndOrgs(nil, nil, h.authz, "boards", "read", args.OrganizationID)
+	if err != nil || !ok {
+		return err
+	}
 
 	ctx := context.Background()
 	query := `
-		DELETE FROM boards
-		WHERE id = $1
-	`
-	_, err = h.dbpool.Exec(ctx, query, boardID)
-	if err != nil {
-		http.Error(w, "Failed to delete board", http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusNoContent)
-}
-
-func (h *BoardsHandler) GetAllBoards(w http.ResponseWriter, r *http.Request) {
-	ok, err := utils.CheckPermissionAndExecute(w, r, h.authz, "boards", "delete")
-	if err != nil || !ok {
-		return
-	}
-	ctx := context.Background()
-	query := `
-		SELECT id, name, organizationid
+		SELECT id, name, organization_id
 		FROM boards
+		WHERE id = $1
 	`
+	row := h.dbpool.QueryRow(ctx, query, args.ID)
 
-	rows, err := h.dbpool.Query(ctx, query)
+	var board Board
+	err = row.Scan(&board.ID, &board.Name, &board.OrganizationID)
 	if err != nil {
-		http.Error(w, "Failed to fetch boards", http.StatusInternalServerError)
-		return
-	}
-	defer rows.Close()
-
-	var boards []Board
-	for rows.Next() {
-		var board Board
-		err := rows.Scan(&board.ID, &board.Name, &board.OrganizationID)
-		if err != nil {
-			http.Error(w, "Failed to read boards data", http.StatusInternalServerError)
-			return
-		}
-		boards = append(boards, board)
+		return fmt.Errorf("Board not found: %v", err)
 	}
 
-	json.NewEncoder(w).Encode(boards)
+	result.Board = board
+	return nil
 }
+
+

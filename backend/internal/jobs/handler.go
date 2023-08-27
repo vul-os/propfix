@@ -7,14 +7,12 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/jackc/pgx/v4"
-	"github.com/jackc/pgx/v4/pgxpool"
-
 	"github.com/exolutionza/propfix-backend-go/internal/authz"
 	"github.com/exolutionza/propfix-backend-go/internal/events"
 	"github.com/exolutionza/propfix-backend-go/internal/utils"
 	"github.com/gorilla/mux"
 	"github.com/teris-io/shortid"
+	"github.com/jackc/pgx/v4/pgxpool"
 )
 
 type JobsHandler struct {
@@ -49,31 +47,35 @@ type Job struct {
 	CreatedAt        time.Time `json:"createdAt"`
 }
 
-func (h *JobsHandler) CreateJob(w http.ResponseWriter, r *http.Request) {
-	ok, err := utils.CheckPermissionAndExecute(w, r, h.authz, "jobs", "create")
-	if err != nil || !ok {
-		return
-	}
+// JSON-RPC request for creating a job
+type CreateJobRequest struct {
+	Job Job `json:"job"`
+	OrganizationID string `json:"organizationId"`
+}
 
-	var jobReq Job
-	err = json.NewDecoder(r.Body).Decode(&jobReq)
-	if err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
-		return
+// JSON-RPC response for creating a job
+type CreateJobResponse struct {
+	ID string `json:"id"`
+	Name string `json:"name"`
+}
+
+func (h *JobsHandler) CreateJob(r *http.Request, args *CreateJobRequest, result *CreateJobResponse) error {
+	ok, err := utils.CheckPermissionAndExecuteResponseWithOrgID(r, h.authz, args.OrganizationID, "jobs", "create")
+	if err != nil || !ok {
+		return err
 	}
 
 	ctx := r.Context()
 
 	id, err := shortid.Generate()
 	if err != nil {
-		http.Error(w, "Failed to generate ID", http.StatusInternalServerError)
-		return
+		return err
 	}
 
-	jobReq.ID = id
+	args.Job.ID = id
 
-	dueDate := jobReq.DueDate
-	createdAt := jobReq.CreatedAt
+	dueDate := args.Job.DueDate
+	createdAt := args.Job.CreatedAt
 
 	sqlQuery := `
 		INSERT INTO jobs (id, name, due_date, priority, description, tenant_identifier, assignee_ids, unit_identifier, building_id, board_id, labels, attachments, cost, hours, created_at)
@@ -81,24 +83,37 @@ func (h *JobsHandler) CreateJob(w http.ResponseWriter, r *http.Request) {
 	`
 
 	_, err = h.pool.Exec(ctx, sqlQuery,
-		jobReq.ID, jobReq.Name, dueDate, jobReq.Priority, jobReq.Description, jobReq.TenantIdentifier,
-		jobReq.AssigneeIDs, jobReq.UnitIdentifier, jobReq.BuildingID, jobReq.BoardID, jobReq.Labels,
-		jobReq.Attachments, jobReq.Cost, jobReq.Hours, createdAt)
+		args.Job.ID, args.Job.Name, dueDate, args.Job.Priority, args.Job.Description, args.Job.TenantIdentifier,
+		args.Job.AssigneeIDs, args.Job.UnitIdentifier, args.Job.BuildingID, args.Job.BoardID, args.Job.Labels,
+		args.Job.Attachments, args.Job.Cost, args.Job.Hours, createdAt)
 
 	if err != nil {
-		fmt.Println(err)
-		http.Error(w, "Failed to create job", http.StatusInternalServerError)
-		return
+		return err
 	}
 
-	json.NewEncoder(w).Encode(map[string]string{"id": jobReq.ID, "name": jobReq.Name})
+	result.ID = args.Job.ID
+	result.Name = args.Job.Name
+	return nil
 }
 
-func (h *JobsHandler) GetJob(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	jobID := vars["id"]
+// JSON-RPC request for getting a job
+type GetJobRequest struct {
+	ID            string `json:"id"`
+	OrganizationID string `json:"organizationId"`
+}
 
+// JSON-RPC response for getting a job
+type GetJobResponse struct {
+	Job Job `json:"job"`
+}
+
+func (h *JobsHandler) GetJob(r *http.Request, args *GetJobRequest, result *GetJobResponse) error {
 	ctx := context.Background()
+
+	ok, err := utils.CheckPermissionAndExecuteResponseWithOrgID(r, h.authz, args.OrganizationID, "jobs", "get")
+	if err != nil || !ok {
+		return err
+	}
 
 	sqlQuery := `
 		SELECT id, name, due_date, priority, description, tenant_identifier, assignee_ids, unit_identifier, building_id, board_id, labels, attachments, cost, hours, created_at
@@ -106,10 +121,10 @@ func (h *JobsHandler) GetJob(w http.ResponseWriter, r *http.Request) {
 		WHERE id = $1
 	`
 
-	row := h.pool.QueryRow(ctx, sqlQuery, jobID)
+	row := h.pool.QueryRow(ctx, sqlQuery, args.ID)
 
 	var job Job
-	err := row.Scan(
+	err = row.Scan(
 		&job.ID, &job.Name, &job.DueDate, &job.Priority, &job.Description,
 		&job.TenantIdentifier, &job.AssigneeIDs, &job.UnitIdentifier,
 		&job.BuildingID, &job.BoardID, &job.Labels, &job.Attachments,
@@ -117,108 +132,101 @@ func (h *JobsHandler) GetJob(w http.ResponseWriter, r *http.Request) {
 	)
 
 	if err == pgx.ErrNoRows {
-		http.Error(w, "Job not found", http.StatusNotFound)
-		return
+		return err
 	} else if err != nil {
-		fmt.Println(err)
-		http.Error(w, "Failed to fetch job", http.StatusInternalServerError)
-		return
+		return err
 	}
 
-	json.NewEncoder(w).Encode(job)
+	result.Job = job
+	return nil
 }
 
-func (h *JobsHandler) UpdateJob(w http.ResponseWriter, r *http.Request) {
-	ok, err := utils.CheckPermissionAndExecute(w, r, h.authz, "jobs", "update")
+// JSON-RPC request for updating a job
+type UpdateJobRequest struct {
+	Job Job `json:"job"`
+	OrganizationID string `json:"organizationId"`
+}
+
+func (h *JobsHandler) UpdateJob(r *http.Request, args *UpdateJobRequest, result *utils.EmptyResponse) error {
+	ok, err := utils.CheckPermissionAndExecuteResponseWithOrgID(r, h.authz, args.OrganizationID, "jobs", "update")
 	if err != nil || !ok {
-		return
+		return err
 	}
-	var jobReq Job
-	err = json.NewDecoder(r.Body).Decode(&jobReq)
-	if err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
-		return
-	}
-
-	// user, ok := r.Context().Value("user").(user.User)
-	// if !ok {
-	// 	http.Error(w, "Failed to get user details", http.StatusInternalServerError)
-	// 	return
-	// }
-
-	// if hasPermission, err := h.authz.CheckPermission(user.ID, "jobs", "update"); err != nil {
-	// 	http.Error(w, "Failed to check permission", http.StatusInternalServerError)
-	// 	return
-	// } else if !hasPermission {
-	// 	http.Error(w, "You do not have permission to update jobs", http.StatusForbidden)
-	// 	return
-	// }
 
 	ctx := context.Background()
 
 	sqlQuery := `
-        UPDATE jobs
-        SET name = $1, due_date = $2, priority = $3, description = $4, tenant_identifier = $5,
-        assignee_ids = $6, unit_identifier = $7, building_id = $8, board_id = $9,
-        labels = $10, attachments = $11, cost = $12, hours = $13, created_at = $14
-        WHERE id = $15
-    `
+		UPDATE jobs
+		SET name = $1, due_date = $2, priority = $3, description = $4, tenant_identifier = $5,
+		assignee_ids = $6, unit_identifier = $7, building_id = $8, board_id = $9,
+		labels = $10, attachments = $11, cost = $12, hours = $13, created_at = $14
+		WHERE id = $15
+	`
 
 	_, err = h.pool.Exec(ctx, sqlQuery,
-		jobReq.Name, jobReq.DueDate, jobReq.Priority, jobReq.Description,
-		jobReq.TenantIdentifier, jobReq.AssigneeIDs, jobReq.UnitIdentifier,
-		jobReq.BuildingID, jobReq.BoardID, jobReq.Labels, jobReq.Attachments,
-		jobReq.Cost, jobReq.Hours, jobReq.CreatedAt, jobReq.ID,
+		args.Job.Name, args.Job.DueDate, args.Job.Priority, args.Job.Description,
+		args.Job.TenantIdentifier, args.Job.AssigneeIDs, args.Job.UnitIdentifier,
+		args.Job.BuildingID, args.Job.BoardID, args.Job.Labels, args.Job.Attachments,
+		args.Job.Cost, args.Job.Hours, args.Job.CreatedAt, args.Job.ID,
 	)
 
 	if err != nil {
-		http.Error(w, "Failed to update job", http.StatusInternalServerError)
-		return
+		return err
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	return nil
 }
 
-func (h *JobsHandler) DeleteJob(w http.ResponseWriter, r *http.Request) {
-	ok, err := utils.CheckPermissionAndExecute(w, r, h.authz, "jobs", "delete")
+// JSON-RPC request for deleting a job
+type DeleteJobRequest struct {
+	ID            string `json:"id"`
+	OrganizationID string `json:"organizationId"`
+}
+
+func (h *JobsHandler) DeleteJob(r *http.Request, args *DeleteJobRequest, result *utils.EmptyResponse) error {
+	ok, err := utils.CheckPermissionAndExecuteResponseWithOrgID(r, h.authz, args.OrganizationID, "jobs", "delete")
 	if err != nil || !ok {
-		return
+		return err
 	}
-	vars := mux.Vars(r)
-	jobID := vars["id"]
 
 	ctx := context.Background()
-
-	// // Delete all events associated with the job ID
-	// err := h.events.DeleteAllEventsForJobID(jobID)
-	// if err != nil {
-	// 	http.Error(w, "Failed to delete events for job", http.StatusInternalServerError)
-	// 	return
-	// }
 
 	sqlQuery := `DELETE FROM jobs WHERE id = $1`
 
-	_, err = h.pool.Exec(ctx, sqlQuery, jobID)
+	_, err = h.pool.Exec(ctx, sqlQuery, args.ID)
 	if err != nil {
-		http.Error(w, "Failed to delete job", http.StatusInternalServerError)
-		return
+		return err
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	return nil
 }
 
-func (h *JobsHandler) GetAllJobs(w http.ResponseWriter, r *http.Request) {
+// JSON-RPC request for getting all jobs
+type GetAllJobsRequest struct {
+	OrganizationID string `json:"organizationId"`
+}
+
+// JSON-RPC response for getting all jobs
+type GetAllJobsResponse struct {
+	Jobs []Job `json:"jobs"`
+}
+
+func (h *JobsHandler) GetAllJobs(r *http.Request, args *GetAllJobsRequest, result *GetAllJobsResponse) error {
 	ctx := context.Background()
 
+	ok, err := utils.CheckPermissionAndExecuteResponseWithOrgID(r, h.authz, args.OrganizationID, "jobs", "getall")
+	if err != nil || !ok {
+		return err
+	}
+
 	sqlQuery := `
-        SELECT id, name, due_date, priority, description, tenant_identifier, assignee_ids, unit_identifier, building_id, board_id, labels, attachments, cost, hours, created_at
-        FROM jobs
-    `
+		SELECT id, name, due_date, priority, description, tenant_identifier, assignee_ids, unit_identifier, building_id, board_id, labels, attachments, cost, hours, created_at
+		FROM jobs
+	`
 
 	rows, err := h.pool.Query(ctx, sqlQuery)
 	if err != nil {
-		http.Error(w, "Failed to fetch jobs", http.StatusInternalServerError)
-		return
+		return err
 	}
 	defer rows.Close()
 
@@ -232,11 +240,11 @@ func (h *JobsHandler) GetAllJobs(w http.ResponseWriter, r *http.Request) {
 			&job.Cost, &job.Hours, &job.CreatedAt,
 		)
 		if err != nil {
-			http.Error(w, "Failed to read job data", http.StatusInternalServerError)
-			return
+			return err
 		}
 		jobs = append(jobs, job)
 	}
 
-	json.NewEncoder(w).Encode(jobs)
+	result.Jobs = jobs
+	return nil
 }
