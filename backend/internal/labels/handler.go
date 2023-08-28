@@ -3,19 +3,18 @@ package labels
 import (
 	"context"
 	"errors"
-	"fmt"
-	"github.com/gorilla/rpc/v2/json2"
-	"github.com/jackc/pgx/v4/pgxpool"
 	"net/http"
+
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v4/pgxpool"
 )
 
 type Label struct {
-	ID          string `json:"id"`
+	ID             string `json:"id"`
 	OrganizationID string `json:"organizationId"`
-	BoardID     string `json:"boardId"`
-	Name        string `json:"name"`
-	Color       string `json:"color"`
-	// Add more fields as needed
+	BoardID        string `json:"boardId"`
+	Name           string `json:"name"`
+	Color          string `json:"color"`
 }
 
 type LabelsHandler struct {
@@ -26,6 +25,65 @@ func NewLabelsHandler(pool *pgxpool.Pool) *LabelsHandler {
 	return &LabelsHandler{
 		pool: pool,
 	}
+}
+
+type CreateLabelRequest struct {
+	OrganizationID string `json:"organizationId"`
+	BoardID        string `json:"boardId"`
+	Name           string `json:"name"`
+	Color          string `json:"color"`
+}
+
+type CreateLabelResponse struct {
+	ID string `json:"id"`
+}
+
+func (h *LabelsHandler) CreateLabel(r *http.Request, args *CreateLabelRequest, reply *CreateLabelResponse) error {
+	ctx := context.Background()
+
+	labelID := uuid.New().String()
+	query := `
+		INSERT INTO labels (id, organization_id, board_id, name, color)
+		VALUES ($1, $2, $3, $4, $5)
+		RETURNING id
+	`
+
+	err := h.pool.QueryRow(ctx, query, labelID, args.OrganizationID, args.BoardID, args.Name, args.Color).Scan(&labelID)
+	if err != nil {
+		return errors.New("Failed to create label")
+	}
+
+	reply.ID = labelID
+	return nil
+}
+
+type UpdateLabelRequest struct {
+	ID             string `json:"id"`
+	OrganizationID string `json:"organizationId"`
+	BoardID        string `json:"boardId"`
+	Name           string `json:"name"`
+	Color          string `json:"color"`
+}
+
+type UpdateLabelResponse struct {
+	Success bool `json:"success"`
+}
+
+func (h *LabelsHandler) UpdateLabel(r *http.Request, args *UpdateLabelRequest, reply *UpdateLabelResponse) error {
+	ctx := context.Background()
+	query := `
+		UPDATE labels
+		SET name = $1, color = $2
+		WHERE id = $3 AND organization_id = $4
+	`
+
+	_, err := h.pool.Exec(ctx, query, args.Name, args.Color, args.ID, args.OrganizationID)
+	if err != nil {
+		return errors.New("Failed to update label")
+	}
+
+	reply.Success = true
+	return nil
 }
 
 type GetLabelRequest struct {

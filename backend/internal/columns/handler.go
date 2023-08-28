@@ -2,13 +2,12 @@ package columns
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 
+	jsonRpcProvider "github.com/exolutionza/propfix-backend-go/internal/api/jsonRpc/service/provider"
 	"github.com/exolutionza/propfix-backend-go/internal/authz"
 	"github.com/exolutionza/propfix-backend-go/internal/utils"
 	"github.com/google/uuid"
-	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
@@ -24,6 +23,27 @@ func NewColumnsHandler(dbpool *pgxpool.Pool, authz *authz.Authz) *ColumnsHandler
 	}
 }
 
+type adaptor struct {
+	dbpool *pgxpool.Pool
+	authz  *authz.Authz
+}
+
+const Name = "Column"
+
+func (a *adaptor) Name() jsonRpcProvider.Name {
+	return Name
+}
+
+func New(
+	dbpool *pgxpool.Pool,
+	authz *authz.Authz,
+) *adaptor {
+	return &adaptor{
+		dbpool: dbpool,
+		authz:  authz,
+	}
+}
+
 type Column struct {
 	ID      string   `json:"id"`
 	Name    string   `json:"name"`
@@ -31,18 +51,16 @@ type Column struct {
 	BoardID string   `json:"boardId"`
 }
 
-// JSON-RPC request for creating a column
 type CreateColumnRequest struct {
 	Column Column `json:"column"`
 }
 
-// JSON-RPC response for creating a column
 type CreateColumnResponse struct {
 	ID string `json:"id"`
 }
 
-func (h *ColumnsHandler) CreateColumn(r *http.Request, args *CreateColumnRequest, result *CreateColumnResponse) error {
-	ok, err := utils.CheckPermissionAndExecuteResponse(r, h.authz, "columns", "create")
+func (a *adaptor) CreateColumn(r *http.Request, args *CreateColumnRequest, result *CreateColumnResponse) error {
+	ok, err := utils.CheckPermission(r, a.authz, "columns", "create")
 	if err != nil || !ok {
 		return err
 	}
@@ -55,7 +73,7 @@ func (h *ColumnsHandler) CreateColumn(r *http.Request, args *CreateColumnRequest
 		VALUES ($1, $2, $3, $4)
 		RETURNING id
 	`
-	row := h.dbpool.QueryRow(ctx, query, args.Column.ID, args.Column.Name, args.Column.JobIDs, args.Column.BoardID)
+	row := a.dbpool.QueryRow(ctx, query, args.Column.ID, args.Column.Name, args.Column.JobIDs, args.Column.BoardID)
 	if err := row.Scan(&args.Column.ID); err != nil {
 		return err
 	}
@@ -64,24 +82,22 @@ func (h *ColumnsHandler) CreateColumn(r *http.Request, args *CreateColumnRequest
 	return nil
 }
 
-// JSON-RPC request for getting a column
 type GetColumnRequest struct {
 	ID string `json:"id"`
 }
 
-// JSON-RPC response for getting a column
 type GetColumnResponse struct {
 	Column Column `json:"column"`
 }
 
-func (h *ColumnsHandler) GetColumn(r *http.Request, args *GetColumnRequest, result *GetColumnResponse) error {
+func (a *adaptor) GetColumn(r *http.Request, args *GetColumnRequest, result *GetColumnResponse) error {
 	ctx := context.Background()
 	query := `
 		SELECT id, name, job_ids, board_id
 		FROM columns
 		WHERE id = $1
 	`
-	row := h.dbpool.QueryRow(ctx, query, args.ID)
+	row := a.dbpool.QueryRow(ctx, query, args.ID)
 
 	var column Column
 	err := row.Scan(&column.ID, &column.Name, &column.JobIDs, &column.BoardID)
@@ -93,13 +109,12 @@ func (h *ColumnsHandler) GetColumn(r *http.Request, args *GetColumnRequest, resu
 	return nil
 }
 
-// JSON-RPC request for updating a column
 type UpdateColumnRequest struct {
 	Column Column `json:"column"`
 }
 
-func (h *ColumnsHandler) UpdateColumn(r *http.Request, args *UpdateColumnRequest, result *utils.EmptyResponse) error {
-	ok, err := utils.CheckPermissionAndExecuteResponse(r, h.authz, "columns", "update")
+func (a *adaptor) UpdateColumn(r *http.Request, args *UpdateColumnRequest, result *utils.EmptyResponse) error {
+	ok, err := utils.CheckPermission(r, a.authz, "columns", "update")
 	if err != nil || !ok {
 		return err
 	}
@@ -110,7 +125,7 @@ func (h *ColumnsHandler) UpdateColumn(r *http.Request, args *UpdateColumnRequest
 		SET name = $2, job_ids = $3, board_id = $4
 		WHERE id = $1
 	`
-	_, err = h.dbpool.Exec(ctx, query, args.Column.ID, args.Column.Name, args.Column.JobIDs, args.Column.BoardID)
+	_, err = a.dbpool.Exec(ctx, query, args.Column.ID, args.Column.Name, args.Column.JobIDs, args.Column.BoardID)
 	if err != nil {
 		return err
 	}
@@ -118,13 +133,12 @@ func (h *ColumnsHandler) UpdateColumn(r *http.Request, args *UpdateColumnRequest
 	return nil
 }
 
-// JSON-RPC request for deleting a column
 type DeleteColumnRequest struct {
 	ID string `json:"id"`
 }
 
-func (h *ColumnsHandler) DeleteColumn(r *http.Request, args *DeleteColumnRequest, result *utils.EmptyResponse) error {
-	ok, err := utils.CheckPermissionAndExecuteResponse(r, h.authz, "columns", "delete")
+func (a *adaptor) DeleteColumn(r *http.Request, args *DeleteColumnRequest, result *utils.EmptyResponse) error {
+	ok, err := utils.CheckPermission(r, a.authz, "columns", "delete")
 	if err != nil || !ok {
 		return err
 	}
@@ -134,7 +148,7 @@ func (h *ColumnsHandler) DeleteColumn(r *http.Request, args *DeleteColumnRequest
 		DELETE FROM columns
 		WHERE id = $1
 	`
-	_, err = h.dbpool.Exec(ctx, query, args.ID)
+	_, err = a.dbpool.Exec(ctx, query, args.ID)
 	if err != nil {
 		return err
 	}
@@ -142,17 +156,13 @@ func (h *ColumnsHandler) DeleteColumn(r *http.Request, args *DeleteColumnRequest
 	return nil
 }
 
-// JSON-RPC request for moving a job between columns
 type MoveJobRequest struct {
 	JobID    string `json:"jobId"`
 	SourceID string `json:"sourceId"`
 	TargetID string `json:"targetId"`
 }
 
-func (h *ColumnsHandler) MoveJob(r *http.Request, args *MoveJobRequest, result *utils.EmptyResponse) error {
-	// Permission check for MoveJob endpoint is not necessary as it's based on specific source and target columns
-	// and the user's permissions on those columns are already checked in GetColumn and UpdateColumn endpoints.
-
+func (a *adaptor) MoveJob(r *http.Request, args *MoveJobRequest, result *utils.EmptyResponse) error {
 	ctx := context.Background()
 
 	// Retrieve the current column
@@ -161,7 +171,7 @@ func (h *ColumnsHandler) MoveJob(r *http.Request, args *MoveJobRequest, result *
 		FROM columns
 		WHERE id = $1
 	`
-	row := h.dbpool.QueryRow(ctx, currentQuery, args.SourceID)
+	row := a.dbpool.QueryRow(ctx, currentQuery, args.SourceID)
 	var currentColumn Column
 	err := row.Scan(&currentColumn.ID, &currentColumn.Name, &currentColumn.JobIDs, &currentColumn.BoardID)
 	if err != nil {
@@ -174,7 +184,7 @@ func (h *ColumnsHandler) MoveJob(r *http.Request, args *MoveJobRequest, result *
 		FROM columns
 		WHERE id = $1
 	`
-	row = h.dbpool.QueryRow(ctx, targetQuery, args.TargetID)
+	row = a.dbpool.QueryRow(ctx, targetQuery, args.TargetID)
 	var targetColumn Column
 	err = row.Scan(&targetColumn.ID, &targetColumn.Name, &targetColumn.JobIDs, &targetColumn.BoardID)
 	if err != nil {
@@ -191,7 +201,7 @@ func (h *ColumnsHandler) MoveJob(r *http.Request, args *MoveJobRequest, result *
 		SET job_ids = $2
 		WHERE id = $1
 	`
-	_, err = h.dbpool.Exec(ctx, updateCurrentQuery, currentColumn.ID, currentColumn.JobIDs)
+	_, err = a.dbpool.Exec(ctx, updateCurrentQuery, currentColumn.ID, currentColumn.JobIDs)
 	if err != nil {
 		return err
 	}
@@ -202,7 +212,7 @@ func (h *ColumnsHandler) MoveJob(r *http.Request, args *MoveJobRequest, result *
 		SET job_ids = $2
 		WHERE id = $1
 	`
-	_, err = h.dbpool.Exec(ctx, updateTargetQuery, targetColumn.ID, targetColumn.JobIDs)
+	_, err = a.dbpool.Exec(ctx, updateTargetQuery, targetColumn.ID, targetColumn.JobIDs)
 	if err != nil {
 		return err
 	}
@@ -210,7 +220,6 @@ func (h *ColumnsHandler) MoveJob(r *http.Request, args *MoveJobRequest, result *
 	return nil
 }
 
-// removeString removes the given string from the slice.
 func removeString(slice []string, target string) []string {
 	result := make([]string, 0, len(slice))
 	for _, s := range slice {
@@ -221,13 +230,13 @@ func removeString(slice []string, target string) []string {
 	return result
 }
 
-func (h *ColumnsHandler) GetAllColumns(r *http.Request, args *utils.EmptyRequest, result *[]Column) error {
+func (a *adaptor) GetAllColumns(r *http.Request, args *utils.EmptyRequest, result *[]Column) error {
 	ctx := context.Background()
 	query := `
 		SELECT id, name, job_ids, board_id
 		FROM columns
 	`
-	rows, err := h.dbpool.Query(ctx, query)
+	rows, err := a.dbpool.Query(ctx, query)
 	if err != nil {
 		return err
 	}

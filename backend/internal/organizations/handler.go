@@ -2,14 +2,13 @@ package organizations
 
 import (
 	"context"
-	"encoding/json"
-	"errors"
+	"net/http"
+
+	jsonRpcProvider "github.com/exolutionza/propfix-backend-go/internal/api/jsonRpc/service/provider"
 	"github.com/exolutionza/propfix-backend-go/internal/authz"
 	"github.com/exolutionza/propfix-backend-go/internal/utils"
 	"github.com/google/uuid"
-	"github.com/gorilla/mux"
-	"github.com/gorilla/rpc/v2/json2"
-	"net/http"
+	"github.com/jackc/pgx/v4/pgxpool"
 )
 
 type Organization struct {
@@ -18,15 +17,24 @@ type Organization struct {
 	Members []string `json:"members"`
 }
 
-type OrganizationHandler struct {
-	store *OrganizationStore
-	authz *authz.Authz
+type adaptor struct {
+	dbpool *pgxpool.Pool
+	authz  *authz.Authz
 }
 
-func NewOrganizationHandler(store *OrganizationStore, authz *authz.Authz) *OrganizationHandler {
-	return &OrganizationHandler{
-		store: store,
-		authz: authz,
+const Name = "Organization"
+
+func (a *adaptor) Name() jsonRpcProvider.Name {
+	return Name
+}
+
+func New(
+	dbpool *pgxpool.Pool,
+	authz *authz.Authz,
+) *adaptor {
+	return &adaptor{
+		dbpool: dbpool,
+		authz:  authz,
 	}
 }
 
@@ -38,24 +46,26 @@ type CreateOrganizationResponse struct {
 	ID string `json:"id"`
 }
 
-func (h *OrganizationHandler) CreateOrganization(r *http.Request, args *CreateOrganizationRequest, reply *CreateOrganizationResponse) error {
-	ok, err := utils.CheckPermissionAndExecute(w, r, h.authz, "organizations", "create")
+func (a *adaptor) CreateOrganization(r *http.Request, args *CreateOrganizationRequest, result *CreateOrganizationResponse) error {
+	ok, err := utils.CheckPermission(r, a.authz, "organizations", "create")
 	if err != nil || !ok {
 		return err
 	}
 
-	org := &Organization{
-		ID:      uuid.New().String(),
-		Name:    args.Name,
-		Members: []string{},
-	}
+	orgID := uuid.New().String()
 
-	err = h.store.CreateOrganization(org)
+	ctx := context.Background()
+	query := `
+		INSERT INTO organizations (id, name, members)
+		VALUES ($1, $2, $3)
+	`
+
+	_, err = a.dbpool.Exec(ctx, query, orgID, args.Name, "{}")
 	if err != nil {
-		return errors.New("Failed to create organization")
+		return err
 	}
 
-	reply.ID = org.ID
+	result.ID = orgID
 	return nil
 }
 
@@ -69,42 +79,25 @@ type UpdateOrganizationResponse struct {
 	Success bool `json:"success"`
 }
 
-func (h *OrganizationHandler) UpdateOrganization(r *http.Request, args *UpdateOrganizationRequest, reply *UpdateOrganizationResponse) error {
-	ok, err := utils.CheckPermissionAndExecute(w, r, h.authz, "organizations", "update")
+func (a *adaptor) UpdateOrganization(r *http.Request, args *UpdateOrganizationRequest, result *UpdateOrganizationResponse) error {
+	ok, err := utils.CheckPermission(r, a.authz, "organizations", "update")
 	if err != nil || !ok {
 		return err
 	}
 
-	org := &Organization{
-		ID:      args.ID,
-		Name:    args.Name,
-		Members: args.Members,
-	}
+	ctx := context.Background()
+	query := `
+		UPDATE organizations
+		SET name = $2, members = $3
+		WHERE id = $1
+	`
 
-	err = h.store.UpdateOrganization(org)
+	_, err = a.dbpool.Exec(ctx, query, args.ID, args.Name, args.Members)
 	if err != nil {
-		return errors.New("Failed to update organization")
+		return err
 	}
 
-	reply.Success = true
-	return nil
-}
-
-type GetOrganizationRequest struct {
-	ID string `json:"id"`
-}
-
-type GetOrganizationResponse struct {
-	Organization Organization `json:"organization"`
-}
-
-func (h *OrganizationHandler) GetOrganization(r *http.Request, args *GetOrganizationRequest, reply *GetOrganizationResponse) error {
-	org, err := h.store.GetOrganizationByID(args.ID)
-	if err != nil {
-		return errors.New("Organization not found")
-	}
-
-	reply.Organization = *org
+	result.Success = true
 	return nil
 }
 
@@ -116,85 +109,55 @@ type DeleteOrganizationResponse struct {
 	Success bool `json:"success"`
 }
 
-func (h *OrganizationHandler) DeleteOrganization(r *http.Request, args *DeleteOrganizationRequest, reply *DeleteOrganizationResponse) error {
-	ok, err := utils.CheckPermissionAndExecute(w, r, h.authz, "organizations", "delete")
+func (a *adaptor) DeleteOrganization(r *http.Request, args *DeleteOrganizationRequest, result *DeleteOrganizationResponse) error {
+	ok, err := utils.CheckPermission(r, a.authz, "organizations", "delete")
 	if err != nil || !ok {
 		return err
 	}
 
-	err = h.store.DeleteOrganization(args.ID)
+	ctx := context.Background()
+	query := `
+		DELETE FROM organizations
+		WHERE id = $1
+	`
+
+	_, err = a.dbpool.Exec(ctx, query, args.ID)
 	if err != nil {
-		return errors.New("Failed to delete organization")
+		return err
 	}
 
-	reply.Success = true
+	result.Success = true
 	return nil
 }
 
-type AddMemberRequest struct {
-	MemberID       string `json:"memberId"`
-	OrganizationID string `json:"organizationId"`
+type GetOrganizationRequest struct {
+	ID string `json:"id"`
 }
 
-type AddMemberResponse struct {
-	Success bool `json:"success"`
+type GetOrganizationResponse struct {
+	Organization Organization `json:"organization"`
 }
 
-func (h *OrganizationHandler) AddMember(r *http.Request, args *AddMemberRequest, reply *AddMemberResponse) error {
-	ok, err := utils.CheckPermissionAndExecute(w, r, h.authz, "organizations", "update", args.OrganizationID)
+func (a *adaptor) GetOrganization(r *http.Request, args *GetOrganizationRequest, result *GetOrganizationResponse) error {
+	ok, err := utils.CheckPermission(r, a.authz, "organizations", "read")
 	if err != nil || !ok {
 		return err
 	}
 
-	// Get the organization from the store using OrganizationID
-	org, err := h.store.GetOrganizationByID(args.OrganizationID)
+	ctx := context.Background()
+	query := `
+		SELECT id, name, members
+		FROM organizations
+		WHERE id = $1
+	`
+
+	var org Organization
+	row := a.dbpool.QueryRow(ctx, query, args.ID)
+	err = row.Scan(&org.ID, &org.Name, &org.Members)
 	if err != nil {
-		return errors.New("Organization not found")
-	}
-
-	// Add the member to the organization's Members slice
-	org.Members = append(org.Members, args.MemberID)
-
-	// Update the organization in the store
-	err = h.store.UpdateOrganization(org)
-	if err != nil {
-		return errors.New("Failed to update organization")
-	}
-
-	reply.Success = true
-	return nil
-}
-
-type RemoveMemberRequest struct {
-	MemberID       string `json:"memberId"`
-	OrganizationID string `json:"organizationId"`
-}
-
-type RemoveMemberResponse struct {
-	Success bool `json:"success"`
-}
-
-func (h *OrganizationHandler) RemoveMember(r *http.Request, args *RemoveMemberRequest, reply *RemoveMemberResponse) error {
-	ok, err := utils.CheckPermissionAndExecute(w, r, h.authz, "organizations", "update", args.OrganizationID)
-	if err != nil || !ok {
 		return err
 	}
 
-	// Get the organization from the store using OrganizationID
-	org, err := h.store.GetOrganizationByID(args.OrganizationID)
-	if err != nil {
-		return errors.New("Organization not found")
-	}
-
-	// Remove the member from the organization's Members slice
-	org.Members = utils.RemoveString(org.Members, args.MemberID)
-
-	// Update the organization in the store
-	err = h.store.UpdateOrganization(org)
-	if err != nil {
-		return errors.New("Failed to update organization")
-	}
-
-	reply.Success = true
+	result.Organization = org
 	return nil
 }
