@@ -10,11 +10,13 @@ import (
 
 	jsonRpcServer "github.com/exolutionza/propfix-backend-go/internal/api/jsonRpc/server"
 	jsonRpcProvider "github.com/exolutionza/propfix-backend-go/internal/api/jsonRpc/service/provider"
-	"github.com/exolutionza/propfix-backend-go/internal/labels"
 
 	firebase "firebase.google.com/go/v4"
 	"github.com/exolutionza/propfix-backend-go/internal/auth"
 	"github.com/exolutionza/propfix-backend-go/internal/authz"
+	"github.com/exolutionza/propfix-backend-go/internal/events"
+	"github.com/exolutionza/propfix-backend-go/internal/jobs"
+	"github.com/exolutionza/propfix-backend-go/internal/labels"
 	"github.com/exolutionza/propfix-backend-go/internal/organizations"
 	"github.com/exolutionza/propfix-backend-go/internal/permissions"
 	"github.com/exolutionza/propfix-backend-go/internal/roles"
@@ -69,6 +71,8 @@ func Router() {
 				permissions.New(dbpool, authorizer),
 				organizations.New(dbpool, authorizer),
 				labels.New(dbpool, authorizer),
+				jobs.New(dbpool, authorizer),
+				events.New(dbpool, authorizer),
 			},
 		},
 		// Add more RPC server configurations for other services here
