@@ -63,6 +63,7 @@ func Router() {
 			},
 			ServiceProviders: []jsonRpcProvider.Provider{
 				roles.New(dbpool, authorizer),
+				organizations.New(dbpool, authorizer),
 			},
 		},
 		// Add more RPC server configurations for other services here
