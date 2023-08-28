@@ -15,7 +15,9 @@ import (
 	"github.com/exolutionza/propfix-backend-go/internal/auth"
 	"github.com/exolutionza/propfix-backend-go/internal/authz"
 	"github.com/exolutionza/propfix-backend-go/internal/organizations"
+	"github.com/exolutionza/propfix-backend-go/internal/permissions"
 	roles "github.com/exolutionza/propfix-backend-go/internal/roles"
+
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
@@ -63,6 +65,7 @@ func Router() {
 			},
 			ServiceProviders: []jsonRpcProvider.Provider{
 				roles.New(dbpool, authorizer),
+				permissions.New(dbpool, authorizer),
 				organizations.New(dbpool, authorizer),
 			},
 		},
