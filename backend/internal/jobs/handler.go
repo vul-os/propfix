@@ -2,13 +2,16 @@ package jobs
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"time"
 
 	jsonRpcProvider "github.com/exolutionza/propfix-backend-go/internal/api/jsonRpc/service/provider"
 	"github.com/exolutionza/propfix-backend-go/internal/authz"
 	"github.com/exolutionza/propfix-backend-go/internal/events"
+	"github.com/exolutionza/propfix-backend-go/internal/user"
 	"github.com/exolutionza/propfix-backend-go/internal/utils"
+
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/teris-io/shortid"
@@ -72,16 +75,11 @@ type CreateJobResponse struct {
 }
 
 func (a *adaptor) CreateJob(r *http.Request, args *CreateJobRequest, result *CreateJobResponse) error {
-	ok, err := utils.CheckPermission(r, a.authz, args.OrganizationID, "jobs")
-	if err != nil || !ok {
-		return err
-	}
-
 	ctx := r.Context()
 
 	id, err := shortid.Generate()
 	if err != nil {
-		return err
+		return errors.New("not permitted")
 	}
 
 	args.Job.ID = id
@@ -121,11 +119,7 @@ type GetJobResponse struct {
 
 func (a *adaptor) GetJob(r *http.Request, args *GetJobRequest, result *GetJobResponse) error {
 	ctx := context.Background()
-
-	ok, err := utils.CheckPermission(r, a.authz, args.OrganizationID, "jobs")
-	if err != nil || !ok {
-		return err
-	}
+	ok, err := utils.CheckPermissionAndOrgs(r, a.authz, "jobs", "create", args.OrganizationID)
 
 	sqlQuery := `
 		SELECT id, name, due_date, priority, description, tenant_identifier, assignee_ids, unit_identifier, building_id, board_id, labels, attachments, cost, hours, created_at
@@ -149,6 +143,13 @@ func (a *adaptor) GetJob(r *http.Request, args *GetJobRequest, result *GetJobRes
 		return err
 	}
 
+	// Conditionally remove fields not allowed
+	if !ok {
+		job.Cost = 0
+		job.Hours = 0
+		job.Priority = ""
+	}
+
 	result.Job = job
 	return nil
 }
@@ -160,9 +161,9 @@ type UpdateJobRequest struct {
 }
 
 func (a *adaptor) UpdateJob(r *http.Request, args *UpdateJobRequest, result *utils.EmptyResponse) error {
-	ok, err := utils.CheckPermission(r, a.authz, args.OrganizationID, "jobs")
+	ok, err := utils.CheckPermissionAndOrgs(r, a.authz, "jobs", "update", args.OrganizationID)
 	if err != nil || !ok {
-		return err
+		return errors.New("not permitted")
 	}
 
 	ctx := context.Background()
@@ -196,9 +197,9 @@ type DeleteJobRequest struct {
 }
 
 func (a *adaptor) DeleteJob(r *http.Request, args *DeleteJobRequest, result *utils.EmptyResponse) error {
-	ok, err := utils.CheckPermission(r, a.authz, args.OrganizationID, "jobs")
+	ok, err := utils.CheckPermissionAndOrgs(r, a.authz, "jobs", "delete", args.OrganizationID)
 	if err != nil || !ok {
-		return err
+		return errors.New("not permitted")
 	}
 
 	ctx := context.Background()
@@ -210,5 +211,71 @@ func (a *adaptor) DeleteJob(r *http.Request, args *DeleteJobRequest, result *uti
 		return err
 	}
 
+	return nil
+}
+
+// JSON-RPC request for getting all jobs
+type GetAllJobsRequest struct {
+	OrganizationID string `json:"organizationId"`
+}
+
+// JSON-RPC response for getting all jobs
+type GetAllJobsResponse struct {
+	Jobs []Job `json:"jobs"`
+}
+
+func (a *adaptor) GetAllJobs(r *http.Request, args *GetAllJobsRequest, result *GetAllJobsResponse) error {
+	ctx := context.Background()
+
+	ok, err := utils.CheckPermissionAndOrgs(r, a.authz, "jobs", "read", args.OrganizationID)
+
+	var rows pgx.Rows
+	if ok {
+		sqlQuery := `
+			SELECT id, name, due_date, priority, description, tenant_identifier, assignee_ids, unit_identifier, building_id, board_id, labels, attachments, cost, hours, created_at
+			FROM jobs
+			WHERE building_id = $1
+		`
+
+		rows, err = a.dbpool.Query(ctx, sqlQuery, args.OrganizationID)
+		if err != nil {
+			return err
+		}
+	} else {
+		usr, ok := r.Context().Value("user").(user.User)
+		if !ok {
+			return errors.New("User not found in context")
+		}
+
+		sqlQuery := `
+			SELECT id, name, due_date, priority, description, tenant_identifier, assignee_ids, unit_identifier, building_id, board_id, labels, attachments, cost, hours, created_at
+			FROM jobs
+			WHERE tenant_identifier = $1
+		`
+
+		rows, err = a.dbpool.Query(ctx, sqlQuery, usr.ID)
+		if err != nil {
+			return err
+		}
+	}
+
+	defer rows.Close()
+
+	var jobs []Job
+	for rows.Next() {
+		var job Job
+		err := rows.Scan(
+			&job.ID, &job.Name, &job.DueDate, &job.Priority, &job.Description,
+			&job.TenantIdentifier, &job.AssigneeIDs, &job.UnitIdentifier,
+			&job.BuildingID, &job.BoardID, &job.Labels, &job.Attachments,
+			&job.Cost, &job.Hours, &job.CreatedAt,
+		)
+		if err != nil {
+			return err
+		}
+		jobs = append(jobs, job)
+	}
+
+	result.Jobs = jobs
 	return nil
 }

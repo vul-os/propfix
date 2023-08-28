@@ -80,7 +80,7 @@ type DeleteRoleResponse struct {
 func (h *adaptor) DeleteRole(r *http.Request, args *DeleteRoleRequest, result *DeleteRoleResponse) error {
 	ok, err := utils.CheckPermission(r, h.authz, "roles", "delete")
 	if err != nil || !ok {
-		return err
+		return errors.New("not permitted")
 	}
 
 	ctx := context.Background()
@@ -110,7 +110,7 @@ type GetRoleResponse struct {
 func (h *adaptor) GetRole(r *http.Request, args *GetRoleRequest, result *GetRoleResponse) error {
 	ok, err := utils.CheckPermission(r, h.authz, "roles", "read")
 	if err != nil || !ok {
-		return err
+		return errors.New("not permitted")
 	}
 
 	ctx := context.Background()
@@ -143,7 +143,7 @@ type UpdateRoleResponse struct {
 func (h *adaptor) UpdateRole(r *http.Request, args *UpdateRoleRequest, result *UpdateRoleResponse) error {
 	ok, err := utils.CheckPermission(r, h.authz, "roles", "update")
 	if err != nil || !ok {
-		return err
+		return errors.New("not permitted")
 	}
 
 	// Perform basic validation on the role data before update

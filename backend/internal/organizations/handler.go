@@ -83,7 +83,7 @@ type UpdateOrganizationResponse struct {
 func (a *adaptor) UpdateOrganization(r *http.Request, args *UpdateOrganizationRequest, result *UpdateOrganizationResponse) error {
 	ok, err := utils.CheckPermission(r, a.authz, "organizations", "update")
 	if err != nil || !ok {
-		return err
+		return errors.New("not permitted")
 	}
 
 	ctx := context.Background()
@@ -113,7 +113,7 @@ type DeleteOrganizationResponse struct {
 func (a *adaptor) DeleteOrganization(r *http.Request, args *DeleteOrganizationRequest, result *DeleteOrganizationResponse) error {
 	ok, err := utils.CheckPermission(r, a.authz, "organizations", "delete")
 	if err != nil || !ok {
-		return err
+		return errors.New("not permitted")
 	}
 
 	ctx := context.Background()
@@ -142,7 +142,7 @@ type GetOrganizationResponse struct {
 func (a *adaptor) GetOrganization(r *http.Request, args *GetOrganizationRequest, result *GetOrganizationResponse) error {
 	ok, err := utils.CheckPermission(r, a.authz, "organizations", "read")
 	if err != nil || !ok {
-		return err
+		return errors.New("not permitted")
 	}
 
 	ctx := context.Background()
