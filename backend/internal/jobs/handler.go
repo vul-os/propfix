@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	jsonRpcProvider "github.com/exolutionza/propfix-backend-go/internal/api/jsonRpc/service/provider"
 	"github.com/exolutionza/propfix-backend-go/internal/authz"
 	"github.com/exolutionza/propfix-backend-go/internal/events"
 	"github.com/exolutionza/propfix-backend-go/internal/utils"
@@ -12,20 +13,6 @@ import (
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/teris-io/shortid"
 )
-
-type JobsHandler struct {
-	pool   *pgxpool.Pool
-	events *events.EventsStore
-	authz  *authz.Authz
-}
-
-func NewJobsHandler(pool *pgxpool.Pool, events *events.EventsStore, authz *authz.Authz) *JobsHandler {
-	return &JobsHandler{
-		pool:   pool,
-		events: events,
-		authz:  authz,
-	}
-}
 
 type Job struct {
 	ID               string    `json:"id"`
@@ -45,6 +32,33 @@ type Job struct {
 	CreatedAt        time.Time `json:"createdAt"`
 }
 
+type JobsHandler struct {
+	pool   *pgxpool.Pool
+	events *events.EventsStore
+	authz  *authz.Authz
+}
+
+type adaptor struct {
+	dbpool *pgxpool.Pool
+	authz  *authz.Authz
+}
+
+const Name = "Job"
+
+func (a *adaptor) Name() jsonRpcProvider.Name {
+	return Name
+}
+
+func New(
+	dbpool *pgxpool.Pool,
+	authz *authz.Authz,
+) *adaptor {
+	return &adaptor{
+		dbpool: dbpool,
+		authz:  authz,
+	}
+}
+
 // JSON-RPC request for creating a job
 type CreateJobRequest struct {
 	Job            Job    `json:"job"`
@@ -57,8 +71,8 @@ type CreateJobResponse struct {
 	Name string `json:"name"`
 }
 
-func (h *JobsHandler) CreateJob(r *http.Request, args *CreateJobRequest, result *CreateJobResponse) error {
-	ok, err := utils.CheckPermissionAndExecuteResponseWithOrgID(r, h.authz, args.OrganizationID, "jobs", "create")
+func (a *adaptor) CreateJob(r *http.Request, args *CreateJobRequest, result *CreateJobResponse) error {
+	ok, err := utils.CheckPermission(r, a.authz, args.OrganizationID, "jobs")
 	if err != nil || !ok {
 		return err
 	}
@@ -80,7 +94,7 @@ func (h *JobsHandler) CreateJob(r *http.Request, args *CreateJobRequest, result 
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
 	`
 
-	_, err = h.pool.Exec(ctx, sqlQuery,
+	_, err = a.dbpool.Exec(ctx, sqlQuery,
 		args.Job.ID, args.Job.Name, dueDate, args.Job.Priority, args.Job.Description, args.Job.TenantIdentifier,
 		args.Job.AssigneeIDs, args.Job.UnitIdentifier, args.Job.BuildingID, args.Job.BoardID, args.Job.Labels,
 		args.Job.Attachments, args.Job.Cost, args.Job.Hours, createdAt)
@@ -105,10 +119,10 @@ type GetJobResponse struct {
 	Job Job `json:"job"`
 }
 
-func (h *JobsHandler) GetJob(r *http.Request, args *GetJobRequest, result *GetJobResponse) error {
+func (a *adaptor) GetJob(r *http.Request, args *GetJobRequest, result *GetJobResponse) error {
 	ctx := context.Background()
 
-	ok, err := utils.CheckPermissionAndExecuteResponseWithOrgID(r, h.authz, args.OrganizationID, "jobs", "get")
+	ok, err := utils.CheckPermission(r, a.authz, args.OrganizationID, "jobs")
 	if err != nil || !ok {
 		return err
 	}
@@ -119,7 +133,7 @@ func (h *JobsHandler) GetJob(r *http.Request, args *GetJobRequest, result *GetJo
 		WHERE id = $1
 	`
 
-	row := h.pool.QueryRow(ctx, sqlQuery, args.ID)
+	row := a.dbpool.QueryRow(ctx, sqlQuery, args.ID)
 
 	var job Job
 	err = row.Scan(
@@ -145,8 +159,8 @@ type UpdateJobRequest struct {
 	OrganizationID string `json:"organizationId"`
 }
 
-func (h *JobsHandler) UpdateJob(r *http.Request, args *UpdateJobRequest, result *utils.EmptyResponse) error {
-	ok, err := utils.CheckPermissionAndExecuteResponseWithOrgID(r, h.authz, args.OrganizationID, "jobs", "update")
+func (a *adaptor) UpdateJob(r *http.Request, args *UpdateJobRequest, result *utils.EmptyResponse) error {
+	ok, err := utils.CheckPermission(r, a.authz, args.OrganizationID, "jobs")
 	if err != nil || !ok {
 		return err
 	}
@@ -161,7 +175,7 @@ func (h *JobsHandler) UpdateJob(r *http.Request, args *UpdateJobRequest, result 
 		WHERE id = $15
 	`
 
-	_, err = h.pool.Exec(ctx, sqlQuery,
+	_, err = a.dbpool.Exec(ctx, sqlQuery,
 		args.Job.Name, args.Job.DueDate, args.Job.Priority, args.Job.Description,
 		args.Job.TenantIdentifier, args.Job.AssigneeIDs, args.Job.UnitIdentifier,
 		args.Job.BuildingID, args.Job.BoardID, args.Job.Labels, args.Job.Attachments,
@@ -181,8 +195,8 @@ type DeleteJobRequest struct {
 	OrganizationID string `json:"organizationId"`
 }
 
-func (h *JobsHandler) DeleteJob(r *http.Request, args *DeleteJobRequest, result *utils.EmptyResponse) error {
-	ok, err := utils.CheckPermissionAndExecuteResponseWithOrgID(r, h.authz, args.OrganizationID, "jobs", "delete")
+func (a *adaptor) DeleteJob(r *http.Request, args *DeleteJobRequest, result *utils.EmptyResponse) error {
+	ok, err := utils.CheckPermission(r, a.authz, args.OrganizationID, "jobs")
 	if err != nil || !ok {
 		return err
 	}
@@ -191,58 +205,10 @@ func (h *JobsHandler) DeleteJob(r *http.Request, args *DeleteJobRequest, result 
 
 	sqlQuery := `DELETE FROM jobs WHERE id = $1`
 
-	_, err = h.pool.Exec(ctx, sqlQuery, args.ID)
+	_, err = a.dbpool.Exec(ctx, sqlQuery, args.ID)
 	if err != nil {
 		return err
 	}
 
-	return nil
-}
-
-// JSON-RPC request for getting all jobs
-type GetAllJobsRequest struct {
-	OrganizationID string `json:"organizationId"`
-}
-
-// JSON-RPC response for getting all jobs
-type GetAllJobsResponse struct {
-	Jobs []Job `json:"jobs"`
-}
-
-func (h *JobsHandler) GetAllJobs(r *http.Request, args *GetAllJobsRequest, result *GetAllJobsResponse) error {
-	ctx := context.Background()
-
-	ok, err := utils.CheckPermissionAndExecuteResponseWithOrgID(r, h.authz, args.OrganizationID, "jobs", "getall")
-	if err != nil || !ok {
-		return err
-	}
-
-	sqlQuery := `
-		SELECT id, name, due_date, priority, description, tenant_identifier, assignee_ids, unit_identifier, building_id, board_id, labels, attachments, cost, hours, created_at
-		FROM jobs
-	`
-
-	rows, err := h.pool.Query(ctx, sqlQuery)
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
-
-	var jobs []Job
-	for rows.Next() {
-		var job Job
-		err := rows.Scan(
-			&job.ID, &job.Name, &job.DueDate, &job.Priority, &job.Description,
-			&job.TenantIdentifier, &job.AssigneeIDs, &job.UnitIdentifier,
-			&job.BuildingID, &job.BoardID, &job.Labels, &job.Attachments,
-			&job.Cost, &job.Hours, &job.CreatedAt,
-		)
-		if err != nil {
-			return err
-		}
-		jobs = append(jobs, job)
-	}
-
-	result.Jobs = jobs
 	return nil
 }
