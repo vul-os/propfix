@@ -51,7 +51,7 @@ func IsAuthenticated(authClient *auth.Client, orgStore organizations.Organizatio
 				user.PhotoURL = picture
 			}
 
-			// Get user's organization IDs using the authStore
+			// Get user's organization IDs using the orgStore
 			orgIDs, err := orgStore.GetOrganizationIDsForUser(user.ID)
 			if err != nil {
 				fmt.Println("Error getting user's organization IDs:", err)

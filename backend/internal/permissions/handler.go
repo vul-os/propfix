@@ -2,14 +2,13 @@ package permissions
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 	"time"
 
+	jsonRpcProvider "github.com/exolutionza/propfix-backend-go/internal/api/jsonRpc/service/provider"
 	"github.com/exolutionza/propfix-backend-go/internal/authz"
 	"github.com/exolutionza/propfix-backend-go/internal/utils"
 	"github.com/google/uuid"
-	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
@@ -21,7 +20,26 @@ type Permission struct {
 	CreatedAt  time.Time `json:"createdAt"`
 }
 
-// ... (other code)
+type adaptor struct {
+	dbpool *pgxpool.Pool
+	authz  *authz.Authz
+}
+
+const Name = "Permissions"
+
+func (a *adaptor) Name() jsonRpcProvider.Name {
+	return Name
+}
+
+func New(
+	dbpool *pgxpool.Pool,
+	authz *authz.Authz,
+) *adaptor {
+	return &adaptor{
+		dbpool: dbpool,
+		authz:  authz,
+	}
+}
 
 type CreatePermissionRequest struct {
 	Resource   string `json:"resource"`
@@ -29,58 +47,36 @@ type CreatePermissionRequest struct {
 	Identifier string `json:"identifier"`
 }
 
-func (h *PermissionsHandler) CreatePermission(w http.ResponseWriter, r *http.Request) {
-	ok, err := utils.CheckPermissionAndExecute(w, r, h.authz, "permissions", "create")
+func (a *adaptor) CreatePermission(r *http.Request, args *CreatePermissionRequest, result *utils.EmptyResponse) error {
+	ok, err := utils.CheckPermission(r, a.authz, "permissions", "create")
 	if err != nil || !ok {
-		return
+		return err
 	}
 
-	var request CreatePermissionRequest
-	err = json.NewDecoder(r.Body).Decode(&request)
-	if err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
-		return
-	}
-
-	if request.Resource == "" || request.Permission == "" || request.Identifier == "" {
-		http.Error(w, "Resource, Permission, and Identifier are required fields", http.StatusBadRequest)
-		return
-	}
+	permissionID := uuid.New().String()
 
 	ctx := context.Background()
 	query := `
 		INSERT INTO permissions (id, resource, permission, identifier, created_at)
 		VALUES ($1, $2, $3, $4, $5)
-		RETURNING id
 	`
 
-	permissionID := uuid.New().String()
-	createdAt := time.Now()
-	err = h.pool.QueryRow(ctx, query, permissionID, request.Resource, request.Permission, request.Identifier, createdAt).Scan(&permissionID)
+	_, err = a.dbpool.Exec(ctx, query, permissionID, args.Resource, args.Permission, args.Identifier, time.Now())
 	if err != nil {
-		http.Error(w, "Failed to create permission", http.StatusInternalServerError)
-		return
+		return err
 	}
 
-	response := map[string]string{"id": permissionID}
-	json.NewEncoder(w).Encode(response)
+	return nil
 }
 
 type DeletePermissionRequest struct {
 	ID string `json:"id"`
 }
 
-func (h *PermissionsHandler) DeletePermission(w http.ResponseWriter, r *http.Request) {
-	ok, err := utils.CheckPermissionAndExecute(w, r, h.authz, "permissions", "delete")
+func (a *adaptor) DeletePermission(r *http.Request, args *DeletePermissionRequest, result *utils.EmptyResponse) error {
+	ok, err := utils.CheckPermission(r, a.authz, "permissions", "delete")
 	if err != nil || !ok {
-		return
-	}
-
-	var request DeletePermissionRequest
-	err = json.NewDecoder(r.Body).Decode(&request)
-	if err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
-		return
+		return err
 	}
 
 	ctx := context.Background()
@@ -89,30 +85,26 @@ func (h *PermissionsHandler) DeletePermission(w http.ResponseWriter, r *http.Req
 		WHERE id = $1
 	`
 
-	_, err = h.pool.Exec(ctx, query, request.ID)
+	_, err = a.dbpool.Exec(ctx, query, args.ID)
 	if err != nil {
-		http.Error(w, "Failed to delete permission", http.StatusInternalServerError)
-		return
+		return err
 	}
 
-	w.WriteHeader(http.StatusOK)
+	return nil
 }
 
 type GetPermissionRequest struct {
 	ID string `json:"id"`
 }
 
-func (h *PermissionsHandler) GetPermission(w http.ResponseWriter, r *http.Request) {
-	ok, err := utils.CheckPermissionAndExecute(w, r, h.authz, "permissions", "read")
-	if err != nil || !ok {
-		return
-	}
+type GetPermissionResponse struct {
+	Permission Permission `json:"permission"`
+}
 
-	var request GetPermissionRequest
-	err = json.NewDecoder(r.Body).Decode(&request)
-	if err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
-		return
+func (a *adaptor) GetPermission(r *http.Request, args *GetPermissionRequest, result *GetPermissionResponse) error {
+	ok, err := utils.CheckPermission(r, a.authz, "permissions", "read")
+	if err != nil || !ok {
+		return err
 	}
 
 	ctx := context.Background()
@@ -121,15 +113,16 @@ func (h *PermissionsHandler) GetPermission(w http.ResponseWriter, r *http.Reques
 		FROM permissions
 		WHERE id = $1
 	`
+	row := a.dbpool.QueryRow(ctx, query, args.ID)
 
 	var permission Permission
-	err = h.pool.QueryRow(ctx, query, request.ID).Scan(&permission.ID, &permission.Resource, &permission.Permission, &permission.Identifier, &permission.CreatedAt)
+	err = row.Scan(&permission.ID, &permission.Resource, &permission.Permission, &permission.Identifier, &permission.CreatedAt)
 	if err != nil {
-		http.Error(w, "Permission not found", http.StatusNotFound)
-		return
+		return err
 	}
 
-	json.NewEncoder(w).Encode(permission)
+	result.Permission = permission
+	return nil
 }
 
 type UpdatePermissionRequest struct {
@@ -139,36 +132,23 @@ type UpdatePermissionRequest struct {
 	Identifier string `json:"identifier"`
 }
 
-func (h *PermissionsHandler) UpdatePermission(w http.ResponseWriter, r *http.Request) {
-	ok, err := utils.CheckPermissionAndExecute(w, r, h.authz, "permissions", "update")
+func (a *adaptor) UpdatePermission(r *http.Request, args *UpdatePermissionRequest, result *utils.EmptyResponse) error {
+	ok, err := utils.CheckPermission(r, a.authz, "permissions", "update")
 	if err != nil || !ok {
-		return
-	}
-
-	var request UpdatePermissionRequest
-	err = json.NewDecoder(r.Body).Decode(&request)
-	if err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
-		return
-	}
-
-	if request.Resource == "" || request.Permission == "" || request.Identifier == "" {
-		http.Error(w, "Resource, Permission, and Identifier are required fields", http.StatusBadRequest)
-		return
+		return err
 	}
 
 	ctx := context.Background()
 	query := `
 		UPDATE permissions
-		SET resource = $1, permission = $2, identifier = $3
-		WHERE id = $4
+		SET resource = $2, permission = $3, identifier = $4
+		WHERE id = $1
 	`
 
-	_, err = h.pool.Exec(ctx, query, request.Resource, request.Permission, request.Identifier, request.ID)
+	_, err = a.dbpool.Exec(ctx, query, args.ID, args.Resource, args.Permission, args.Identifier)
 	if err != nil {
-		http.Error(w, "Failed to update permission", http.StatusInternalServerError)
-		return
+		return err
 	}
 
-	w.WriteHeader(http.StatusOK)
+	return nil
 }

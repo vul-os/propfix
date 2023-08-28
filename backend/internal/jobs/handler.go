@@ -2,17 +2,15 @@ package jobs
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/exolutionza/propfix-backend-go/internal/authz"
 	"github.com/exolutionza/propfix-backend-go/internal/events"
 	"github.com/exolutionza/propfix-backend-go/internal/utils"
-	"github.com/gorilla/mux"
-	"github.com/teris-io/shortid"
+	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/teris-io/shortid"
 )
 
 type JobsHandler struct {
@@ -49,13 +47,13 @@ type Job struct {
 
 // JSON-RPC request for creating a job
 type CreateJobRequest struct {
-	Job Job `json:"job"`
+	Job            Job    `json:"job"`
 	OrganizationID string `json:"organizationId"`
 }
 
 // JSON-RPC response for creating a job
 type CreateJobResponse struct {
-	ID string `json:"id"`
+	ID   string `json:"id"`
 	Name string `json:"name"`
 }
 
@@ -98,7 +96,7 @@ func (h *JobsHandler) CreateJob(r *http.Request, args *CreateJobRequest, result 
 
 // JSON-RPC request for getting a job
 type GetJobRequest struct {
-	ID            string `json:"id"`
+	ID             string `json:"id"`
 	OrganizationID string `json:"organizationId"`
 }
 
@@ -143,7 +141,7 @@ func (h *JobsHandler) GetJob(r *http.Request, args *GetJobRequest, result *GetJo
 
 // JSON-RPC request for updating a job
 type UpdateJobRequest struct {
-	Job Job `json:"job"`
+	Job            Job    `json:"job"`
 	OrganizationID string `json:"organizationId"`
 }
 
@@ -179,7 +177,7 @@ func (h *JobsHandler) UpdateJob(r *http.Request, args *UpdateJobRequest, result 
 
 // JSON-RPC request for deleting a job
 type DeleteJobRequest struct {
-	ID            string `json:"id"`
+	ID             string `json:"id"`
 	OrganizationID string `json:"organizationId"`
 }
 

@@ -2,159 +2,73 @@ package roles
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 	"time"
 
+	jsonRpcProvider "github.com/exolutionza/propfix-backend-go/internal/api/jsonRpc/service/provider"
 	"github.com/exolutionza/propfix-backend-go/internal/authz"
 	"github.com/exolutionza/propfix-backend-go/internal/utils"
 
 	"github.com/google/uuid"
-	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
-type RoleHandler struct {
-	pool  *pgxpool.Pool
-	authz *authz.Authz
+type adaptor struct {
+	dbpool *pgxpool.Pool
+	authz  *authz.Authz
 }
 
-func NewRoleHandler(pool *pgxpool.Pool, authz *authz.Authz) *RoleHandler {
-	return &RoleHandler{
-		pool:  pool,
-		authz: authz,
-	}
+const Name = "Role"
+
+func (a *adaptor) Name() jsonRpcProvider.Name {
+	return Name
 }
 
-type GetRoleRequest struct {
-	ID            string `json:"id"`
-	OrganizationID string `json:"organizationId"`
-}
-
-func (h *RoleHandler) GetRole(w http.ResponseWriter, r *http.Request) {
-	var request GetRoleRequest
-	err := json.NewDecoder(r.Body).Decode(&request)
-	if err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
-		return
+func New(
+	dbpool *pgxpool.Pool,
+	authz *authz.Authz,
+) *adaptor {
+	return &adaptor{
+		dbpool: dbpool,
+		authz:  authz,
 	}
-
-	ok, err := utils.CheckPermissionAndOrgs(w, r, h.authz, "roles", "read", request.OrganizationID)
-	if err != nil || !ok {
-		return
-	}
-
-	ctx := context.Background()
-	query := `
-		SELECT id, name, description, user_ids, created_at
-		FROM roles
-		WHERE id = $1
-	`
-
-	var role authz.Role
-	err = h.pool.QueryRow(ctx, query, request.ID).Scan(&role.ID, &role.Name, &role.Description, &role.UserIDs, &role.CreatedAt)
-	if err != nil {
-		http.Error(w, "Role not found", http.StatusNotFound)
-		return
-	}
-
-	json.NewEncoder(w).Encode(role)
-}
-
-type UpdateRoleRequest struct {
-	ID            string   `json:"id"`
-	OrganizationID string   `json:"organizationId"`
-	Name          string   `json:"name"`
-	Description   string   `json:"description"`
-	UserIDs       []string `json:"userIds"`
-}
-
-func (h *RoleHandler) UpdateRole(w http.ResponseWriter, r *http.Request) {
-	var request UpdateRoleRequest
-	err := json.NewDecoder(r.Body).Decode(&request)
-	if err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
-		return
-	}
-
-	if request.Name == "" || request.Description == "" {
-		http.Error(w, "Name and Description are required fields", http.StatusBadRequest)
-		return
-	}
-
-	ok, err := utils.CheckPermissionAndOrgs(w, r, h.authz, "roles", "update", request.OrganizationID)
-	if err != nil || !ok {
-		return
-	}
-
-	ctx := context.Background()
-	query := `
-		UPDATE roles
-		SET name = $1, description = $2, user_ids = $3
-		WHERE id = $4
-	`
-
-	_, err = h.pool.Exec(ctx, query, request.Name, request.Description, request.UserIDs, request.ID)
-	if err != nil {
-		http.Error(w, "Failed to update role", http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
 }
 
 type CreateRoleRequest struct {
-	OrganizationID string   `json:"organizationId"`
-	Name           string   `json:"name"`
-	Description    string   `json:"description"`
-	UserIDs        []string `json:"userIds"`
+	Role authz.Role `json:"role"`
 }
 
-func (h *RoleHandler) CreateRole(w http.ResponseWriter, r *http.Request) {
-	var request CreateRoleRequest
-	err := json.NewDecoder(r.Body).Decode(&request)
-	if err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
-		return
+func (h *adaptor) CreateRole(r *http.Request, args *CreateRoleRequest, result *utils.EmptyResponse) error {
+	ok, err := utils.CheckPermission(r, h.authz, "roles", "create")
+	if err != nil || !ok {
+		return err
 	}
 
-	ok, err := utils.CheckPermissionAndOrgs(w, r, h.authz, "roles", "create", request.OrganizationID)
-	if err != nil || !ok {
-		return
-	}
+	roleID := uuid.New().String()
 
 	ctx := context.Background()
 	query := `
-		INSERT INTO roles (id, organization_id, name, description, user_ids, created_at)
-		VALUES ($1, $2, $3, $4, $5, $6)
+		INSERT INTO roles (id, name, description, user_ids, created_at)
+		VALUES ($1, $2, $3, $4, $5)
 	`
 
-	roleID := uuid.New().String()
-	_, err = h.pool.Exec(ctx, query, roleID, request.OrganizationID, request.Name, request.Description, request.UserIDs, time.Now())
+	_, err = h.dbpool.Exec(ctx, query, roleID, args.Role.Name, args.Role.Description, args.Role.UserIDs, time.Now())
 	if err != nil {
-		http.Error(w, "Failed to create role", http.StatusInternalServerError)
-		return
+		return err
 	}
 
-	w.WriteHeader(http.StatusCreated)
+	return nil
 }
 
 type DeleteRoleRequest struct {
-	ID            string `json:"id"`
+	ID             string `json:"id"`
 	OrganizationID string `json:"organizationId"`
 }
 
-func (h *RoleHandler) DeleteRole(w http.ResponseWriter, r *http.Request) {
-	var request DeleteRoleRequest
-	err := json.NewDecoder(r.Body).Decode(&request)
-	if err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
-		return
-	}
-
-	ok, err := utils.CheckPermissionAndOrgs(w, r, h.authz, "roles", "delete", request.OrganizationID)
+func (h *adaptor) DeleteRole(r *http.Request, args *DeleteRoleRequest, result *utils.EmptyResponse) error {
+	ok, err := utils.CheckPermission(r, h.authz, "roles", "delete")
 	if err != nil || !ok {
-		return
+		return err
 	}
 
 	ctx := context.Background()
@@ -163,11 +77,72 @@ func (h *RoleHandler) DeleteRole(w http.ResponseWriter, r *http.Request) {
 		WHERE id = $1
 	`
 
-	_, err = h.pool.Exec(ctx, query, request.ID)
+	_, err = h.dbpool.Exec(ctx, query, args.ID)
 	if err != nil {
-		http.Error(w, "Failed to delete role", http.StatusInternalServerError)
-		return
+		return err
 	}
 
-	w.WriteHeader(http.StatusOK)
+	return nil
+}
+
+type GetRoleRequest struct {
+	ID             string `json:"id"`
+	OrganizationID string `json:"organizationId"`
+}
+
+type GetRoleResponse struct {
+	Role authz.Role `json:"role"`
+}
+
+func (h *adaptor) GetRole(r *http.Request, args *GetRoleRequest, result *GetRoleResponse) error {
+	ok, err := utils.CheckPermission(r, h.authz, "roles", "read")
+	if err != nil || !ok {
+		return err
+	}
+
+	ctx := context.Background()
+	query := `
+		SELECT id, name, description, user_ids, created_at
+		FROM roles
+		WHERE id = $1
+	`
+	row := h.dbpool.QueryRow(ctx, query, args.ID)
+
+	var role authz.Role
+	err = row.Scan(&role.ID, &role.Name, &role.Description, &role.UserIDs, &role.CreatedAt)
+	if err != nil {
+		return err
+	}
+
+	result.Role = role
+	return nil
+}
+
+type UpdateRoleRequest struct {
+	Role authz.Role `json:"role"`
+}
+
+func (h *adaptor) UpdateRole(r *http.Request, args *UpdateRoleRequest, result *utils.EmptyResponse) error {
+	ok, err := utils.CheckPermission(r, h.authz, "roles", "update")
+	if err != nil || !ok {
+		return err
+	}
+
+	// Perform basic validation on the role data before update
+	if args.Role.Name == "" {
+		return utils.NewBadRequestError("Name is a required field")
+	}
+
+	ctx := context.Background()
+	query := `
+		UPDATE roles
+		SET name = $2, description = $3, user_ids = $4
+		WHERE id = $1
+	`
+	_, err = h.dbpool.Exec(ctx, query, args.Role.ID, args.Role.Name, args.Role.Description, args.Role.UserIDs)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
