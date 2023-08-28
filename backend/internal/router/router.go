@@ -56,8 +56,8 @@ func Router() {
 
 	rpcServerConfigs := []jsonRpcServer.RPCServerConfig{
 		{
-			Name: "Role",
-			Path: "/role",
+			Name: "Authorized",
+			Path: "/api/authenticated",
 			Middleware: []func(http.Handler) http.Handler{
 				auth.IsAuthenticated(authClient, *orgStore),
 			},
