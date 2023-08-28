@@ -15,7 +15,7 @@ import (
 	"github.com/exolutionza/propfix-backend-go/internal/auth"
 	"github.com/exolutionza/propfix-backend-go/internal/authz"
 	"github.com/exolutionza/propfix-backend-go/internal/organizations"
-	roles "github.com/exolutionza/propfix-backend-go/internal/role"
+	roles "github.com/exolutionza/propfix-backend-go/internal/roles"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
