@@ -38,12 +38,11 @@ type CreateRoleRequest struct {
 	Role authz.Role `json:"role"`
 }
 
-func (h *adaptor) CreateRole(r *http.Request, args *CreateRoleRequest, result *utils.EmptyResponse) error {
-	ok, err := utils.CheckPermission(r, h.authz, "roles", "create")
-	if err != nil || !ok {
-		return err
-	}
+type CreateRoleResponse struct {
+	RoleID string `json:"role_id"`
+}
 
+func (a *adaptor) CreateRole(r *http.Request, request *CreateRoleRequest, response *CreateRoleResponse) error {
 	roleID := uuid.New().String()
 
 	ctx := context.Background()
@@ -52,17 +51,19 @@ func (h *adaptor) CreateRole(r *http.Request, args *CreateRoleRequest, result *u
 		VALUES ($1, $2, $3, $4, $5)
 	`
 
-	_, err = h.dbpool.Exec(ctx, query, roleID, args.Role.Name, args.Role.Description, args.Role.UserIDs, time.Now())
+	_, err := a.dbpool.Exec(ctx, query, roleID, request.Role.Name, request.Role.Description, request.Role.UserIDs, time.Now())
 	if err != nil {
 		return err
 	}
 
+	*response = CreateRoleResponse{
+		RoleID: roleID,
+	}
 	return nil
 }
 
 type DeleteRoleRequest struct {
-	ID             string `json:"id"`
-	OrganizationID string `json:"organizationId"`
+	ID string `json:"id"`
 }
 
 func (h *adaptor) DeleteRole(r *http.Request, args *DeleteRoleRequest, result *utils.EmptyResponse) error {
@@ -86,8 +87,7 @@ func (h *adaptor) DeleteRole(r *http.Request, args *DeleteRoleRequest, result *u
 }
 
 type GetRoleRequest struct {
-	ID             string `json:"id"`
-	OrganizationID string `json:"organizationId"`
+	ID string `json:"id"`
 }
 
 type GetRoleResponse struct {
@@ -95,10 +95,10 @@ type GetRoleResponse struct {
 }
 
 func (h *adaptor) GetRole(r *http.Request, args *GetRoleRequest, result *GetRoleResponse) error {
-	ok, err := utils.CheckPermission(r, h.authz, "roles", "read")
-	if err != nil || !ok {
-		return err
-	}
+	// ok, err := utils.CheckPermission(r, h.authz, "roles", "read")
+	// if err != nil || !ok {
+	// 	return err
+	// }
 
 	ctx := context.Background()
 	query := `
@@ -109,7 +109,7 @@ func (h *adaptor) GetRole(r *http.Request, args *GetRoleRequest, result *GetRole
 	row := h.dbpool.QueryRow(ctx, query, args.ID)
 
 	var role authz.Role
-	err = row.Scan(&role.ID, &role.Name, &role.Description, &role.UserIDs, &role.CreatedAt)
+	err := row.Scan(&role.ID, &role.Name, &role.Description, &role.UserIDs, &role.CreatedAt)
 	if err != nil {
 		return err
 	}

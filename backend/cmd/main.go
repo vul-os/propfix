@@ -3,12 +3,10 @@ package main
 import (
 	"fmt"
 	"log"
-	"net/http"
 	"os"
 	"path/filepath"
 
 	r "github.com/exolutionza/propfix-backend-go/internal/router"
-	"github.com/gorilla/mux"
 )
 
 func main() {
@@ -37,13 +35,8 @@ func main() {
 
 	// // // Main Part Here
 
-	// Create a new router
-	router := mux.NewRouter()
+	// Start the server using the router package's Start function
+	r.Router()
 
-	// Handle requests using the Router function
-	router.PathPrefix("/").HandlerFunc(r.Router)
-
-	// Start the server
-	fmt.Println("Server listening on port 8080")
-	log.Fatal(http.ListenAndServe(":8080", router))
+	fmt.Println("Server is running. Press Ctrl+C to exit.")
 }

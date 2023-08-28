@@ -6,7 +6,7 @@ require (
 	cloud.google.com/go/bigquery v1.52.0
 	cloud.google.com/go/storage v1.31.0
 	firebase.google.com/go/v4 v4.11.0
-	github.com/GoogleCloudPlatform/functions-framework-go v1.7.3
+	github.com/GoogleCloudPlatform/functions-framework-go v1.7.4
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/rpc v1.2.0
@@ -20,6 +20,7 @@ require (
 	cloud.google.com/go/compute v1.20.1 // indirect
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
 	cloud.google.com/go/firestore v1.11.0 // indirect
+	cloud.google.com/go/functions v1.15.1 // indirect
 	cloud.google.com/go/iam v1.1.0 // indirect
 	cloud.google.com/go/longrunning v0.5.1 // indirect
 	github.com/MicahParks/keyfunc v1.9.0 // indirect
