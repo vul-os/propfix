@@ -178,8 +178,8 @@ func createLabelsTable(dbpool *pgxpool.Pool) error {
 }
 
 func main() {
-	pgHost := "postgresql-141986-0.cloudclusters.net"
-	pgPort := "18850"
+	pgHost := "postgresql-142310-0.cloudclusters.net"
+	pgPort := "18723"
 	pgDatabase := "propfix"
 	pgUser := "propfixadmin"
 	pgPassword := "happy123"

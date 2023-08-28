@@ -51,10 +51,10 @@ type CreatePermissionResponse struct {
 }
 
 func (a *adaptor) CreatePermission(r *http.Request, args *CreatePermissionRequest, result *CreatePermissionResponse) error {
-	// ok, err := utils.CheckPermission(r, a.authz, "permissions", "create")
-	// if err != nil || !ok {
-	// 	return err
-	// }
+	ok, err := utils.CheckPermission(r, a.authz, "permissions", "create")
+	if err != nil || !ok {
+		return err
+	}
 
 	permissionID := uuid.New().String()
 
@@ -64,7 +64,7 @@ func (a *adaptor) CreatePermission(r *http.Request, args *CreatePermissionReques
 		VALUES ($1, $2, $3, $4, $5)
 	`
 
-	_, err := a.dbpool.Exec(ctx, query, permissionID, args.Permission.Resource, args.Permission.Permission, args.Permission.Identifier, time.Now())
+	_, err = a.dbpool.Exec(ctx, query, permissionID, args.Permission.Resource, args.Permission.Permission, args.Permission.Identifier, time.Now())
 	if err != nil {
 		return err
 	}
@@ -82,10 +82,10 @@ type DeletePermissionResponse struct {
 }
 
 func (a *adaptor) DeletePermission(r *http.Request, args *DeletePermissionRequest, result *DeletePermissionResponse) error {
-	// ok, err := utils.CheckPermission(r, a.authz, "permissions", "delete")
-	// if err != nil || !ok {
-	//	return err
-	//	}
+	ok, err := utils.CheckPermission(r, a.authz, "permissions", "delete")
+	if err != nil || !ok {
+		return err
+	}
 
 	ctx := context.Background()
 	query := `
