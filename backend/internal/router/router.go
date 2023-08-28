@@ -4,6 +4,9 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 
 	jsonRpcServer "github.com/exolutionza/propfix-backend-go/internal/api/jsonRpc/server"
 	jsonRpcProvider "github.com/exolutionza/propfix-backend-go/internal/api/jsonRpc/service/provider"
@@ -16,7 +19,7 @@ import (
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
-func Start() {
+func Router() {
 	pgHost := "postgresql-141986-0.cloudclusters.net"
 	pgPort := "18850"
 	pgDatabase := "propfix"
@@ -68,8 +71,17 @@ func Start() {
 	// Create a new server instance
 	rpcServer := jsonRpcServer.New("localhost", "8080", rpcServerConfigs)
 
-	// Start the server
-	if err := rpcServer.Start(); err != nil {
-		fmt.Println("Failed to start server:", err)
-	}
+	// Start server using goroutine
+	go func() {
+		if err := rpcServer.Start(); err != nil {
+			fmt.Println("Failed to start server:", err)
+		}
+	}()
+
+	// Wait for interrupt signal to stop
+	systemSignalsChannel := make(chan os.Signal, 1)
+	signal.Notify(systemSignalsChannel, os.Interrupt, syscall.SIGTERM)
+	<-systemSignalsChannel
+
+	fmt.Println("Application is shutting down..")
 }
