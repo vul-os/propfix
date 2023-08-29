@@ -124,18 +124,17 @@ func (s *Authz) CheckEventPermission(r *http.Request, eventID, resource, permiss
 		SELECT EXISTS (
 			SELECT 1
 			FROM jobs
-			WHERE tenant_identifier = $1 AND id = (SELECT job_id FROM events WHERE id = $2 AND type = 'public')
+			WHERE tenant_identifier = $1 AND id = $2
 			LIMIT 1
 		)
 	`
 
 	var hasJobRelation bool
 	err = s.dbpool.QueryRow(ctx, sqlJobQuery, user.ID, eventID).Scan(&hasJobRelation)
-	if err != nil {
+	if err != nil || !hasJobRelation {
 		fmt.Println(err)
 		return "", err
 	}
-
 	return "public", nil
 }
 
