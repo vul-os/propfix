@@ -51,10 +51,10 @@ func (a *adaptor) CreateEvent(r *http.Request, args *CreateEventRequest, result 
 		accessType = "public"
 	}
 	user, ok := r.Context().Value("user").(user.User)
-	if !ok {
+	if !ok || accessType == "" {
 		return errors.New("not permitted")
 	}
-
+	fmt.Println(accessType)
 	eventID, err := a.store.CreateEvent(args.Event, accessType, user.ID)
 	if err != nil {
 		return fmt.Errorf("Failed to create event: %v", err)
