@@ -138,7 +138,7 @@ export const AuthProvider = (props) => {
         // Fetch organizations using JSON-RPC
         try {
           const fetchedOrganizations = await jsonRpcRequest('Organizations.GetAllOrganizations', [{}], idToken);
-          setOrganizations(fetchedOrganizations); // Set the organizations
+          setOrganizations(fetchedOrganizations.organizations); // Set the organizations
 
           // ... (rest of the logic remains the same)
         } catch (error) {
