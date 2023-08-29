@@ -2,6 +2,7 @@ package board
 
 import (
 	"context"
+	"errors"
 	"net/http"
 
 	jsonRpcProvider "github.com/exolutionza/propfix-backend-go/internal/api/jsonRpc/service/provider"
@@ -15,7 +16,6 @@ type Board struct {
 	ID             string `json:"id"`
 	Name           string `json:"name"`
 	OrganizationID string `json:"organizationId"`
-	// Add more fields as needed
 }
 
 type adaptor struct {
@@ -43,10 +43,14 @@ type CreateBoardRequest struct {
 	Board Board `json:"board"`
 }
 
-func (a *adaptor) CreateBoard(r *http.Request, args *CreateBoardRequest, result *utils.EmptyResponse) error {
+type CreateBoardResponse struct {
+	ID string `json:"id"`
+}
+
+func (a *adaptor) CreateBoard(r *http.Request, args *CreateBoardRequest, result *CreateBoardResponse) error {
 	ok, err := utils.CheckPermissionAndOrgs(r, a.authz, "boards", "create", args.Board.OrganizationID)
 	if err != nil || !ok {
-		return err
+		return errors.New("not permitted")
 	}
 
 	boardID := uuid.New().String()
@@ -58,9 +62,10 @@ func (a *adaptor) CreateBoard(r *http.Request, args *CreateBoardRequest, result 
 	`
 	_, err = a.dbpool.Exec(ctx, query, boardID, args.Board.Name, args.Board.OrganizationID)
 	if err != nil {
-		return err
+		return errors.New("Failed to create board")
 	}
 
+	result.ID = boardID
 	return nil
 }
 
@@ -68,10 +73,14 @@ type UpdateBoardRequest struct {
 	Board Board `json:"board"`
 }
 
-func (a *adaptor) UpdateBoard(r *http.Request, args *UpdateBoardRequest, result *utils.EmptyResponse) error {
+type UpdateBoardResponse struct {
+	Success bool `json:"success"`
+}
+
+func (a *adaptor) UpdateBoard(r *http.Request, args *UpdateBoardRequest, result *UpdateBoardResponse) error {
 	ok, err := utils.CheckPermissionAndOrgs(r, a.authz, "boards", "update", args.Board.OrganizationID)
 	if err != nil || !ok {
-		return err
+		return errors.New("not permitted")
 	}
 
 	// Perform basic validation on the board data before update
@@ -87,9 +96,10 @@ func (a *adaptor) UpdateBoard(r *http.Request, args *UpdateBoardRequest, result 
 	`
 	_, err = a.dbpool.Exec(ctx, query, args.Board.ID, args.Board.Name)
 	if err != nil {
-		return err
+		return errors.New("Failed to update board")
 	}
 
+	result.Success = true
 	return nil
 }
 
@@ -98,10 +108,14 @@ type DeleteBoardRequest struct {
 	OrganizationID string `json:"organizationId"`
 }
 
-func (a *adaptor) DeleteBoard(r *http.Request, args *DeleteBoardRequest, result *utils.EmptyResponse) error {
+type DeleteBoardResponse struct {
+	Success bool `json:"success"`
+}
+
+func (a *adaptor) DeleteBoard(r *http.Request, args *DeleteBoardRequest, result *DeleteBoardResponse) error {
 	ok, err := utils.CheckPermissionAndOrgs(r, a.authz, "boards", "delete", args.OrganizationID)
 	if err != nil || !ok {
-		return err
+		return errors.New("not permitted")
 	}
 
 	ctx := context.Background()
@@ -111,9 +125,10 @@ func (a *adaptor) DeleteBoard(r *http.Request, args *DeleteBoardRequest, result 
 	`
 	_, err = a.dbpool.Exec(ctx, query, args.ID)
 	if err != nil {
-		return err
+		return errors.New("Failed to delete board")
 	}
 
+	result.Success = true
 	return nil
 }
 
@@ -129,7 +144,7 @@ type GetBoardResponse struct {
 func (a *adaptor) GetBoard(r *http.Request, args *GetBoardRequest, result *GetBoardResponse) error {
 	ok, err := utils.CheckPermissionAndOrgs(r, a.authz, "boards", "read", args.OrganizationID)
 	if err != nil || !ok {
-		return err
+		return errors.New("not permitted")
 	}
 
 	ctx := context.Background()

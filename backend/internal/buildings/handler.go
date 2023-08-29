@@ -2,6 +2,7 @@ package buildings
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"time"
 
@@ -12,39 +13,6 @@ import (
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
-type BuildingsHandler struct {
-	dbpool *pgxpool.Pool
-	authz  *authz.Authz // Add the authz instance to the handler
-}
-
-func NewBuildingsHandler(dbpool *pgxpool.Pool, authz *authz.Authz) *BuildingsHandler {
-	return &BuildingsHandler{
-		dbpool: dbpool,
-		authz:  authz, // Assign the authz instance to the handler
-	}
-}
-
-type adaptor struct {
-	dbpool *pgxpool.Pool
-	authz  *authz.Authz
-}
-
-const Name = "Buildings"
-
-func (a *adaptor) Name() jsonRpcProvider.Name {
-	return Name
-}
-
-func New(
-	dbpool *pgxpool.Pool,
-	authz *authz.Authz,
-) *adaptor {
-	return &adaptor{
-		dbpool: dbpool,
-		authz:  authz,
-	}
-}
-
 type Building struct {
 	ID               string    `json:"id"`
 	BuildingName     string    `json:"buildingName"`
@@ -52,6 +20,24 @@ type Building struct {
 	UnitNumberSystem string    `json:"unitNumberSystem"`
 	CreatedAt        time.Time `json:"createdAt"`
 	OrganizationID   string    `json:"organizationId"`
+}
+
+type adaptor struct {
+	pool  *pgxpool.Pool
+	authz *authz.Authz
+}
+
+func New(pool *pgxpool.Pool, authz *authz.Authz) *adaptor {
+	return &adaptor{
+		pool:  pool,
+		authz: authz,
+	}
+}
+
+const Name = "Buildings"
+
+func (a *adaptor) Name() jsonRpcProvider.Name {
+	return Name
 }
 
 type CreateBuildingRequest struct {
@@ -62,29 +48,56 @@ type CreateBuildingResponse struct {
 	ID string `json:"id"`
 }
 
-func (a *adaptor) CreateBuilding(r *http.Request, args *CreateBuildingRequest, result *CreateBuildingResponse) error {
+func (a *adaptor) CreateBuilding(r *http.Request, args *CreateBuildingRequest, reply *CreateBuildingResponse) error {
 	ok, err := utils.CheckPermissionAndOrgs(r, a.authz, "buildings", "create", args.Building.OrganizationID)
 	if err != nil || !ok {
-		return err
+		return errors.New("not permitted")
 	}
 
-	args.Building.ID = uuid.New().String()
-	args.Building.CreatedAt = time.Now()
-
 	ctx := context.Background()
+	buildingID := uuid.New().String()
 	query := `
 		INSERT INTO buildings (id, building_name, address, unit_number_system, created_at, organization_id)
 		VALUES ($1, $2, $3, $4, $5, $6)
 		RETURNING id
 	`
-	row := a.dbpool.QueryRow(ctx, query, args.Building.ID, args.Building.BuildingName, args.Building.Address, args.Building.UnitNumberSystem, args.Building.CreatedAt, args.Building.OrganizationID)
-	if err := row.Scan(&args.Building.ID); err != nil {
-		return err
+
+	err = a.pool.QueryRow(ctx, query, buildingID, args.Building.BuildingName, args.Building.Address, args.Building.UnitNumberSystem, time.Now(), args.Building.OrganizationID).Scan(&buildingID)
+	if err != nil {
+		return errors.New("Failed to create building")
 	}
 
-	// Make sure the ID is assigned to the result.ID field
-	result.ID = args.Building.ID
+	reply.ID = buildingID
+	return nil
+}
 
+type UpdateBuildingRequest struct {
+	Building Building `json:"building"`
+}
+
+type UpdateBuildingResponse struct {
+	Success bool `json:"success"`
+}
+
+func (a *adaptor) UpdateBuilding(r *http.Request, args *UpdateBuildingRequest, reply *UpdateBuildingResponse) error {
+	ok, err := utils.CheckPermissionAndOrgs(r, a.authz, "buildings", "update", args.Building.OrganizationID)
+	if err != nil || !ok {
+		return errors.New("not permitted")
+	}
+
+	ctx := context.Background()
+	query := `
+		UPDATE buildings
+		SET building_name = $1, address = $2, unit_number_system = $3
+		WHERE id = $4 AND organization_id = $5
+	`
+
+	_, err = a.pool.Exec(ctx, query, args.Building.BuildingName, args.Building.Address, args.Building.UnitNumberSystem, args.Building.ID, args.Building.OrganizationID)
+	if err != nil {
+		return errors.New("Failed to update building")
+	}
+
+	reply.Success = true
 	return nil
 }
 
@@ -97,10 +110,10 @@ type GetBuildingResponse struct {
 	Building Building `json:"building"`
 }
 
-func (a *adaptor) GetBuilding(r *http.Request, args *GetBuildingRequest, result *GetBuildingResponse) error {
+func (a *adaptor) GetBuilding(r *http.Request, args *GetBuildingRequest, reply *GetBuildingResponse) error {
 	ok, err := utils.CheckPermissionAndOrgs(r, a.authz, "buildings", "read", args.OrganizationID)
 	if err != nil || !ok {
-		return err
+		return errors.New("not permitted")
 	}
 
 	ctx := context.Background()
@@ -109,7 +122,7 @@ func (a *adaptor) GetBuilding(r *http.Request, args *GetBuildingRequest, result 
 		FROM buildings
 		WHERE id = $1
 	`
-	row := a.dbpool.QueryRow(ctx, query, args.ID)
+	row := a.pool.QueryRow(ctx, query, args.ID)
 
 	var building Building
 	err = row.Scan(&building.ID, &building.BuildingName, &building.Address, &building.UnitNumberSystem, &building.CreatedAt, &building.OrganizationID)
@@ -117,36 +130,7 @@ func (a *adaptor) GetBuilding(r *http.Request, args *GetBuildingRequest, result 
 		return err
 	}
 
-	result.Building = building
-	return nil
-}
-
-type UpdateBuildingRequest struct {
-	Building Building `json:"building"`
-}
-
-func (a *adaptor) UpdateBuilding(r *http.Request, args *UpdateBuildingRequest, result *utils.EmptyResponse) error {
-	ok, err := utils.CheckPermissionAndOrgs(r, a.authz, "buildings", "update", args.Building.OrganizationID)
-	if err != nil || !ok {
-		return err
-	}
-
-	// Perform basic validation on the building data before update
-	if args.Building.BuildingName == "" || args.Building.Address == "" || args.Building.UnitNumberSystem == "" {
-		return utils.NewBadRequestError("BuildingName, Address, and UnitNumberSystem are required fields")
-	}
-
-	ctx := context.Background()
-	query := `
-		UPDATE buildings
-		SET building_name = $2, address = $3, unit_number_system = $4
-		WHERE id = $1
-	`
-	_, err = a.dbpool.Exec(ctx, query, args.Building.ID, args.Building.BuildingName, args.Building.Address, args.Building.UnitNumberSystem)
-	if err != nil {
-		return err
-	}
-
+	reply.Building = building
 	return nil
 }
 
@@ -155,21 +139,27 @@ type DeleteBuildingRequest struct {
 	OrganizationID string `json:"organizationId"`
 }
 
-func (a *adaptor) DeleteBuilding(r *http.Request, args *DeleteBuildingRequest, result *utils.EmptyResponse) error {
+type DeleteBuildingResponse struct {
+	Success bool `json:"success"`
+}
+
+func (a *adaptor) DeleteBuilding(r *http.Request, args *DeleteBuildingRequest, reply *DeleteBuildingResponse) error {
 	ok, err := utils.CheckPermissionAndOrgs(r, a.authz, "buildings", "delete", args.OrganizationID)
 	if err != nil || !ok {
-		return err
+		return errors.New("not permitted")
 	}
 
 	ctx := context.Background()
 	query := `
 		DELETE FROM buildings
-		WHERE id = $1
+		WHERE id = $1 AND organization_id = $2
 	`
-	_, err = a.dbpool.Exec(ctx, query, args.ID)
+
+	_, err = a.pool.Exec(ctx, query, args.ID, args.OrganizationID)
 	if err != nil {
-		return err
+		return errors.New("Failed to delete building")
 	}
 
+	reply.Success = true
 	return nil
 }
