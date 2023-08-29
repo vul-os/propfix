@@ -22,9 +22,11 @@ import DashboardLayout from './layouts/dashboard';
 import LoginPage from './pages/auth/LoginPage';
 
 import Account from './pages/account/account';
-import { KanbanView } from './pages/kanban/view'//
-// import { OrderListView } from './pages/order/view'
-import JobDataGrid from './pages/data-grid/data-grid'
+import { KanbanView } from './pages/kanban/view';
+import JobDataGrid from './pages/data-grid/data-grid';
+
+// Import the Stepper component
+import Stepper from './pages/job-wizzard/stepper'; // Make sure this path is correct
 
 function App() {
   return (
@@ -54,15 +56,15 @@ function App() {
                       <AuthGuard>
                         <DashboardLayout><KanbanView /> </DashboardLayout>
                       </AuthGuard>
-                    } 
+                    }
                   />
-                  <Route 
-                    path="/jobs" 
+                  <Route
+                    path="/jobs"
                     element={
                       <AuthGuard>
                         <DashboardLayout><JobDataGrid /> </DashboardLayout>
                       </AuthGuard>
-                    } 
+                    }
                   />
                   <Route
                     path="/account/*"
@@ -72,6 +74,19 @@ function App() {
                           <Routes>
                             <Route path="/" element={<Account />} />
                             <Route path=":accountVar" element={<Account />} />
+                          </Routes>
+                        </DashboardLayout>
+                      </AuthGuard>
+                    }
+                  />
+                  <Route
+                    path="/job-wizzard/*"
+                    element={
+                      <AuthGuard>
+                        <DashboardLayout>
+                          <Routes>
+                            {/* Add the route for the Stepper component */}
+                            <Route path="/" element={<Stepper />} />
                           </Routes>
                         </DashboardLayout>
                       </AuthGuard>

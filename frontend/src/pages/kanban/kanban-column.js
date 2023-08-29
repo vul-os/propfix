@@ -1,5 +1,5 @@
 import PropTypes from 'prop-types';
-import { useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Droppable, Draggable } from '@hello-pangea/dnd';
 import { alpha } from '@mui/material/styles';
 import Paper from '@mui/material/Paper';
@@ -8,84 +8,51 @@ import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
 
 import { useBoolean } from '../../hooks/use-boolean';
+import { useSnackbar } from '../../components/snackbar';
+import KanbanJobItem from './kanban-job-item';
+import { useAuthContext } from '../../contexts/auth';
 import {
   updateColumn,
   clearColumn,
   deleteColumn,
-  createTask,
-  updateTask,
-  deleteTask,
+  createJob,
+  updateJob,
+  deleteJob,
 } from '../../api/kanban';
-import Iconify from '../../components/iconify';
-import { useSnackbar } from '../../components/snackbar';
-import KanbanTaskItem from './kanban-task-item';
 
 export default function KanbanColumn({ column, jobs, index }) {
   const { enqueueSnackbar } = useSnackbar();
-  const openAddTask = useBoolean();
+  const openAddJob = useBoolean();
+  const { getIdToken } = useAuthContext(); // Get the getIdToken function from the auth context
 
-  const handleUpdateColumn = useCallback(
-    async (columnName) => {
+  const handleAddJob = useCallback(
+    async (jobData) => {
       try {
-        if (column.name !== columnName) {
-          updateColumn(column.id, columnName);
+        const token = await getIdToken(); // Get the JWT token from the auth context
+        createJob(column.id, jobData, token); // Pass the token to the createJob function
 
-          enqueueSnackbar('Update success!', {
-            anchorOrigin: { vertical: 'top', horizontal: 'center' },
-          });
-        }
+        openAddJob.onFalse();
       } catch (error) {
         console.error(error);
       }
     },
-    [column.id, column.name, enqueueSnackbar]
+    [column.id, getIdToken, openAddJob] // Include getIdToken in the dependencies array
   );
 
-  const handleClearColumn = useCallback(async () => {
+  const handleUpdateJob = useCallback(async (jobData) => {
     try {
-      clearColumn(column.id);
+      const token = await getIdToken(); // Get the JWT token from the auth context
+      updateJob(jobData, token); // Pass the token to the updateJob function
     } catch (error) {
       console.error(error);
     }
-  }, [column.id]);
+  }, [getIdToken]);
 
-  const handleDeleteColumn = useCallback(async () => {
-    try {
-      deleteColumn(column.id);
-
-      enqueueSnackbar('Delete success!', {
-        anchorOrigin: { vertical: 'top', horizontal: 'center' },
-      });
-    } catch (error) {
-      console.error(error);
-    }
-  }, [column.id, enqueueSnackbar]);
-
-  const handleAddTask = useCallback(
-    async (taskData) => {
+  const handleDeleteJob = useCallback(
+    async (jobId) => {
       try {
-        createTask(column.id, taskData);
-
-        openAddTask.onFalse();
-      } catch (error) {
-        console.error(error);
-      }
-    },
-    [column.id, openAddTask]
-  );
-
-  const handleUpdateTask = useCallback(async (taskData) => {
-    try {
-      updateTask(taskData);
-    } catch (error) {
-      console.error(error);
-    }
-  }, []);
-
-  const handleDeleteTask = useCallback(
-    async (taskId) => {
-      try {
-        deleteTask(column.id, taskId);
+        const token = await getIdToken(); // Get the JWT token from the auth context
+        deleteJob(column.id, jobId, token); // Pass the token to the deleteJob function
 
         enqueueSnackbar('Delete success!', {
           anchorOrigin: { vertical: 'top', horizontal: 'center' },
@@ -94,7 +61,7 @@ export default function KanbanColumn({ column, jobs, index }) {
         console.error(error);
       }
     },
-    [column.id, enqueueSnackbar]
+    [column.id, getIdToken, enqueueSnackbar]
   );
 
   return (
@@ -113,14 +80,14 @@ export default function KanbanColumn({ column, jobs, index }) {
           }}
         >
           <Stack {...provided.dragHandleProps}>
-          <Stack
-            spacing={1}
-            direction="row"
-            alignItems="center"
-            justifyContent="space-between"
-            sx={{ pt: 3 }}
-          >
-            <Typography
+            <Stack
+              spacing={1}
+              direction="row"
+              alignItems="center"
+              justifyContent="space-between"
+              sx={{ pt: 3 }}
+            >
+              <Typography
                 component="div"
                 sx={{
                   py: 0.75,
@@ -128,20 +95,19 @@ export default function KanbanColumn({ column, jobs, index }) {
                   borderWidth: 2,
                   borderStyle: 'solid',
                   borderColor: 'transparent',
-                  transition: (theme) => theme.transitions.create(['padding-left', 'border-color']),
+                  transition: (theme) =>
+                    theme.transitions.create(['padding-left', 'border-color']),
                   '&:focus': {
                     paddingLeft: 1.5,
                     borderColor: (theme) => theme.palette.text.primary,
                   },
                 }}
-              > 
-              {column.name}
-            </Typography>
+              >
+                {column.name}
+              </Typography>
+            </Stack>
 
-         
-          </Stack>
-
-            <Droppable droppableId={column.id} type="TASK">
+            <Droppable droppableId={column.id} type="JOB">
               {(dropProvided) => (
                 <Stack
                   ref={dropProvided.innerRef}
@@ -152,21 +118,22 @@ export default function KanbanColumn({ column, jobs, index }) {
                     width: 280,
                   }}
                 >
-                  {column.jobids && column.jobids.map((taskId, taskIndex) => {
-                    const task = jobs.find((job) => job && job.id === taskId);
-                    if(task) {  // Check if task is not undefined before rendering
-                      return (
-                        <KanbanTaskItem
-                          key={taskId}
-                          index={taskIndex}
-                          task={task}
-                          onUpdateTask={handleUpdateTask}
-                          onDeleteTask={() => handleDeleteTask(taskId)}
-                        />
-                      );
-                    }
-                    return null;
-                  })}
+                  {column.jobids &&
+                    column.jobids.map((jobId, jobIndex) => {
+                      const job = jobs.find((job) => job && job.id === jobId);
+                      if (job) {
+                        return (
+                          <KanbanJobItem
+                            key={jobId}
+                            index={jobIndex}
+                            job={job}
+                            onUpdateJob={handleUpdateJob}
+                            onDeleteJob={() => handleDeleteJob(jobId)}
+                          />
+                        );
+                      }
+                      return null;
+                    })}
                   {dropProvided.placeholder}
                 </Stack>
               )}

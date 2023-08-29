@@ -203,7 +203,7 @@ export default function KanbanDetails({
   const renderAttachments = (
     <Stack direction="row">
       <StyledLabel>Attachments</StyledLabel>
-      <KanbanDetailsAttachments attachments={task.attachmenturls} />
+      <KanbanDetailsAttachments jobId={task.id} attachments={task.attachmenturls} />
     </Stack>
   );
 
