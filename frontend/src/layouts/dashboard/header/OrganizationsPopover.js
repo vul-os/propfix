@@ -61,9 +61,9 @@ export default function OrganizationsPopover() {
         <Stack spacing={0.75}>
           {organizations.map((option) => (
             <MenuItem
-              key={option.value}
-              selected={option.value === activeOrganization}
-              onClick={() => handleOrganizationClick(option.value)}
+              key={option.id}
+              selected={option.id === activeOrganization}
+              onClick={() => handleOrganizationClick(option.id)}
               sx={{
                 display: 'flex',
                 flexDirection: 'column',
