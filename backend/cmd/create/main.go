@@ -127,6 +127,7 @@ func createJobsTable(dbpool *pgxpool.Pool) error {
 			priority TEXT,
 			description TEXT,
 			tenant_identifier TEXT,
+			organization_id TEXT,
 			assignee_ids TEXT[],
 			unit_identifier TEXT,
 			building_id TEXT,
@@ -162,8 +163,8 @@ func createLabelsTable(dbpool *pgxpool.Pool) error {
 }
 
 func main() {
-	pgHost := "postgresql-142500-0.cloudclusters.net"
-	pgPort := "10082"
+	pgHost := "postgresql-141986-0.cloudclusters.net"
+	pgPort := "18850"
 	pgDatabase := "propfix"
 	pgUser := "propfixadmin"
 	pgPassword := "happy123"

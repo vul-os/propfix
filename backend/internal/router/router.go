@@ -60,6 +60,7 @@ func Router() {
 	authorizer := authz.NewAuthz(dbpool)
 
 	orgStore := organizations.NewOrganizationStore(dbpool)
+	columnStore := columns.NewColumnsStore(dbpool)
 
 	rpcServerConfigs := []jsonRpcServer.RPCServerConfig{
 		{
@@ -74,9 +75,9 @@ func Router() {
 				permissions.New(dbpool, authorizer),
 				buildings.New(dbpool, authorizer),
 				labels.New(dbpool, authorizer),
-				jobs.New(dbpool, authorizer),
+				jobs.New(dbpool, authorizer, columnStore),
 				events.New(dbpool, authorizer),
-				columns.New(dbpool, authorizer),
+				columns.New(dbpool, authorizer, columnStore),
 			},
 		},
 		// Add more RPC server configurations for other services here
