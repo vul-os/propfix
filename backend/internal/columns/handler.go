@@ -2,53 +2,42 @@ package columns
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"net/http"
 
 	jsonRpcProvider "github.com/exolutionza/propfix-backend-go/internal/api/jsonRpc/service/provider"
+
 	"github.com/exolutionza/propfix-backend-go/internal/authz"
+
 	"github.com/exolutionza/propfix-backend-go/internal/utils"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
-
-type ColumnsHandler struct {
-	dbpool *pgxpool.Pool
-	authz  *authz.Authz // Add the authz instance to the handler
-}
-
-func NewColumnsHandler(dbpool *pgxpool.Pool, authz *authz.Authz) *ColumnsHandler {
-	return &ColumnsHandler{
-		dbpool: dbpool,
-		authz:  authz, // Assign the authz instance to the handler
-	}
-}
-
-type adaptor struct {
-	dbpool *pgxpool.Pool
-	authz  *authz.Authz
-}
-
-const Name = "Column"
-
-func (a *adaptor) Name() jsonRpcProvider.Name {
-	return Name
-}
-
-func New(
-	dbpool *pgxpool.Pool,
-	authz *authz.Authz,
-) *adaptor {
-	return &adaptor{
-		dbpool: dbpool,
-		authz:  authz,
-	}
-}
 
 type Column struct {
 	ID      string   `json:"id"`
 	Name    string   `json:"name"`
 	JobIDs  []string `json:"jobIds"`
 	BoardID string   `json:"boardId"`
+}
+
+type adaptor struct {
+	pool  *pgxpool.Pool
+	authz *authz.Authz
+}
+
+func New(pool *pgxpool.Pool, authz *authz.Authz) *adaptor {
+	return &adaptor{
+		pool:  pool,
+		authz: authz,
+	}
+}
+
+const Name = "Columns"
+
+func (a *adaptor) Name() jsonRpcProvider.Name {
+	return Name
 }
 
 type CreateColumnRequest struct {
@@ -59,53 +48,26 @@ type CreateColumnResponse struct {
 	ID string `json:"id"`
 }
 
-func (a *adaptor) CreateColumn(r *http.Request, args *CreateColumnRequest, result *CreateColumnResponse) error {
+func (a *adaptor) CreateColumn(r *http.Request, args *CreateColumnRequest, reply *CreateColumnResponse) error {
 	ok, err := utils.CheckPermission(r, a.authz, "columns", "create")
 	if err != nil || !ok {
-		return err
+		return errors.New("not permitted")
 	}
 
-	args.Column.ID = uuid.New().String()
-
 	ctx := context.Background()
+	columnID := uuid.New().String()
 	query := `
 		INSERT INTO columns (id, name, job_ids, board_id)
 		VALUES ($1, $2, $3, $4)
 		RETURNING id
 	`
-	row := a.dbpool.QueryRow(ctx, query, args.Column.ID, args.Column.Name, args.Column.JobIDs, args.Column.BoardID)
-	if err := row.Scan(&args.Column.ID); err != nil {
-		return err
-	}
 
-	result.ID = args.Column.ID
-	return nil
-}
-
-type GetColumnRequest struct {
-	ID string `json:"id"`
-}
-
-type GetColumnResponse struct {
-	Column Column `json:"column"`
-}
-
-func (a *adaptor) GetColumn(r *http.Request, args *GetColumnRequest, result *GetColumnResponse) error {
-	ctx := context.Background()
-	query := `
-		SELECT id, name, job_ids, board_id
-		FROM columns
-		WHERE id = $1
-	`
-	row := a.dbpool.QueryRow(ctx, query, args.ID)
-
-	var column Column
-	err := row.Scan(&column.ID, &column.Name, &column.JobIDs, &column.BoardID)
+	err = a.pool.QueryRow(ctx, query, columnID, args.Column.Name, args.Column.JobIDs, args.Column.BoardID).Scan(&columnID)
 	if err != nil {
-		return err
+		return errors.New("Failed to create column")
 	}
 
-	result.Column = column
+	reply.ID = columnID
 	return nil
 }
 
@@ -113,34 +75,70 @@ type UpdateColumnRequest struct {
 	Column Column `json:"column"`
 }
 
-func (a *adaptor) UpdateColumn(r *http.Request, args *UpdateColumnRequest, result *utils.EmptyResponse) error {
+type UpdateColumnResponse struct {
+	Success bool `json:"success"`
+}
+
+func (a *adaptor) UpdateColumn(r *http.Request, args *UpdateColumnRequest, reply *UpdateColumnResponse) error {
 	ok, err := utils.CheckPermission(r, a.authz, "columns", "update")
 	if err != nil || !ok {
-		return err
+		return errors.New("not permitted")
 	}
 
 	ctx := context.Background()
 	query := `
 		UPDATE columns
-		SET name = $2, job_ids = $3, board_id = $4
-		WHERE id = $1
+		SET name = $1, job_ids = $2, board_id = $3
+		WHERE id = $4
 	`
-	_, err = a.dbpool.Exec(ctx, query, args.Column.ID, args.Column.Name, args.Column.JobIDs, args.Column.BoardID)
+
+	_, err = a.pool.Exec(ctx, query, args.Column.Name, args.Column.JobIDs, args.Column.BoardID, args.Column.ID)
 	if err != nil {
-		return err
+		return errors.New("Failed to update column")
 	}
 
+	reply.Success = true
+	return nil
+}
+
+type GetColumnRequest struct {
+	ColumnID string `json:"id"`
+}
+
+type GetColumnResponse struct {
+	Column Column `json:"column"`
+}
+
+func (a *adaptor) GetColumn(r *http.Request, args *GetColumnRequest, reply *GetColumnResponse) error {
+	ctx := context.Background()
+	query := `
+		SELECT id, name, job_ids, board_id
+		FROM columns
+		WHERE id = $1
+	`
+
+	var column Column
+	err := a.pool.QueryRow(ctx, query, args.ColumnID).Scan(&column.ID, &column.Name, &column.JobIDs, &column.BoardID)
+	if err != nil {
+		return errors.New("Column not found")
+	}
+
+	reply.Column = column
 	return nil
 }
 
 type DeleteColumnRequest struct {
-	ID string `json:"id"`
+	ColumnID string `json:"id"`
 }
 
-func (a *adaptor) DeleteColumn(r *http.Request, args *DeleteColumnRequest, result *utils.EmptyResponse) error {
+type DeleteColumnResponse struct {
+	Message string `json:"message"`
+}
+
+func (a *adaptor) DeleteColumn(r *http.Request, args *DeleteColumnRequest, result *DeleteColumnResponse) error {
 	ok, err := utils.CheckPermission(r, a.authz, "columns", "delete")
 	if err != nil || !ok {
-		return err
+		return errors.New("not permitted")
 	}
 
 	ctx := context.Background()
@@ -148,110 +146,18 @@ func (a *adaptor) DeleteColumn(r *http.Request, args *DeleteColumnRequest, resul
 		DELETE FROM columns
 		WHERE id = $1
 	`
-	_, err = a.dbpool.Exec(ctx, query, args.ID)
+
+	res, err := a.pool.Exec(ctx, query, args.ColumnID)
 	if err != nil {
+		fmt.Println(err)
 		return err
 	}
 
-	return nil
-}
+	numRows := res.RowsAffected()
 
-type MoveJobRequest struct {
-	JobID    string `json:"jobId"`
-	SourceID string `json:"sourceId"`
-	TargetID string `json:"targetId"`
-}
+	// Log the result to aid in debugging
+	result.Message = fmt.Sprintf("Deleted %d rows\n", numRows)
 
-func (a *adaptor) MoveJob(r *http.Request, args *MoveJobRequest, result *utils.EmptyResponse) error {
-	ctx := context.Background()
-
-	// Retrieve the current column
-	currentQuery := `
-		SELECT id, name, job_ids, board_id
-		FROM columns
-		WHERE id = $1
-	`
-	row := a.dbpool.QueryRow(ctx, currentQuery, args.SourceID)
-	var currentColumn Column
-	err := row.Scan(&currentColumn.ID, &currentColumn.Name, &currentColumn.JobIDs, &currentColumn.BoardID)
-	if err != nil {
-		return err
-	}
-
-	// Retrieve the target column
-	targetQuery := `
-		SELECT id, name, job_ids, board_id
-		FROM columns
-		WHERE id = $1
-	`
-	row = a.dbpool.QueryRow(ctx, targetQuery, args.TargetID)
-	var targetColumn Column
-	err = row.Scan(&targetColumn.ID, &targetColumn.Name, &targetColumn.JobIDs, &targetColumn.BoardID)
-	if err != nil {
-		return err
-	}
-
-	// Move the job from the current column to the target column
-	currentColumn.JobIDs = removeString(currentColumn.JobIDs, args.JobID)
-	targetColumn.JobIDs = append(targetColumn.JobIDs, args.JobID)
-
-	// Update the current column in the database
-	updateCurrentQuery := `
-		UPDATE columns
-		SET job_ids = $2
-		WHERE id = $1
-	`
-	_, err = a.dbpool.Exec(ctx, updateCurrentQuery, currentColumn.ID, currentColumn.JobIDs)
-	if err != nil {
-		return err
-	}
-
-	// Update the target column in the database
-	updateTargetQuery := `
-		UPDATE columns
-		SET job_ids = $2
-		WHERE id = $1
-	`
-	_, err = a.dbpool.Exec(ctx, updateTargetQuery, targetColumn.ID, targetColumn.JobIDs)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func removeString(slice []string, target string) []string {
-	result := make([]string, 0, len(slice))
-	for _, s := range slice {
-		if s != target {
-			result = append(result, s)
-		}
-	}
-	return result
-}
-
-func (a *adaptor) GetAllColumns(r *http.Request, args *utils.EmptyRequest, result *[]Column) error {
-	ctx := context.Background()
-	query := `
-		SELECT id, name, job_ids, board_id
-		FROM columns
-	`
-	rows, err := a.dbpool.Query(ctx, query)
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
-
-	var columns []Column
-	for rows.Next() {
-		var column Column
-		err := rows.Scan(&column.ID, &column.Name, &column.JobIDs, &column.BoardID)
-		if err != nil {
-			return err
-		}
-		columns = append(columns, column)
-	}
-
-	*result = columns
+	// Explicitly return a non-nil error if there are no issues
 	return nil
 }

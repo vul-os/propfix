@@ -16,6 +16,7 @@ import (
 	"github.com/exolutionza/propfix-backend-go/internal/authz"
 	"github.com/exolutionza/propfix-backend-go/internal/board"
 	"github.com/exolutionza/propfix-backend-go/internal/buildings"
+	"github.com/exolutionza/propfix-backend-go/internal/columns"
 	"github.com/exolutionza/propfix-backend-go/internal/events"
 	"github.com/exolutionza/propfix-backend-go/internal/jobs"
 	"github.com/exolutionza/propfix-backend-go/internal/labels"
@@ -77,6 +78,7 @@ func Router() {
 				jobs.New(dbpool, authorizer),
 				events.New(dbpool, authorizer),
 				board.New(dbpool, authorizer),
+				columns.New(dbpool, authorizer),
 			},
 		},
 		// Add more RPC server configurations for other services here
