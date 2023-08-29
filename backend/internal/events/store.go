@@ -2,7 +2,6 @@ package events
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"time"
 
@@ -21,15 +20,16 @@ func NewEventsStore(pool *pgxpool.Pool) *EventsStore {
 }
 
 type Event struct {
-	ID        string          `json:"id"`
-	Type      string          `json:"type"`
-	JobID     string          `json:"jobId"`
-	MemberID  string          `json:"memberId"`
-	Data      json.RawMessage `json:"data"`
-	CreatedAt time.Time       `json:"createdAt"`
+	ID         string      `json:"id"`
+	Type       string      `json:"type"`
+	Visibility string      `json:"visibility"`
+	JobID      string      `json:"jobId"`
+	MemberID   string      `json:"memberId"`
+	Data       interface{} `json:"data"`
+	CreatedAt  time.Time   `json:"createdAt"`
 }
 
-func (s *EventsStore) CreateEvent(event Event) (string, error) {
+func (s *EventsStore) CreateEvent(event Event, accessType string) (string, error) {
 	// Perform basic validation on the event data before insertion
 	if event.Type == "" || event.JobID == "" || event.MemberID == "" {
 		return "", fmt.Errorf("Type, Data, JobID, and MemberID are required fields")
@@ -41,11 +41,11 @@ func (s *EventsStore) CreateEvent(event Event) (string, error) {
 
 	ctx := context.Background()
 	query := `
-		INSERT INTO events (id, type, job_id, member_id, data, created_at)
-		VALUES ($1, $2, $3, $4, $5, $6)
+		INSERT INTO events (id, type, job_id, member_id, data, created_at, visibility)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
 	`
 
-	_, err := s.pool.Exec(ctx, query, event.ID, event.Type, event.JobID, event.MemberID, event.Data, event.CreatedAt)
+	_, err := s.pool.Exec(ctx, query, event.ID, event.Type, event.JobID, event.MemberID, event.Data, event.CreatedAt, accessType)
 	if err != nil {
 		return "", fmt.Errorf("Failed to create event: %v", err)
 	}
@@ -56,13 +56,13 @@ func (s *EventsStore) CreateEvent(event Event) (string, error) {
 func (s *EventsStore) GetEvent(eventID string) (*Event, error) {
 	ctx := context.Background()
 	query := `
-		SELECT id, type, job_id, member_id, data, created_at
+		SELECT id, type, job_id, member_id, data, created_at, visibility
 		FROM events
 		WHERE id = $1
 	`
 
 	var event Event
-	err := s.pool.QueryRow(ctx, query, eventID).Scan(&event.ID, &event.Type, &event.JobID, &event.MemberID, &event.Data, &event.CreatedAt)
+	err := s.pool.QueryRow(ctx, query, eventID).Scan(&event.ID, &event.Type, &event.JobID, &event.MemberID, &event.Data, &event.CreatedAt, &event.Visibility)
 	if err != nil {
 		return nil, fmt.Errorf("Event not found")
 	}
@@ -81,11 +81,11 @@ func (s *EventsStore) UpdateEvent(event Event) error {
 	ctx := context.Background()
 	query := `
 		UPDATE events
-		SET type = $1, job_id = $2, member_id = $3, data = $4, created_at = $5
-		WHERE id = $6
+		SET type = $1, job_id = $2, member_id = $3, data = $4, created_at = $5, visibility = $6
+		WHERE id = $7
 	`
 
-	_, err := s.pool.Exec(ctx, query, event.Type, event.JobID, event.MemberID, event.Data, event.CreatedAt, event.ID)
+	_, err := s.pool.Exec(ctx, query, event.Type, event.JobID, event.MemberID, event.Data, event.CreatedAt, event.Visibility, event.ID)
 	if err != nil {
 		return fmt.Errorf("Failed to update event: %v", err)
 	}
@@ -123,13 +123,16 @@ func (s *EventsStore) DeleteAllEventsForJobID(jobID string) error {
 	return nil
 }
 
-func (s *EventsStore) GetAllEventsForJob(jobID string) ([]Event, error) {
+func (s *EventsStore) GetAllEventsForJob(jobID string, visibility string) ([]Event, error) {
 	ctx := context.Background()
 	query := `
-		SELECT id, type, job_id, member_id, data, created_at
+		SELECT id, type, job_id, member_id, data, created_at, visibility
 		FROM events
 		WHERE job_id = $1
 	`
+	if visibility == "public" {
+		query += " AND visibility = 'public'"
+	}
 
 	rows, err := s.pool.Query(ctx, query, jobID)
 	if err != nil {
@@ -140,34 +143,7 @@ func (s *EventsStore) GetAllEventsForJob(jobID string) ([]Event, error) {
 	var events []Event
 	for rows.Next() {
 		var event Event
-		err := rows.Scan(&event.ID, &event.Type, &event.JobID, &event.MemberID, &event.Data, &event.CreatedAt)
-		if err != nil {
-			return nil, fmt.Errorf("Failed to scan event row: %v", err)
-		}
-		events = append(events, event)
-	}
-
-	return events, nil
-}
-
-func (s *EventsStore) GetPublicEventsForJob(jobID string) ([]Event, error) {
-	ctx := context.Background()
-	query := `
-		SELECT id, type, job_id, member_id, data, created_at
-		FROM events
-		WHERE job_id = $1 AND type = 'public'
-	`
-
-	rows, err := s.pool.Query(ctx, query, jobID)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to get public events for job: %v", err)
-	}
-	defer rows.Close()
-
-	var events []Event
-	for rows.Next() {
-		var event Event
-		err := rows.Scan(&event.ID, &event.Type, &event.JobID, &event.MemberID, &event.Data, &event.CreatedAt)
+		err := rows.Scan(&event.ID, &event.Type, &event.JobID, &event.MemberID, &event.Data, &event.CreatedAt, &event.Visibility)
 		if err != nil {
 			return nil, fmt.Errorf("Failed to scan event row: %v", err)
 		}
