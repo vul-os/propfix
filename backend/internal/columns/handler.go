@@ -16,10 +16,10 @@ import (
 )
 
 type Column struct {
-	ID      string   `json:"id"`
-	Name    string   `json:"name"`
-	JobIDs  []string `json:"jobIds"`
-	BoardID string   `json:"boardId"`
+	ID             string   `json:"id"`
+	Name           string   `json:"name"`
+	JobIDs         []string `json:"jobIds"`
+	OrganizationID string   `json:"organizationId"`
 }
 
 type adaptor struct {
@@ -57,12 +57,12 @@ func (a *adaptor) CreateColumn(r *http.Request, args *CreateColumnRequest, reply
 	ctx := context.Background()
 	columnID := uuid.New().String()
 	query := `
-		INSERT INTO columns (id, name, job_ids, board_id)
+		INSERT INTO columns (id, name, job_ids, organization_id)
 		VALUES ($1, $2, $3, $4)
 		RETURNING id
 	`
 
-	err = a.pool.QueryRow(ctx, query, columnID, args.Column.Name, args.Column.JobIDs, args.Column.BoardID).Scan(&columnID)
+	err = a.pool.QueryRow(ctx, query, columnID, args.Column.Name, args.Column.JobIDs, args.Column.OrganizationID).Scan(&columnID)
 	if err != nil {
 		return errors.New("Failed to create column")
 	}
@@ -88,11 +88,11 @@ func (a *adaptor) UpdateColumn(r *http.Request, args *UpdateColumnRequest, reply
 	ctx := context.Background()
 	query := `
 		UPDATE columns
-		SET name = $1, job_ids = $2, board_id = $3
+		SET name = $1, job_ids = $2, organization_id = $3
 		WHERE id = $4
 	`
 
-	_, err = a.pool.Exec(ctx, query, args.Column.Name, args.Column.JobIDs, args.Column.BoardID, args.Column.ID)
+	_, err = a.pool.Exec(ctx, query, args.Column.Name, args.Column.JobIDs, args.Column.OrganizationID, args.Column.ID)
 	if err != nil {
 		return errors.New("Failed to update column")
 	}
@@ -117,13 +117,13 @@ func (a *adaptor) GetColumn(r *http.Request, args *GetColumnRequest, reply *GetC
 
 	ctx := context.Background()
 	query := `
-		SELECT id, name, job_ids, board_id
+		SELECT id, name, job_ids, organization_id
 		FROM columns
 		WHERE id = $1
 	`
 
 	var column Column
-	err = a.pool.QueryRow(ctx, query, args.ColumnID).Scan(&column.ID, &column.Name, &column.JobIDs, &column.BoardID)
+	err = a.pool.QueryRow(ctx, query, args.ColumnID).Scan(&column.ID, &column.Name, &column.JobIDs, &column.OrganizationID)
 	if err != nil {
 		return errors.New("Column not found")
 	}

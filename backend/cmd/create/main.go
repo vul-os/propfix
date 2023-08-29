@@ -53,7 +53,7 @@ func createColumnsTable(dbpool *pgxpool.Pool) error {
 			id TEXT PRIMARY KEY,
 			name TEXT NOT NULL,
 			job_ids TEXT[],
-			board_id TEXT
+			organization_id TEXT
 		)
 	`)
 	if err != nil {
@@ -117,22 +117,6 @@ func createPermissionsTable(dbpool *pgxpool.Pool) error {
 	return nil
 }
 
-func createBoardTable(dbpool *pgxpool.Pool) error {
-	ctx := context.Background()
-
-	_, err := dbpool.Exec(ctx, `
-		CREATE TABLE IF NOT EXISTS boards (
-			id TEXT PRIMARY KEY,
-			name TEXT NOT NULL,
-			organization_id TEXT NOT NULL
-		)
-	`)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 func createJobsTable(dbpool *pgxpool.Pool) error {
 	ctx := context.Background()
 
@@ -146,7 +130,6 @@ func createJobsTable(dbpool *pgxpool.Pool) error {
 			assignee_ids TEXT[],
 			unit_identifier TEXT,
 			building_id TEXT,
-			board_id TEXT,
 			labels TEXT[],
 			attachments TEXT[],
 			cost FLOAT8,
@@ -222,11 +205,6 @@ func main() {
 	err = createPermissionsTable(dbpool)
 	if err != nil {
 		log.Fatal("Error creating permissions table: ", err)
-	}
-
-	err = createBoardTable(dbpool)
-	if err != nil {
-		log.Fatal("Error creating board table: ", err)
 	}
 
 	err = createJobsTable(dbpool)
