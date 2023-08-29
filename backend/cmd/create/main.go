@@ -71,6 +71,7 @@ func createEventsTable(dbpool *pgxpool.Pool) error {
 			type TEXT NOT NULL,
 			job_id TEXT,
 			member_id TEXT,
+			visibility TEXT,
 			data JSON,
 			created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 		)

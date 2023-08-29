@@ -16,7 +16,7 @@ type adaptor struct {
 	authz *authz.Authz
 }
 
-const Name = "Event"
+const Name = "Events"
 
 func (a *adaptor) Name() jsonRpcProvider.Name {
 	return Name
@@ -46,7 +46,11 @@ func (a *adaptor) CreateEvent(r *http.Request, args *CreateEventRequest, result 
 		return errors.New("not permitted")
 	}
 
-	eventID, err := a.store.CreateEvent(args.Event)
+	if args.Event.Visibility == "public" && accessType == "private" {
+		accessType = "public"
+	}
+
+	eventID, err := a.store.CreateEvent(args.Event, accessType)
 	if err != nil {
 		return fmt.Errorf("Failed to create event: %v", err)
 	}
@@ -139,18 +143,10 @@ func (a *adaptor) GetAllEvents(r *http.Request, args *GetAllEventsRequest, resul
 	}
 
 	var events []Event
-	if accessType == "private" {
-		events, err = a.store.GetAllEventsForJob(args.JobID)
-		if err != nil {
-			return fmt.Errorf("Failed to get events: %v", err)
-		}
-	} else if accessType == "public" {
-		events, err = a.store.GetPublicEventsForJob(args.JobID)
-		if err != nil {
-			return fmt.Errorf("Failed to get public events: %v", err)
-		}
+	events, err = a.store.GetAllEventsForJob(args.JobID, accessType)
+	if err != nil {
+		return fmt.Errorf("Failed to get public events: %v", err)
 	}
-
 	result.Events = events
 	return nil
 }
