@@ -14,12 +14,13 @@ import (
 	firebase "firebase.google.com/go/v4"
 	"github.com/exolutionza/propfix-backend-go/internal/auth"
 	"github.com/exolutionza/propfix-backend-go/internal/authz"
+	"github.com/exolutionza/propfix-backend-go/internal/buildings"
 	"github.com/exolutionza/propfix-backend-go/internal/events"
 	"github.com/exolutionza/propfix-backend-go/internal/jobs"
 	"github.com/exolutionza/propfix-backend-go/internal/labels"
 	"github.com/exolutionza/propfix-backend-go/internal/organizations"
 	"github.com/exolutionza/propfix-backend-go/internal/permissions"
-	"github.com/exolutionza/propfix-backend-go/internal/roles"
+	roles "github.com/exolutionza/propfix-backend-go/internal/roles"
 
 	"github.com/jackc/pgx/v4/pgxpool"
 )
@@ -68,8 +69,9 @@ func Router() {
 			},
 			ServiceProviders: []jsonRpcProvider.Provider{
 				roles.New(dbpool, authorizer),
-				permissions.New(dbpool, authorizer),
 				organizations.New(dbpool, authorizer),
+				permissions.New(dbpool, authorizer),
+				buildings.New(dbpool, authorizer),
 				labels.New(dbpool, authorizer),
 				jobs.New(dbpool, authorizer),
 				events.New(dbpool, authorizer),
