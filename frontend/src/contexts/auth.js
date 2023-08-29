@@ -32,7 +32,8 @@ const HANDLERS = {
   SIGN_OUT: 'SIGN_OUT',
   SIGN_IN_WITH_GOOGLE: 'SIGN_IN_WITH_GOOGLE',
   SIGN_UP: 'SIGN_UP',
-  FORGOT_PASSWORD: 'FORGOT_PASSWORD'
+  FORGOT_PASSWORD: 'FORGOT_PASSWORD',
+  FETCH_ORGANIZATIONS: 'FETCH_ORGANIZATIONS'
 };
 
 const initialState = {
@@ -94,6 +95,13 @@ const handlers = {
       isAuthenticated: true,
       user
     };
+  },
+  [ORGANIZATION_HANDLERS.FETCH_ORGANIZATIONS]: (state, action) => {
+    const organizations = action.payload;
+    return {
+      ...state,
+      organizations
+    };
   }
 };
 
@@ -107,18 +115,33 @@ export const AuthProvider = (props) => {
   const [state, dispatch] = useReducer(reducer, initialState);
   const initialized = useRef(false);
 
+  const [activeOrganization, setActiveOrganization] = useState(null);
+  const [organizations, setOrganizations] = useState([]);
+
   const initialize = async () => {
     if (initialized.current) {
       return;
     }
     initialized.current = true;
 
-    onAuthStateChanged(auth, (user) => {
+    onAuthStateChanged(auth, async (user) => {
       if (user) {
         dispatch({
           type: HANDLERS.INITIALIZE,
           payload: user
         });
+
+        const idToken = await user.getIdToken();
+
+        // Fetch organizations using JSON-RPC
+        try {
+          const fetchedOrganizations = await jsonRpcRequest('Organizations.GetAllOrganizations', [idToken], idToken);
+          setOrganizations(fetchedOrganizations); // Set the organizations
+
+          // ... (rest of the logic remains the same)
+        } catch (error) {
+          console.error('Error fetching organizations:', error);
+        }
       } else {
         dispatch({
           type: HANDLERS.INITIALIZE
@@ -239,7 +262,10 @@ export const AuthProvider = (props) => {
         signOut,
         signUp,
         sendPasswordResetLink,
-        getIdToken
+        getIdToken,
+        activeOrganization,
+        setActiveOrganization,
+        organizations,
       }}
     >
       {children}
