@@ -139,7 +139,10 @@ export const AuthProvider = (props) => {
         try {
           const fetchedOrganizations = await jsonRpcRequest('Organizations.GetAllOrganizations', [{}], idToken);
           setOrganizations(fetchedOrganizations.organizations); // Set the organizations
+          if (fetchedOrganizations && fetchedOrganizations.organizations) {
+            setActiveOrganization(fetchedOrganizations.organizations[0])
 
+          }
           // ... (rest of the logic remains the same)
         } catch (error) {
           console.error('Error fetching organizations:', error);
