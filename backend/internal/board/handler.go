@@ -23,7 +23,7 @@ type adaptor struct {
 	authz  *authz.Authz
 }
 
-const Name = "Board"
+const Name = "Boards"
 
 func (a *adaptor) Name() jsonRpcProvider.Name {
 	return Name

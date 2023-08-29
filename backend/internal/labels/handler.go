@@ -17,7 +17,6 @@ import (
 type Label struct {
 	ID             string `json:"id"`
 	OrganizationID string `json:"organizationId"`
-	BoardID        string `json:"boardId"`
 	Name           string `json:"name"`
 	Color          string `json:"color"`
 }
@@ -57,12 +56,12 @@ func (a *adaptor) CreateLabel(r *http.Request, args *CreateLabelRequest, reply *
 	ctx := context.Background()
 	labelID := uuid.New().String()
 	query := `
-		INSERT INTO labels (id, organization_id, board_id, name, color)
-		VALUES ($1, $2, $3, $4, $5)
+		INSERT INTO labels (id, organization_id, name, color)
+		VALUES ($1, $2, $3, $4)
 		RETURNING id
 	`
 
-	err = a.pool.QueryRow(ctx, query, labelID, args.Label.OrganizationID, args.Label.BoardID, args.Label.Name, args.Label.Color).Scan(&labelID)
+	err = a.pool.QueryRow(ctx, query, labelID, args.Label.OrganizationID, args.Label.Name, args.Label.Color).Scan(&labelID)
 	if err != nil {
 		return errors.New("Failed to create label")
 	}
@@ -113,13 +112,13 @@ type GetLabelResponse struct {
 func (a *adaptor) GetLabel(r *http.Request, args *GetLabelRequest, reply *GetLabelResponse) error {
 	ctx := context.Background()
 	query := `
-		SELECT id, name, color, board_id
+		SELECT id, name, color
 		FROM labels
 		WHERE id = $1 AND organization_id = $2
 	`
 
 	var label Label
-	err := a.pool.QueryRow(ctx, query, args.LabelID, args.OrganizationID).Scan(&label.ID, &label.Name, &label.Color, &label.BoardID)
+	err := a.pool.QueryRow(ctx, query, args.LabelID, args.OrganizationID).Scan(&label.ID, &label.Name, &label.Color)
 	if err != nil {
 		return errors.New("Label not found")
 	}

@@ -166,9 +166,9 @@ func createLabelsTable(dbpool *pgxpool.Pool) error {
 	_, err := dbpool.Exec(ctx, `
 		CREATE TABLE IF NOT EXISTS labels (
 			id TEXT PRIMARY KEY,
-			board_id TEXT NOT NULL,
 			name TEXT NOT NULL,
-			color TEXT
+			color TEXT,
+			organization_id TEXT NOT NULL
 		)
 	`)
 	if err != nil {
@@ -178,8 +178,8 @@ func createLabelsTable(dbpool *pgxpool.Pool) error {
 }
 
 func main() {
-	pgHost := "postgresql-142310-0.cloudclusters.net"
-	pgPort := "18723"
+	pgHost := "postgresql-141986-0.cloudclusters.net"
+	pgPort := "18850"
 	pgDatabase := "propfix"
 	pgUser := "propfixadmin"
 	pgPassword := "happy123"
