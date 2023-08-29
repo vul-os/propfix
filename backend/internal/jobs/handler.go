@@ -224,8 +224,8 @@ func (a *adaptor) DeleteJob(r *http.Request, args *DeleteJobRequest, result *uti
 	return nil
 }
 
-// JSON-RPC request for getting all jobs
 type GetAllJobsRequest struct {
+	OrganizationID string `json:"organizationId"`
 }
 
 // JSON-RPC response for getting all jobs
@@ -234,35 +234,33 @@ type GetAllJobsResponse struct {
 }
 
 func (a *adaptor) GetAllJobs(r *http.Request, args *GetAllJobsRequest, result *GetAllJobsResponse) error {
-	ctx := context.Background()
-	user, ok := r.Context().Value("user").(user.User)
-	if !ok {
-		return nil
+	ok, err := utils.CheckPermission(r, a.authz, "jobs", "get")
+	if err != nil || !ok {
+		return errors.New("not permitted")
 	}
 
-	permissionStatus, err := a.authz.CheckPermission(user.ID, "jobs", "getall")
-	if err != nil {
-		return err
-	}
+	ctx := context.Background()
 
 	var rows pgx.Rows
-	if !permissionStatus { // public
+	if args.OrganizationID != "" {
 		sqlQuery := `
 			SELECT id, name, due_date, description, tenant_identifier, assignee_ids, unit_identifier, building_id, labels, attachments, created_at
 			FROM jobs
-			WHERE tenant_identifier = $1
+			WHERE building_id IN (
+				SELECT id
+				FROM buildings
+				WHERE organization_id = $1
+			)
 		`
-		rows, err = a.dbpool.Query(ctx, sqlQuery, user.ID)
+		rows, err = a.dbpool.Query(ctx, sqlQuery, args.OrganizationID)
 		if err != nil {
 			return err
 		}
-
-	} else { // private
+	} else {
 		sqlQuery := `
 			SELECT id, name, due_date, description, tenant_identifier, assignee_ids, unit_identifier, building_id, labels, attachments, created_at
 			FROM jobs
 		`
-
 		rows, err = a.dbpool.Query(ctx, sqlQuery)
 		if err != nil {
 			return err
@@ -281,11 +279,6 @@ func (a *adaptor) GetAllJobs(r *http.Request, args *GetAllJobsRequest, result *G
 		)
 		if err != nil {
 			return err
-		}
-		if !permissionStatus {
-			job.Cost = 0
-			job.Hours = 0
-			job.Priority = ""
 		}
 		jobs = append(jobs, job)
 	}
