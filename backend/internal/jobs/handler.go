@@ -5,12 +5,12 @@ import (
 	"errors"
 	"net/http"
 	"time"
+	"fmt"
 
 	jsonRpcProvider "github.com/exolutionza/propfix-backend-go/internal/api/jsonRpc/service/provider"
 	"github.com/exolutionza/propfix-backend-go/internal/authz"
-	"github.com/exolutionza/propfix-backend-go/internal/events"
+	"github.com/exolutionza/propfix-backend-go/internal/columns"
 	"github.com/exolutionza/propfix-backend-go/internal/user"
-	"github.com/exolutionza/propfix-backend-go/internal/utils"
 
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
@@ -20,13 +20,13 @@ import (
 type Job struct {
 	ID               string    `json:"id"`
 	Name             string    `json:"name"`
+	OrganizationID   string    `json:"organizationId"`
 	Priority         string    `json:"priority"`
 	Description      string    `json:"description"`
 	TenantIdentifier string    `json:"tenantIdentifier"`
 	AssigneeIDs      []string  `json:"assigneeIds"`
 	UnitIdentifier   string    `json:"unitIdentifier"`
 	BuildingID       string    `json:"buildingId"`
-	BoardID          string    `json:"boardId"`
 	Labels           []string  `json:"labels"`
 	Attachments      []string  `json:"attachments"`
 	Cost             float64   `json:"cost"`
@@ -35,15 +35,10 @@ type Job struct {
 	CreatedAt        time.Time `json:"createdAt"`
 }
 
-type JobsHandler struct {
-	pool   *pgxpool.Pool
-	events *events.EventsStore
-	authz  *authz.Authz
-}
-
 type adaptor struct {
-	dbpool *pgxpool.Pool
-	authz  *authz.Authz
+	dbpool       *pgxpool.Pool
+	authz        *authz.Authz
+	columnsStore *columns.ColumnsStore
 }
 
 const Name = "Jobs"
@@ -55,10 +50,12 @@ func (a *adaptor) Name() jsonRpcProvider.Name {
 func New(
 	dbpool *pgxpool.Pool,
 	authz *authz.Authz,
+	cs *columns.ColumnsStore,
 ) *adaptor {
 	return &adaptor{
-		dbpool: dbpool,
-		authz:  authz,
+		dbpool:       dbpool,
+		authz:        authz,
+		columnsStore: cs,
 	}
 }
 
@@ -74,13 +71,13 @@ type GetJobResponse struct {
 
 func (a *adaptor) GetJob(r *http.Request, args *GetJobRequest, result *GetJobResponse) error {
 	ctx := context.Background()
-	permissionStatus, err := a.authz.CheckJobPermission(r, args.ID, "jobs", "read")
-	if err != nil {
-		return err
-	}
+
+	// Check permission logic here
 
 	sqlQuery := `
-		SELECT id, name, due_date, description, tenant_identifier, assignee_ids, unit_identifier, building_id, labels, attachments, created_at
+		SELECT id, name, organization_id, priority, description, tenant_identifier,
+		assignee_ids, unit_identifier, building_id, labels, attachments,
+		cost, hours, due_date, created_at
 		FROM jobs
 		WHERE id = $1
 	`
@@ -88,23 +85,17 @@ func (a *adaptor) GetJob(r *http.Request, args *GetJobRequest, result *GetJobRes
 	row := a.dbpool.QueryRow(ctx, sqlQuery, args.ID)
 
 	var job Job
-	err = row.Scan(
-		&job.ID, &job.Name, &job.DueDate, &job.Description,
+	err := row.Scan(
+		&job.ID, &job.Name, &job.OrganizationID, &job.Priority, &job.Description,
 		&job.TenantIdentifier, &job.AssigneeIDs, &job.UnitIdentifier,
-		&job.BuildingID, &job.Labels, &job.Attachments, &job.CreatedAt,
+		&job.BuildingID, &job.Labels, &job.Attachments, &job.Cost, &job.Hours,
+		&job.DueDate, &job.CreatedAt,
 	)
 
 	if err == pgx.ErrNoRows {
-		return err
+		return errors.New("Job not found")
 	} else if err != nil {
 		return err
-	}
-
-	// Conditionally remove fields not allowed
-	if permissionStatus == "public" {
-		job.AssigneeIDs = nil
-		job.UnitIdentifier = ""
-		job.BuildingID = ""
 	}
 
 	result.Job = job
@@ -123,14 +114,9 @@ type CreateJobResponse struct {
 
 func (a *adaptor) CreateJob(r *http.Request, args *CreateJobRequest, result *CreateJobResponse) error {
 	ctx := r.Context()
-	// permissionStatus, err := a.authz.CheckJobPermission(r, args.Job.ID, "jobs", "create")
-	// if err != nil {
-	// 	return err
-	// }
 
-	// if permissionStatus != "public" {
-	// 	return errors.New("not permitted")
-	// }
+	// Check permission logic here
+
 	user, ok := r.Context().Value("user").(user.User)
 	if !ok {
 		return errors.New("not permitted")
@@ -146,14 +132,18 @@ func (a *adaptor) CreateJob(r *http.Request, args *CreateJobRequest, result *Cre
 	args.Job.TenantIdentifier = user.ID
 
 	sqlQuery := `
-		INSERT INTO jobs (id, name, due_date, description, tenant_identifier, assignee_ids, unit_identifier, building_id, labels, attachments, created_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+		INSERT INTO jobs (id, name, organization_id, priority, description, tenant_identifier,
+		assignee_ids, unit_identifier, building_id, labels, attachments, cost, hours,
+		due_date, created_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
 	`
 
 	_, err = a.dbpool.Exec(ctx, sqlQuery,
-		args.Job.ID, args.Job.Name, args.Job.DueDate, args.Job.Description, args.Job.TenantIdentifier,
-		args.Job.AssigneeIDs, args.Job.UnitIdentifier, args.Job.BuildingID, args.Job.Labels,
-		args.Job.Attachments, args.Job.CreatedAt)
+		args.Job.ID, args.Job.Name, args.Job.OrganizationID, args.Job.Priority,
+		args.Job.Description, args.Job.TenantIdentifier, args.Job.AssigneeIDs,
+		args.Job.UnitIdentifier, args.Job.BuildingID, args.Job.Labels,
+		args.Job.Attachments, args.Job.Cost, args.Job.Hours, args.Job.DueDate,
+		args.Job.CreatedAt)
 
 	if err != nil {
 		return err
@@ -168,33 +158,37 @@ type UpdateJobRequest struct {
 	Job Job `json:"job"`
 }
 
-func (a *adaptor) UpdateJob(r *http.Request, args *UpdateJobRequest, result *utils.EmptyResponse) error {
-	ctx := context.Background()
-	permissionStatus, err := a.authz.CheckJobPermission(r, args.Job.ID, "jobs", "update")
-	if err != nil {
-		return err
-	}
+// JSON-RPC response for updating a job
+type UpdateJobResponse struct {
+	Success bool `json:"success"`
+}
 
-	if permissionStatus != "" {
-		return errors.New("not permitted")
-	}
+func (a *adaptor) UpdateJob(r *http.Request, args *UpdateJobRequest, result *UpdateJobResponse) error {
+	ctx := context.Background()
+
+	// Check permission logic here
 
 	sqlQuery := `
 		UPDATE jobs
-		SET name = $1, due_date = $2, description = $3, tenant_identifier = $4,
-		assignee_ids = $5, unit_identifier = $6, building_id = $7, labels = $8, attachments = $9
-		WHERE id = $10
+		SET name = $1, organization_id = $2, priority = $3, description = $4,
+		tenant_identifier = $5, assignee_ids = $6, unit_identifier = $7,
+		building_id = $8, labels = $9, attachments = $10, cost = $11, hours = $12,
+		due_date = $13
+		WHERE id = $14
 	`
 
-	_, err = a.dbpool.Exec(ctx, sqlQuery,
-		args.Job.Name, args.Job.DueDate, args.Job.Description,
-		args.Job.TenantIdentifier, args.Job.AssigneeIDs, args.Job.UnitIdentifier,
-		args.Job.BuildingID, args.Job.Labels, args.Job.Attachments, args.Job.ID)
+	_, err := a.dbpool.Exec(ctx, sqlQuery,
+		args.Job.Name, args.Job.OrganizationID, args.Job.Priority,
+		args.Job.Description, args.Job.TenantIdentifier, args.Job.AssigneeIDs,
+		args.Job.UnitIdentifier, args.Job.BuildingID, args.Job.Labels,
+		args.Job.Attachments, args.Job.Cost, args.Job.Hours, args.Job.DueDate,
+		args.Job.ID)
 
 	if err != nil {
 		return err
 	}
 
+	result.Success = true
 	return nil
 }
 
@@ -203,29 +197,30 @@ type DeleteJobRequest struct {
 	ID string `json:"id"`
 }
 
-func (a *adaptor) DeleteJob(r *http.Request, args *DeleteJobRequest, result *utils.EmptyResponse) error {
-	ctx := context.Background()
-	permissionStatus, err := a.authz.CheckJobPermission(r, args.ID, "jobs", "delete")
-	if err != nil {
-		return err
-	}
+// JSON-RPC response for deleting a job
+type DeleteJobResponse struct {
+	Success bool `json:"success"`
+}
 
-	if permissionStatus != "" {
-		return errors.New("not permitted")
-	}
+func (a *adaptor) DeleteJob(r *http.Request, args *DeleteJobRequest, result *DeleteJobResponse) error {
+	ctx := context.Background()
+
+	// Check permission logic here
 
 	sqlQuery := `DELETE FROM jobs WHERE id = $1`
 
-	_, err = a.dbpool.Exec(ctx, sqlQuery, args.ID)
+	_, err := a.dbpool.Exec(ctx, sqlQuery, args.ID)
 	if err != nil {
 		return err
 	}
 
+	result.Success = true
 	return nil
 }
 
 // JSON-RPC request for getting all jobs
 type GetAllJobsRequest struct {
+	OrganizationID string `json:"organizationId"`
 }
 
 // JSON-RPC response for getting all jobs
@@ -235,38 +230,47 @@ type GetAllJobsResponse struct {
 
 func (a *adaptor) GetAllJobs(r *http.Request, args *GetAllJobsRequest, result *GetAllJobsResponse) error {
 	ctx := context.Background()
+
 	user, ok := r.Context().Value("user").(user.User)
 	if !ok {
-		return nil
+		return errors.New("not permitted")
 	}
-
-	permissionStatus, err := a.authz.CheckPermission(user.ID, "jobs", "getall")
-	if err != nil {
-		return err
-	}
+	permissionStatus := "private"
+	// permissionStatus, err := a.authz.CheckJobPermission(user.ID, "jobs", "getall")
+	// if err != nil {
+	// 	return err
+	// }
 
 	var rows pgx.Rows
-	if !permissionStatus { // public
-		sqlQuery := `
-			SELECT id, name, due_date, description, tenant_identifier, assignee_ids, unit_identifier, building_id, labels, attachments, created_at
-			FROM jobs
-			WHERE tenant_identifier = $1
-		`
-		rows, err = a.dbpool.Query(ctx, sqlQuery, user.ID)
-		if err != nil {
-			return err
-		}
+	var sqlQuery string
+	var queryParams []interface{}
 
-	} else { // private
-		sqlQuery := `
-			SELECT id, name, due_date, description, tenant_identifier, assignee_ids, unit_identifier, building_id, labels, attachments, created_at
+	if args.OrganizationID != "" { // If organization ID is provided in the request
+		sqlQuery = `
+			SELECT id, name, organization_id, priority, description, tenant_identifier,
+			assignee_ids, unit_identifier, building_id, labels, attachments,
+			cost, hours, due_date, created_at
+			FROM jobs
+			WHERE organization_id = $1
+		`
+		queryParams = append(queryParams, args.OrganizationID)
+	} else {
+		sqlQuery = `
+			SELECT id, name, organization_id, priority, description, tenant_identifier,
+			assignee_ids, unit_identifier, building_id, labels, attachments,
+			cost, hours, due_date, created_at
 			FROM jobs
 		`
+	}
 
-		rows, err = a.dbpool.Query(ctx, sqlQuery)
-		if err != nil {
-			return err
-		}
+	if permissionStatus == "public" {
+		sqlQuery += " AND tenant_identifier = $2"
+		queryParams = append(queryParams, user.ID)
+	}
+
+	rows, err := a.dbpool.Query(ctx, sqlQuery, queryParams...)
+	if err != nil {
+		return err
 	}
 
 	defer rows.Close()
@@ -275,14 +279,15 @@ func (a *adaptor) GetAllJobs(r *http.Request, args *GetAllJobsRequest, result *G
 	for rows.Next() {
 		var job Job
 		err := rows.Scan(
-			&job.ID, &job.Name, &job.DueDate, &job.Description,
+			&job.ID, &job.Name, &job.OrganizationID, &job.Priority, &job.Description,
 			&job.TenantIdentifier, &job.AssigneeIDs, &job.UnitIdentifier,
-			&job.BuildingID, &job.Labels, &job.Attachments, &job.CreatedAt,
+			&job.BuildingID, &job.Labels, &job.Attachments, &job.Cost, &job.Hours,
+			&job.DueDate, &job.CreatedAt,
 		)
 		if err != nil {
 			return err
 		}
-		if !permissionStatus {
+		if permissionStatus == "public" {
 			job.Cost = 0
 			job.Hours = 0
 			job.Priority = ""
@@ -292,4 +297,107 @@ func (a *adaptor) GetAllJobs(r *http.Request, args *GetAllJobsRequest, result *G
 
 	result.Jobs = jobs
 	return nil
+}
+
+// Define the KanbanBoard struct for the response
+type KanbanBoard struct {
+	Columns map[string]columns.Column `json:"columns"`
+	Jobs    map[string]Job    `json:"jobs"`
+	Ordered []string          `json:"ordered"`
+}
+
+// Define the GetKanbanBoardRequest struct
+type GetKanbanBoardRequest struct {
+	OrganizationID string `json:"organizationId"`
+}
+
+// Define the GetKanbanBoardResponse struct
+type GetKanbanBoardResponse struct {
+	Board KanbanBoard `json:"board"`
+}
+
+func (a *adaptor) GetKanbanBoard(r *http.Request, args *GetKanbanBoardRequest, result *GetKanbanBoardResponse) error {
+	// Fetch columns using the ColumnsStore
+	cols, err := a.columnsStore.GetAllColumns(args.OrganizationID)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	fmt.Println(cols)
+
+	// Fetch jobs using the organization ID (simplified example)
+	jobs, err := a.GetJobsByOrganization(args.OrganizationID)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	// Create a map to store jobs by their IDs
+	jobsMap := make(map[string]Job)
+	for _, job := range jobs {
+		jobsMap[job.ID] = job
+	}
+
+	// Create a map to store columns by their IDs
+	columnsMap := make(map[string]columns.Column)
+	for _, col := range cols {
+		columnsMap[col.ID] = columns.Column{
+			ID:     col.ID,
+			Name:   col.Name,
+			JobIDs: col.JobIDs,
+		}
+	}
+
+	// Create an ordered list of column IDs
+	var orderedColumns []string
+	for _, col := range cols {
+		orderedColumns = append(orderedColumns, col.ID)
+	}
+
+	// Build the response structure
+	response := GetKanbanBoardResponse{
+		Board: KanbanBoard{
+			Columns: columnsMap,
+			Jobs:    jobsMap,
+			Ordered: orderedColumns,
+		},
+	}
+
+	// Set the response
+	*result = response
+	return nil
+}
+
+func (a *adaptor) GetJobsByOrganization(orgID string) ([]Job, error) {
+	ctx := context.Background()
+
+    // Query to fetch jobs based on organization ID
+    query := fmt.Sprintf("SELECT * FROM jobs WHERE organization_id = '%s'", orgID)
+	
+	rows, err := a.dbpool.Query(ctx, query)
+    if err != nil {
+		fmt.Println(err)
+        return nil, err
+    }
+    defer rows.Close()
+    
+    var jobs []Job
+    for rows.Next() {
+        var job Job
+		err := rows.Scan(
+			&job.ID, &job.Name, &job.OrganizationID, &job.Priority, &job.Description,
+			&job.TenantIdentifier, &job.AssigneeIDs, &job.UnitIdentifier,
+			&job.BuildingID, &job.Labels, &job.Attachments, &job.Cost, &job.Hours,
+			&job.DueDate, &job.CreatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+        jobs = append(jobs, job)
+    }
+    
+    if err := rows.Err(); err != nil {
+        return nil, err
+    }
+    
+    return jobs, nil
 }
