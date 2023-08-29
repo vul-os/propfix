@@ -1,21 +1,15 @@
+import React from 'react';
 import { Helmet } from 'react-helmet-async';
-import { useEffect } from 'react';
-// @mui
 import { styled } from '@mui/material/styles';
 import { Link, Container, Typography, Divider, Stack, Button } from '@mui/material';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link as RouterLink } from 'react-router-dom';
 
-// hooks
 import { useResponsive } from '../../hooks/use-responsive';
-// components
 import Logo from '../../components/logo';
 import Iconify from '../../components/iconify';
-// sections
 import LoginForm from './LoginForm';
 
 import { useAuthContext } from '../../contexts/auth';
-
-// ----------------------------------------------------------------------
 
 const StyledRoot = styled('div')(({ theme }) => ({
   [theme.breakpoints.up('md')]: {
@@ -43,24 +37,15 @@ const StyledContent = styled('div')(({ theme }) => ({
   padding: theme.spacing(12, 0),
 }));
 
-// ----------------------------------------------------------------------
-
 export default function LoginPage() {
   const mdUp = useResponsive('up', 'md');
   const navigate = useNavigate();
   const location = useLocation();
   const { signInWithGoogle, isAuthenticated } = useAuthContext();
 
-  // useEffect(() => {
-  //   if (isAuthenticated) {
-  //     navigate('/'); // Redirect to the dashboard or any other desired page
-  //   }
-  // }, [isAuthenticated, navigate]);
-
   const handleGoogleSignIn = async () => {
     try {
       await signInWithGoogle();
-      // Handle successful sign-in
       const { from } = location.state || { from: { pathname: '/' } };
       navigate(from);
     } catch (error) {
@@ -99,8 +84,10 @@ export default function LoginPage() {
             </Typography>
 
             <Typography variant="body2" sx={{ mb: 5 }}>
-              Don’t have an account? {''}
-              <Link variant="subtitle2">Get started</Link>
+              Don’t have an account?{' '}
+              <Link component={RouterLink} to="/signup-page " variant="subtitle2">
+                Get started
+              </Link>
             </Typography>
 
             <Stack direction="row" spacing={2}>

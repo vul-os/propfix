@@ -14,6 +14,9 @@ import { SettingsProvider, SettingsDrawer } from './components/settings';
 import ThemeProvider from './theme';
 // components
 import ScrollToTop from './components/scroll-to-top';
+import SignUpPage from './pages/auth/signup-page'; // Update the path accordingly
+import ForgotPasswordPage from './pages/auth/forgot-password-page'; // Update the path accordingly
+
 // layouts
 import DashboardLayout from './layouts/dashboard';
 import LoginPage from './pages/auth/LoginPage';
@@ -32,11 +35,11 @@ function App() {
         <LocalizationProvider dateAdapter={AdapterDateFns}>
           <SettingsProvider
             defaultSettings={{
-              themeMode: 'light',
-              themeDirection: 'ltr',
-              themeContrast: 'default',
-              themeLayout: 'vertical',
-              themeColorPresets: 'default',
+            themeMode: 'light', // 'light' | 'dark'
+            themeDirection: 'ltr', //  'rtl' | 'ltr'
+            themeContrast: 'default', // 'default' | 'bold'
+            themeLayout: 'vertical', // 'vertical' | 'horizontal' | 'mini'
+            themeColorPresets: 'default', // 'default' | 'cyan' | 'purple' | 'blue' | 'orange' | 'red'
               themeStretch: false,
             }}
           >
@@ -45,8 +48,10 @@ function App() {
               <AuthProvider>
                 <Routes>
                   <Route path="/auth/login" element={<LoginPage />} />
-                  <Route
-                    path="/"
+                  <Route path="/auth/signup" element={<SignUpPage />} /> {/* New route */}
+                  <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} /> {/* New route */}
+                  <Route 
+                    path="/" 
                     element={
                       <AuthGuard>
                         <DashboardLayout><KanbanView /> </DashboardLayout>
