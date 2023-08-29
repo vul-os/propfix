@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	jsonRpcProvider "github.com/exolutionza/propfix-backend-go/internal/api/jsonRpc/service/provider"
+	"github.com/exolutionza/propfix-backend-go/internal/user"
 
 	"github.com/exolutionza/propfix-backend-go/internal/authz"
 	"github.com/jackc/pgx/v4/pgxpool"
@@ -49,8 +50,12 @@ func (a *adaptor) CreateEvent(r *http.Request, args *CreateEventRequest, result 
 	if args.Event.Visibility == "public" && accessType == "private" {
 		accessType = "public"
 	}
+	user, ok := r.Context().Value("user").(user.User)
+	if !ok {
+		return errors.New("not permitted")
+	}
 
-	eventID, err := a.store.CreateEvent(args.Event, accessType)
+	eventID, err := a.store.CreateEvent(args.Event, accessType, user.ID)
 	if err != nil {
 		return fmt.Errorf("Failed to create event: %v", err)
 	}

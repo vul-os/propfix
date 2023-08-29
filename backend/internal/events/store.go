@@ -29,7 +29,7 @@ type Event struct {
 	CreatedAt  time.Time   `json:"createdAt"`
 }
 
-func (s *EventsStore) CreateEvent(event Event, accessType string) (string, error) {
+func (s *EventsStore) CreateEvent(event Event, accessType string, userId string) (string, error) {
 	// Perform basic validation on the event data before insertion
 	if event.Type == "" || event.JobID == "" || event.MemberID == "" {
 		return "", fmt.Errorf("Type, Data, JobID, and MemberID are required fields")
@@ -45,7 +45,7 @@ func (s *EventsStore) CreateEvent(event Event, accessType string) (string, error
 		VALUES ($1, $2, $3, $4, $5, $6, $7)
 	`
 
-	_, err := s.pool.Exec(ctx, query, event.ID, event.Type, event.JobID, event.MemberID, event.Data, event.CreatedAt, accessType)
+	_, err := s.pool.Exec(ctx, query, event.ID, event.Type, event.JobID, userId, event.Data, event.CreatedAt, accessType)
 	if err != nil {
 		return "", fmt.Errorf("Failed to create event: %v", err)
 	}
