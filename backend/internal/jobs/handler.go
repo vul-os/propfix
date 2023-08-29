@@ -131,6 +131,10 @@ func (a *adaptor) CreateJob(r *http.Request, args *CreateJobRequest, result *Cre
 	// if permissionStatus != "public" {
 	// 	return errors.New("not permitted")
 	// }
+	user, ok := r.Context().Value("user").(user.User)
+	if !ok {
+		return errors.New("not permitted")
+	}
 
 	id, err := shortid.Generate()
 	if err != nil {
@@ -139,6 +143,7 @@ func (a *adaptor) CreateJob(r *http.Request, args *CreateJobRequest, result *Cre
 
 	args.Job.ID = id
 	args.Job.CreatedAt = time.Now()
+	args.Job.TenantIdentifier = user.ID
 
 	sqlQuery := `
 		INSERT INTO jobs (id, name, due_date, description, tenant_identifier, assignee_ids, unit_identifier, building_id, labels, attachments, created_at)
