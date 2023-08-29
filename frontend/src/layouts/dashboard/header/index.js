@@ -9,7 +9,7 @@ import Iconify from '../../../components/iconify';
 //
 import Searchbar from './Searchbar';
 import AccountPopover from './AccountPopover';
-import CurrencyPopover from './CurrencyPopover';
+import OrganizationsPopover from './OrganizationsPopover';
 
 // ----------------------------------------------------------------------
 
@@ -66,7 +66,7 @@ export default function Header({ onOpenNav }) {
             sm: 2,
           }}
         >
-          <CurrencyPopover />
+          <OrganizationsPopover />
           <AccountPopover />
         </Stack>
       </StyledToolbar>
