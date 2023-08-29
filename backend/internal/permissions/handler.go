@@ -142,10 +142,7 @@ func (a *adaptor) GetPermission(r *http.Request, args *GetPermissionRequest, res
 }
 
 type UpdatePermissionRequest struct {
-	ID         string `json:"id"`
-	Resource   string `json:"resource"`
-	Permission string `json:"permission"`
-	Identifier string `json:"identifier"`
+	Permission Permission `json:"permission"`
 }
 
 func (a *adaptor) UpdatePermission(r *http.Request, args *UpdatePermissionRequest, result *utils.EmptyResponse) error {
@@ -161,7 +158,7 @@ func (a *adaptor) UpdatePermission(r *http.Request, args *UpdatePermissionReques
 		WHERE id = $1
 	`
 
-	_, err = a.dbpool.Exec(ctx, query, args.ID, args.Resource, args.Permission, args.Identifier)
+	_, err = a.dbpool.Exec(ctx, query, args.Permission.ID, args.Permission.Resource, args.Permission.Permission, args.Permission.Identifier)
 	if err != nil {
 		return err
 	}
