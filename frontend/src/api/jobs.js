@@ -56,3 +56,14 @@ export async function getAllJobs(idToken) {
     return [];
   }
 }
+
+export async function getBoard(idToken, organizationId) {
+  try {
+    const params = [{organizationId}];
+
+    return await jsonRpcRequest('Jobs.GetKanbanBoard', params, idToken);
+  } catch (error) {
+    console.error('Error fetching all jobs:', error);
+    return [];
+  }
+}

@@ -6,7 +6,7 @@ import Typography from '@mui/material/Typography';
 
 import EmptyContent from '../../../components/empty-content';
 import { moveJob } from '../../../api/columns';
-import { fetchBoard } from '../../../api/board';
+import { getBoard } from '../../../api/jobs';
 import { hideScroll } from '../../../theme/css';
 
 import KanbanColumn from '../kanban-column';
@@ -22,7 +22,7 @@ export default function KanbanView() {
     async function fetchData() {
       try {
         const token = await getIdToken(); 
-        const boardData = await fetchBoard(token);
+        const boardData = await getBoard(token, "8d3a2d83-ba07-48e9-a2db-af91247b3183");
         setBoard(boardData.board);
         setBoardLoading(false);
       } catch (error) {
