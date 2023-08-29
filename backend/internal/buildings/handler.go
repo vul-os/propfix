@@ -29,7 +29,7 @@ type adaptor struct {
 	authz  *authz.Authz
 }
 
-const Name = "Building"
+const Name = "Buildings"
 
 func (a *adaptor) Name() jsonRpcProvider.Name {
 	return Name
@@ -82,7 +82,9 @@ func (a *adaptor) CreateBuilding(r *http.Request, args *CreateBuildingRequest, r
 		return err
 	}
 
+	// Make sure the ID is assigned to the result.ID field
 	result.ID = args.Building.ID
+
 	return nil
 }
 
