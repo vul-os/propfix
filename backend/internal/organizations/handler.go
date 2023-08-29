@@ -162,3 +162,65 @@ func (a *adaptor) GetOrganization(r *http.Request, args *GetOrganizationRequest,
 	result.Organization = org
 	return nil
 }
+
+type AddMemberRequest struct {
+	ID     string `json:"id"`
+	UserID string `json:"userId"`
+}
+
+type AddMemberResponse struct {
+	Success bool `json:"success"`
+}
+
+func (a *adaptor) AddMember(r *http.Request, args *AddMemberRequest, result *AddMemberResponse) error {
+	ok, err := utils.CheckPermission(r, a.authz, "organizations", "addmember")
+	if err != nil || !ok {
+		return errors.New("not permitted")
+	}
+
+	ctx := context.Background()
+	query := `
+		UPDATE organizations
+		SET members = array_append(members, $2)
+		WHERE id = $1
+	`
+
+	_, err = a.dbpool.Exec(ctx, query, args.ID, args.UserID)
+	if err != nil {
+		return err
+	}
+
+	result.Success = true
+	return nil
+}
+
+type RemoveMemberRequest struct {
+	ID     string `json:"id"`
+	UserID string `json:"userId"`
+}
+
+type RemoveMemberResponse struct {
+	Success bool `json:"success"`
+}
+
+func (a *adaptor) RemoveMember(r *http.Request, args *RemoveMemberRequest, result *RemoveMemberResponse) error {
+	ok, err := utils.CheckPermission(r, a.authz, "organizations", "removemember")
+	if err != nil || !ok {
+		return errors.New("not permitted")
+	}
+
+	ctx := context.Background()
+	query := `
+		UPDATE organizations
+		SET members = array_remove(members, $2)
+		WHERE id = $1
+	`
+
+	_, err = a.dbpool.Exec(ctx, query, args.ID, args.UserID)
+	if err != nil {
+		return err
+	}
+
+	result.Success = true
+	return nil
+}
