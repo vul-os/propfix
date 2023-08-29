@@ -110,6 +110,11 @@ type GetLabelResponse struct {
 }
 
 func (a *adaptor) GetLabel(r *http.Request, args *GetLabelRequest, reply *GetLabelResponse) error {
+	ok, err := utils.CheckPermissionAndOrgs(r, a.authz, "labels", "get", args.OrganizationID)
+	if err != nil || !ok {
+		return errors.New("not permitted")
+	}
+
 	ctx := context.Background()
 	query := `
 		SELECT id, name, color
@@ -118,7 +123,7 @@ func (a *adaptor) GetLabel(r *http.Request, args *GetLabelRequest, reply *GetLab
 	`
 
 	var label Label
-	err := a.pool.QueryRow(ctx, query, args.LabelID, args.OrganizationID).Scan(&label.ID, &label.Name, &label.Color)
+	err = a.pool.QueryRow(ctx, query, args.LabelID, args.OrganizationID).Scan(&label.ID, &label.Name, &label.Color)
 	if err != nil {
 		return errors.New("Label not found")
 	}
