@@ -2,12 +2,14 @@ package roles
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
 
 	jsonRpcProvider "github.com/exolutionza/propfix-backend-go/internal/api/jsonRpc/service/provider"
 	"github.com/exolutionza/propfix-backend-go/internal/authz"
+	"github.com/exolutionza/propfix-backend-go/internal/utils"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v4/pgxpool"
@@ -39,10 +41,15 @@ type CreateRoleRequest struct {
 }
 
 type CreateRoleResponse struct {
-	RoleID string `json:"role_id"`
+	ID string `json:"id"`
 }
 
 func (a *adaptor) CreateRole(r *http.Request, request *CreateRoleRequest, response *CreateRoleResponse) error {
+	ok, err := utils.CheckPermission(r, a.authz, "roles", "create")
+	if err != nil || !ok {
+		return errors.New("not permitted")
+	}
+
 	roleID := uuid.New().String()
 
 	ctx := context.Background()
@@ -51,13 +58,13 @@ func (a *adaptor) CreateRole(r *http.Request, request *CreateRoleRequest, respon
 		VALUES ($1, $2, $3, $4, $5)
 	`
 
-	_, err := a.dbpool.Exec(ctx, query, roleID, request.Role.Name, request.Role.Description, request.Role.UserIDs, time.Now())
+	_, err = a.dbpool.Exec(ctx, query, roleID, request.Role.Name, request.Role.Description, request.Role.UserIDs, time.Now())
 	if err != nil {
 		return err
 	}
 
 	*response = CreateRoleResponse{
-		RoleID: roleID,
+		ID: roleID,
 	}
 	return nil
 }
@@ -71,10 +78,10 @@ type DeleteRoleResponse struct {
 }
 
 func (h *adaptor) DeleteRole(r *http.Request, args *DeleteRoleRequest, result *DeleteRoleResponse) error {
-	// ok, err := utils.CheckPermission(r, h.authz, "roles", "delete")
-	// if err != nil || !ok {
-	// 	return err
-	// }
+	ok, err := utils.CheckPermission(r, h.authz, "roles", "delete")
+	if err != nil || !ok {
+		return errors.New("not permitted")
+	}
 
 	ctx := context.Background()
 	query := `
@@ -101,10 +108,10 @@ type GetRoleResponse struct {
 }
 
 func (h *adaptor) GetRole(r *http.Request, args *GetRoleRequest, result *GetRoleResponse) error {
-	// ok, err := utils.CheckPermission(r, h.authz, "roles", "read")
-	// if err != nil || !ok {
-	// 	return err
-	// }
+	ok, err := utils.CheckPermission(r, h.authz, "roles", "read")
+	if err != nil || !ok {
+		return errors.New("not permitted")
+	}
 
 	ctx := context.Background()
 	query := `
@@ -115,7 +122,7 @@ func (h *adaptor) GetRole(r *http.Request, args *GetRoleRequest, result *GetRole
 	row := h.dbpool.QueryRow(ctx, query, args.ID)
 
 	var role authz.Role
-	err := row.Scan(&role.ID, &role.Name, &role.Description, &role.UserIDs, &role.CreatedAt)
+	err = row.Scan(&role.ID, &role.Name, &role.Description, &role.UserIDs, &role.CreatedAt)
 	if err != nil {
 		return err
 	}
@@ -134,10 +141,10 @@ type UpdateRoleResponse struct {
 }
 
 func (h *adaptor) UpdateRole(r *http.Request, args *UpdateRoleRequest, result *UpdateRoleResponse) error {
-	// ok, err := utils.CheckPermission(r, h.authz, "roles", "update")
-	// if err != nil || !ok {
-	// 	return err
-	// }
+	ok, err := utils.CheckPermission(r, h.authz, "roles", "update")
+	if err != nil || !ok {
+		return errors.New("not permitted")
+	}
 
 	// Perform basic validation on the role data before update
 	if args.Role.Name == "" {

@@ -3,8 +3,10 @@ package authz
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"time"
 
+	"github.com/exolutionza/propfix-backend-go/internal/user"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
@@ -102,4 +104,73 @@ func (s *Authz) GetRoleIDsForUser(userID string) ([]string, error) {
 	}
 
 	return roleIDs, nil
+}
+
+func (s *Authz) CheckEventPermission(r *http.Request, eventID, resource, permission string) (string, error) {
+	ctx := context.Background()
+	user, ok := r.Context().Value("user").(user.User)
+	if !ok {
+		return "", nil
+	}
+
+	// Check Permissions
+	ok, err := s.CheckPermission(user.ID, resource, permission)
+	if ok {
+		return "private", nil
+	}
+
+	// Check job relation for public access to public events
+	sqlJobQuery := `
+		SELECT EXISTS (
+			SELECT 1
+			FROM jobs
+			WHERE tenant_identifier = $1 AND id = (SELECT job_id FROM events WHERE id = $2 AND type = 'public')
+			LIMIT 1
+		)
+	`
+
+	var hasJobRelation bool
+	err = s.dbpool.QueryRow(ctx, sqlJobQuery, user.ID, eventID).Scan(&hasJobRelation)
+	if err != nil {
+		fmt.Println(err)
+		return "", err
+	}
+
+	return "public", nil
+}
+
+func (s *Authz) CheckJobPermission(r *http.Request, jobID, resource, permission string) (string, error) {
+	ctx := context.Background()
+	user, ok := r.Context().Value("user").(user.User)
+	if !ok {
+		return "", nil
+	}
+	// Check Permissions
+	ok, err := s.CheckPermission(user.ID, resource, permission)
+	if ok {
+		return "private", nil
+	}
+
+	// Check if the user's ID is the tenant identifier for the job with jobID
+	sqlJobQuery := `
+		SELECT EXISTS (
+			SELECT 1
+			FROM jobs
+			WHERE tenant_identifier = $1 AND id = $2
+			LIMIT 1
+		)
+	`
+
+	var hasJobRelation bool
+	err = s.dbpool.QueryRow(ctx, sqlJobQuery, user.ID, jobID).Scan(&hasJobRelation)
+	if err != nil {
+		fmt.Println(err)
+		return "", err
+	}
+
+	if hasJobRelation {
+		return "public", nil
+	}
+
+	return "", nil
 }

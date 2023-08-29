@@ -1,117 +1,156 @@
 package events
 
 import (
-	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 
+	jsonRpcProvider "github.com/exolutionza/propfix-backend-go/internal/api/jsonRpc/service/provider"
+
 	"github.com/exolutionza/propfix-backend-go/internal/authz"
-	"github.com/gorilla/mux"
+	"github.com/jackc/pgx/v4/pgxpool"
 )
 
-type EventsHandler struct {
+type adaptor struct {
 	store *EventsStore
-	authz *authz.Authz // Replace with your authorization mechanism
+	authz *authz.Authz
 }
 
-func NewEventsHandler(store *EventsStore, authz *authz.Authz) *EventsHandler {
-	return &EventsHandler{
-		store: store,
+const Name = "Event"
+
+func (a *adaptor) Name() jsonRpcProvider.Name {
+	return Name
+}
+
+func New(
+	dbpool *pgxpool.Pool,
+	authz *authz.Authz,
+) *adaptor {
+	return &adaptor{
+		store: NewEventsStore(dbpool),
 		authz: authz,
 	}
 }
 
-func (h *EventsHandler) CreateEvent(w http.ResponseWriter, r *http.Request) {
-	var event Event
-	err := json.NewDecoder(r.Body).Decode(&event)
-	if err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
-		return
-	}
-
-	eventID, err := h.store.CreateEvent(event)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to create event: %v", err), http.StatusInternalServerError)
-		return
-	}
-
-	response := struct {
-		ID string `json:"id"`
-	}{
-		ID: eventID,
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(response)
+type CreateEventRequest struct {
+	Event Event `json:"event"`
 }
 
-func (h *EventsHandler) GetEvent(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	eventID := vars["id"]
-
-	event, err := h.store.GetEvent(eventID)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("Event not found: %v", err), http.StatusNotFound)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(event)
+type CreateEventResponse struct {
+	ID string `json:"id"`
 }
 
-func (h *EventsHandler) UpdateEvent(w http.ResponseWriter, r *http.Request) {
-	var event Event
-	err := json.NewDecoder(r.Body).Decode(&event)
-	if err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
-		return
+func (a *adaptor) CreateEvent(r *http.Request, args *CreateEventRequest, result *CreateEventResponse) error {
+	accessType, err := a.authz.CheckEventPermission(r, args.Event.JobID, "events", "create")
+	if err != nil || accessType == "" {
+		return errors.New("not permitted")
 	}
 
-	// user, ok := r.Context().Value("user").(user.User)
-	// if !ok {
-	// 	http.Error(w, "Failed to get user details", http.StatusInternalServerError)
-	// 	return
-	// }
-
-	// if hasPermission, err := h.authz.CheckPermission(user.ID, "events", "update"); err != nil {
-	// 	http.Error(w, "Failed to check permission", http.StatusInternalServerError)
-	// 	return
-	// } else if !hasPermission {
-	// 	http.Error(w, "You do not have permission to update events", http.StatusForbidden)
-	// 	return
-	// }
-
-	err = h.store.UpdateEvent(event)
+	eventID, err := a.store.CreateEvent(args.Event)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to update event: %v", err), http.StatusInternalServerError)
-		return
+		return fmt.Errorf("Failed to create event: %v", err)
 	}
+
+	result.ID = eventID
+	return nil
 }
 
-func (h *EventsHandler) DeleteEvent(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	eventID := vars["id"]
+type GetEventRequest struct {
+	ID string `json:"id"`
+}
 
-	// user, ok := r.Context().Value("user").(user.User)
-	// if !ok {
-	// 	http.Error(w, "Failed to get user details", http.StatusInternalServerError)
-	// 	return
-	// }
+type GetEventResponse struct {
+	Event Event `json:"event"`
+}
 
-	// if hasPermission, err := h.authz.CheckPermission(user.ID, "events", "delete"); err != nil {
-	// 	http.Error(w, "Failed to check permission", http.StatusInternalServerError)
-	// 	return
-	// } else if !hasPermission {
-	// 	http.Error(w, "You do not have permission to delete events", http.StatusForbidden)
-	// 	return
-	// }
-
-	err := h.store.DeleteEvent(eventID)
+func (a *adaptor) GetEvent(r *http.Request, args *GetEventRequest, result *GetEventResponse) error {
+	event, err := a.store.GetEvent(args.ID)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to delete event: %v", err), http.StatusInternalServerError)
-		return
+		return fmt.Errorf("Event not found: %v", err)
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	accessType, err := a.authz.CheckEventPermission(r, event.JobID, "events", "read")
+	if err != nil || accessType == "" {
+		return err
+	}
+
+	result.Event = *event
+	return nil
+}
+
+type UpdateEventRequest struct {
+	Event Event `json:"event"`
+}
+
+type UpdateEventResponse struct {
+	ID string `json:"id"`
+}
+
+func (a *adaptor) UpdateEvent(r *http.Request, args *UpdateEventRequest, result *UpdateEventResponse) error {
+	accessType, err := a.authz.CheckEventPermission(r, args.Event.JobID, "events", "update")
+	if err != nil || accessType == "" {
+		return errors.New("not permitted")
+	}
+
+	err = a.store.UpdateEvent(args.Event)
+	if err != nil {
+		return fmt.Errorf("Failed to update event: %v", err)
+	}
+
+	result.ID = args.Event.ID
+	return nil
+}
+
+type DeleteEventRequest struct {
+	ID string `json:"id"`
+}
+
+type DeleteEventResponse struct {
+	ID string `json:"id"`
+}
+
+func (a *adaptor) DeleteEvent(r *http.Request, args *DeleteEventRequest, result *DeleteEventResponse) error {
+	accessType, err := a.authz.CheckEventPermission(r, args.ID, "events", "delete")
+	if err != nil || accessType == "" {
+		return errors.New("not permitted")
+	}
+
+	err = a.store.DeleteEvent(args.ID)
+	if err != nil {
+		return fmt.Errorf("Failed to delete event: %v", err)
+	}
+
+	result.ID = args.ID
+	return nil
+}
+
+type GetAllEventsRequest struct {
+	JobID string `json:"jobId"`
+}
+
+type GetAllEventsResponse struct {
+	Events []Event `json:"events"`
+}
+
+func (a *adaptor) GetAllEvents(r *http.Request, args *GetAllEventsRequest, result *GetAllEventsResponse) error {
+	accessType, err := a.authz.CheckEventPermission(r, args.JobID, "events", "readall")
+	if err != nil || accessType == "" {
+		return errors.New("not permitted")
+	}
+
+	var events []Event
+	if accessType == "private" {
+		events, err = a.store.GetAllEventsForJob(args.JobID)
+		if err != nil {
+			return fmt.Errorf("Failed to get events: %v", err)
+		}
+	} else if accessType == "public" {
+		events, err = a.store.GetPublicEventsForJob(args.JobID)
+		if err != nil {
+			return fmt.Errorf("Failed to get public events: %v", err)
+		}
+	}
+
+	result.Events = events
+	return nil
 }

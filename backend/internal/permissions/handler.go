@@ -2,6 +2,7 @@ package permissions
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -51,10 +52,10 @@ type CreatePermissionResponse struct {
 }
 
 func (a *adaptor) CreatePermission(r *http.Request, args *CreatePermissionRequest, result *CreatePermissionResponse) error {
-	// ok, err := utils.CheckPermission(r, a.authz, "permissions", "create")
-	// if err != nil || !ok {
-	// 	return err
-	// }
+	ok, err := utils.CheckPermission(r, a.authz, "permissions", "create")
+	if err != nil || !ok {
+		return errors.New("not permitted")
+	}
 
 	permissionID := uuid.New().String()
 
@@ -64,7 +65,7 @@ func (a *adaptor) CreatePermission(r *http.Request, args *CreatePermissionReques
 		VALUES ($1, $2, $3, $4, $5)
 	`
 
-	_, err := a.dbpool.Exec(ctx, query, permissionID, args.Permission.Resource, args.Permission.Permission, args.Permission.Identifier, time.Now())
+	_, err = a.dbpool.Exec(ctx, query, permissionID, args.Permission.Resource, args.Permission.Permission, args.Permission.Identifier, time.Now())
 	if err != nil {
 		return err
 	}
@@ -82,10 +83,10 @@ type DeletePermissionResponse struct {
 }
 
 func (a *adaptor) DeletePermission(r *http.Request, args *DeletePermissionRequest, result *DeletePermissionResponse) error {
-	// ok, err := utils.CheckPermission(r, a.authz, "permissions", "delete")
-	// if err != nil || !ok {
-	//	return err
-	//	}
+	ok, err := utils.CheckPermission(r, a.authz, "permissions", "delete")
+	if err != nil || !ok {
+		return errors.New("not permitted")
+	}
 
 	ctx := context.Background()
 	query := `
@@ -119,7 +120,7 @@ type GetPermissionResponse struct {
 func (a *adaptor) GetPermission(r *http.Request, args *GetPermissionRequest, result *GetPermissionResponse) error {
 	ok, err := utils.CheckPermission(r, a.authz, "permissions", "read")
 	if err != nil || !ok {
-		return err
+		return errors.New("not permitted")
 	}
 
 	ctx := context.Background()
@@ -150,7 +151,7 @@ type UpdatePermissionRequest struct {
 func (a *adaptor) UpdatePermission(r *http.Request, args *UpdatePermissionRequest, result *utils.EmptyResponse) error {
 	ok, err := utils.CheckPermission(r, a.authz, "permissions", "update")
 	if err != nil || !ok {
-		return err
+		return errors.New("not permitted")
 	}
 
 	ctx := context.Background()

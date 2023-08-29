@@ -8,6 +8,7 @@ import (
 	"github.com/exolutionza/propfix-backend-go/internal/user"
 )
 
+// TODO: move to authz store.go
 func CheckPermissionAndOrgs(r *http.Request, authz *authz.Authz, resource string, permission string, orgID string) (bool, error) {
 	user, ok := r.Context().Value("user").(user.User)
 	if !ok {
@@ -41,6 +42,7 @@ func CheckPermissionAndOrgs(r *http.Request, authz *authz.Authz, resource string
 	return true, nil
 }
 
+// TODO: move to authz store.go
 func CheckPermission(r *http.Request, authz *authz.Authz, resource string, permission string) (bool, error) {
 	user, ok := r.Context().Value("user").(user.User)
 	if !ok {

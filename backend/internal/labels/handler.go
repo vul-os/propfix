@@ -5,6 +5,11 @@ import (
 	"errors"
 	"net/http"
 
+	jsonRpcProvider "github.com/exolutionza/propfix-backend-go/internal/api/jsonRpc/service/provider"
+
+	"github.com/exolutionza/propfix-backend-go/internal/authz"
+
+	"github.com/exolutionza/propfix-backend-go/internal/utils"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
@@ -17,30 +22,39 @@ type Label struct {
 	Color          string `json:"color"`
 }
 
-type LabelsHandler struct {
-	pool *pgxpool.Pool
+type adaptor struct {
+	pool  *pgxpool.Pool
+	authz *authz.Authz
 }
 
-func NewLabelsHandler(pool *pgxpool.Pool) *LabelsHandler {
-	return &LabelsHandler{
-		pool: pool,
+func New(pool *pgxpool.Pool, authz *authz.Authz) *adaptor {
+	return &adaptor{
+		pool:  pool,
+		authz: authz,
 	}
 }
 
+const Name = "Labels"
+
+func (a *adaptor) Name() jsonRpcProvider.Name {
+	return Name
+}
+
 type CreateLabelRequest struct {
-	OrganizationID string `json:"organizationId"`
-	BoardID        string `json:"boardId"`
-	Name           string `json:"name"`
-	Color          string `json:"color"`
+	Label Label `json:"label"`
 }
 
 type CreateLabelResponse struct {
 	ID string `json:"id"`
 }
 
-func (h *LabelsHandler) CreateLabel(r *http.Request, args *CreateLabelRequest, reply *CreateLabelResponse) error {
-	ctx := context.Background()
+func (a *adaptor) CreateLabel(r *http.Request, args *CreateLabelRequest, reply *CreateLabelResponse) error {
+	ok, err := utils.CheckPermissionAndOrgs(r, a.authz, "labels", "create", args.Label.OrganizationID)
+	if err != nil || !ok {
+		return errors.New("not permitted")
+	}
 
+	ctx := context.Background()
 	labelID := uuid.New().String()
 	query := `
 		INSERT INTO labels (id, organization_id, board_id, name, color)
@@ -48,7 +62,7 @@ func (h *LabelsHandler) CreateLabel(r *http.Request, args *CreateLabelRequest, r
 		RETURNING id
 	`
 
-	err := h.pool.QueryRow(ctx, query, labelID, args.OrganizationID, args.BoardID, args.Name, args.Color).Scan(&labelID)
+	err = a.pool.QueryRow(ctx, query, labelID, args.Label.OrganizationID, args.Label.BoardID, args.Label.Name, args.Label.Color).Scan(&labelID)
 	if err != nil {
 		return errors.New("Failed to create label")
 	}
@@ -58,18 +72,19 @@ func (h *LabelsHandler) CreateLabel(r *http.Request, args *CreateLabelRequest, r
 }
 
 type UpdateLabelRequest struct {
-	ID             string `json:"id"`
-	OrganizationID string `json:"organizationId"`
-	BoardID        string `json:"boardId"`
-	Name           string `json:"name"`
-	Color          string `json:"color"`
+	Label Label `json:"label"`
 }
 
 type UpdateLabelResponse struct {
 	Success bool `json:"success"`
 }
 
-func (h *LabelsHandler) UpdateLabel(r *http.Request, args *UpdateLabelRequest, reply *UpdateLabelResponse) error {
+func (a *adaptor) UpdateLabel(r *http.Request, args *UpdateLabelRequest, reply *UpdateLabelResponse) error {
+	ok, err := utils.CheckPermissionAndOrgs(r, a.authz, "labels", "update", args.Label.OrganizationID)
+	if err != nil || !ok {
+		return errors.New("not permitted")
+	}
+
 	ctx := context.Background()
 	query := `
 		UPDATE labels
@@ -77,7 +92,7 @@ func (h *LabelsHandler) UpdateLabel(r *http.Request, args *UpdateLabelRequest, r
 		WHERE id = $3 AND organization_id = $4
 	`
 
-	_, err := h.pool.Exec(ctx, query, args.Name, args.Color, args.ID, args.OrganizationID)
+	_, err = a.pool.Exec(ctx, query, args.Label.Name, args.Label.Color, args.Label.ID, args.Label.OrganizationID)
 	if err != nil {
 		return errors.New("Failed to update label")
 	}
@@ -95,7 +110,7 @@ type GetLabelResponse struct {
 	Label Label `json:"label"`
 }
 
-func (h *LabelsHandler) GetLabel(r *http.Request, args *GetLabelRequest, reply *GetLabelResponse) error {
+func (a *adaptor) GetLabel(r *http.Request, args *GetLabelRequest, reply *GetLabelResponse) error {
 	ctx := context.Background()
 	query := `
 		SELECT id, name, color, board_id
@@ -104,7 +119,7 @@ func (h *LabelsHandler) GetLabel(r *http.Request, args *GetLabelRequest, reply *
 	`
 
 	var label Label
-	err := h.pool.QueryRow(ctx, query, args.LabelID, args.OrganizationID).Scan(&label.ID, &label.Name, &label.Color, &label.BoardID)
+	err := a.pool.QueryRow(ctx, query, args.LabelID, args.OrganizationID).Scan(&label.ID, &label.Name, &label.Color, &label.BoardID)
 	if err != nil {
 		return errors.New("Label not found")
 	}
@@ -122,14 +137,19 @@ type DeleteLabelResponse struct {
 	Success bool `json:"success"`
 }
 
-func (h *LabelsHandler) DeleteLabel(r *http.Request, args *DeleteLabelRequest, reply *DeleteLabelResponse) error {
+func (a *adaptor) DeleteLabel(r *http.Request, args *DeleteLabelRequest, reply *DeleteLabelResponse) error {
+	ok, err := utils.CheckPermissionAndOrgs(r, a.authz, "labels", "delete", args.OrganizationID)
+	if err != nil || !ok {
+		return errors.New("not permitted")
+	}
+
 	ctx := context.Background()
 	query := `
 		DELETE FROM labels
 		WHERE id = $1 AND organization_id = $2
 	`
 
-	_, err := h.pool.Exec(ctx, query, args.LabelID, args.OrganizationID)
+	_, err = a.pool.Exec(ctx, query, args.LabelID, args.OrganizationID)
 	if err != nil {
 		return errors.New("Failed to delete label")
 	}

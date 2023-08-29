@@ -2,9 +2,9 @@ package events
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
-	"encoding/json"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v4/pgxpool"
@@ -21,12 +21,12 @@ func NewEventsStore(pool *pgxpool.Pool) *EventsStore {
 }
 
 type Event struct {
-	ID        string    `json:"id"`
-	Type      string    `json:"type"`
-	JobID     string    `json:"jobId"`
-	MemberID  string    `json:"memberId"`
-	Data      json.RawMessage    `json:"data"`
-	CreatedAt time.Time `json:"createdAt"`
+	ID        string          `json:"id"`
+	Type      string          `json:"type"`
+	JobID     string          `json:"jobId"`
+	MemberID  string          `json:"memberId"`
+	Data      json.RawMessage `json:"data"`
+	CreatedAt time.Time       `json:"createdAt"`
 }
 
 func (s *EventsStore) CreateEvent(event Event) (string, error) {
@@ -121,4 +121,58 @@ func (s *EventsStore) DeleteAllEventsForJobID(jobID string) error {
 	}
 
 	return nil
+}
+
+func (s *EventsStore) GetAllEventsForJob(jobID string) ([]Event, error) {
+	ctx := context.Background()
+	query := `
+		SELECT id, type, job_id, member_id, data, created_at
+		FROM events
+		WHERE job_id = $1
+	`
+
+	rows, err := s.pool.Query(ctx, query, jobID)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to get events for job: %v", err)
+	}
+	defer rows.Close()
+
+	var events []Event
+	for rows.Next() {
+		var event Event
+		err := rows.Scan(&event.ID, &event.Type, &event.JobID, &event.MemberID, &event.Data, &event.CreatedAt)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to scan event row: %v", err)
+		}
+		events = append(events, event)
+	}
+
+	return events, nil
+}
+
+func (s *EventsStore) GetPublicEventsForJob(jobID string) ([]Event, error) {
+	ctx := context.Background()
+	query := `
+		SELECT id, type, job_id, member_id, data, created_at
+		FROM events
+		WHERE job_id = $1 AND type = 'public'
+	`
+
+	rows, err := s.pool.Query(ctx, query, jobID)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to get public events for job: %v", err)
+	}
+	defer rows.Close()
+
+	var events []Event
+	for rows.Next() {
+		var event Event
+		err := rows.Scan(&event.ID, &event.Type, &event.JobID, &event.MemberID, &event.Data, &event.CreatedAt)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to scan event row: %v", err)
+		}
+		events = append(events, event)
+	}
+
+	return events, nil
 }
