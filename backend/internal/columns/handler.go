@@ -110,6 +110,11 @@ type GetColumnResponse struct {
 }
 
 func (a *adaptor) GetColumn(r *http.Request, args *GetColumnRequest, reply *GetColumnResponse) error {
+	ok, err := utils.CheckPermission(r, a.authz, "columns", "get")
+	if err != nil || !ok {
+		return errors.New("not permitted")
+	}
+
 	ctx := context.Background()
 	query := `
 		SELECT id, name, job_ids, board_id
@@ -118,7 +123,7 @@ func (a *adaptor) GetColumn(r *http.Request, args *GetColumnRequest, reply *GetC
 	`
 
 	var column Column
-	err := a.pool.QueryRow(ctx, query, args.ColumnID).Scan(&column.ID, &column.Name, &column.JobIDs, &column.BoardID)
+	err = a.pool.QueryRow(ctx, query, args.ColumnID).Scan(&column.ID, &column.Name, &column.JobIDs, &column.BoardID)
 	if err != nil {
 		return errors.New("Column not found")
 	}
