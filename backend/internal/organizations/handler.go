@@ -6,6 +6,8 @@ import (
 	"net/http"
 
 	jsonRpcProvider "github.com/exolutionza/propfix-backend-go/internal/api/jsonRpc/service/provider"
+	"github.com/exolutionza/propfix-backend-go/internal/user"
+
 	"github.com/exolutionza/propfix-backend-go/internal/authz"
 	"github.com/exolutionza/propfix-backend-go/internal/utils"
 	"github.com/google/uuid"
@@ -222,5 +224,44 @@ func (a *adaptor) RemoveMember(r *http.Request, args *RemoveMemberRequest, resul
 	}
 
 	result.Success = true
+	return nil
+}
+
+type GetAllOrganizationsRequest struct{}
+
+type GetAllOrganizationsResponse struct {
+	Organizations []Organization `json:"organizations"`
+}
+
+func (a *adaptor) GetAllOrganizations(r *http.Request, args *GetAllOrganizationsRequest, result *GetAllOrganizationsResponse) error {
+	user, ok := r.Context().Value("user").(user.User)
+	if !ok {
+		return errors.New("not permitted")
+	}
+
+	ctx := context.Background()
+	query := `
+		SELECT id, name, members
+		FROM organizations
+		WHERE $1 = ANY(members)
+	`
+
+	rows, err := a.dbpool.Query(ctx, query, user.ID)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	var organizations []Organization
+	for rows.Next() {
+		var org Organization
+		err := rows.Scan(&org.ID, &org.Name, &org.Members)
+		if err != nil {
+			return err
+		}
+		organizations = append(organizations, org)
+	}
+
+	result.Organizations = organizations
 	return nil
 }
