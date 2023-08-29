@@ -11,7 +11,7 @@ export async function jsonRpcRequest(method, params, idToken) {
         jsonrpc: '2.0',
         method,
         params,
-        id: Date.now(),
+        id: 1,
       },
       { headers: { Authorization: idToken } }
     );
