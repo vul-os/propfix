@@ -17,8 +17,8 @@ export async function getOrganization(organizationId, idToken) {
 // Function to fetch all organizations
 export async function getAllOrganizations(idToken) {
   try {
-    const params = [idToken];
-    return await jsonRpcRequest('Organizations.GetAllOrganizations', params, idToken);
+    const params = {};
+    return await jsonRpcRequest('Organizations.GetAllOrganizations', [{}], idToken);
   } catch (error) {
     console.error('Error fetching all organizations:', error);
     return [];

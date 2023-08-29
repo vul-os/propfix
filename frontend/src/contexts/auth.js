@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useReducer, useRef } from 'react';
+import React, { createContext, useContext, useEffect, useReducer, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
 import { initializeApp } from 'firebase/app';
 import {
@@ -11,6 +11,8 @@ import {
   GoogleAuthProvider,
   sendPasswordResetEmail
 } from 'firebase/auth';
+
+import { jsonRpcRequest } from '../api/jsonrpc/client'; // Adjust the path based on your project's structure
 
 // Initialize Firebase with your configuration
 const firebaseConfig = {
@@ -96,7 +98,7 @@ const handlers = {
       user
     };
   },
-  [ORGANIZATION_HANDLERS.FETCH_ORGANIZATIONS]: (state, action) => {
+  [HANDLERS.FETCH_ORGANIZATIONS]: (state, action) => {
     const organizations = action.payload;
     return {
       ...state,
@@ -135,7 +137,7 @@ export const AuthProvider = (props) => {
 
         // Fetch organizations using JSON-RPC
         try {
-          const fetchedOrganizations = await jsonRpcRequest('Organizations.GetAllOrganizations', [idToken], idToken);
+          const fetchedOrganizations = await jsonRpcRequest('Organizations.GetAllOrganizations', [{}], idToken);
           setOrganizations(fetchedOrganizations); // Set the organizations
 
           // ... (rest of the logic remains the same)

@@ -11,14 +11,7 @@ import { useBoolean } from '../../hooks/use-boolean';
 import { useSnackbar } from '../../components/snackbar';
 import KanbanJobItem from './kanban-job-item';
 import { useAuthContext } from '../../contexts/auth';
-import {
-  updateColumn,
-  clearColumn,
-  deleteColumn,
-  createJob,
-  updateJob,
-  deleteJob,
-} from '../../api/kanban';
+
 
 export default function KanbanColumn({ column, jobs, index }) {
   const { enqueueSnackbar } = useSnackbar();
@@ -29,7 +22,7 @@ export default function KanbanColumn({ column, jobs, index }) {
     async (jobData) => {
       try {
         const token = await getIdToken(); // Get the JWT token from the auth context
-        createJob(column.id, jobData, token); // Pass the token to the createJob function
+        // createJob(column.id, jobData, token); // Pass the token to the createJob function
 
         openAddJob.onFalse();
       } catch (error) {
@@ -42,7 +35,7 @@ export default function KanbanColumn({ column, jobs, index }) {
   const handleUpdateJob = useCallback(async (jobData) => {
     try {
       const token = await getIdToken(); // Get the JWT token from the auth context
-      updateJob(jobData, token); // Pass the token to the updateJob function
+      // updateJob(jobData, token); // Pass the token to the updateJob function
     } catch (error) {
       console.error(error);
     }
@@ -52,7 +45,7 @@ export default function KanbanColumn({ column, jobs, index }) {
     async (jobId) => {
       try {
         const token = await getIdToken(); // Get the JWT token from the auth context
-        deleteJob(column.id, jobId, token); // Pass the token to the deleteJob function
+        // deleteJob(column.id, jobId, token); // Pass the token to the deleteJob function
 
         enqueueSnackbar('Delete success!', {
           anchorOrigin: { vertical: 'top', horizontal: 'center' },

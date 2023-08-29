@@ -1,5 +1,5 @@
 import config from '../config/config';
-import { jsonRpcRequest } from './jsonRpcHelper'; // Adjust the path based on your project's structure
+import { jsonRpcRequest } from './jsonrpc/client';
 
 const API_BASE_URL = `${config.apiUrl}`;
 

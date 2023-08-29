@@ -1,5 +1,5 @@
 import axios from 'axios';
-import config from '../config/config';
+import config from '../../config/config';
 
 const API_BASE_URL = `${config.apiUrl}`;
 
@@ -9,20 +9,22 @@ export async function jsonRpcRequest(method, params, idToken) {
       API_BASE_URL,
       {
         jsonrpc: '2.0',
-        method: method,
-        params: params,
-        id: Date.now(),
+        method,
+        params,
+        id: 1,
       },
       { headers: { Authorization: idToken } }
     );
 
     if (response.data && response.data.result !== undefined) {
       return response.data.result;
-    } else if (response.data && response.data.error) {
-      throw new Error(response.data.error.message);
-    } else {
-      throw new Error('Invalid JSON-RPC response');
     }
+
+    if (response.data && response.data.error) {
+      throw new Error(response.data.error.message);
+    }
+
+    throw new Error('Invalid JSON-RPC response');
   } catch (error) {
     console.error(`Error in JSON-RPC request (${method}):`, error);
     throw error;
