@@ -74,13 +74,13 @@ export default function KanbanJobItem({ job, index, onDeleteJob, onUpdateJob, sx
         )}
       </Draggable>
 
-      <KanbanDetails
+      {/* <KanbanDetails
         task={job}
         openDetails={openDetails.value}
         onCloseDetails={openDetails.onFalse}
         onUpdateTask={onUpdateJob}
         onDeleteTask={onUpdateJob}
-      />
+      /> */}
     </>
   );
 }
