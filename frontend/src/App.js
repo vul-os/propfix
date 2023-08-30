@@ -24,6 +24,7 @@ import LoginPage from './pages/auth/LoginPage';
 import Account from './pages/account/account';
 import { KanbanView } from './pages/kanban/view';
 import JobDataGrid from './pages/data-grid/data-grid';
+import EventsList from './pages/events/events-list';
 
 // Import the Stepper component
 import Stepper from './pages/job-wizzard/stepper'; // Make sure this path is correct
@@ -63,6 +64,18 @@ function App() {
                     element={
                       <AuthGuard>
                         <DashboardLayout><JobDataGrid /> </DashboardLayout>
+                      </AuthGuard>
+                    }
+                  />
+                  <Route
+                    path="/events/*"
+                    element={
+                      <AuthGuard>
+                        <DashboardLayout>
+                          <Routes>
+                            <Route path=":jobId" element={<EventsList />} />
+                          </Routes>
+                        </DashboardLayout>
                       </AuthGuard>
                     }
                   />

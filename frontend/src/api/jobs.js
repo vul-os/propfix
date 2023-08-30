@@ -47,9 +47,9 @@ export async function deleteJob(jobId, idToken) {
 }
 
 // Function to fetch all jobs
-export async function getAllJobs(idToken) {
+export async function getAllJobs(idToken, organizationId) {
   try {
-    const params = [idToken];
+    const params = [{organizationId}];
     return await jsonRpcRequest('Jobs.GetAllJobs', params, idToken);
   } catch (error) {
     console.error('Error fetching all jobs:', error);
