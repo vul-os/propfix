@@ -185,11 +185,9 @@ func (a *adaptor) GetAllBuildings(r *http.Request, args *GetAllBuildingsRequest,
 	if args.Latitude != 0.0 && args.Longitude != 0.0 {
 		// Estimate the closest buildings within a 5km radius
 		query := `
-			SELECT id, building_name, address, unit_number_system, latitude, longitude, created_at, organization_id,
-				   earth_distance(ll_to_earth($1, $2), ll_to_earth(latitude, longitude)) AS distance
+			SELECT id, building_name, address, unit_number_system, latitude, longitude, created_at, organization_id
 			FROM buildings
 			WHERE earth_box(ll_to_earth($1, $2), 5000) @> ll_to_earth(latitude, longitude)
-			ORDER BY distance
 		`
 		rows, err = a.pool.Query(ctx, query, args.Latitude, args.Longitude)
 	} else {

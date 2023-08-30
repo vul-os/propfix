@@ -2,175 +2,112 @@ package attachments
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"log"
+	"io"
 	"net/http"
 	"time"
 
 	"cloud.google.com/go/storage"
-	jsonRpcProvider "github.com/exolutionza/propfix-backend-go/internal/api/jsonRpc/service/provider"
-	"github.com/exolutionza/propfix-backend-go/internal/authz"
 	"github.com/exolutionza/propfix-backend-go/internal/events"
-	"github.com/exolutionza/propfix-backend-go/internal/user"
-
-	"github.com/google/uuid"
+	"github.com/gorilla/mux"
 )
 
-type adaptor struct {
-	authz  *authz.Authz
-	bucket *storage.BucketHandle
-	store  *events.EventsStore
+type FileUploadHandler struct {
+	bucket      *storage.BucketHandle
+	eventsStore *events.EventsStore
 }
 
-func New(
-	authz *authz.Authz,
-	eventsStore *events.EventsStore,
-	bucket *storage.BucketHandle,
-) *adaptor {
-	return &adaptor{
-		authz:  authz,
-		store:  eventsStore,
-		bucket: bucket,
+func NewFileUploadHandler(bucket *storage.BucketHandle, eventsStore *events.EventsStore) (*FileUploadHandler, error) {
+	return &FileUploadHandler{
+		bucket:      bucket,
+		eventsStore: eventsStore,
+	}, nil
+}
+
+func (h *FileUploadHandler) UploadFile(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	jobID := vars["jobid"]
+
+	// Parse the file from the request
+	file, header, err := r.FormFile("file")
+	if err != nil {
+		http.Error(w, "Failed to read file from request", http.StatusBadRequest)
+		return
 	}
-}
+	defer file.Close()
 
-const Name = "Attachments"
-
-func (a *adaptor) Name() jsonRpcProvider.Name {
-	return Name
-}
-
-type UploadFileRequest struct {
-	JobID string `json:"jobid"`
-	File  []byte `json:"file"`
-}
-
-type UploadFileResponse struct {
-	SignedURL string `json:"signedURL"`
-}
-
-func (a *adaptor) UploadFile(r *http.Request, args *UploadFileRequest, reply *UploadFileResponse) error {
-	accessType, err := a.authz.CheckJobPermission(r, args.JobID, "file", "upload")
-	if err != nil || accessType == "" {
-		return errors.New("not permitted")
-	}
-
-	objectName := fmt.Sprintf("%s/%s", args.JobID, uuid.New().String()) // Generate a unique filename
-
-	obj := a.bucket.Object(objectName)
+	// Create a new object in the bucket with the desired filename
+	objectName := fmt.Sprintf("%s/%s", jobID, header.Filename)
+	obj := h.bucket.Object(objectName)
 	wc := obj.NewWriter(context.Background())
 
-	if _, err := wc.Write(args.File); err != nil {
-		return fmt.Errorf("failed to write file to Cloud Storage: %v", err)
+	// Copy the file data to the object in Cloud Storage
+	if _, err := io.Copy(wc, file); err != nil {
+		http.Error(w, "Failed to upload file to Cloud Storage", http.StatusInternalServerError)
+		return
 	}
 	if err := wc.Close(); err != nil {
-		return fmt.Errorf("failed to close Cloud Storage writer: %v", err)
+		http.Error(w, "Failed to close Cloud Storage writer", http.StatusInternalServerError)
+		return
 	}
 
-	opts := storage.SignedURLOptions{
+	// Generate a signed URL for the uploaded file
+	opts := &storage.SignedURLOptions{
 		Scheme:  storage.SigningSchemeV4,
-		Method:  http.MethodGet,
+		Method:  "GET",
 		Expires: time.Now().Add(15 * time.Minute),
 	}
-
-	signedURL, err := a.bucket.SignedURL(objectName, &opts)
+	signedURL, err := h.bucket.SignedURL(objectName, opts)
 	if err != nil {
-		return fmt.Errorf("failed to generate signed URL: %v", err)
+		http.Error(w, "Failed to generate signed URL", http.StatusInternalServerError)
+		return
 	}
 
-	user, ok := r.Context().Value("user").(user.User)
-	if !ok {
-		return nil
-	}
-
-	event := events.Event{
-		ID:         uuid.New().String(),
-		Type:       "file_upload",
-		JobID:      args.JobID,
-		Data:       objectName, // Store the object name for reference
-		CreatedAt:  time.Now(),
-		Visibility: "private", // Assuming accessType is private for all
-	}
-	_, err = a.store.CreateEvent(event, "private", user.ID)
-	if err != nil {
-		log.Printf("Failed to create event for file upload: %v", err)
-	}
-
-	reply.SignedURL = signedURL
-	return nil
+	// Return the signed URL in the response
+	w.WriteHeader(http.StatusCreated)
+	fmt.Fprintln(w, signedURL)
 }
 
-type GetFileRequest struct {
-	JobID    string `json:"jobid"`
-	FileName string `json:"filename"`
-}
+func (h *FileUploadHandler) GetFile(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	jobID := vars["jobid"]
+	filename := vars["filename"]
 
-type GetFileResponse struct {
-	SignedURL string `json:"signedURL"`
-}
+	// Construct the object path in the bucket
+	objectName := fmt.Sprintf("%s/%s", jobID, filename)
 
-func (a *adaptor) GetFile(r *http.Request, args *GetFileRequest, reply *GetFileResponse) error {
-	accessType, err := a.authz.CheckJobPermission(r, args.JobID, "file", "get")
-	if err != nil || accessType == "" {
-		return errors.New("not permitted")
-	}
-
-	objectName := fmt.Sprintf("%s/%s", args.JobID, args.FileName)
-
-	opts := storage.SignedURLOptions{
+	// Generate a signed URL for accessing the file
+	opts := &storage.SignedURLOptions{
 		Scheme:  storage.SigningSchemeV4,
-		Method:  http.MethodGet,
+		Method:  "GET",
 		Expires: time.Now().Add(15 * time.Minute),
 	}
-
-	signedURL, err := a.bucket.SignedURL(objectName, &opts)
+	signedURL, err := h.bucket.SignedURL(objectName, opts)
 	if err != nil {
-		return fmt.Errorf("failed to generate signed URL: %v", err)
+		http.Error(w, "Failed to generate signed URL", http.StatusInternalServerError)
+		return
 	}
 
-	reply.SignedURL = signedURL
-	return nil
+	// Return the signed URL in the response
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(signedURL))
 }
 
-type DeleteFileRequest struct {
-	JobID    string `json:"jobid"`
-	FileName string `json:"filename"`
-}
+func (h *FileUploadHandler) DeleteFile(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	jobID := vars["jobid"]
+	filename := vars["filename"]
 
-type DeleteFileResponse struct {
-	Success bool `json:"success"`
-}
+	// Construct the object path in the bucket
+	objectName := fmt.Sprintf("%s/%s", jobID, filename)
 
-func (a *adaptor) DeleteFile(r *http.Request, args *DeleteFileRequest, reply *DeleteFileResponse) error {
-	accessType, err := a.authz.CheckJobPermission(r, args.JobID, "events", "delete")
-	if err != nil || accessType == "" {
-		return errors.New("not permitted")
+	// Delete the file from the bucket
+	if err := h.bucket.Object(objectName).Delete(r.Context()); err != nil {
+		http.Error(w, "Failed to delete file from Cloud Storage", http.StatusInternalServerError)
+		return
 	}
 
-	objectName := fmt.Sprintf("%s/%s", args.JobID, args.FileName)
-
-	if err := a.bucket.Object(objectName).Delete(r.Context()); err != nil {
-		return fmt.Errorf("failed to delete file from Cloud Storage: %v", err)
-	}
-
-	user, ok := r.Context().Value("user").(user.User)
-	if !ok {
-		return nil
-	}
-
-	event := events.Event{
-		ID:        uuid.New().String(),
-		Type:      "file_deletion",
-		JobID:     args.JobID,
-		Data:      args.FileName,
-		CreatedAt: time.Now(),
-	}
-	_, err = a.store.CreateEvent(event, "private", user.ID)
-	if err != nil {
-		log.Printf("Failed to create event for file deletion: %v", err)
-	}
-
-	reply.Success = true
-	return nil
+	// Return success status in the response
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintln(w, "File deleted successfully!")
 }

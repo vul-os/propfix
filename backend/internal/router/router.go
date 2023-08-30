@@ -11,9 +11,10 @@ import (
 	"cloud.google.com/go/storage"
 	jsonRpcServer "github.com/exolutionza/propfix-backend-go/internal/api/jsonRpc/server"
 	jsonRpcProvider "github.com/exolutionza/propfix-backend-go/internal/api/jsonRpc/service/provider"
+	"github.com/exolutionza/propfix-backend-go/internal/attachments"
+	"github.com/gorilla/mux"
 
 	firebase "firebase.google.com/go/v4"
-	"github.com/exolutionza/propfix-backend-go/internal/attachments"
 	"github.com/exolutionza/propfix-backend-go/internal/auth"
 	"github.com/exolutionza/propfix-backend-go/internal/authz"
 	"github.com/exolutionza/propfix-backend-go/internal/buildings"
@@ -36,7 +37,10 @@ func Router() {
 	pgUser := "propfixadmin"
 	pgPassword := "happy123"
 
-	bucketName := ""
+	bucketName := "propfix-attachments"
+	serverAddress := "localhost"
+	serverPort := "8080"
+	attachmentPort := "8081"
 
 	pgConnString := fmt.Sprintf("user=%s password=%s host=%s port=%s dbname=%s sslmode=disable",
 		pgUser, pgPassword, pgHost, pgPort, pgDatabase)
@@ -91,14 +95,13 @@ func Router() {
 				jobs.New(dbpool, authorizer, columnStore),
 				events.New(authorizer, eventStore),
 				columns.New(dbpool, authorizer, columnStore),
-				attachments.New(authorizer, eventStore, bucket),
 			},
 		},
 		// Add more RPC server configurations for other services here
 	}
 
 	// Create a new server instance
-	rpcServer := jsonRpcServer.New("localhost", "8080", rpcServerConfigs)
+	rpcServer := jsonRpcServer.New(serverAddress, serverPort, rpcServerConfigs)
 
 	// Start server using goroutine
 	go func() {
@@ -107,6 +110,30 @@ func Router() {
 		}
 	}()
 
+	// File upload server
+	fileUploadHandler, _ := attachments.NewFileUploadHandler(bucket, eventStore) // Use your event store
+
+	router := mux.NewRouter()
+	authenticatedRouter := router.PathPrefix("/attachments").Subrouter()
+	authenticatedRouter.Use(auth.IsAuthenticated(authClient, *orgStore)) // Apply auth middleware to authenticated routes
+
+	authenticatedRouter.HandleFunc("/upload/{jobid}", fileUploadHandler.UploadFile).Methods("POST")
+	authenticatedRouter.HandleFunc("/download/{jobid}/{filename}", fileUploadHandler.GetFile).Methods("GET")
+	authenticatedRouter.HandleFunc("/delete/{jobid}/{filename}", fileUploadHandler.DeleteFile).Methods("DELETE")
+
+	// Create an HTTP server with the router as the handler
+	httpServer := &http.Server{
+		Addr:    fmt.Sprintf("%s:%s", serverAddress, attachmentPort), // Replace with your desired address and port
+		Handler: router,
+	}
+	// Start the server using a goroutine
+	go func() {
+		if err := httpServer.ListenAndServe(); err != nil {
+			fmt.Println("Failed to start server:", err)
+		}
+	}()
+
+	// Add more routes as needed
 	// Wait for interrupt signal to stop
 	systemSignalsChannel := make(chan os.Signal, 1)
 	signal.Notify(systemSignalsChannel, os.Interrupt, syscall.SIGTERM)
