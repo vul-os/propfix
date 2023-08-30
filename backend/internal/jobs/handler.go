@@ -271,7 +271,7 @@ func (a *adaptor) GetAllJobs(r *http.Request, args *GetAllJobsRequest, result *G
 			assignee_ids, unit_identifier, building_id, labels, attachments,
 			cost, hours, due_date, created_at
 			FROM jobs
-			where tenant_identifier = $2
+			where tenant_identifier = $1
 		`
 		queryParams = append(queryParams, user.ID)
 	}
