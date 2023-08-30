@@ -183,20 +183,20 @@ func (a *adaptor) GetAllBuildings(r *http.Request, args *GetAllBuildingsRequest,
 	var rows pgx.Rows
 	var err error
 
-	if args.Latitude != 0.0 && args.Longitude != 0.0 {
-		query := `
-			SELECT id, building_name, address, unit_number_system, latitude, longitude, created_at, organization_id
-			FROM buildings
-			WHERE earth_box(ll_to_earth($1, $2), 5000) @> ll_to_earth(latitude, longitude)
-		`
-		rows, err = a.pool.Query(ctx, query, args.Latitude, args.Longitude)
-	} else if args.Search != "" {
+	if args.Search != "" {
 		query := `
 			SELECT id, building_name, address, unit_number_system, latitude, longitude, created_at, organization_id
 			FROM buildings
 			WHERE building_name ILIKE $1 OR address ILIKE $1
 		`
 		rows, err = a.pool.Query(ctx, query, "%"+args.Search+"%")
+	} else if args.Latitude != 0.0 && args.Longitude != 0.0 {
+		query := `
+			SELECT id, building_name, address, unit_number_system, latitude, longitude, created_at, organization_id
+			FROM buildings
+			WHERE earth_box(ll_to_earth($1, $2), 5000) @> ll_to_earth(latitude, longitude)
+		`
+		rows, err = a.pool.Query(ctx, query, args.Latitude, args.Longitude)
 	} else {
 		query := `
 			SELECT id, building_name, address, unit_number_system, latitude, longitude, created_at, organization_id
