@@ -12,7 +12,7 @@ function getConfig() {
         return defaultConfig;
       case location.includes('localhost'):
         return {
-          apiUrl: 'http://localhost:8080',
+          apiUrl: 'http://localhost:8080/api/authenticated/',
         };
       case location.includes('gitpod'):
         return {

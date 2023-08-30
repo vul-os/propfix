@@ -1,5 +1,5 @@
 import config from '../config/config';
-import { jsonRpcRequest } from './jsonRpcHelper'; // Adjust the path based on your project's structure
+import { jsonRpcRequest } from './jsonrpc/client';
 
 const API_BASE_URL = `${config.apiUrl}`;
 
@@ -51,6 +51,17 @@ export async function getAllJobs(idToken) {
   try {
     const params = [idToken];
     return await jsonRpcRequest('Jobs.GetAllJobs', params, idToken);
+  } catch (error) {
+    console.error('Error fetching all jobs:', error);
+    return [];
+  }
+}
+
+export async function getBoard(idToken, organizationId) {
+  try {
+    const params = [{organizationId}];
+
+    return await jsonRpcRequest('Jobs.GetKanbanBoard', params, idToken);
   } catch (error) {
     console.error('Error fetching all jobs:', error);
     return [];

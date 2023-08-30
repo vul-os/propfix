@@ -6,7 +6,7 @@ import Typography from '@mui/material/Typography';
 
 import EmptyContent from '../../../components/empty-content';
 import { moveJob } from '../../../api/columns';
-import { fetchBoard } from '../../../api/board';
+import { getBoard } from '../../../api/jobs';
 import { hideScroll } from '../../../theme/css';
 
 import KanbanColumn from '../kanban-column';
@@ -17,12 +17,11 @@ export default function KanbanView() {
   const [board, setBoard] = useState(null);
   const [boardLoading, setBoardLoading] = useState(true);
   const { getIdToken } = useAuthContext(); 
-
   useEffect(() => {
     async function fetchData() {
       try {
         const token = await getIdToken(); 
-        const boardData = await fetchBoard(token);
+        const boardData = await getBoard(token, "8d3a2d83-ba07-48e9-a2db-af91247b3183");
         setBoard(boardData.board);
         setBoardLoading(false);
       } catch (error) {
@@ -98,7 +97,6 @@ export default function KanbanView() {
     },
     [getIdToken] 
   );
-
   const renderSkeleton = (
     <Stack direction="row" alignItems="flex-start" spacing={3}>
       {[...Array(4)].map((_, index) => (
@@ -153,9 +151,11 @@ export default function KanbanView() {
                   ...hideScroll.x,
                 }}
               >
-                {board?.ordered.map((columnId, index) => {
+                {board && Object.keys(board.jobs).length > 0 && board?.ordered.map((columnId, index) => {
                   const column = board?.columns[columnId];
-                  const columnJobs = column && column.jobids && board.jobs ? column.jobids.map(jobId => board.jobs.find(job => job.id === jobId)) : [];
+                  const columnJobs = column && column.jobIds && board.jobs
+                  ? column.jobIds.map(jobId => board.jobs[jobId])
+                  : [];
                   return <KanbanColumn
                     index={index}
                     key={columnId}

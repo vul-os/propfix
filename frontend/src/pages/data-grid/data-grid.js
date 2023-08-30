@@ -7,7 +7,7 @@ import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
 import Chip from '@mui/material/Chip'; // Import Chip
 
-import { fetchAllJobs } from '../../api/jobs';
+// import { fetchAllJobs } from '../../api/jobs';
 import { useAuthContext } from '../../contexts/auth';
 import KanbanDetails from '../pop-over/kanban-details';
 import KanbanDetailsPriority from '../pop-over/kanban-details-priority';
@@ -25,8 +25,8 @@ function JobDataGrid() {
   const fetchJobsData = async () => {
     try {
       const idToken = await getIdToken();
-      const allJobs = await fetchAllJobs(idToken);
-      setJobs(allJobs);
+      // const allJobs = await fetchAllJobs(idToken);
+      // setJobs(allJobs);
     } catch (error) {
       console.error('Error fetching jobs:', error);
     }
