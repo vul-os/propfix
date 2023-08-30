@@ -5,8 +5,8 @@ import Step from '@mui/material/Step';
 import StepLabel from '@mui/material/StepLabel';
 import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
-import { createJob } from 'src/api/jobs';
-import { useAuthContext } from 'src/contexts/auth'; 
+import { createJob } from '../../api/jobs';
+import { useAuthContext } from '../../contexts/auth'; 
 import UnitInfoStep from './unitinfo';
 import JobInfoStep from './jobinfo';
 import ReviewSubmitStep from './reviewsubmit';
@@ -41,20 +41,28 @@ export default function HorizontalLinearStepper() {
   };
 
   const handleSubmit = async () => {
+    console.log('unitInfo:', unitInfo);
     if (activeStep === steps.length - 1) {
       try {
+        // Get the idToken from your auth context
         const idToken = await getIdToken();
-
-        const createdJob = await createJob(jobInfo, idToken);
-
+  
+        console.log('Creating job with jobInfo:', jobInfo);
+        console.log('Using idToken:', idToken);
+  
+        const createdJob = await createJob({"job": jobInfo}, idToken);
+  
         if (createdJob) {
           console.log('Job created successfully:', createdJob);
         } else {
           console.error('Error creating job');
         }
-
+  
+        // Reset the state to initial values
         setUnitInfo(initialUnitInfo);
         setJobInfo(initialJobInfo);
+  
+        // Reset the active step to the first step
         setActiveStep(0);
       } catch (error) {
         console.error('Error creating job:', error);
@@ -63,7 +71,8 @@ export default function HorizontalLinearStepper() {
       handleNext();
     }
   };
-
+  
+  
   const handleUnitInfoChange = (newUnitInfo) => {
     setUnitInfo(newUnitInfo);
   };
