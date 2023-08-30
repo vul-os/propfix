@@ -111,8 +111,8 @@ export default function KanbanColumn({ column, jobs, index }) {
                     width: 280,
                   }}
                 >
-                  {column.jobids &&
-                    column.jobids.map((jobId, jobIndex) => {
+                  {column.jobIds &&
+                    column.jobIds.map((jobId, jobIndex) => {
                       const job = jobs.find((job) => job && job.id === jobId);
                       if (job) {
                         return (

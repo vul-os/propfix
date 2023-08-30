@@ -17,7 +17,6 @@ export default function KanbanView() {
   const [board, setBoard] = useState(null);
   const [boardLoading, setBoardLoading] = useState(true);
   const { getIdToken } = useAuthContext(); 
-
   useEffect(() => {
     async function fetchData() {
       try {
@@ -98,7 +97,6 @@ export default function KanbanView() {
     },
     [getIdToken] 
   );
-
   const renderSkeleton = (
     <Stack direction="row" alignItems="flex-start" spacing={3}>
       {[...Array(4)].map((_, index) => (
@@ -153,9 +151,11 @@ export default function KanbanView() {
                   ...hideScroll.x,
                 }}
               >
-                {board?.ordered.map((columnId, index) => {
+                {board && Object.keys(board.jobs).length > 0 && board?.ordered.map((columnId, index) => {
                   const column = board?.columns[columnId];
-                  const columnJobs = column && column.jobids && board.jobs ? column.jobids.map(jobId => board.jobs.find(job => job.id === jobId)) : [];
+                  const columnJobs = column && column.jobIds && board.jobs
+                  ? column.jobIds.map(jobId => board.jobs[jobId])
+                  : [];
                   return <KanbanColumn
                     index={index}
                     key={columnId}
