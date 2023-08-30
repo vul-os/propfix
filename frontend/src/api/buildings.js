@@ -32,15 +32,16 @@ export async function deleteBuilding(buildingId, idToken) {
   }
 }
 
-export async function getAllBuildings(idToken) {
+export async function getAllBuildings(latitude, longitude, search, idToken) {
   try {
-    const params = [idToken];
+    const params = [{latitude, longitude, search}];
     return await jsonRpcRequest('Buildings.GetAllBuildings', params, idToken);
   } catch (error) {
-    console.error('Error fetching all buildings:', error);
+    console.error('Error fetching buildings:', error);
     return [];
   }
 }
+
 
 export async function getBuilding(buildingId, organizationId, idToken) {
   try {
