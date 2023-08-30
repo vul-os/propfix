@@ -52,7 +52,7 @@ type CreatePermissionResponse struct {
 }
 
 func (a *adaptor) CreatePermission(r *http.Request, args *CreatePermissionRequest, result *CreatePermissionResponse) error {
-	ok, err := utils.CheckPermission(r, a.authz, "permissions", "create")
+	ok, err := a.authz.CheckPermission(r, "permissions", "create")
 	if err != nil || !ok {
 		return errors.New("not permitted")
 	}
@@ -83,7 +83,7 @@ type DeletePermissionResponse struct {
 }
 
 func (a *adaptor) DeletePermission(r *http.Request, args *DeletePermissionRequest, result *DeletePermissionResponse) error {
-	ok, err := utils.CheckPermission(r, a.authz, "permissions", "delete")
+	ok, err := a.authz.CheckPermission(r, "permissions", "delete")
 	if err != nil || !ok {
 		return errors.New("not permitted")
 	}
@@ -118,7 +118,7 @@ type GetPermissionResponse struct {
 }
 
 func (a *adaptor) GetPermission(r *http.Request, args *GetPermissionRequest, result *GetPermissionResponse) error {
-	ok, err := utils.CheckPermission(r, a.authz, "permissions", "read")
+	ok, err := a.authz.CheckPermission(r, "permissions", "read")
 	if err != nil || !ok {
 		return errors.New("not permitted")
 	}
@@ -146,7 +146,7 @@ type UpdatePermissionRequest struct {
 }
 
 func (a *adaptor) UpdatePermission(r *http.Request, args *UpdatePermissionRequest, result *utils.EmptyResponse) error {
-	ok, err := utils.CheckPermission(r, a.authz, "permissions", "update")
+	ok, err := a.authz.CheckPermission(r, "permissions", "update")
 	if err != nil || !ok {
 		return errors.New("not permitted")
 	}

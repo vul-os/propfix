@@ -9,7 +9,6 @@ import (
 
 	"github.com/exolutionza/propfix-backend-go/internal/authz"
 
-	"github.com/exolutionza/propfix-backend-go/internal/utils"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
@@ -48,7 +47,7 @@ type CreateLabelResponse struct {
 }
 
 func (a *adaptor) CreateLabel(r *http.Request, args *CreateLabelRequest, reply *CreateLabelResponse) error {
-	ok, err := utils.CheckPermissionAndOrgs(r, a.authz, "labels", "create", args.Label.OrganizationID)
+	ok, err := a.authz.CheckPermissionAndOrgs(r, "labels", "create", args.Label.OrganizationID)
 	if err != nil || !ok {
 		return errors.New("not permitted")
 	}
@@ -79,7 +78,7 @@ type UpdateLabelResponse struct {
 }
 
 func (a *adaptor) UpdateLabel(r *http.Request, args *UpdateLabelRequest, reply *UpdateLabelResponse) error {
-	ok, err := utils.CheckPermissionAndOrgs(r, a.authz, "labels", "update", args.Label.OrganizationID)
+	ok, err := a.authz.CheckPermissionAndOrgs(r, "labels", "update", args.Label.OrganizationID)
 	if err != nil || !ok {
 		return errors.New("not permitted")
 	}
@@ -101,8 +100,7 @@ func (a *adaptor) UpdateLabel(r *http.Request, args *UpdateLabelRequest, reply *
 }
 
 type GetLabelRequest struct {
-	OrganizationID string `json:"organizationId"`
-	LabelID        string `json:"labelId"`
+	LabelID string `json:"labelId"`
 }
 
 type GetLabelResponse struct {
@@ -110,22 +108,21 @@ type GetLabelResponse struct {
 }
 
 func (a *adaptor) GetLabel(r *http.Request, args *GetLabelRequest, reply *GetLabelResponse) error {
-	ok, err := utils.CheckPermissionAndOrgs(r, a.authz, "labels", "get", args.OrganizationID)
-	if err != nil || !ok {
-		return errors.New("not permitted")
-	}
-
 	ctx := context.Background()
 	query := `
-		SELECT id, name, color
+		SELECT id, name, color, organization_id
 		FROM labels
-		WHERE id = $1 AND organization_id = $2
+		WHERE id = $1
 	`
 
 	var label Label
-	err = a.pool.QueryRow(ctx, query, args.LabelID, args.OrganizationID).Scan(&label.ID, &label.Name, &label.Color)
+	err := a.pool.QueryRow(ctx, query, args.LabelID).Scan(&label.ID, &label.Name, &label.Color, &label.OrganizationID)
 	if err != nil {
 		return errors.New("Label not found")
+	}
+	ok, err := a.authz.CheckPermissionAndOrgs(r, "labels", "get", label.OrganizationID)
+	if err != nil || !ok {
+		return errors.New("not permitted")
 	}
 
 	reply.Label = label
@@ -133,8 +130,7 @@ func (a *adaptor) GetLabel(r *http.Request, args *GetLabelRequest, reply *GetLab
 }
 
 type DeleteLabelRequest struct {
-	OrganizationID string `json:"organizationId"`
-	LabelID        string `json:"labelId"`
+	LabelID string `json:"labelId"`
 }
 
 type DeleteLabelResponse struct {
@@ -142,7 +138,7 @@ type DeleteLabelResponse struct {
 }
 
 func (a *adaptor) DeleteLabel(r *http.Request, args *DeleteLabelRequest, reply *DeleteLabelResponse) error {
-	ok, err := utils.CheckPermissionAndOrgs(r, a.authz, "labels", "delete", args.OrganizationID)
+	ok, err := a.authz.CheckPermission(r, "labels", "delete")
 	if err != nil || !ok {
 		return errors.New("not permitted")
 	}
@@ -150,10 +146,10 @@ func (a *adaptor) DeleteLabel(r *http.Request, args *DeleteLabelRequest, reply *
 	ctx := context.Background()
 	query := `
 		DELETE FROM labels
-		WHERE id = $1 AND organization_id = $2
+		WHERE id = $1
 	`
 
-	_, err = a.pool.Exec(ctx, query, args.LabelID, args.OrganizationID)
+	_, err = a.pool.Exec(ctx, query, args.LabelID)
 	if err != nil {
 		return errors.New("Failed to delete label")
 	}

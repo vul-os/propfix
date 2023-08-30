@@ -8,7 +8,6 @@ import (
 
 	jsonRpcProvider "github.com/exolutionza/propfix-backend-go/internal/api/jsonRpc/service/provider"
 	"github.com/exolutionza/propfix-backend-go/internal/authz"
-	"github.com/exolutionza/propfix-backend-go/internal/utils"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
@@ -52,7 +51,7 @@ type CreateBuildingResponse struct {
 }
 
 func (a *adaptor) CreateBuilding(r *http.Request, args *CreateBuildingRequest, reply *CreateBuildingResponse) error {
-	ok, err := utils.CheckPermissionAndOrgs(r, a.authz, "buildings", "create", args.Building.OrganizationID)
+	ok, err := a.authz.CheckPermissionAndOrgs(r, "buildings", "create", args.Building.OrganizationID)
 	if err != nil || !ok {
 		return errors.New("not permitted")
 	}
@@ -83,7 +82,7 @@ type UpdateBuildingResponse struct {
 }
 
 func (a *adaptor) UpdateBuilding(r *http.Request, args *UpdateBuildingRequest, reply *UpdateBuildingResponse) error {
-	ok, err := utils.CheckPermissionAndOrgs(r, a.authz, "buildings", "update", args.Building.OrganizationID)
+	ok, err := a.authz.CheckPermissionAndOrgs(r, "buildings", "update", args.Building.OrganizationID)
 	if err != nil || !ok {
 		return errors.New("not permitted")
 	}
@@ -105,8 +104,7 @@ func (a *adaptor) UpdateBuilding(r *http.Request, args *UpdateBuildingRequest, r
 }
 
 type GetBuildingRequest struct {
-	ID             string `json:"id"`
-	OrganizationID string `json:"organizationId"`
+	ID string `json:"id"`
 }
 
 type GetBuildingResponse struct {
@@ -114,11 +112,6 @@ type GetBuildingResponse struct {
 }
 
 func (a *adaptor) GetBuilding(r *http.Request, args *GetBuildingRequest, reply *GetBuildingResponse) error {
-	ok, err := utils.CheckPermissionAndOrgs(r, a.authz, "buildings", "read", args.OrganizationID)
-	if err != nil || !ok {
-		return errors.New("not permitted")
-	}
-
 	ctx := context.Background()
 	query := `
 		SELECT id, building_name, address, unit_number_system, latitude, longitude, created_at, organization_id
@@ -128,9 +121,13 @@ func (a *adaptor) GetBuilding(r *http.Request, args *GetBuildingRequest, reply *
 	row := a.pool.QueryRow(ctx, query, args.ID)
 
 	var building Building
-	err = row.Scan(&building.ID, &building.BuildingName, &building.Address, &building.UnitNumberSystem, &building.Latitude, &building.Longitude, &building.CreatedAt, &building.OrganizationID)
+	err := row.Scan(&building.ID, &building.BuildingName, &building.Address, &building.UnitNumberSystem, &building.Latitude, &building.Longitude, &building.CreatedAt, &building.OrganizationID)
 	if err != nil {
 		return err
+	}
+	ok, err := a.authz.CheckPermissionAndOrgs(r, "buildings", "read", building.OrganizationID)
+	if err != nil || !ok {
+		return errors.New("not permitted")
 	}
 
 	reply.Building = building
@@ -138,8 +135,7 @@ func (a *adaptor) GetBuilding(r *http.Request, args *GetBuildingRequest, reply *
 }
 
 type DeleteBuildingRequest struct {
-	ID             string `json:"id"`
-	OrganizationID string `json:"organizationId"`
+	ID string `json:"id"`
 }
 
 type DeleteBuildingResponse struct {
@@ -147,7 +143,7 @@ type DeleteBuildingResponse struct {
 }
 
 func (a *adaptor) DeleteBuilding(r *http.Request, args *DeleteBuildingRequest, reply *DeleteBuildingResponse) error {
-	ok, err := utils.CheckPermissionAndOrgs(r, a.authz, "buildings", "delete", args.OrganizationID)
+	ok, err := a.authz.CheckPermission(r, "buildings", "delete")
 	if err != nil || !ok {
 		return errors.New("not permitted")
 	}
@@ -155,10 +151,10 @@ func (a *adaptor) DeleteBuilding(r *http.Request, args *DeleteBuildingRequest, r
 	ctx := context.Background()
 	query := `
 		DELETE FROM buildings
-		WHERE id = $1 AND organization_id = $2
+		WHERE id = $1 
 	`
 
-	_, err = a.pool.Exec(ctx, query, args.ID, args.OrganizationID)
+	_, err = a.pool.Exec(ctx, query, args.ID)
 	if err != nil {
 		return errors.New("Failed to delete building")
 	}

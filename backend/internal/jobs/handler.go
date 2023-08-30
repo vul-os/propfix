@@ -3,9 +3,9 @@ package jobs
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"time"
-	"fmt"
 
 	jsonRpcProvider "github.com/exolutionza/propfix-backend-go/internal/api/jsonRpc/service/provider"
 	"github.com/exolutionza/propfix-backend-go/internal/authz"
@@ -302,8 +302,8 @@ func (a *adaptor) GetAllJobs(r *http.Request, args *GetAllJobsRequest, result *G
 // Define the KanbanBoard struct for the response
 type KanbanBoard struct {
 	Columns map[string]columns.Column `json:"columns"`
-	Jobs    map[string]Job    `json:"jobs"`
-	Ordered []string          `json:"ordered"`
+	Jobs    map[string]Job            `json:"jobs"`
+	Ordered []string                  `json:"ordered"`
 }
 
 // Define the GetKanbanBoardRequest struct
@@ -367,22 +367,23 @@ func (a *adaptor) GetKanbanBoard(r *http.Request, args *GetKanbanBoardRequest, r
 	return nil
 }
 
+// todo: move into store.go
 func (a *adaptor) GetJobsByOrganization(orgID string) ([]Job, error) {
 	ctx := context.Background()
 
-    // Query to fetch jobs based on organization ID
-    query := fmt.Sprintf("SELECT * FROM jobs WHERE organization_id = '%s'", orgID)
-	
+	// Query to fetch jobs based on organization ID
+	query := fmt.Sprintf("SELECT * FROM jobs WHERE organization_id = '%s'", orgID)
+
 	rows, err := a.dbpool.Query(ctx, query)
-    if err != nil {
+	if err != nil {
 		fmt.Println(err)
-        return nil, err
-    }
-    defer rows.Close()
-    
-    var jobs []Job
-    for rows.Next() {
-        var job Job
+		return nil, err
+	}
+	defer rows.Close()
+
+	var jobs []Job
+	for rows.Next() {
+		var job Job
 		err := rows.Scan(
 			&job.ID, &job.Name, &job.OrganizationID, &job.Priority, &job.Description,
 			&job.TenantIdentifier, &job.AssigneeIDs, &job.UnitIdentifier,
@@ -392,12 +393,12 @@ func (a *adaptor) GetJobsByOrganization(orgID string) ([]Job, error) {
 		if err != nil {
 			return nil, err
 		}
-        jobs = append(jobs, job)
-    }
-    
-    if err := rows.Err(); err != nil {
-        return nil, err
-    }
-    
-    return jobs, nil
+		jobs = append(jobs, job)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return jobs, nil
 }
