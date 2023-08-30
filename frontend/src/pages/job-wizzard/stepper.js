@@ -1,15 +1,46 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Box from '@mui/material/Box';
 import Stepper from '@mui/material/Stepper';
 import Step from '@mui/material/Step';
 import StepLabel from '@mui/material/StepLabel';
 import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
+import Autocomplete from '@mui/material/Autocomplete';
+import InputBase from '@mui/material/InputBase';
+import { styled } from '@mui/material/styles';
 import { createJob } from '../../api/jobs';
 import { useAuthContext } from '../../contexts/auth'; 
 import UnitInfoStep from './unitinfo';
 import JobInfoStep from './jobinfo';
 import ReviewSubmitStep from './reviewsubmit';
+import { getAllBuildings } from '../../api/buildings';
+
+const BootstrapInput = styled(InputBase)(({ theme }) => ({
+  borderRadius: 4,
+  position: 'relative',
+  backgroundColor: theme.palette.background.paper,
+  border: '1px solid #ced4da',
+  fontSize: 16,
+  padding: '10px 26px 10px 12px',
+  transition: theme.transitions.create(['border-color', 'box-shadow']),
+  fontFamily: [
+    '-apple-system',
+    'BlinkMacSystemFont',
+    '"Segoe UI"',
+    'Roboto',
+    '"Helvetica Neue"',
+    'Arial',
+    'sans-serif',
+    '"Apple Color Emoji"',
+    '"Segoe UI Emoji"',
+    '"Segoe UI Symbol"',
+  ].join(','),
+  '&:focus': {
+    borderRadius: 4,
+    borderColor: '#80bdff',
+    boxShadow: '0 0 0 0.2rem rgba(0,123,255,.25)',
+  },
+}));
 
 const steps = ['UNIT INFO', 'JOB INFO', 'REVIEW & SUBMIT'];
 
@@ -28,12 +59,51 @@ export default function HorizontalLinearStepper() {
     attachments: [], 
   };
 
-
   const [activeStep, setActiveStep] = useState(0);
   const [unitInfo, setUnitInfo] = useState(initialUnitInfo);
   const [jobInfo, setJobInfo] = useState(initialJobInfo);
+  const [buildings, setBuildings] = useState([]);
+  const [userLocation, setUserLocation] = useState(null);
+  const [selectedBuilding, setSelectedBuilding] = useState('');
 
   const { getIdToken } = useAuthContext();
+
+  useEffect(() => {
+    fetchBuildings();
+    getUserLocation();
+  }, []);
+
+  const fetchBuildings = async () => {
+    try {
+      const idToken = await getIdToken();
+      const fetchedBuildings = await getAllBuildings(
+        userLocation?.latitude,
+        userLocation?.longitude,
+        '',
+        idToken
+      );
+      setBuildings(fetchedBuildings);
+    } catch (error) {
+      console.error('Error fetching buildings:', error);
+    }
+  };
+
+  const getUserLocation = () => {
+    if ('geolocation' in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const userLatitude = position.coords.latitude;
+          const userLongitude = position.coords.longitude;
+          setUserLocation({ latitude: userLatitude, longitude: userLongitude });
+        },
+        (error) => {
+          console.error('Error getting user location:', error);
+        }
+      );
+    } else {
+      console.error('Geolocation is not supported in this browser.');
+    }
+  };
 
   const handleNext = () => {
     setActiveStep(activeStep + 1);
@@ -46,11 +116,8 @@ export default function HorizontalLinearStepper() {
   const handleSubmit = async () => {
     if (activeStep === steps.length - 1) {
       try {
-        // Get the idToken from your auth context
         const idToken = await getIdToken();
   
-        console.log('Creating job with jobInfo:', jobInfo);
-        console.log('Using idToken:', idToken);
         const combinedData = {
           unitName: unitInfo.unitName,
           tenantIdentifier: unitInfo.tenantIdentifier,
@@ -61,8 +128,6 @@ export default function HorizontalLinearStepper() {
           attachments: jobInfo.attachments, 
         };
   
-        console.log("jhgjgh", combinedData, unitInfo)
-        
         const createdJob = await createJob({"job": combinedData}, idToken);
   
         if (createdJob) {
@@ -71,11 +136,9 @@ export default function HorizontalLinearStepper() {
           console.error('Error creating job');
         }
   
-        // Reset the state to initial values
         setUnitInfo(initialUnitInfo);
         setJobInfo(initialJobInfo);
   
-        // Reset the active step to the first step
         setActiveStep(0);
       } catch (error) {
         console.error('Error creating job:', error);
@@ -84,8 +147,7 @@ export default function HorizontalLinearStepper() {
       handleNext();
     }
   };
-  
-  
+
   const handleUnitInfoChange = (newUnitInfo) => {
     setUnitInfo(newUnitInfo);
   };
@@ -116,10 +178,32 @@ export default function HorizontalLinearStepper() {
     switch (step) {
       case 0:
         return (
-          <UnitInfoStep
-            unitInfo={unitInfo}
-            handleUnitInfoChange={handleUnitInfoChange}
-          />
+          <div>
+            <UnitInfoStep
+              unitInfo={unitInfo}
+              handleUnitInfoChange={handleUnitInfoChange}
+            />
+            <Autocomplete
+              options={buildings}
+              getOptionLabel={(building) => building.name}
+              value={selectedBuilding}
+              onChange={(event, newValue) => {
+                setSelectedBuilding(newValue.name);
+                handleUnitInfoChange({
+                  ...unitInfo,
+                  buildingId: newValue.id,
+                });
+              }}
+              renderInput={(params) => (
+                <BootstrapInput
+                  {...params.inputProps}
+                  placeholder="Select a Building or Use Location"
+                  fullWidth
+                  style={{ marginBottom: '16px' }}
+                />
+              )}
+            />
+          </div>
         );
       case 1:
         return (
@@ -131,15 +215,7 @@ export default function HorizontalLinearStepper() {
         return 'Unknown step';
     }
   };
-  const handleDrop = async (acceptedFiles) => {
-    try {
-      // Your logic to handle file upload
-    } catch (error) {
-      console.error('Error uploading files:', error);
-    }
-  };
 
- 
   return (
     <Box sx={{ width: '100%' }}>
       <Stepper activeStep={activeStep}>
