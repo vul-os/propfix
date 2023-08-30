@@ -6,7 +6,7 @@ export default function UnitInfoStep({ unitInfo, handleUnitInfoChange }) {
     <div>
       <TextField
         label="Name"
-        value={unitInfo.unitName}
+        value={unitInfo.Name}
         onChange={(e) => handleUnitInfoChange({ ...unitInfo, unitName: e.target.value })}
         fullWidth
         style={{ marginBottom: '16px' }}

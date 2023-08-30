@@ -24,7 +24,10 @@ export default function HorizontalLinearStepper() {
   const initialJobInfo = {
     title: '',
     description: '',
+    labels: [],
+    attachments: [], 
   };
+
 
   const [activeStep, setActiveStep] = useState(0);
   const [unitInfo, setUnitInfo] = useState(initialUnitInfo);
@@ -41,7 +44,6 @@ export default function HorizontalLinearStepper() {
   };
 
   const handleSubmit = async () => {
-    console.log('unitInfo:', unitInfo);
     if (activeStep === steps.length - 1) {
       try {
         // Get the idToken from your auth context
@@ -49,8 +51,19 @@ export default function HorizontalLinearStepper() {
   
         console.log('Creating job with jobInfo:', jobInfo);
         console.log('Using idToken:', idToken);
+        const combinedData = {
+          unitName: unitInfo.unitName,
+          tenantIdentifier: unitInfo.tenantIdentifier,
+          unitIdentifier: unitInfo.unitIdentifier,
+          buildingId: unitInfo.buildingId,
+          title: jobInfo.title,
+          labels: jobInfo.labels,
+          attachments: jobInfo.attachments, 
+        };
   
-        const createdJob = await createJob({"job": jobInfo}, idToken);
+        console.log("jhgjgh", combinedData, unitInfo)
+        
+        const createdJob = await createJob({"job": combinedData}, idToken);
   
         if (createdJob) {
           console.log('Job created successfully:', createdJob);
@@ -118,7 +131,15 @@ export default function HorizontalLinearStepper() {
         return 'Unknown step';
     }
   };
+  const handleDrop = async (acceptedFiles) => {
+    try {
+      // Your logic to handle file upload
+    } catch (error) {
+      console.error('Error uploading files:', error);
+    }
+  };
 
+ 
   return (
     <Box sx={{ width: '100%' }}>
       <Stepper activeStep={activeStep}>
