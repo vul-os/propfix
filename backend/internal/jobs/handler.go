@@ -3,9 +3,9 @@ package jobs
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"time"
-	"fmt"
 
 	jsonRpcProvider "github.com/exolutionza/propfix-backend-go/internal/api/jsonRpc/service/provider"
 	"github.com/exolutionza/propfix-backend-go/internal/authz"
@@ -72,7 +72,10 @@ type GetJobResponse struct {
 func (a *adaptor) GetJob(r *http.Request, args *GetJobRequest, result *GetJobResponse) error {
 	ctx := context.Background()
 
-	// Check permission logic here
+	accessType, err := a.authz.CheckJobPermission(r, args.ID, "jobs", "get")
+	if err != nil || accessType == "" {
+		return errors.New("not permitted")
+	}
 
 	sqlQuery := `
 		SELECT id, name, organization_id, priority, description, tenant_identifier,
@@ -85,7 +88,7 @@ func (a *adaptor) GetJob(r *http.Request, args *GetJobRequest, result *GetJobRes
 	row := a.dbpool.QueryRow(ctx, sqlQuery, args.ID)
 
 	var job Job
-	err := row.Scan(
+	err = row.Scan(
 		&job.ID, &job.Name, &job.OrganizationID, &job.Priority, &job.Description,
 		&job.TenantIdentifier, &job.AssigneeIDs, &job.UnitIdentifier,
 		&job.BuildingID, &job.Labels, &job.Attachments, &job.Cost, &job.Hours,
@@ -115,7 +118,10 @@ type CreateJobResponse struct {
 func (a *adaptor) CreateJob(r *http.Request, args *CreateJobRequest, result *CreateJobResponse) error {
 	ctx := r.Context()
 
-	// Check permission logic here
+	accessType, err := a.authz.CheckJobPermission(r, args.Job.ID, "jobs", "create")
+	if err != nil || accessType == "" {
+		return errors.New("not permitted")
+	}
 
 	user, ok := r.Context().Value("user").(user.User)
 	if !ok {
@@ -166,7 +172,10 @@ type UpdateJobResponse struct {
 func (a *adaptor) UpdateJob(r *http.Request, args *UpdateJobRequest, result *UpdateJobResponse) error {
 	ctx := context.Background()
 
-	// Check permission logic here
+	accessType, err := a.authz.CheckJobPermission(r, args.Job.ID, "jobs", "update")
+	if err != nil || accessType == "" {
+		return errors.New("not permitted")
+	}
 
 	sqlQuery := `
 		UPDATE jobs
@@ -177,7 +186,7 @@ func (a *adaptor) UpdateJob(r *http.Request, args *UpdateJobRequest, result *Upd
 		WHERE id = $14
 	`
 
-	_, err := a.dbpool.Exec(ctx, sqlQuery,
+	_, err = a.dbpool.Exec(ctx, sqlQuery,
 		args.Job.Name, args.Job.OrganizationID, args.Job.Priority,
 		args.Job.Description, args.Job.TenantIdentifier, args.Job.AssigneeIDs,
 		args.Job.UnitIdentifier, args.Job.BuildingID, args.Job.Labels,
@@ -205,11 +214,14 @@ type DeleteJobResponse struct {
 func (a *adaptor) DeleteJob(r *http.Request, args *DeleteJobRequest, result *DeleteJobResponse) error {
 	ctx := context.Background()
 
-	// Check permission logic here
+	accessType, err := a.authz.CheckJobPermission(r, args.ID, "jobs", "delete")
+	if err != nil || accessType == "" {
+		return errors.New("not permitted")
+	}
 
 	sqlQuery := `DELETE FROM jobs WHERE id = $1`
 
-	_, err := a.dbpool.Exec(ctx, sqlQuery, args.ID)
+	_, err = a.dbpool.Exec(ctx, sqlQuery, args.ID)
 	if err != nil {
 		return err
 	}
@@ -230,22 +242,21 @@ type GetAllJobsResponse struct {
 
 func (a *adaptor) GetAllJobs(r *http.Request, args *GetAllJobsRequest, result *GetAllJobsResponse) error {
 	ctx := context.Background()
-
 	user, ok := r.Context().Value("user").(user.User)
 	if !ok {
 		return errors.New("not permitted")
 	}
-	permissionStatus := "private"
-	// permissionStatus, err := a.authz.CheckJobPermission(user.ID, "jobs", "getall")
-	// if err != nil {
-	// 	return err
-	// }
 
 	var rows pgx.Rows
 	var sqlQuery string
 	var queryParams []interface{}
 
 	if args.OrganizationID != "" { // If organization ID is provided in the request
+		ok, err := a.authz.CheckPermission(r, "jobs", "getall")
+		if err != nil || !ok {
+			return errors.New("not permitted")
+		}
+
 		sqlQuery = `
 			SELECT id, name, organization_id, priority, description, tenant_identifier,
 			assignee_ids, unit_identifier, building_id, labels, attachments,
@@ -260,11 +271,8 @@ func (a *adaptor) GetAllJobs(r *http.Request, args *GetAllJobsRequest, result *G
 			assignee_ids, unit_identifier, building_id, labels, attachments,
 			cost, hours, due_date, created_at
 			FROM jobs
+			where tenant_identifier = $1
 		`
-	}
-
-	if permissionStatus == "public" {
-		sqlQuery += " AND tenant_identifier = $2"
 		queryParams = append(queryParams, user.ID)
 	}
 
@@ -287,7 +295,7 @@ func (a *adaptor) GetAllJobs(r *http.Request, args *GetAllJobsRequest, result *G
 		if err != nil {
 			return err
 		}
-		if permissionStatus == "public" {
+		if args.OrganizationID == "" {
 			job.Cost = 0
 			job.Hours = 0
 			job.Priority = ""
@@ -302,8 +310,8 @@ func (a *adaptor) GetAllJobs(r *http.Request, args *GetAllJobsRequest, result *G
 // Define the KanbanBoard struct for the response
 type KanbanBoard struct {
 	Columns map[string]columns.Column `json:"columns"`
-	Jobs    map[string]Job    `json:"jobs"`
-	Ordered []string          `json:"ordered"`
+	Jobs    map[string]Job            `json:"jobs"`
+	Ordered []string                  `json:"ordered"`
 }
 
 // Define the GetKanbanBoardRequest struct
@@ -367,22 +375,23 @@ func (a *adaptor) GetKanbanBoard(r *http.Request, args *GetKanbanBoardRequest, r
 	return nil
 }
 
+// todo: move into store.go
 func (a *adaptor) GetJobsByOrganization(orgID string) ([]Job, error) {
 	ctx := context.Background()
 
-    // Query to fetch jobs based on organization ID
-    query := fmt.Sprintf("SELECT * FROM jobs WHERE organization_id = '%s'", orgID)
-	
+	// Query to fetch jobs based on organization ID
+	query := fmt.Sprintf("SELECT * FROM jobs WHERE organization_id = '%s'", orgID)
+
 	rows, err := a.dbpool.Query(ctx, query)
-    if err != nil {
+	if err != nil {
 		fmt.Println(err)
-        return nil, err
-    }
-    defer rows.Close()
-    
-    var jobs []Job
-    for rows.Next() {
-        var job Job
+		return nil, err
+	}
+	defer rows.Close()
+
+	var jobs []Job
+	for rows.Next() {
+		var job Job
 		err := rows.Scan(
 			&job.ID, &job.Name, &job.OrganizationID, &job.Priority, &job.Description,
 			&job.TenantIdentifier, &job.AssigneeIDs, &job.UnitIdentifier,
@@ -392,12 +401,12 @@ func (a *adaptor) GetJobsByOrganization(orgID string) ([]Job, error) {
 		if err != nil {
 			return nil, err
 		}
-        jobs = append(jobs, job)
-    }
-    
-    if err := rows.Err(); err != nil {
-        return nil, err
-    }
-    
-    return jobs, nil
+		jobs = append(jobs, job)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return jobs, nil
 }

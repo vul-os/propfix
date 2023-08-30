@@ -9,7 +9,6 @@ import (
 	jsonRpcProvider "github.com/exolutionza/propfix-backend-go/internal/api/jsonRpc/service/provider"
 
 	"github.com/exolutionza/propfix-backend-go/internal/authz"
-	"github.com/exolutionza/propfix-backend-go/internal/utils"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
@@ -50,7 +49,7 @@ type CreateColumnResponse struct {
 }
 
 func (a *adaptor) CreateColumn(r *http.Request, args *CreateColumnRequest, reply *CreateColumnResponse) error {
-	ok, err := utils.CheckPermission(r, a.authz, "columns", "create")
+	ok, err := a.authz.CheckPermissionAndOrgs(r, "columns", "create", args.Column.OrganizationID)
 	if err != nil || !ok {
 		return errors.New("not permitted")
 	}
@@ -81,7 +80,7 @@ type UpdateColumnResponse struct {
 }
 
 func (a *adaptor) UpdateColumn(r *http.Request, args *UpdateColumnRequest, reply *UpdateColumnResponse) error {
-	ok, err := utils.CheckPermission(r, a.authz, "columns", "update")
+	ok, err := a.authz.CheckPermissionAndOrgs(r, "columns", "create", args.Column.OrganizationID)
 	if err != nil || !ok {
 		return errors.New("not permitted")
 	}
@@ -111,11 +110,6 @@ type GetColumnResponse struct {
 }
 
 func (a *adaptor) GetColumn(r *http.Request, args *GetColumnRequest, reply *GetColumnResponse) error {
-	ok, err := utils.CheckPermission(r, a.authz, "columns", "get")
-	if err != nil || !ok {
-		return errors.New("not permitted")
-	}
-
 	ctx := context.Background()
 	query := `
 		SELECT id, name, job_ids, organization_id
@@ -124,9 +118,13 @@ func (a *adaptor) GetColumn(r *http.Request, args *GetColumnRequest, reply *GetC
 	`
 
 	var column Column
-	err = a.pool.QueryRow(ctx, query, args.ColumnID).Scan(&column.ID, &column.Name, &column.JobIDs, &column.OrganizationID)
+	err := a.pool.QueryRow(ctx, query, args.ColumnID).Scan(&column.ID, &column.Name, &column.JobIDs, &column.OrganizationID)
 	if err != nil {
 		return errors.New("Column not found")
+	}
+	ok, err := a.authz.CheckPermissionAndOrgs(r, "columns", "get", column.OrganizationID)
+	if err != nil || !ok {
+		return errors.New("not permitted")
 	}
 
 	reply.Column = column
@@ -142,7 +140,7 @@ type DeleteColumnResponse struct {
 }
 
 func (a *adaptor) DeleteColumn(r *http.Request, args *DeleteColumnRequest, result *DeleteColumnResponse) error {
-	ok, err := utils.CheckPermission(r, a.authz, "columns", "delete")
+	ok, err := a.authz.CheckPermission(r, "columns", "delete")
 	if err != nil || !ok {
 		return errors.New("not permitted")
 	}
@@ -178,11 +176,6 @@ type AddJobsResponse struct {
 }
 
 func (a *adaptor) AddJobs(r *http.Request, args *AddJobsRequest, reply *AddJobsResponse) error {
-	ok, err := utils.CheckPermission(r, a.authz, "columns", "update")
-	if err != nil || !ok {
-		return errors.New("not permitted")
-	}
-
 	ctx := context.Background()
 
 	// Fetch existing column to get current job IDs
@@ -191,6 +184,10 @@ func (a *adaptor) AddJobs(r *http.Request, args *AddJobsRequest, reply *AddJobsR
 		return fmt.Errorf("Failed to fetch existing column: %v", err)
 	}
 
+	ok, err := a.authz.CheckPermissionAndOrgs(r, "columns", "addjobs", existingColumn.OrganizationID)
+	if err != nil || !ok {
+		return errors.New("not permitted")
+	}
 	// Append new job IDs to existing ones
 	newJobIDs := append(existingColumn.JobIDs, args.JobIDs...)
 
@@ -219,17 +216,17 @@ type RemoveJobsResponse struct {
 }
 
 func (a *adaptor) RemoveJobs(r *http.Request, args *RemoveJobsRequest, reply *RemoveJobsResponse) error {
-	ok, err := utils.CheckPermission(r, a.authz, "columns", "update")
-	if err != nil || !ok {
-		return errors.New("not permitted")
-	}
-
 	ctx := context.Background()
 
 	// Fetch existing column to get current job IDs
 	existingColumn, err := a.columnStore.GetColumn(args.ColumnID)
 	if err != nil {
 		return fmt.Errorf("Failed to fetch existing column: %v", err)
+	}
+
+	ok, err := a.authz.CheckPermissionAndOrgs(r, "columns", "removejobs", existingColumn.OrganizationID)
+	if err != nil || !ok {
+		return errors.New("not permitted")
 	}
 
 	// Create a map of existing job IDs for quick lookup
