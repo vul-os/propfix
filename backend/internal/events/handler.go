@@ -118,8 +118,8 @@ type DeleteEventResponse struct {
 }
 
 func (a *adaptor) DeleteEvent(r *http.Request, args *DeleteEventRequest, result *DeleteEventResponse) error {
-	accessType, err := a.authz.CheckJobPermission(r, args.ID, "events", "delete")
-	if err != nil || accessType == "" {
+	accessType, err := a.authz.CheckPermission(r, "events", "delete")
+	if err != nil || !accessType {
 		return errors.New("not permitted")
 	}
 
