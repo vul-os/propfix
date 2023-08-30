@@ -13,21 +13,13 @@ import (
 )
 
 type FileUploadHandler struct {
-	client      *storage.Client
-	bucketName  string
+	bucket      *storage.BucketHandle
 	eventsStore *events.EventsStore
 }
 
-func NewFileUploadHandler(bucketName string, eventsStore *events.EventsStore) (*FileUploadHandler, error) {
-	ctx := context.Background()
-	client, err := storage.NewClient(ctx)
-	if err != nil {
-		return nil, err
-	}
-
+func NewFileUploadHandler(bucket *storage.BucketHandle, eventsStore *events.EventsStore) (*FileUploadHandler, error) {
 	return &FileUploadHandler{
-		client:      client,
-		bucketName:  bucketName,
+		bucket:      bucket,
 		eventsStore: eventsStore,
 	}, nil
 }
@@ -46,7 +38,7 @@ func (h *FileUploadHandler) UploadFile(w http.ResponseWriter, r *http.Request) {
 
 	// Create a new object in the bucket with the desired filename
 	objectName := fmt.Sprintf("%s/%s", jobID, header.Filename)
-	obj := h.client.Bucket(h.bucketName).Object(objectName)
+	obj := h.bucket.Object(objectName)
 	wc := obj.NewWriter(context.Background())
 
 	// Copy the file data to the object in Cloud Storage
@@ -60,24 +52,16 @@ func (h *FileUploadHandler) UploadFile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Generate a signed URL for the uploaded file
-	signedURL, err := h.GenerateV4GetObjectSignedURL(h.bucketName, objectName)
+	opts := &storage.SignedURLOptions{
+		Scheme:  storage.SigningSchemeV4,
+		Method:  "GET",
+		Expires: time.Now().Add(15 * time.Minute),
+	}
+	signedURL, err := h.bucket.SignedURL(objectName, opts)
 	if err != nil {
 		http.Error(w, "Failed to generate signed URL", http.StatusInternalServerError)
 		return
 	}
-
-	// // Create an event for file upload
-	// event := events.Event{
-	// 	ID:        uuid.New().String(),
-	// 	Type:      "file_upload",
-	// 	JobID:     jobID,
-	// 	Data:      header.Filename,
-	// 	CreatedAt: time.Now(),
-	// }
-	// _, err = h.eventsStore.CreateEvent(event)
-	// if err != nil {
-	// 	log.Printf("Failed to create event for file upload: %v", err)
-	// }
 
 	// Return the signed URL in the response
 	w.WriteHeader(http.StatusCreated)
@@ -93,7 +77,12 @@ func (h *FileUploadHandler) GetFile(w http.ResponseWriter, r *http.Request) {
 	objectName := fmt.Sprintf("%s/%s", jobID, filename)
 
 	// Generate a signed URL for accessing the file
-	signedURL, err := h.GenerateV4GetObjectSignedURL(h.bucketName, objectName)
+	opts := &storage.SignedURLOptions{
+		Scheme:  storage.SigningSchemeV4,
+		Method:  "GET",
+		Expires: time.Now().Add(15 * time.Minute),
+	}
+	signedURL, err := h.bucket.SignedURL(objectName, opts)
 	if err != nil {
 		http.Error(w, "Failed to generate signed URL", http.StatusInternalServerError)
 		return
@@ -102,29 +91,6 @@ func (h *FileUploadHandler) GetFile(w http.ResponseWriter, r *http.Request) {
 	// Return the signed URL in the response
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(signedURL))
-}
-
-// GenerateV4GetObjectSignedURL generates object signed URL with GET method.
-func (h *FileUploadHandler) GenerateV4GetObjectSignedURL(bucket, object string) (string, error) {
-	ctx := context.Background()
-	client, err := storage.NewClient(ctx)
-	if err != nil {
-		return "", fmt.Errorf("storage.NewClient: %w", err)
-	}
-	defer client.Close()
-
-	opts := &storage.SignedURLOptions{
-		Scheme:  storage.SigningSchemeV4,
-		Method:  "GET",
-		Expires: time.Now().Add(15 * time.Minute),
-	}
-
-	u, err := client.Bucket(bucket).SignedURL(object, opts)
-	if err != nil {
-		return "", fmt.Errorf("Bucket(%q).SignedURL: %w", bucket, err)
-	}
-
-	return u, nil
 }
 
 func (h *FileUploadHandler) DeleteFile(w http.ResponseWriter, r *http.Request) {
@@ -136,23 +102,10 @@ func (h *FileUploadHandler) DeleteFile(w http.ResponseWriter, r *http.Request) {
 	objectName := fmt.Sprintf("%s/%s", jobID, filename)
 
 	// Delete the file from the bucket
-	if err := h.client.Bucket(h.bucketName).Object(objectName).Delete(r.Context()); err != nil {
+	if err := h.bucket.Object(objectName).Delete(r.Context()); err != nil {
 		http.Error(w, "Failed to delete file from Cloud Storage", http.StatusInternalServerError)
 		return
 	}
-
-	// // Create an event for file deletion
-	// event := events.Event{
-	// 	ID:        uuid.New().String(),
-	// 	Type:      "file_deletion",
-	// 	JobID:     jobID,
-	// 	Data:      filename,
-	// 	CreatedAt: time.Now(),
-	// }
-	// _, err := h.eventsStore.CreateEvent(event)
-	// if err != nil {
-	// 	log.Printf("Failed to create event for file deletion: %v", err)
-	// }
 
 	// Return success status in the response
 	w.WriteHeader(http.StatusOK)

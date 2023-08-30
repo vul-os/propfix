@@ -9,7 +9,6 @@ import (
 	"github.com/exolutionza/propfix-backend-go/internal/user"
 
 	"github.com/exolutionza/propfix-backend-go/internal/authz"
-	"github.com/jackc/pgx/v4/pgxpool"
 )
 
 type adaptor struct {
@@ -24,11 +23,11 @@ func (a *adaptor) Name() jsonRpcProvider.Name {
 }
 
 func New(
-	dbpool *pgxpool.Pool,
 	authz *authz.Authz,
+	store *EventsStore,
 ) *adaptor {
 	return &adaptor{
-		store: NewEventsStore(dbpool),
+		store: store,
 		authz: authz,
 	}
 }
@@ -42,7 +41,7 @@ type CreateEventResponse struct {
 }
 
 func (a *adaptor) CreateEvent(r *http.Request, args *CreateEventRequest, result *CreateEventResponse) error {
-	accessType, err := a.authz.CheckEventPermission(r, args.Event.JobID, "events", "create")
+	accessType, err := a.authz.CheckJobPermission(r, args.Event.JobID, "events", "create")
 	if err != nil || accessType == "" {
 		return errors.New("not permitted")
 	}
@@ -78,7 +77,7 @@ func (a *adaptor) GetEvent(r *http.Request, args *GetEventRequest, result *GetEv
 		return fmt.Errorf("Event not found: %v", err)
 	}
 
-	accessType, err := a.authz.CheckEventPermission(r, event.JobID, "events", "read")
+	accessType, err := a.authz.CheckJobPermission(r, event.JobID, "events", "read")
 	if err != nil || accessType == "" {
 		return err
 	}
@@ -96,7 +95,7 @@ type UpdateEventResponse struct {
 }
 
 func (a *adaptor) UpdateEvent(r *http.Request, args *UpdateEventRequest, result *UpdateEventResponse) error {
-	accessType, err := a.authz.CheckEventPermission(r, args.Event.JobID, "events", "update")
+	accessType, err := a.authz.CheckJobPermission(r, args.Event.JobID, "events", "update")
 	if err != nil || accessType == "" {
 		return errors.New("not permitted")
 	}
@@ -119,7 +118,7 @@ type DeleteEventResponse struct {
 }
 
 func (a *adaptor) DeleteEvent(r *http.Request, args *DeleteEventRequest, result *DeleteEventResponse) error {
-	accessType, err := a.authz.CheckEventPermission(r, args.ID, "events", "delete")
+	accessType, err := a.authz.CheckJobPermission(r, args.ID, "events", "delete")
 	if err != nil || accessType == "" {
 		return errors.New("not permitted")
 	}
@@ -142,7 +141,7 @@ type GetAllEventsResponse struct {
 }
 
 func (a *adaptor) GetAllEvents(r *http.Request, args *GetAllEventsRequest, result *GetAllEventsResponse) error {
-	accessType, err := a.authz.CheckEventPermission(r, args.JobID, "events", "readall")
+	accessType, err := a.authz.CheckJobPermission(r, args.JobID, "events", "readall")
 	if err != nil || accessType == "" {
 		return errors.New("not permitted")
 	}
