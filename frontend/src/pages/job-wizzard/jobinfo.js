@@ -1,7 +1,10 @@
 import React from 'react';
 import TextField from '@mui/material/TextField';
+import CloseIcon from '@mui/icons-material/Close';
+import Stack from '@mui/material/Stack';
+import { UploadBox } from '../../components/upload';
 
-export default function JobInfoStep({ jobInfo, handleJobInfoChange }) {
+export default function JobInfoStep({ jobInfo, handleJobInfoChange, handleRemoveFile, handleDrop }) {
   return (
     <div>
       <TextField
@@ -12,13 +15,61 @@ export default function JobInfoStep({ jobInfo, handleJobInfoChange }) {
         style={{ marginBottom: '16px' }}
       />
       <TextField
-        label="Priority"
+        label="Labels"
         value={jobInfo.description}
         onChange={(e) => handleJobInfoChange({ ...jobInfo, description: e.target.value })}
         fullWidth
         style={{ marginBottom: '16px' }}
       />
-      {/* Add other fields here */}
+
+      {/* Attachments */}
+      <Stack direction="row" flexWrap="wrap">
+        {jobInfo.attachments &&
+          jobInfo.attachments.map((attachment, index) => (
+            <div
+              key={index}
+              style={{
+                position: 'relative',
+                marginRight: '10px',
+                marginBottom: '10px',
+              }}
+            >
+              <img
+                src={attachment.preview}
+                alt={attachment.name}
+                style={{ width: 64, height: 64 }}
+              />
+              <div
+                className="close-icon-background"
+                style={{
+                  position: 'absolute',
+                  top: 4,
+                  right: 4,
+                  width: 20,
+                  height: 20,
+                  borderRadius: '50%',
+                  background: 'rgba(33, 43, 54, 0.8)',
+                  zIndex: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <CloseIcon
+                  className="close-icon"
+                  onClick={() => handleRemoveFile(attachment)}
+                  style={{
+                    cursor: 'pointer',
+                    color: 'white',
+                    fontSize: 14,
+                    textTransform: 'none',
+                  }}
+                />
+              </div>
+            </div>
+          ))}
+        <UploadBox onDrop={handleDrop} />
+      </Stack>
     </div>
   );
 }

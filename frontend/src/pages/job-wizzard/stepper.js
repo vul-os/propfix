@@ -5,6 +5,8 @@ import Step from '@mui/material/Step';
 import StepLabel from '@mui/material/StepLabel';
 import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
+import { createJob } from '../../api/jobs';
+import { useAuthContext } from '../../contexts/auth'; 
 import UnitInfoStep from './unitinfo';
 import JobInfoStep from './jobinfo';
 import ReviewSubmitStep from './reviewsubmit';
@@ -17,18 +19,21 @@ export default function HorizontalLinearStepper() {
     tenantIdentifier: '',
     unitIdentifier: '',
     buildingId: '',
-    // Initialize other fields as needed
   };
 
   const initialJobInfo = {
     title: '',
     description: '',
-    // Initialize other fields as needed
+    labels: [],
+    attachments: [], 
   };
+
 
   const [activeStep, setActiveStep] = useState(0);
   const [unitInfo, setUnitInfo] = useState(initialUnitInfo);
   const [jobInfo, setJobInfo] = useState(initialJobInfo);
+
+  const { getIdToken } = useAuthContext();
 
   const handleNext = () => {
     setActiveStep(activeStep + 1);
@@ -38,21 +43,49 @@ export default function HorizontalLinearStepper() {
     setActiveStep(activeStep - 1);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (activeStep === steps.length - 1) {
-      // Process the form data and submit
-
-      // Reset the state to initial values
-      setUnitInfo(initialUnitInfo);
-      setJobInfo(initialJobInfo);
-
-      // Reset the active step to the first step
-      setActiveStep(0);
+      try {
+        // Get the idToken from your auth context
+        const idToken = await getIdToken();
+  
+        console.log('Creating job with jobInfo:', jobInfo);
+        console.log('Using idToken:', idToken);
+        const combinedData = {
+          unitName: unitInfo.unitName,
+          tenantIdentifier: unitInfo.tenantIdentifier,
+          unitIdentifier: unitInfo.unitIdentifier,
+          buildingId: unitInfo.buildingId,
+          title: jobInfo.title,
+          labels: jobInfo.labels,
+          attachments: jobInfo.attachments, 
+        };
+  
+        console.log("jhgjgh", combinedData, unitInfo)
+        
+        const createdJob = await createJob({"job": combinedData}, idToken);
+  
+        if (createdJob) {
+          console.log('Job created successfully:', createdJob);
+        } else {
+          console.error('Error creating job');
+        }
+  
+        // Reset the state to initial values
+        setUnitInfo(initialUnitInfo);
+        setJobInfo(initialJobInfo);
+  
+        // Reset the active step to the first step
+        setActiveStep(0);
+      } catch (error) {
+        console.error('Error creating job:', error);
+      }
     } else {
       handleNext();
     }
   };
-
+  
+  
   const handleUnitInfoChange = (newUnitInfo) => {
     setUnitInfo(newUnitInfo);
   };
@@ -64,13 +97,16 @@ export default function HorizontalLinearStepper() {
   const isStepValid = () => {
     switch (activeStep) {
       case 0:
-        return unitInfo.unitName !== '' &&
-               unitInfo.tenantIdentifier !== '' &&
-               unitInfo.unitIdentifier !== '' &&
-               unitInfo.buildingId !== ''; // Validate other fields as needed
+        return (
+          unitInfo.unitName !== '' &&
+          unitInfo.tenantIdentifier !== '' &&
+          unitInfo.unitIdentifier !== '' &&
+          unitInfo.buildingId !== ''
+        );
       case 1:
-        return jobInfo.title !== '' &&
-               jobInfo.description !== ''; // Validate other fields as needed
+        return (
+          jobInfo.title !== '' && jobInfo.description !== ''
+        );
       default:
         return true;
     }
@@ -79,29 +115,41 @@ export default function HorizontalLinearStepper() {
   const getStepContent = (step) => {
     switch (step) {
       case 0:
-        return <UnitInfoStep unitInfo={unitInfo} handleUnitInfoChange={handleUnitInfoChange} />;
+        return (
+          <UnitInfoStep
+            unitInfo={unitInfo}
+            handleUnitInfoChange={handleUnitInfoChange}
+          />
+        );
       case 1:
-        return <JobInfoStep jobInfo={jobInfo} handleJobInfoChange={handleJobInfoChange} />;
+        return (
+          <JobInfoStep jobInfo={jobInfo} handleJobInfoChange={handleJobInfoChange} />
+        );
       case 2:
         return <ReviewSubmitStep unitInfo={unitInfo} jobInfo={jobInfo} />;
       default:
         return 'Unknown step';
     }
   };
+  const handleDrop = async (acceptedFiles) => {
+    try {
+      // Your logic to handle file upload
+    } catch (error) {
+      console.error('Error uploading files:', error);
+    }
+  };
 
+ 
   return (
     <Box sx={{ width: '100%' }}>
       <Stepper activeStep={activeStep}>
-        {steps.map((label, index) => {
-          return (
-            <Step key={label}>
-              <StepLabel>{label}</StepLabel>
-            </Step>
-          );
-        })}
+        {steps.map((label, index) => (
+          <Step key={label}>
+            <StepLabel>{label}</StepLabel>
+          </Step>
+        ))}
       </Stepper>
       {activeStep === steps.length ? (
-        // Render completed message and reset button
         <>
           <Typography sx={{ mt: 2, mb: 1 }}>
             All steps completed - you&apos;re finished
@@ -112,7 +160,6 @@ export default function HorizontalLinearStepper() {
           </Box>
         </>
       ) : (
-        // Render step content and navigation buttons
         <>
           <Typography sx={{ mt: 2, mb: 1 }}>Step {activeStep + 1}</Typography>
           {getStepContent(activeStep)}
@@ -126,10 +173,7 @@ export default function HorizontalLinearStepper() {
               Back
             </Button>
             <Box sx={{ flex: '1 1 auto' }} />
-            <Button
-              onClick={handleSubmit}
-              disabled={!isStepValid()}
-            >
+            <Button onClick={handleSubmit} disabled={!isStepValid()}>
               {activeStep === steps.length - 1 ? 'Finish' : 'Next'}
             </Button>
           </Box>
