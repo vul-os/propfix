@@ -35,6 +35,8 @@ func createBuildingsTable(dbpool *pgxpool.Pool) error {
 			building_name TEXT NOT NULL,
 			address TEXT,
 			unit_number_system TEXT,
+			latitude FLOAT8,
+			longitude FLOAT8,
 			created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			organization_id TEXT
 		)

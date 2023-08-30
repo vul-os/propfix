@@ -8,10 +8,12 @@ import (
 	"os/signal"
 	"syscall"
 
+	"cloud.google.com/go/storage"
 	jsonRpcServer "github.com/exolutionza/propfix-backend-go/internal/api/jsonRpc/server"
 	jsonRpcProvider "github.com/exolutionza/propfix-backend-go/internal/api/jsonRpc/service/provider"
 
 	firebase "firebase.google.com/go/v4"
+	"github.com/exolutionza/propfix-backend-go/internal/attachments"
 	"github.com/exolutionza/propfix-backend-go/internal/auth"
 	"github.com/exolutionza/propfix-backend-go/internal/authz"
 	"github.com/exolutionza/propfix-backend-go/internal/buildings"
@@ -21,6 +23,7 @@ import (
 	"github.com/exolutionza/propfix-backend-go/internal/labels"
 	"github.com/exolutionza/propfix-backend-go/internal/organizations"
 	"github.com/exolutionza/propfix-backend-go/internal/permissions"
+
 	roles "github.com/exolutionza/propfix-backend-go/internal/roles"
 
 	"github.com/jackc/pgx/v4/pgxpool"
@@ -32,6 +35,8 @@ func Router() {
 	pgDatabase := "propfix"
 	pgUser := "propfixadmin"
 	pgPassword := "happy123"
+
+	bucketName := ""
 
 	pgConnString := fmt.Sprintf("user=%s password=%s host=%s port=%s dbname=%s sslmode=disable",
 		pgUser, pgPassword, pgHost, pgPort, pgDatabase)
@@ -51,6 +56,13 @@ func Router() {
 		fmt.Println("Failed to initialize Firebase app:", err)
 		return
 	}
+	ctx := context.Background()
+	storageClient, err := storage.NewClient(ctx)
+	if err != nil {
+		fmt.Println("Failed to initialize google storage", err)
+		return
+	}
+	bucket := storageClient.Bucket(bucketName)
 
 	authClient, err := app.Auth(context.Background())
 	if err != nil {
@@ -61,6 +73,7 @@ func Router() {
 
 	orgStore := organizations.NewOrganizationStore(dbpool)
 	columnStore := columns.NewColumnsStore(dbpool)
+	eventStore := events.NewEventsStore(dbpool)
 
 	rpcServerConfigs := []jsonRpcServer.RPCServerConfig{
 		{
@@ -76,8 +89,9 @@ func Router() {
 				buildings.New(dbpool, authorizer),
 				labels.New(dbpool, authorizer),
 				jobs.New(dbpool, authorizer, columnStore),
-				events.New(dbpool, authorizer),
+				events.New(authorizer, eventStore),
 				columns.New(dbpool, authorizer, columnStore),
+				attachments.New(authorizer, eventStore, bucket),
 			},
 		},
 		// Add more RPC server configurations for other services here
