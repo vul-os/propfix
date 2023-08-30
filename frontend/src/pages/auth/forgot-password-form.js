@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { TextField, Button, Stack, Typography, Snackbar, Alert } from '@mui/material';
-import { useAuthContext } from '../../contexts/auth';
+import { useAuth } from '../../contexts/auth'; // Import the Firebase Auth context
 
 export default function ForgotPasswordForm() {
-  const { sendPasswordResetLink } = useAuthContext();
+  const auth = useAuth(); // Firebase Auth context
   const [email, setEmail] = useState('');
   const [resetSent, setResetSent] = useState(false);
   const [error, setError] = useState(null);
@@ -15,7 +15,7 @@ export default function ForgotPasswordForm() {
     }
 
     try {
-      await sendPasswordResetLink(email);
+      await auth.sendPasswordResetEmail(email);
       setResetSent(true);
       setError(null);
     } catch (err) {
@@ -60,11 +60,11 @@ export default function ForgotPasswordForm() {
         </Alert>
       </Snackbar>
 
-      {resetSent && (
+      {resetSent ? (
         <Typography variant="body1">
           A password reset link has been sent to your email address.
         </Typography>
-      )}
+      ) : null}
     </Stack>
   );
 }

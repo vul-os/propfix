@@ -46,7 +46,7 @@ export default function ForgotPasswordPage() {
   return (
     <StyledRoot>
       <Helmet>
-        <title>Forgot Password | Your App Name</title>
+        <title>Forgot Password | Prop Fix</title>
       </Helmet>
 
       <StyledSection>
