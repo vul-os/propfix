@@ -5,7 +5,7 @@ import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
 
 import EmptyContent from '../../../components/empty-content';
-import { moveJob } from '../../../api/columns';
+import { moveJobs } from '../../../api/columns';
 import { getBoard } from '../../../api/jobs';
 import { hideScroll } from '../../../theme/css';
 
@@ -37,6 +37,7 @@ export default function KanbanView() {
   const onDragEnd = useCallback(
     async ({ destination, source, draggableId, type }) => {
       const token = await getIdToken(); 
+      console.log(destination, source, draggableId)
       try {
         if (!destination) {
           return;
@@ -80,16 +81,14 @@ export default function KanbanView() {
   
           setBoard(newBoardState);
         }
-  
-
         // actually do api request
-        await moveJob(
-          sourceColumn.jobids[source.index],
+        await moveJobs(
           sourceColumn.id,
           destinationColumn.id,
+          [draggableId],
           token 
         );
-
+        
         console.info('Moving to a different list!');
       } catch (error) {
         console.error(error);
@@ -123,15 +122,8 @@ export default function KanbanView() {
 
       {boardLoading && renderSkeleton}
 
-      {board?.ordered.length === 0 && (
-        <EmptyContent
-          filled
-          title="No Data"
-          sx={{
-            py: 10,
-            maxHeight: { md: 480 },
-          }}
-        />
+      {board && board?.ordered.length === 0 && (
+        <></>
       )}
 
       {!!board?.ordered.length && (
