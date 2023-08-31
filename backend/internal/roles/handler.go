@@ -9,7 +9,6 @@ import (
 
 	jsonRpcProvider "github.com/exolutionza/propfix-backend-go/internal/api/jsonRpc/service/provider"
 	"github.com/exolutionza/propfix-backend-go/internal/authz"
-	"github.com/exolutionza/propfix-backend-go/internal/utils"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v4/pgxpool"
@@ -45,7 +44,7 @@ type CreateRoleResponse struct {
 }
 
 func (a *adaptor) CreateRole(r *http.Request, request *CreateRoleRequest, response *CreateRoleResponse) error {
-	ok, err := utils.CheckPermission(r, a.authz, "roles", "create")
+	ok, err := a.authz.CheckPermission(r, "roles", "create")
 	if err != nil || !ok {
 		return errors.New("not permitted")
 	}
@@ -78,7 +77,7 @@ type DeleteRoleResponse struct {
 }
 
 func (h *adaptor) DeleteRole(r *http.Request, args *DeleteRoleRequest, result *DeleteRoleResponse) error {
-	ok, err := utils.CheckPermission(r, h.authz, "roles", "delete")
+	ok, err := h.authz.CheckPermission(r, "roles", "delete")
 	if err != nil || !ok {
 		return errors.New("not permitted")
 	}
@@ -108,7 +107,7 @@ type GetRoleResponse struct {
 }
 
 func (h *adaptor) GetRole(r *http.Request, args *GetRoleRequest, result *GetRoleResponse) error {
-	ok, err := utils.CheckPermission(r, h.authz, "roles", "read")
+	ok, err := h.authz.CheckPermission(r, "roles", "read")
 	if err != nil || !ok {
 		return errors.New("not permitted")
 	}
@@ -141,7 +140,7 @@ type UpdateRoleResponse struct {
 }
 
 func (h *adaptor) UpdateRole(r *http.Request, args *UpdateRoleRequest, result *UpdateRoleResponse) error {
-	ok, err := utils.CheckPermission(r, h.authz, "roles", "update")
+	ok, err := h.authz.CheckPermission(r, "roles", "update")
 	if err != nil || !ok {
 		return errors.New("not permitted")
 	}

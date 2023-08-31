@@ -35,6 +35,8 @@ func createBuildingsTable(dbpool *pgxpool.Pool) error {
 			building_name TEXT NOT NULL,
 			address TEXT,
 			unit_number_system TEXT,
+			latitude FLOAT8,
+			longitude FLOAT8,
 			created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			organization_id TEXT
 		)
@@ -52,8 +54,9 @@ func createColumnsTable(dbpool *pgxpool.Pool) error {
 		CREATE TABLE IF NOT EXISTS columns (
 			id TEXT PRIMARY KEY,
 			name TEXT NOT NULL,
+			order INTEGER
 			job_ids TEXT[],
-			board_id TEXT
+			organization_id TEXT
 		)
 	`)
 	if err != nil {
@@ -117,22 +120,6 @@ func createPermissionsTable(dbpool *pgxpool.Pool) error {
 	return nil
 }
 
-func createBoardTable(dbpool *pgxpool.Pool) error {
-	ctx := context.Background()
-
-	_, err := dbpool.Exec(ctx, `
-		CREATE TABLE IF NOT EXISTS boards (
-			id TEXT PRIMARY KEY,
-			name TEXT NOT NULL,
-			organization_id TEXT NOT NULL
-		)
-	`)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 func createJobsTable(dbpool *pgxpool.Pool) error {
 	ctx := context.Background()
 
@@ -143,10 +130,10 @@ func createJobsTable(dbpool *pgxpool.Pool) error {
 			priority TEXT,
 			description TEXT,
 			tenant_identifier TEXT,
+			organization_id TEXT,
 			assignee_ids TEXT[],
 			unit_identifier TEXT,
 			building_id TEXT,
-			board_id TEXT,
 			labels TEXT[],
 			attachments TEXT[],
 			cost FLOAT8,
@@ -222,11 +209,6 @@ func main() {
 	err = createPermissionsTable(dbpool)
 	if err != nil {
 		log.Fatal("Error creating permissions table: ", err)
-	}
-
-	err = createBoardTable(dbpool)
-	if err != nil {
-		log.Fatal("Error creating board table: ", err)
 	}
 
 	err = createJobsTable(dbpool)

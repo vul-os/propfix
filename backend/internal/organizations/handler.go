@@ -6,8 +6,9 @@ import (
 	"net/http"
 
 	jsonRpcProvider "github.com/exolutionza/propfix-backend-go/internal/api/jsonRpc/service/provider"
+	"github.com/exolutionza/propfix-backend-go/internal/user"
+
 	"github.com/exolutionza/propfix-backend-go/internal/authz"
-	"github.com/exolutionza/propfix-backend-go/internal/utils"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
@@ -48,7 +49,7 @@ type CreateOrganizationResponse struct {
 }
 
 func (a *adaptor) CreateOrganization(r *http.Request, args *CreateOrganizationRequest, result *CreateOrganizationResponse) error {
-	ok, err := utils.CheckPermission(r, a.authz, "organizations", "create")
+	ok, err := a.authz.CheckPermission(r, "organizations", "create")
 	if err != nil || !ok {
 		return errors.New("not permitted")
 	}
@@ -81,7 +82,7 @@ type UpdateOrganizationResponse struct {
 }
 
 func (a *adaptor) UpdateOrganization(r *http.Request, args *UpdateOrganizationRequest, result *UpdateOrganizationResponse) error {
-	ok, err := utils.CheckPermission(r, a.authz, "organizations", "update")
+	ok, err := a.authz.CheckPermission(r, "organizations", "update")
 	if err != nil || !ok {
 		return errors.New("not permitted")
 	}
@@ -111,7 +112,7 @@ type DeleteOrganizationResponse struct {
 }
 
 func (a *adaptor) DeleteOrganization(r *http.Request, args *DeleteOrganizationRequest, result *DeleteOrganizationResponse) error {
-	ok, err := utils.CheckPermission(r, a.authz, "organizations", "delete")
+	ok, err := a.authz.CheckPermission(r, "organizations", "delete")
 	if err != nil || !ok {
 		return errors.New("not permitted")
 	}
@@ -140,7 +141,7 @@ type GetOrganizationResponse struct {
 }
 
 func (a *adaptor) GetOrganization(r *http.Request, args *GetOrganizationRequest, result *GetOrganizationResponse) error {
-	ok, err := utils.CheckPermission(r, a.authz, "organizations", "read")
+	ok, err := a.authz.CheckPermission(r, "organizations", "read")
 	if err != nil || !ok {
 		return errors.New("not permitted")
 	}
@@ -173,7 +174,7 @@ type AddMemberResponse struct {
 }
 
 func (a *adaptor) AddMember(r *http.Request, args *AddMemberRequest, result *AddMemberResponse) error {
-	ok, err := utils.CheckPermission(r, a.authz, "organizations", "addmember")
+	ok, err := a.authz.CheckPermission(r, "organizations", "addmember")
 	if err != nil || !ok {
 		return errors.New("not permitted")
 	}
@@ -204,7 +205,7 @@ type RemoveMemberResponse struct {
 }
 
 func (a *adaptor) RemoveMember(r *http.Request, args *RemoveMemberRequest, result *RemoveMemberResponse) error {
-	ok, err := utils.CheckPermission(r, a.authz, "organizations", "removemember")
+	ok, err := a.authz.CheckPermission(r, "organizations", "removemember")
 	if err != nil || !ok {
 		return errors.New("not permitted")
 	}
@@ -222,5 +223,44 @@ func (a *adaptor) RemoveMember(r *http.Request, args *RemoveMemberRequest, resul
 	}
 
 	result.Success = true
+	return nil
+}
+
+type GetAllOrganizationsRequest struct{}
+
+type GetAllOrganizationsResponse struct {
+	Organizations []Organization `json:"organizations"`
+}
+
+func (a *adaptor) GetAllOrganizations(r *http.Request, args *GetAllOrganizationsRequest, result *GetAllOrganizationsResponse) error {
+	user, ok := r.Context().Value("user").(user.User)
+	if !ok {
+		return errors.New("not permitted")
+	}
+
+	ctx := context.Background()
+	query := `
+		SELECT id, name, members
+		FROM organizations
+		WHERE $1 = ANY(members)
+	`
+
+	rows, err := a.dbpool.Query(ctx, query, user.ID)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	var organizations []Organization
+	for rows.Next() {
+		var org Organization
+		err := rows.Scan(&org.ID, &org.Name, &org.Members)
+		if err != nil {
+			return err
+		}
+		organizations = append(organizations, org)
+	}
+
+	result.Organizations = organizations
 	return nil
 }

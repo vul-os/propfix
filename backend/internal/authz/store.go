@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/exolutionza/propfix-backend-go/internal/user"
+	"github.com/exolutionza/propfix-backend-go/internal/utils"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
@@ -27,34 +28,6 @@ func NewAuthz(dbpool *pgxpool.Pool) *Authz {
 	return &Authz{
 		dbpool: dbpool,
 	}
-}
-
-func (s *Authz) CheckPermission(userID, resource, permission string) (bool, error) {
-	ctx := context.Background()
-
-	roleIDs, err := s.GetRoleIDsForUser(userID)
-	if err != nil {
-		fmt.Println(err)
-		return false, err
-	}
-	fmt.Println(userID, roleIDs)
-	sqlQuery := `
-	SELECT EXISTS (
-		SELECT 1
-		FROM permissions 
-		WHERE (identifier = $1 OR identifier = ANY($2)) AND resource = $3 AND (permission = $4 OR permission = 'all')
-		LIMIT 1
-	)
-	`
-
-	var hasPermission bool
-	err = s.dbpool.QueryRow(ctx, sqlQuery, userID, roleIDs, resource, permission).Scan(&hasPermission)
-	if err != nil {
-		fmt.Println(err)
-		return false, err
-	}
-
-	return hasPermission, nil
 }
 
 func (s *Authz) CheckRolePermission(roleID, resource, permission string) (bool, error) {
@@ -106,70 +79,101 @@ func (s *Authz) GetRoleIDsForUser(userID string) ([]string, error) {
 	return roleIDs, nil
 }
 
-func (s *Authz) CheckEventPermission(r *http.Request, eventID, resource, permission string) (string, error) {
+func (s *Authz) CheckJobPermission(r *http.Request, jobId, resource, permission string) (string, error) {
 	ctx := context.Background()
 	user, ok := r.Context().Value("user").(user.User)
 	if !ok {
 		return "", nil
 	}
 
-	// Check Permissions
-	ok, err := s.CheckPermission(user.ID, resource, permission)
-	if ok {
-		return "private", nil
-	}
-
-	// Check job relation for public access to public events
-	sqlJobQuery := `
+	// Check Permissions and job relation for public access to public events
+	sqlQuery := `
 		SELECT EXISTS (
 			SELECT 1
 			FROM jobs
-			WHERE tenant_identifier = $1 AND id = $2
+			WHERE (tenant_identifier = $1 AND id = $2)
+				OR (id = $2 AND organization_id = ANY($3))
 			LIMIT 1
 		)
 	`
 
-	var hasJobRelation bool
-	err = s.dbpool.QueryRow(ctx, sqlJobQuery, user.ID, eventID).Scan(&hasJobRelation)
-	if err != nil || !hasJobRelation {
-		fmt.Println(err)
-		return "", err
-	}
-	return "public", nil
-}
-
-func (s *Authz) CheckJobPermission(r *http.Request, jobID, resource, permission string) (string, error) {
-	ctx := context.Background()
-	user, ok := r.Context().Value("user").(user.User)
-	if !ok {
-		return "", nil
-	}
-	// Check Permissions
-	ok, err := s.CheckPermission(user.ID, resource, permission)
-	if ok {
-		return "private", nil
-	}
-
-	// Check if the user's ID is the tenant identifier for the job with jobID
-	sqlJobQuery := `
-		SELECT EXISTS (
-			SELECT 1
-			FROM jobs
-			WHERE tenant_identifier = $1 AND id = $2
-			LIMIT 1
-		)
-	`
-
-	var hasJobRelation bool
-	err = s.dbpool.QueryRow(ctx, sqlJobQuery, user.ID, jobID).Scan(&hasJobRelation)
+	var hasPermission bool
+	err := s.dbpool.QueryRow(ctx, sqlQuery, user.ID, jobId, user.OrganizationIds).Scan(&hasPermission)
 	if err != nil {
 		fmt.Println(err)
 		return "", err
 	}
 
-	if hasJobRelation {
-		return "public", nil
+	if hasPermission {
+		return "private", nil
 	}
 
-	return "", nil
+	return "public", nil
+}
+
+func (s *Authz) CheckPermission(r *http.Request, resource string, permission string) (bool, error) {
+	user, ok := r.Context().Value("user").(user.User)
+	if !ok {
+		return false, nil
+	}
+
+	ctx := context.Background()
+
+	roleIDs, err := s.GetRoleIDsForUser(user.ID)
+	if err != nil {
+		fmt.Println(err)
+		return false, err
+	}
+
+	sqlQuery := `
+	SELECT EXISTS (
+		SELECT 1
+		FROM permissions 
+		WHERE (identifier = $1 OR identifier = ANY($2)) AND resource = $3 AND (permission = $4 OR permission = 'all')
+		LIMIT 1
+	)
+	`
+
+	var hasPermission bool
+	err = s.dbpool.QueryRow(ctx, sqlQuery, user.ID, roleIDs, resource, permission).Scan(&hasPermission)
+	if err != nil {
+		fmt.Println(err)
+		return false, err
+	}
+
+	return hasPermission, nil
+}
+
+// TODO: move to authz store.go
+func (s *Authz) CheckPermissionAndOrgs(r *http.Request, resource string, permission string, orgID string) (bool, error) {
+	user, ok := r.Context().Value("user").(user.User)
+	if !ok {
+		return false, nil
+	}
+
+	hasPermission, err := s.CheckPermission(r, resource, permission)
+	if err != nil {
+		fmt.Println(err)
+		return false, err
+	}
+
+	if !hasPermission {
+		return false, nil
+	}
+
+	if user.OrganizationIds == nil {
+		return false, nil
+	}
+
+	// Check if the provided organization ID is not blank
+	if orgID == "" {
+		return false, nil
+	}
+
+	// Check if the provided organization ID is within the user's allowed organization IDs
+	if !utils.ContainsString(user.OrganizationIds, orgID) {
+		return false, nil
+	}
+
+	return true, nil
 }

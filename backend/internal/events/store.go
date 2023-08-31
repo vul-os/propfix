@@ -130,9 +130,9 @@ func (s *EventsStore) GetAllEventsForJob(jobID string, visibility string) ([]Eve
 		FROM events
 		WHERE job_id = $1
 	`
-	if visibility == "public" {
-		query += " AND visibility = 'public'"
-	}
+	// if visibility == "public" {
+	// 	query += " AND visibility = 'public'"
+	// }
 
 	rows, err := s.pool.Query(ctx, query, jobID)
 	if err != nil {
