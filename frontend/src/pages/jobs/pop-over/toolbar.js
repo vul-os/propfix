@@ -16,10 +16,10 @@ import CustomPopover, { usePopover } from '../../../components/custom-popover';
 
 // ----------------------------------------------------------------------
 
-export default function KanbanDetailsToolbar({
-  taskName,
+export default function Toolbar({
+  jobName,
+  jobStatus,
   onDelete,
-  taskStatus,
   onCloseDetails,
 }) {
   const smUp = useResponsive('up', 'sm');
@@ -28,7 +28,7 @@ export default function KanbanDetailsToolbar({
 
   const popover = usePopover();
 
-  const [status, setStatus] = useState(taskStatus);
+  const [status, setStatus] = useState(jobStatus);
 
   const handleChangeStatus = useCallback(
     (newValue) => {
@@ -65,7 +65,7 @@ export default function KanbanDetailsToolbar({
         </Button>
 
         <Stack direction="row" justifyContent="flex-end" flexGrow={1}>
-          <Tooltip title="Delete task">
+          <Tooltip title="Delete job">
             <IconButton onClick={confirm.onTrue}>
               <Iconify icon="solar:trash-bin-trash-bold" />
             </IconButton>
@@ -98,7 +98,7 @@ export default function KanbanDetailsToolbar({
         title="Delete"
         content={
           <>
-            Are you sure want to delete <strong> {taskName} </strong>?
+            Are you sure want to delete <strong> {jobName} </strong>?
           </>
         }
         action={
@@ -111,9 +111,9 @@ export default function KanbanDetailsToolbar({
   );
 }
 
-KanbanDetailsToolbar.propTypes = {
+Toolbar.propTypes = {
+  jobName: PropTypes.string,
+  jobStatus: PropTypes.string,
   onCloseDetails: PropTypes.func,
   onDelete: PropTypes.func,
-  taskName: PropTypes.string,
-  taskStatus: PropTypes.string,
 };

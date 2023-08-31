@@ -1,25 +1,22 @@
 import React, { useState } from 'react';
 import { TextField, Button, Stack, Typography, Snackbar, Alert } from '@mui/material';
-import { useAuthContext } from '../../contexts/auth';
+import { getAuth, sendPasswordResetEmail } from 'firebase/auth';
 
-export default function ForgotPasswordForm() {
-  const { sendPasswordResetLink } = useAuthContext();
+export default function ForgotPasswordForm({ onSuccess }) {
+  const auth = getAuth();
+
   const [email, setEmail] = useState('');
   const [resetSent, setResetSent] = useState(false);
   const [error, setError] = useState(null);
 
   const handleResetPassword = async () => {
-    if (email.trim() === '') {
-      setError('Please enter your email address.');
-      return;
-    }
-
     try {
-      await sendPasswordResetLink(email);
+      await sendPasswordResetEmail(auth, email);
       setResetSent(true);
       setError(null);
+      onSuccess(); // Notify parent component of success
     } catch (err) {
-      setError('Error sending reset link. Please check your email.');
+      setError(err.message);
     }
   };
 
@@ -61,9 +58,9 @@ export default function ForgotPasswordForm() {
       </Snackbar>
 
       {resetSent && (
-        <Typography variant="body1">
+        <Alert severity="success">
           A password reset link has been sent to your email address.
-        </Typography>
+        </Alert>
       )}
     </Stack>
   );

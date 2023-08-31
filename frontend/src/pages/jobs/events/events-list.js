@@ -16,13 +16,15 @@ const styles = {
   },
 };
 
-export default function EventsList() {
-  const { jobId } = useParams();
+export default function EventsList({ jobId }) {
+  // const { jobId } = useParams();
   const { getIdToken } = useAuthContext();
   const [events, setEvents] = useState([]);
 
   useEffect(() => {
-    fetchEvents();
+    if (jobId) {
+      fetchEvents();
+    }
   }, [jobId]);
 
   const fetchEvents = async () => {
@@ -37,7 +39,7 @@ export default function EventsList() {
 
   return (
     <div style={styles.container}>
-      {events.map((event) => (
+      {events && events.map((event) => (
         <div key={event.id} elevation={3}>
           {event.type === 'MESSAGE' ? (
             <MessageStep event={event} />
