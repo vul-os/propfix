@@ -7,6 +7,8 @@ import utc from 'dayjs/plugin/utc';
 import { styled, alpha } from '@mui/material/styles';
 import Drawer from '@mui/material/Drawer';
 import Divider from '@mui/material/Divider';
+import Stack from '@mui/material/Stack';
+
 import { useAuthContext } from '../../../contexts/auth'; 
 
 import Scrollbar from '../../../components/scrollbar';
@@ -15,6 +17,8 @@ import Scrollbar from '../../../components/scrollbar';
 import { useBoolean } from '../../../hooks/use-boolean';
 // components
 import EventsList from '../events/events-list';
+import CommentInput from '../events/comment-input';
+
 import Toolbar from './toolbar';
 import JobDetails from '../job';
 
@@ -40,7 +44,7 @@ export default function PopOver({
   openPopOver,
   onClosePopOver,
 }) {
-  const { getIdToken } = useAuthContext(); 
+  const { getIdToken, user } = useAuthContext(); 
   console.log("jobprop", job)
   const handleAddJob = useCallback(
     async (jobData) => {
@@ -72,17 +76,6 @@ export default function PopOver({
     [getIdToken, enqueueSnackbar]
   );
 
-  // const renderHead = (
-  //   <Toolbar
-  //     jobName={job.name}
-  //     jobStatus={job.status}
-  //     onDelete={handleDeleteJob}
-  //     onClosePopOver={onClosePopOver}
-  //   />
-  // );
-
-  // const renderEvents = ;
-
   return (
     <Drawer
       open={openPopOver}
@@ -100,7 +93,12 @@ export default function PopOver({
         },
       }}
     >
-      {/* {renderHead} */}
+      <Toolbar
+        jobName={job.name}
+        jobStatus={job.status}
+        onDelete={handleDeleteJob}
+        onClosePopOver={onClosePopOver}
+      />
       <Divider />
       <Scrollbar
         sx={{
@@ -112,9 +110,20 @@ export default function PopOver({
           },
         }}
       >
-        <JobDetails job={job} />
-        <EventsList jobId={job.id} />
+        <Stack
+          spacing={3}
+          sx={{
+            pt: 3,
+            pb: 5,
+            px: 2.5,
+          }}
+        >
+          <JobDetails job={job} />
+          <EventsList jobId={job.id} />
+        </Stack>
       </Scrollbar>
+      <CommentInput user={user} />
+
     </Drawer>
   );
 }

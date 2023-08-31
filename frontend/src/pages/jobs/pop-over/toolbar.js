@@ -20,7 +20,7 @@ export default function Toolbar({
   jobName,
   jobStatus,
   onDelete,
-  onCloseDetails,
+  onClosePopUp,
 }) {
   const smUp = useResponsive('up', 'sm');
 
@@ -49,7 +49,7 @@ export default function Toolbar({
       >
         {!smUp && (
           <Tooltip title="Back">
-            <IconButton onClick={onCloseDetails} sx={{ mr: 1 }}>
+            <IconButton onClick={onClosePopUp} sx={{ mr: 1 }}>
               <Iconify icon="eva:arrow-ios-back-fill" />
             </IconButton>
           </Tooltip>
@@ -114,6 +114,6 @@ export default function Toolbar({
 Toolbar.propTypes = {
   jobName: PropTypes.string,
   jobStatus: PropTypes.string,
-  onCloseDetails: PropTypes.func,
+  onClosePopUp: PropTypes.func,
   onDelete: PropTypes.func,
 };

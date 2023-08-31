@@ -1,20 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import { useParams } from 'react-router-dom';
-import Paper from '@mui/material/Paper';
+import Stack from '@mui/material/Stack';
 import { useAuthContext } from '../../../contexts/auth';
 import { getAllEvents } from '../../../api/events';
 import MessageStep from './message-step'; // Import the MessageStep component
 import CrudStep from './crud-step'; // Import the CrudStep component
 
-const styles = {
-  container: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '16px',
-    padding: '16px',
-  },
-};
 
 export default function EventsList({ jobId }) {
   // const { jobId } = useParams();
@@ -38,7 +30,15 @@ export default function EventsList({ jobId }) {
   };
 
   return (
-    <div style={styles.container}>
+    <Stack
+      spacing={3}
+      flexGrow={1}
+      sx={{
+        py: 3,
+        px: 2.5,
+        bgcolor: 'background.neutral',
+      }}
+    >
       {events && events.map((event) => (
         <div key={event.id} elevation={3}>
           {event.type === 'MESSAGE' ? (
@@ -48,7 +48,7 @@ export default function EventsList({ jobId }) {
           )}
         </div>
       ))}
-    </div>
+    </Stack>
   );
 }
 

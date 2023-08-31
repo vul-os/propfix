@@ -9,9 +9,8 @@ import Paper from '@mui/material/Paper';
 import AvatarGroup, { avatarGroupClasses } from '@mui/material/AvatarGroup'; // Import AvatarGroup and avatarGroupClasses from MUI
 import { useBoolean } from '../../hooks/use-boolean';
 import PopOver from '../jobs/pop-over';
+import { bgBlur } from '../../theme/css';
 
-// Placeholder for bgBlur function or remove if not needed
-const bgBlur = (styles) => styles;
 
 export default function KanbanJobItem({ job, index, sx, ...other }) {
   const theme = useTheme();
@@ -49,7 +48,7 @@ export default function KanbanJobItem({ job, index, sx, ...other }) {
               overflow: 'hidden',
               position: 'relative',
               bgcolor: 'background.default',
-              boxShadow: theme.customShadows.z1,
+              boxShadow: theme.customShadows.z20,
               '&:hover': {
                 boxShadow: theme.customShadows.z20,
               },
@@ -68,9 +67,16 @@ export default function KanbanJobItem({ job, index, sx, ...other }) {
             {...other}
           >
             <Stack spacing={2} sx={{ px: 2, py: 2.5, position: 'relative' }}>
+              {/* {renderPriority} */}
+
+              <Typography variant="subtitle2">{job.name}</Typography>
+
+              {/* {renderInfo} */}
+            </Stack>
+            {/* <Stack spacing={2} sx={{ px: 2, py: 2.5, position: 'relative' }}>
               <Typography variant="subtitle2">{job.name}</Typography>
               {renderInfo}
-            </Stack>
+            </Stack> */}
           </Paper>
         )}
       </Draggable>

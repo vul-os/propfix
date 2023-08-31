@@ -7,9 +7,9 @@ import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
 import Chip from '@mui/material/Chip';
 import { useAuthContext } from '../../../contexts/auth';
-import KanbanDetails from '../pop-over';
 import Iconify from '../../../components/iconify';
 import { getAllJobs } from '../../../api/jobs';
+import PopOver from '../pop-over';
 
 function JobDataGrid() {
   const [jobs, setJobs] = useState([]);
@@ -144,10 +144,10 @@ function JobDataGrid() {
         onRowClick={handleRowClick}
       />
       {selectedRow && (
-        <KanbanDetails
-          task={selectedRow}
-          openDetails={selectedRow !== null}
-          onCloseDetails={() => setSelectedRow(null)}
+        <PopOver
+          job={selectedRow}
+          openPopOver={selectedRow !== null}
+          onClosePopOver={() => setSelectedRow(null)}
         />
       )}
     </Container>
