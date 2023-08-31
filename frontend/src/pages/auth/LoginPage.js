@@ -84,11 +84,17 @@ export default function LoginPage() {
             </Typography>
 
             <Typography variant="body2" sx={{ mb: 5 }}>
-              Don’t have an account?{' '}
-              <Link component={RouterLink} to="/signup-page " variant="subtitle2">
-                Get started
-              </Link>
-            </Typography>
+        Don’t have an account?{' '}
+        <Link component={RouterLink} to="/signup-page" variant="subtitle2">
+          Get started
+        </Link>
+      </Typography>
+
+      <Typography variant="body2" sx={{ mb: 5 }}>
+        <Link component={RouterLink} to="/forgot-password-page" variant="subtitle2">
+          Forgot password?
+        </Link>
+      </Typography>
 
             <Stack direction="row" spacing={2}>
               <Button onClick={() => handleGoogleSignIn()} fullWidth size="large" color="inherit" variant="outlined">
