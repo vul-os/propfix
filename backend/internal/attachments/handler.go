@@ -1,4 +1,4 @@
-package handlers
+package attachments
 
 import (
 	"context"
@@ -8,24 +8,19 @@ import (
 	"time"
 
 	"cloud.google.com/go/storage"
+	"github.com/exolutionza/propfix-backend-go/internal/events"
 	"github.com/gorilla/mux"
 )
 
 type FileUploadHandler struct {
-	client     *storage.Client
-	bucketName string
+	bucket      *storage.BucketHandle
+	eventsStore *events.EventsStore
 }
 
-func NewFileUploadHandler(bucketName string) (*FileUploadHandler, error) {
-	ctx := context.Background()
-	client, err := storage.NewClient(ctx)
-	if err != nil {
-		return nil, err
-	}
-
+func NewFileUploadHandler(bucket *storage.BucketHandle, eventsStore *events.EventsStore) (*FileUploadHandler, error) {
 	return &FileUploadHandler{
-		client:     client,
-		bucketName: bucketName,
+		bucket:      bucket,
+		eventsStore: eventsStore,
 	}, nil
 }
 
@@ -40,26 +35,29 @@ func (h *FileUploadHandler) UploadFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer file.Close()
-	fmt.Println(header.Filename)
+
 	// Create a new object in the bucket with the desired filename
 	objectName := fmt.Sprintf("%s/%s", jobID, header.Filename)
-	obj := h.client.Bucket(h.bucketName).Object(objectName)
+	obj := h.bucket.Object(objectName)
 	wc := obj.NewWriter(context.Background())
 
 	// Copy the file data to the object in Cloud Storage
 	if _, err := io.Copy(wc, file); err != nil {
-		fmt.Println(err)
 		http.Error(w, "Failed to upload file to Cloud Storage", http.StatusInternalServerError)
 		return
 	}
 	if err := wc.Close(); err != nil {
-		fmt.Println(err)
 		http.Error(w, "Failed to close Cloud Storage writer", http.StatusInternalServerError)
 		return
 	}
 
 	// Generate a signed URL for the uploaded file
-	signedURL, err := generateV4GetObjectSignedURL(w, h.bucketName, objectName)
+	opts := &storage.SignedURLOptions{
+		Scheme:  storage.SigningSchemeV4,
+		Method:  "GET",
+		Expires: time.Now().Add(15 * time.Minute),
+	}
+	signedURL, err := h.bucket.SignedURL(objectName, opts)
 	if err != nil {
 		http.Error(w, "Failed to generate signed URL", http.StatusInternalServerError)
 		return
@@ -67,8 +65,6 @@ func (h *FileUploadHandler) UploadFile(w http.ResponseWriter, r *http.Request) {
 
 	// Return the signed URL in the response
 	w.WriteHeader(http.StatusCreated)
-	fmt.Fprintln(w, "Uploaded file successfully!")
-	fmt.Fprintln(w, "Signed URL for accessing the file:")
 	fmt.Fprintln(w, signedURL)
 }
 
@@ -79,10 +75,14 @@ func (h *FileUploadHandler) GetFile(w http.ResponseWriter, r *http.Request) {
 
 	// Construct the object path in the bucket
 	objectName := fmt.Sprintf("%s/%s", jobID, filename)
-	fmt.Println(filename, jobID)
 
 	// Generate a signed URL for accessing the file
-	signedURL, err := generateV4GetObjectSignedURL(w, h.bucketName, objectName)
+	opts := &storage.SignedURLOptions{
+		Scheme:  storage.SigningSchemeV4,
+		Method:  "GET",
+		Expires: time.Now().Add(15 * time.Minute),
+	}
+	signedURL, err := h.bucket.SignedURL(objectName, opts)
 	if err != nil {
 		http.Error(w, "Failed to generate signed URL", http.StatusInternalServerError)
 		return
@@ -93,25 +93,21 @@ func (h *FileUploadHandler) GetFile(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(signedURL))
 }
 
-// generateV4GetObjectSignedURL generates object signed URL with GET method.
-func generateV4GetObjectSignedURL(w io.Writer, bucket, object string) (string, error) {
-	ctx := context.Background()
-	client, err := storage.NewClient(ctx)
-	if err != nil {
-		return "", fmt.Errorf("storage.NewClient: %w", err)
-	}
-	defer client.Close()
+func (h *FileUploadHandler) DeleteFile(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	jobID := vars["jobid"]
+	filename := vars["filename"]
 
-	opts := &storage.SignedURLOptions{
-		Scheme:  storage.SigningSchemeV4,
-		Method:  "GET",
-		Expires: time.Now().Add(15 * time.Minute),
-	}
+	// Construct the object path in the bucket
+	objectName := fmt.Sprintf("%s/%s", jobID, filename)
 
-	u, err := client.Bucket(bucket).SignedURL(object, opts)
-	if err != nil {
-		return "", fmt.Errorf("Bucket(%q).SignedURL: %w", bucket, err)
+	// Delete the file from the bucket
+	if err := h.bucket.Object(objectName).Delete(r.Context()); err != nil {
+		http.Error(w, "Failed to delete file from Cloud Storage", http.StatusInternalServerError)
+		return
 	}
 
-	return u, nil
+	// Return success status in the response
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintln(w, "File deleted successfully!")
 }

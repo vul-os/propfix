@@ -3,115 +3,141 @@ package router
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 
-	"cloud.google.com/go/bigquery"
+	"cloud.google.com/go/storage"
+	jsonRpcServer "github.com/exolutionza/propfix-backend-go/internal/api/jsonRpc/server"
+	jsonRpcProvider "github.com/exolutionza/propfix-backend-go/internal/api/jsonRpc/service/provider"
+	"github.com/exolutionza/propfix-backend-go/internal/attachments"
+	"github.com/gorilla/mux"
+
 	firebase "firebase.google.com/go/v4"
 	"github.com/exolutionza/propfix-backend-go/internal/auth"
-	"github.com/exolutionza/propfix-backend-go/internal/handlers"
-	"github.com/gorilla/mux"
+	"github.com/exolutionza/propfix-backend-go/internal/authz"
+	"github.com/exolutionza/propfix-backend-go/internal/buildings"
+	"github.com/exolutionza/propfix-backend-go/internal/columns"
+	"github.com/exolutionza/propfix-backend-go/internal/events"
+	"github.com/exolutionza/propfix-backend-go/internal/jobs"
+	"github.com/exolutionza/propfix-backend-go/internal/labels"
+	"github.com/exolutionza/propfix-backend-go/internal/organizations"
+	"github.com/exolutionza/propfix-backend-go/internal/permissions"
+
+	roles "github.com/exolutionza/propfix-backend-go/internal/roles"
+
+	"github.com/jackc/pgx/v4/pgxpool"
 )
 
-func Router(w http.ResponseWriter, r *http.Request) {
-	projectID := "propfix"
+func Router() {
+	pgHost := "postgresql-141986-0.cloudclusters.net"
+	pgPort := "18850"
+	pgDatabase := "propfix"
+	pgUser := "propfixadmin"
+	pgPassword := "happy123"
 
-	// Create a BigQuery client
-	ctx := context.Background()
+	bucketName := "propfix-attachments"
+	serverAddress := "localhost"
+	serverPort := "8080"
+	attachmentPort := "8081"
 
-	client, err := bigquery.NewClient(ctx, projectID)
+	pgConnString := fmt.Sprintf("user=%s password=%s host=%s port=%s dbname=%s sslmode=disable",
+		pgUser, pgPassword, pgHost, pgPort, pgDatabase)
+
+	dbpool, err := pgxpool.Connect(context.Background(), pgConnString)
 	if err != nil {
-		log.Fatalf("Failed to create BigQuery client: %v", err)
+		fmt.Println("Failed to connect to PostgreSQL:", err)
+		return
 	}
-	defer client.Close()
+	defer dbpool.Close()
 
 	conf := &firebase.Config{
 		ProjectID: "prop-fix",
 	}
 	app, err := firebase.NewApp(context.Background(), conf)
 	if err != nil {
-		log.Fatalf("Failed to initialize Firebase app: %v", err)
+		fmt.Println("Failed to initialize Firebase app:", err)
+		return
 	}
+	ctx := context.Background()
+	storageClient, err := storage.NewClient(ctx)
+	if err != nil {
+		fmt.Println("Failed to initialize google storage", err)
+		return
+	}
+	bucket := storageClient.Bucket(bucketName)
 
-	// Initialize Firebase Auth client
 	authClient, err := app.Auth(context.Background())
 	if err != nil {
-		log.Fatalf("Failed to initialize Firebase Auth client: %v", err)
+		fmt.Println("Failed to initialize Firebase Auth client:", err)
+		return
+	}
+	authorizer := authz.NewAuthz(dbpool)
+
+	orgStore := organizations.NewOrganizationStore(dbpool)
+	columnStore := columns.NewColumnsStore(dbpool)
+	eventStore := events.NewEventsStore(dbpool)
+
+	rpcServerConfigs := []jsonRpcServer.RPCServerConfig{
+		{
+			Name: "Authorized",
+			Path: "/api/authenticated",
+			Middleware: []func(http.Handler) http.Handler{
+				auth.IsAuthenticated(authClient, *orgStore),
+			},
+			ServiceProviders: []jsonRpcProvider.Provider{
+				roles.New(dbpool, authorizer),
+				organizations.New(dbpool, authorizer),
+				permissions.New(dbpool, authorizer),
+				buildings.New(dbpool, authorizer),
+				labels.New(dbpool, authorizer),
+				jobs.New(dbpool, authorizer, columnStore),
+				events.New(authorizer, eventStore),
+				columns.New(dbpool, authorizer, columnStore),
+			},
+		},
+		// Add more RPC server configurations for other services here
 	}
 
-	fileUploadHandler, err := handlers.NewFileUploadHandler("propfix-attachments")
-	if err != nil {
-		log.Fatalf("Failed to initialize Firebase Auth client: %v", err)
-	}
-	// Create a Gorilla Mux router
+	// Create a new server instance
+	rpcServer := jsonRpcServer.New(serverAddress, serverPort, rpcServerConfigs)
+
+	// Start server using goroutine
+	go func() {
+		if err := rpcServer.Start(); err != nil {
+			fmt.Println("Failed to start server:", err)
+		}
+	}()
+
+	// File upload server
+	fileUploadHandler, _ := attachments.NewFileUploadHandler(bucket, eventStore) // Use your event store
+
 	router := mux.NewRouter()
+	authenticatedRouter := router.PathPrefix("/attachments").Subrouter()
+	authenticatedRouter.Use(auth.IsAuthenticated(authClient, *orgStore)) // Apply auth middleware to authenticated routes
 
-	// Define the routes
-	router.HandleFunc("/", helloWorld).Methods("GET")
+	authenticatedRouter.HandleFunc("/upload/{jobid}", fileUploadHandler.UploadFile).Methods("POST")
+	authenticatedRouter.HandleFunc("/download/{jobid}/{filename}", fileUploadHandler.GetFile).Methods("GET")
+	authenticatedRouter.HandleFunc("/delete/{jobid}/{filename}", fileUploadHandler.DeleteFile).Methods("DELETE")
 
-	// Protected routes using auth middleware
-	protectedRouter := router.PathPrefix("").Subrouter()
-	protectedRouter.Use(auth.IsAuthenticated(authClient))
+	// Create an HTTP server with the router as the handler
+	httpServer := &http.Server{
+		Addr:    fmt.Sprintf("%s:%s", serverAddress, attachmentPort), // Replace with your desired address and port
+		Handler: router,
+	}
+	// Start the server using a goroutine
+	go func() {
+		if err := httpServer.ListenAndServe(); err != nil {
+			fmt.Println("Failed to start server:", err)
+		}
+	}()
 
-	// Initialize and register the handlers for each table
-	membersHandler := handlers.NewMembersHandler(client)
-	protectedRouter.HandleFunc("/members/{id}", membersHandler.GetMember).Methods("GET")
-	protectedRouter.HandleFunc("/members/{id}", membersHandler.DeleteMember).Methods("DELETE")
-	protectedRouter.HandleFunc("/members", membersHandler.CreateMember).Methods("POST")
-	protectedRouter.HandleFunc("/members", membersHandler.UpdateMember).Methods("PUT")
+	// Add more routes as needed
+	// Wait for interrupt signal to stop
+	systemSignalsChannel := make(chan os.Signal, 1)
+	signal.Notify(systemSignalsChannel, os.Interrupt, syscall.SIGTERM)
+	<-systemSignalsChannel
 
-	jobsHandler := handlers.NewJobsHandler(client)
-	protectedRouter.HandleFunc("/jobs", jobsHandler.GetAllJobs).Methods("GET")
-	protectedRouter.HandleFunc("/jobs/{id}", jobsHandler.GetJob).Methods("GET")
-	protectedRouter.HandleFunc("/jobs/{id}", jobsHandler.DeleteJob).Methods("DELETE")
-	protectedRouter.HandleFunc("/jobs", jobsHandler.CreateJob).Methods("POST")
-	protectedRouter.HandleFunc("/jobs", jobsHandler.UpdateJob).Methods("PUT")
-
-	historyHandler := handlers.NewHistoryHandler(client)
-	protectedRouter.HandleFunc("/history/{id}", historyHandler.GetHistory).Methods("GET")
-	protectedRouter.HandleFunc("/history", historyHandler.CreateHistory).Methods("POST")
-	protectedRouter.HandleFunc("/history", historyHandler.UpdateHistory).Methods("PUT")
-	protectedRouter.HandleFunc("/history/{id}", historyHandler.DeleteHistory).Methods("DELETE")
-
-	commentsHandler := handlers.NewCommentsHandler(client)
-	protectedRouter.HandleFunc("/comments/{id}", commentsHandler.GetComment).Methods("GET")
-	protectedRouter.HandleFunc("/comments", commentsHandler.CreateComment).Methods("POST")
-	protectedRouter.HandleFunc("/comments", commentsHandler.UpdateComment).Methods("PUT")
-	protectedRouter.HandleFunc("/comments/{id}", commentsHandler.DeleteComment).Methods("DELETE")
-
-	buildingsHandler := handlers.NewBuildingsHandler(client)
-	protectedRouter.HandleFunc("/buildings/{id}", buildingsHandler.GetBuilding).Methods("GET")
-	protectedRouter.HandleFunc("/buildings", buildingsHandler.CreateBuilding).Methods("POST")
-	protectedRouter.HandleFunc("/buildings", buildingsHandler.UpdateBuilding).Methods("PUT")
-	protectedRouter.HandleFunc("/buildings/{id}", buildingsHandler.DeleteBuilding).Methods("DELETE")
-
-	columnsHandler := handlers.NewColumnsHandler(client)
-
-	// Define routes
-	protectedRouter.HandleFunc("/columns", columnsHandler.GetAllColumns).Methods("GET")
-	protectedRouter.HandleFunc("/columns/{id}", columnsHandler.GetColumn).Methods("GET")
-	protectedRouter.HandleFunc("/columns", columnsHandler.CreateColumn).Methods("POST")
-	protectedRouter.HandleFunc("/columns/{id}", columnsHandler.UpdateColumn).Methods("PUT")
-	protectedRouter.HandleFunc("/columns/{id}", columnsHandler.DeleteColumn).Methods("DELETE")
-	protectedRouter.HandleFunc("/movejob", columnsHandler.MoveJob).Methods("POST")
-
-	protectedRouter.HandleFunc("/file/{jobid}/{filename}", fileUploadHandler.GetFile).Methods("GET")
-	protectedRouter.HandleFunc("/file/{jobid}/{filename}", fileUploadHandler.UploadFile).Methods("POST")
-
-	router.HandleFunc("/file/{jobid}/{filename}", fileUploadHandler.GetFile).Methods("GET")
-	router.HandleFunc("/file/{jobid}", fileUploadHandler.UploadFile).Methods("POST")
-	// Add the route for GetBoard
-	boardHandler := handlers.NewBoardHandler(client)
-	protectedRouter.HandleFunc("/board", boardHandler.GetBoard).Methods("GET")
-
-	// Apply the enableCORS middleware to all routes
-	handler := EnableCORS(router)
-
-	// Serve the HTTP requests
-	handler.ServeHTTP(w, r)
-}
-
-// helloWorld writes "Hello, World!" to the HTTP response.
-func helloWorld(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "Hello, World!")
+	fmt.Println("Application is shutting down..")
 }
