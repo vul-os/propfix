@@ -1,36 +1,40 @@
 import React from 'react';
-import PropTypes from 'prop-types';
-import Stack from '@mui/material/Stack';
 import Avatar from '@mui/material/Avatar';
+import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-import Chip from '@mui/material/Chip';
+import CreateIcon from '@mui/icons-material/Create'; // Material Icons
+import UpdateIcon from '@mui/icons-material/Update';
+import DeleteIcon from '@mui/icons-material/Delete';
 import { fToNow } from '../../utils/format-time';
 
-export default function CRUDStep({ avatarUrl, name, createdAt, messageType }) {
+export default function CrudStep({ event }) {
+  let icon;
+  let action;
+
+  if (event.type === 'CREATE') {
+    icon = <CreateIcon />;
+    action = 'created';
+  } else if (event.type === 'UPDATE') {
+    icon = <UpdateIcon />;
+    action = 'updated';
+  } else if (event.type === 'DELETE') {
+    icon = <DeleteIcon />;
+    action = 'deleted';
+  }
+
   return (
     <Stack direction="row" spacing={2}>
-      <Avatar src={avatarUrl} />
-
       <Stack spacing={0.5} flexGrow={1}>
         <Stack direction="row" alignItems="center" justifyContent="space-between">
-          <Typography variant="subtitle2">{name}</Typography>
+          <Typography variant="subtitle2">{event.name}</Typography>
           <Typography variant="caption" sx={{ color: 'text.disabled' }}>
-            {fToNow(createdAt)}
+            {fToNow(event.createdAt)}
           </Typography>
         </Stack>
-
         <Typography variant="body2">
-          <Chip label={messageType} color="primary" size="small" sx={{ mr: 1 }} />
-          {`${messageType} event`}
+          {icon} {action} the event
         </Typography>
       </Stack>
     </Stack>
   );
 }
-
-CRUDStep.propTypes = {
-  avatarUrl: PropTypes.string.isRequired,
-  name: PropTypes.string.isRequired,
-  createdAt: PropTypes.string.isRequired,
-  messageType: PropTypes.oneOf(['create', 'update', 'delete']).isRequired,
-};
