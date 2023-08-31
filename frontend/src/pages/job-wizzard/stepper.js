@@ -40,6 +40,7 @@ export default function HorizontalLinearStepper() {
   const [jobInfo, setJobInfo] = useState(initialJobInfo);
   const [buildings, setBuildings] = useState([]);
   const [userLocation, setUserLocation] = useState(null);
+  const [selectedBuilding, setSelectedBuilding] = useState(null);
 
   const { getIdToken } = useAuthContext();
 
@@ -88,44 +89,6 @@ export default function HorizontalLinearStepper() {
     setActiveStep(activeStep - 1);
   };
 
-  const handleSubmit = async () => {
-    if (activeStep === steps.length - 1) {
-      try {
-        const idToken = await getIdToken();
-  
-        // Combine unitInfo and jobInfo data
-        const combinedData = {
-          unitName: unitInfo.unitName,
-          tenantIdentifier: unitInfo.tenantIdentifier,
-          unitIdentifier: unitInfo.unitIdentifier,
-          buildingId: unitInfo.buildingId,
-          title: jobInfo.title,
-          labels: jobInfo.labels,
-          attachments: jobInfo.attachments, 
-        };
-  
-        // Create the job using the combined data
-        const createdJob = await createJob({"job": combinedData}, idToken);
-  
-        if (createdJob) {
-          console.log('Job created successfully:', createdJob);
-        } else {
-          console.error('Error creating job');
-        }
-  
-        // Reset the form
-        setUnitInfo(initialUnitInfo);
-        setJobInfo(initialJobInfo);
-  
-        setActiveStep(0);
-      } catch (error) {
-        console.error('Error creating job:', error);
-      }
-    } else {
-      handleNext();
-    }
-  };
-
   const handleUnitInfoChange = (newUnitInfo) => {
     setUnitInfo(newUnitInfo);
   };
@@ -160,12 +123,19 @@ export default function HorizontalLinearStepper() {
             <UnitInfoStep
               unitInfo={unitInfo}
               handleUnitInfoChange={handleUnitInfoChange}
+              handleNext={handleNext}
+              isStepValid={isStepValid}
             />
           </div>
         );
       case 1:
         return (
-          <JobInfoStep jobInfo={jobInfo} handleJobInfoChange={handleJobInfoChange} />
+          <JobInfoStep
+            jobInfo={jobInfo}
+            handleJobInfoChange={handleJobInfoChange}
+            handleNext={handleNext}
+            isStepValid={isStepValid}
+          />
         );
       case 2:
         return <ReviewSubmitStep unitInfo={unitInfo} jobInfo={jobInfo} />;
@@ -207,7 +177,11 @@ export default function HorizontalLinearStepper() {
               Back
             </Button>
             <Box sx={{ flex: '1 1 auto' }} />
-            <Button onClick={handleSubmit} disabled={!isStepValid()}>
+            <Button
+              variant="contained"
+              onClick={handleNext}
+              disabled={!isStepValid()}
+            >
               {activeStep === steps.length - 1 ? 'Finish' : 'Next'}
             </Button>
           </Box>
