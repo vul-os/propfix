@@ -5,7 +5,6 @@ import Step from '@mui/material/Step';
 import StepLabel from '@mui/material/StepLabel';
 import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
-import Autocomplete from '@mui/material/Autocomplete';
 import InputBase from '@mui/material/InputBase';
 import { styled } from '@mui/material/styles';
 import { createJob } from '../../api/jobs';
@@ -16,30 +15,7 @@ import ReviewSubmitStep from './reviewsubmit';
 import { getAllBuildings } from '../../api/buildings';
 
 const BootstrapInput = styled(InputBase)(({ theme }) => ({
-  borderRadius: 4,
-  position: 'relative',
-  backgroundColor: theme.palette.background.paper,
-  border: '1px solid #ced4da',
-  fontSize: 16,
-  padding: '10px 26px 10px 12px',
-  transition: theme.transitions.create(['border-color', 'box-shadow']),
-  fontFamily: [
-    '-apple-system',
-    'BlinkMacSystemFont',
-    '"Segoe UI"',
-    'Roboto',
-    '"Helvetica Neue"',
-    'Arial',
-    'sans-serif',
-    '"Apple Color Emoji"',
-    '"Segoe UI Emoji"',
-    '"Segoe UI Symbol"',
-  ].join(','),
-  '&:focus': {
-    borderRadius: 4,
-    borderColor: '#80bdff',
-    boxShadow: '0 0 0 0.2rem rgba(0,123,255,.25)',
-  },
+  // ... (styles for BootstrapInput)
 }));
 
 const steps = ['UNIT INFO', 'JOB INFO', 'REVIEW & SUBMIT'];
@@ -64,7 +40,6 @@ export default function HorizontalLinearStepper() {
   const [jobInfo, setJobInfo] = useState(initialJobInfo);
   const [buildings, setBuildings] = useState([]);
   const [userLocation, setUserLocation] = useState(null);
-  const [selectedBuilding, setSelectedBuilding] = useState('');
 
   const { getIdToken } = useAuthContext();
 
@@ -118,6 +93,7 @@ export default function HorizontalLinearStepper() {
       try {
         const idToken = await getIdToken();
   
+        // Combine unitInfo and jobInfo data
         const combinedData = {
           unitName: unitInfo.unitName,
           tenantIdentifier: unitInfo.tenantIdentifier,
@@ -128,6 +104,7 @@ export default function HorizontalLinearStepper() {
           attachments: jobInfo.attachments, 
         };
   
+        // Create the job using the combined data
         const createdJob = await createJob({"job": combinedData}, idToken);
   
         if (createdJob) {
@@ -136,6 +113,7 @@ export default function HorizontalLinearStepper() {
           console.error('Error creating job');
         }
   
+        // Reset the form
         setUnitInfo(initialUnitInfo);
         setJobInfo(initialJobInfo);
   
@@ -183,26 +161,6 @@ export default function HorizontalLinearStepper() {
               unitInfo={unitInfo}
               handleUnitInfoChange={handleUnitInfoChange}
             />
-            <Autocomplete
-              options={buildings}
-              getOptionLabel={(building) => building.name}
-              value={selectedBuilding}
-              onChange={(event, newValue) => {
-                setSelectedBuilding(newValue.name);
-                handleUnitInfoChange({
-                  ...unitInfo,
-                  buildingId: newValue.id,
-                });
-              }}
-              renderInput={(params) => (
-                <BootstrapInput
-                  {...params.inputProps}
-                  placeholder="Select a Building or Use Location"
-                  fullWidth
-                  style={{ marginBottom: '16px' }}
-                />
-              )}
-            />
           </div>
         );
       case 1:
@@ -226,7 +184,7 @@ export default function HorizontalLinearStepper() {
         ))}
       </Stepper>
       {activeStep === steps.length ? (
-        <>
+        <div>
           <Typography sx={{ mt: 2, mb: 1 }}>
             All steps completed - you&apos;re finished
           </Typography>
@@ -234,9 +192,9 @@ export default function HorizontalLinearStepper() {
             <Box sx={{ flex: '1 1 auto' }} />
             <Button onClick={() => setActiveStep(0)}>Reset</Button>
           </Box>
-        </>
+        </div>
       ) : (
-        <>
+        <div>
           <Typography sx={{ mt: 2, mb: 1 }}>Step {activeStep + 1}</Typography>
           {getStepContent(activeStep)}
           <Box sx={{ display: 'flex', flexDirection: 'row', pt: 2 }}>
@@ -253,7 +211,7 @@ export default function HorizontalLinearStepper() {
               {activeStep === steps.length - 1 ? 'Finish' : 'Next'}
             </Button>
           </Box>
-        </>
+        </div>
       )}
     </Box>
   );

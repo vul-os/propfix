@@ -1,65 +1,66 @@
 import React, { useState, useEffect } from 'react';
-import TextField from '@mui/material/TextField';
-import Autocomplete from '@mui/material/Autocomplete';
-import FormControl from '@mui/material/FormControl';
-import InputLabel from '@mui/material/InputLabel';
-import MenuItem from '@mui/material/MenuItem';
-import Select from '@mui/material/Select';
-import { styled } from '@mui/material/styles'; // Import the styled utility
-import InputBase from '@mui/material/InputBase';
-import { getAllBuildings } from '../../api/buildings';
+import { TextField, IconButton, InputAdornment } from '@mui/material';
+import LocationOnIcon from '@mui/icons-material/LocationOn';
 import { useAuthContext } from '../../contexts/auth';
-
-const BootstrapInput = styled(InputBase)(({ theme }) => ({
-  borderRadius: 4,
-  position: 'relative',
-  backgroundColor: theme.palette.background.paper,
-  border: '1px solid #ced4da',
-  fontSize: 16,
-  padding: '10px 26px 10px 12px',
-  transition: theme.transitions.create(['border-color', 'box-shadow']),
-  fontFamily: [
-    '-apple-system',
-    'BlinkMacSystemFont',
-    '"Segoe UI"',
-    'Roboto',
-    '"Helvetica Neue"',
-    'Arial',
-    'sans-serif',
-    '"Apple Color Emoji"',
-    '"Segoe UI Emoji"',
-    '"Segoe UI Symbol"',
-  ].join(','),
-  '&:focus': {
-    borderRadius: 4,
-    borderColor: '#80bdff',
-    boxShadow: '0 0 0 0.2rem rgba(0,123,255,.25)',
-  },
-}));
+import { getAllBuildings } from '../../api/buildings';
 
 export default function UnitInfoStep({ unitInfo, handleUnitInfoChange }) {
   const { getIdToken } = useAuthContext();
   const [buildings, setBuildings] = useState([]);
   const [userLocation, setUserLocation] = useState(null);
-  const [userChoice, setUserChoice] = useState('');
+  const [useLocation, setUseLocation] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [searchValue, setSearchValue] = useState('');
 
   useEffect(() => {
-    fetchBuildings();
-    getUserLocation();
-  }, []);
+    if (useLocation && userLocation) {
+      fetchBuildings(userLocation);
+    } else if (searchValue.trim() !== '') {
+      fetchBuildings(null, searchValue);
+    }
+  }, [useLocation, userLocation, searchValue]);
 
-  const fetchBuildings = async () => {
+  const fetchBuildings = async (location, search) => {
     try {
+      setLoading(true);
       const idToken = await getIdToken();
-      const fetchedBuildings = await getAllBuildings(
-        userLocation?.latitude,
-        userLocation?.longitude,
-        '',
-        idToken
-      );
+      let fetchedBuildings = [];
+
+      if (useLocation && location) {
+        fetchedBuildings = await getAllBuildings(location.latitude, location.longitude, null, idToken);
+      } else if (search) {
+        fetchedBuildings = await getAllBuildings(null, null, search, idToken);
+      }
+
+      setLoading(false);
       setBuildings(fetchedBuildings);
     } catch (error) {
       console.error('Error fetching buildings:', error);
+      setLoading(false);
+    }
+  };
+
+  const handleSearchInputChange = (event) => {
+    setSearchValue(event.target.value);
+  };
+
+  const handleSearchButton = () => {
+    setUseLocation(false); // Search takes priority over location
+    fetchBuildings(null, searchValue);
+  };
+
+  const handleSearchKeyDown = (event) => {
+    if (event.key === 'Enter') {
+      setUseLocation(false); // Search takes priority over location
+      fetchBuildings(null, searchValue);
+    }
+  };
+
+  const handleLocationButtonClick = () => {
+    const confirmLocation = window.confirm('Allow this app to access your location?');
+    if (confirmLocation) {
+      getUserLocation();
+      setUseLocation(true);
     }
   };
 
@@ -83,68 +84,29 @@ export default function UnitInfoStep({ unitInfo, handleUnitInfoChange }) {
   return (
     <div>
       <TextField
-        label="Name"
-        value={unitInfo.Name}
-        onChange={(e) => handleUnitInfoChange({ ...unitInfo, unitName: e.target.value })}
+        label="Search and Select a Building"
         fullWidth
-        style={{ marginBottom: '16px' }}
+        value={searchValue}
+        onChange={handleSearchInputChange}
+        onKeyDown={handleSearchKeyDown}
+        InputProps={{
+          endAdornment: (
+            <InputAdornment position="end">
+              <IconButton onClick={handleLocationButtonClick}>
+                <LocationOnIcon />
+              </IconButton>
+            </InputAdornment>
+          ),
+        }}
       />
-      <TextField
-        label="Tenant Identifier"
-        value={unitInfo.tenantIdentifier}
-        onChange={(e) => handleUnitInfoChange({ ...unitInfo, tenantIdentifier: e.target.value })}
-        fullWidth
-        style={{ marginBottom: '16px' }}
-      />
-      <TextField
-        label="Unit Identifier"
-        value={unitInfo.unitIdentifier}
-        onChange={(e) => handleUnitInfoChange({ ...unitInfo, unitIdentifier: e.target.value })}
-        fullWidth
-        style={{ marginBottom: '16px' }}
-      />
-      <FormControl variant="standard" fullWidth sx={{ marginBottom: '16px' }}>
-        <InputLabel id="building-choice-label">Choose an Option...</InputLabel>
-        <Select
-          labelId="building-choice-label"
-          id="building-choice"
-          value={userChoice}
-          onChange={(event) => {
-            setUserChoice(event.target.value);
-            if (event.target.value === 'location') {
-              getUserLocation();
-              handleUnitInfoChange({
-                ...unitInfo,
-                buildingId: 'use-location',
-              });
-            } else {
-              handleUnitInfoChange({
-                ...unitInfo,
-                buildingId: '',
-              });
-            }
-          }}
-          input={<BootstrapInput />}
-        >
-          <MenuItem value="">Choose an Option...</MenuItem>
-          <MenuItem value="location">Use My Location</MenuItem>
-          <MenuItem value="type">Type Building Name</MenuItem>
-          {buildings.map((building) => (
-            <MenuItem key={building.id} value={building.id}>
-              {building.name}
-            </MenuItem>
-          ))}
-        </Select>
-      </FormControl>
-      {userChoice === 'type' && (
-        <TextField
-          label="Type Building Name"
-          value={unitInfo.buildingId}
-          onChange={(e) => handleUnitInfoChange({ ...unitInfo, buildingId: e.target.value })}
-          fullWidth
-          style={{ marginBottom: '16px' }}
-        />
-      )}
+      {/* Display cards with buildings */}
+      {buildings && buildings.map((building) => (
+        <div key={building.id}>
+          <h3>{building.name}</h3>
+          <p>Address: {building.address}</p>
+          {/* Other building information */}
+        </div>
+      ))}
     </div>
   );
 }
