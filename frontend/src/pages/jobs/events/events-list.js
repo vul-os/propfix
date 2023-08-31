@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import { useParams } from 'react-router-dom';
 import Paper from '@mui/material/Paper';
-import { useAuthContext } from '../../contexts/auth';
-import { getAllEvents } from '../../api/events';
+import { useAuthContext } from '../../../contexts/auth';
+import { getAllEvents } from '../../../api/events';
 import MessageStep from './message-step'; // Import the MessageStep component
 import CrudStep from './crud-step'; // Import the CrudStep component
 

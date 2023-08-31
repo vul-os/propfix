@@ -6,9 +6,9 @@ import Avatar from '@mui/material/Avatar';
 import InputBase from '@mui/material/InputBase';
 import IconButton from '@mui/material/IconButton';
 // hooks
-import { useMockedUser } from '../../hooks/use-mocked-user';
+import { useMockedUser } from '../../../hooks/use-mocked-user';
 // components
-import Iconify from '../../components/iconify';
+import Iconify from '../../../components/iconify';
 
 // ---------------------------------------------------------------------
 

@@ -20,19 +20,19 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 
 // hooks
-import { useBoolean } from '../../hooks/use-boolean';
+import { useBoolean } from '../../../hooks/use-boolean';
 // components
-import Iconify from '../../components/iconify';
-import Scrollbar from '../../components/scrollbar';
-import CustomDateRangePicker, { useDateRangePicker } from '../../components/custom-date-range-picker';
+import Iconify from '../../../components/iconify';
+import Scrollbar from '../../../components/scrollbar';
+import CustomDateRangePicker, { useDateRangePicker } from '../../../components/custom-date-range-picker';
 //
-import KanbanInputName from '../kanban/kanban-input-name';
-import KanbanDetailsToolbar from './kanban-details-toolbar';
+import KanbanInputName from '../../kanban/kanban-input-name';
+import KanbanDetailsToolbar from './toolbar';
 // import KanbanContactsDialog from './kanban-contacts-dialog';
-import KanbanDetailsPriority from './kanban-details-priority';
-import KanbanDetailsAttachments from './kanban-details-attachments';
-import KanbanDetailsCommentList from './kanban-details-comment-list';
-import KanbanDetailsCommentInput from './kanban-details-comment-input';
+import KanbanDetailsPriority from './priority';
+import KanbanDetailsAttachments from './attachments';
+import KanbanDetailsCommentList from './comment-list';
+import KanbanDetailsCommentInput from './comment-input';
 
 dayjs.extend(utc);
 

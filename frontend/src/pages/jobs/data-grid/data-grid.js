@@ -6,10 +6,10 @@ import Stack from '@mui/material/Stack';
 import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
 import Chip from '@mui/material/Chip';
-import { useAuthContext } from '../../contexts/auth';
-import KanbanDetails from '../pop-over/kanban-details';
-import Iconify from '../../components/iconify';
-import { getAllJobs } from '../../api/jobs';
+import { useAuthContext } from '../../../contexts/auth';
+import KanbanDetails from '../pop-over';
+import Iconify from '../../../components/iconify';
+import { getAllJobs } from '../../../api/jobs';
 
 function JobDataGrid() {
   const [jobs, setJobs] = useState([]);
