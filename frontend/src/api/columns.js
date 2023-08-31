@@ -7,13 +7,13 @@ const API_BASE_URL = `${config.apiUrl}`;
 // ...
 
 // New function to move jobs between columns
-export async function moveJobs(sourceColumnId, destinationColumnId, jobIdsToMove, idToken) {
+export async function moveJobs(sourceColumnId, destinationColumnId, jobIds, idToken) {
   try {
     const params = [
       {
         sourceColumnId,
         destinationColumnId,
-        jobIdsToMove,
+        jobIds,
       },
       idToken
     ];

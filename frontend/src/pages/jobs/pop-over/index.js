@@ -45,7 +45,6 @@ export default function PopOver({
   onClosePopOver,
 }) {
   const { getIdToken, user } = useAuthContext(); 
-  console.log("jobprop", job)
   const handleAddJob = useCallback(
     async (jobData) => {
       try {

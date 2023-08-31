@@ -51,18 +51,20 @@ export default function KanbanView() {
         const destinationColumn = board?.columns[destination.droppableId];
 
         if (sourceColumn && destinationColumn) {
+          console.log("heree: ", sourceColumn, destinationColumn)
           // Get a copy of job ids from source column
-          const newStartJobIds = Array.from(sourceColumn.jobids || []);
+          const newStartJobIds = Array.from(sourceColumn.jobIds || []);
   
           // Remove the job id from source column
           newStartJobIds.splice(source.index, 1);
   
           // Get a copy of job ids from destination column
-          const newEndJobIds = Array.from(destinationColumn.jobids || []);
+          const newEndJobIds = Array.from(destinationColumn.jobIds || []);
   
           // Add the job id to the destination column
           newEndJobIds.splice(destination.index, 0, draggableId);
-  
+          console.log("heree: ", newStartJobIds, newEndJobIds)
+
           // Create new board state
           const newBoardState = {
             ...board,
@@ -70,31 +72,31 @@ export default function KanbanView() {
               ...board.columns,
               [source.droppableId]: {
                 ...sourceColumn,
-                jobids: newStartJobIds,
+                jobIds: newStartJobIds,
               },
               [destination.droppableId]: {
                 ...destinationColumn,
-                jobids: newEndJobIds,
+                jobIds: newEndJobIds,
               },
             },
           };
-  
           setBoard(newBoardState);
+          // actually do api request
+          await moveJobs(
+            sourceColumn.id,
+            destinationColumn.id,
+            [draggableId],
+            token 
+          );
         }
-        // actually do api request
-        await moveJobs(
-          sourceColumn.id,
-          destinationColumn.id,
-          [draggableId],
-          token 
-        );
+   
         
         console.info('Moving to a different list!');
       } catch (error) {
         console.error(error);
       }
     },
-    [getIdToken] 
+    [getIdToken, board] 
   );
   const renderSkeleton = (
     <Stack direction="row" alignItems="flex-start" spacing={3}>

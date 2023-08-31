@@ -15,7 +15,6 @@ import { bgBlur } from '../../theme/css';
 export default function KanbanJobItem({ job, index, sx, ...other }) {
   const theme = useTheme();
   const openDetails = useBoolean();
-  console.log("jobprop2", job)
   const renderInfo = (
     <Stack direction="row" alignItems="center">
       <AvatarGroup
