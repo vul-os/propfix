@@ -8,14 +8,15 @@ import Typography from '@mui/material/Typography';
 import Paper from '@mui/material/Paper';
 import AvatarGroup, { avatarGroupClasses } from '@mui/material/AvatarGroup'; // Import AvatarGroup and avatarGroupClasses from MUI
 import { useBoolean } from '../../hooks/use-boolean';
+import PopOver from '../jobs/pop-over';
 
 // Placeholder for bgBlur function or remove if not needed
 const bgBlur = (styles) => styles;
 
-export default function KanbanJobItem({ job, index, onDeleteJob, onUpdateJob, sx, ...other }) {
+export default function KanbanJobItem({ job, index, sx, ...other }) {
   const theme = useTheme();
   const openDetails = useBoolean();
-
+  console.log("jobprop2", job)
   const renderInfo = (
     <Stack direction="row" alignItems="center">
       <AvatarGroup
@@ -74,21 +75,17 @@ export default function KanbanJobItem({ job, index, onDeleteJob, onUpdateJob, sx
         )}
       </Draggable>
 
-      {/* <KanbanDetails
-        task={job}
-        openDetails={openDetails.value}
-        onCloseDetails={openDetails.onFalse}
-        onUpdateTask={onUpdateJob}
-        onDeleteTask={onUpdateJob}
-      /> */}
+      <PopOver
+        job={job}
+        openPopOver={openDetails.value}
+        onClosePopOver={openDetails.onFalse}
+      />
     </>
   );
 }
 
 KanbanJobItem.propTypes = {
   index: PropTypes.number,
-  onDeleteJob: PropTypes.func,
-  onUpdateJob: PropTypes.func,
   sx: PropTypes.object,
   job: PropTypes.object,
 };

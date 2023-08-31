@@ -5,34 +5,18 @@ import utc from 'dayjs/plugin/utc';
 
 // @mui
 import { styled, alpha } from '@mui/material/styles';
-import Chip from '@mui/material/Chip';
-import Stack from '@mui/material/Stack';
 import Drawer from '@mui/material/Drawer';
-import Button from '@mui/material/Button';
-import Avatar from '@mui/material/Avatar';
 import Divider from '@mui/material/Divider';
-import Tooltip from '@mui/material/Tooltip';
-import TextField from '@mui/material/TextField';
-import IconButton from '@mui/material/IconButton';
+import { useAuthContext } from '../../../contexts/auth'; 
 
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import Scrollbar from '../../../components/scrollbar';
 
 // hooks
 import { useBoolean } from '../../../hooks/use-boolean';
 // components
-import Iconify from '../../../components/iconify';
-import Scrollbar from '../../../components/scrollbar';
-import CustomDateRangePicker, { useDateRangePicker } from '../../../components/custom-date-range-picker';
-//
-import KanbanInputName from '../../kanban/kanban-input-name';
-import KanbanDetailsToolbar from './toolbar';
-// import KanbanContactsDialog from './kanban-contacts-dialog';
-import KanbanDetailsPriority from './priority';
-import KanbanDetailsAttachments from './attachments';
-import KanbanDetailsCommentList from './comment-list';
-import KanbanDetailsCommentInput from './comment-input';
+import EventsList from '../events/events-list';
+import Toolbar from './toolbar';
+import JobDetails from '../job';
 
 dayjs.extend(utc);
 
@@ -46,173 +30,63 @@ const StyledLabel = styled('span')(({ theme }) => ({
   fontWeight: theme.typography.fontWeightSemiBold,
 }));
 
+function enqueueSnackbar(message, options) {
+  console.log('Snackbar:', message, options);
+}
 // ----------------------------------------------------------------------
 
-export default function KanbanDetails({
-  task,
-  openDetails,
-  onCloseDetails,
-  //
-  onUpdateTask,
-  onDeleteTask,
+export default function PopOver({
+  job,
+  openPopOver,
+  onClosePopOver,
 }) {
-  const [priority, setPriority] = useState(task.priority.toLowerCase());
-
-  const [taskName, setTaskName] = useState(task.name);
-
-  const contacts = useBoolean();
-
-  const [taskDescription, setTaskDescription] = useState(task.description);
-
-  const [value, setValue] = useState() // Initialize with today's date
-
-  const handleChangeTaskName = useCallback((event) => {
-    setTaskName(event.target.value);
-  }, []);
-
-  const handleUpdateTask = useCallback(
-    (event) => {
+  const { getIdToken } = useAuthContext(); 
+  console.log("jobprop", job)
+  const handleAddJob = useCallback(
+    async (jobData) => {
       try {
-        if (event.key === 'Enter') {
-          if (taskName) {
-            onUpdateTask({
-              ...task,
-              name: taskName,
-            });
-          }
-        }
+        const token = await getIdToken(); // Get the JWT token from the auth context
+        // createJob(column.id, jobData, token); // Pass the token to the createJob function
+
+        // openAddJob.onFalse();
       } catch (error) {
         console.error(error);
       }
     },
-    [onUpdateTask, task, taskName]
+    [getIdToken] // Include getIdToken in the dependencies array
   );
 
-  const handleChangeTaskDescription = useCallback((event) => {
-    setTaskDescription(event.target.value);
-  }, []);
+  const handleDeleteJob = useCallback(
+    async (jobId) => {
+      try {
+        const token = await getIdToken(); // Get the JWT token from the auth context
+        // deleteJob(jobId, token); // Pass the token to the deleteJob function
 
-  const handleChangePriority = useCallback((newValue) => {
-    setPriority(newValue);
-  }, []);
-
-  const renderHead = (
-    <KanbanDetailsToolbar
-      taskName={task.name}
-      onDelete={onDeleteTask}
-      taskStatus={task.status}
-      onCloseDetails={onCloseDetails}
-    />
+        enqueueSnackbar('Delete success!', {
+          anchorOrigin: { vertical: 'top', horizontal: 'center' },
+        });
+      } catch (error) {
+        console.error(error);
+      }
+    },
+    [getIdToken, enqueueSnackbar]
   );
 
-  const renderName = (
-    <KanbanInputName
-      placeholder="Task name"
-      value={taskName}
-      onChange={handleChangeTaskName}
-      onKeyUp={handleUpdateTask}
-    />
-  );
+  // const renderHead = (
+  //   <Toolbar
+  //     jobName={job.name}
+  //     jobStatus={job.status}
+  //     onDelete={handleDeleteJob}
+  //     onClosePopOver={onClosePopOver}
+  //   />
+  // );
 
-  const renderReporter = (
-    <Stack direction="row" alignItems="center">
-      <StyledLabel>Reporter</StyledLabel>
-      <Avatar alt={task.reporter.name} src={task.reporter.avatarUrl} />
-    </Stack>
-  );
-
-  const renderAssignee = (
-    <Stack direction="row">
-      <StyledLabel sx={{ height: 40, lineHeight: '40px' }}>Assignee</StyledLabel>
-
-      <Stack direction="row" flexWrap="wrap" alignItems="center" spacing={1}>
-        {task.assignees.map((user) => (
-          <Avatar key={user.id} alt={user.name} src={user.avatarUrl} />
-        ))}
-
-        <Tooltip title="Add assignee">
-          <IconButton
-            onClick={contacts.onTrue}
-            sx={{
-              bgcolor: (theme) => alpha(theme.palette.grey[500], 0.08),
-              border: (theme) => `dashed 1px ${theme.palette.divider}`,
-            }}
-          >
-            <Iconify icon="mingcute:add-line" />
-          </IconButton>
-        </Tooltip>
-{/* 
-        <KanbanContactsDialog
-          assignee={task.assignee}
-          open={contacts.value}
-          onClose={contacts.onFalse}
-        /> */}
-      </Stack>
-    </Stack>
-  );
-
-  const renderLabel = (
-    <Stack direction="row">
-      <StyledLabel sx={{ height: 24, lineHeight: '24px' }}>Labels</StyledLabel>
-
-      {!!task.labels.length && (
-        <Stack direction="row" flexWrap="wrap" alignItems="center" spacing={1}>
-          {task.labels.map((label) => (
-            <Chip key={label} color="info" label={label} size="small" variant="soft" />
-          ))}
-        </Stack>
-      )}
-    </Stack>
-  );
-
-  const renderDueDate = (
-    <Stack direction="row" alignItems="center">
-      <StyledLabel> Due date </StyledLabel>
-        <DatePicker
-          value={value}
-          onChange={(newValue) => setValue(newValue)}
-        />
-    </Stack>
-  );
-
-  const renderPriority = (
-    <Stack direction="row" alignItems="center">
-      <StyledLabel>Priority</StyledLabel>
-
-      <KanbanDetailsPriority priority={priority} onChangePriority={handleChangePriority} />
-    </Stack>
-  );
-
-  const renderDescription = (
-    <Stack direction="row">
-      <StyledLabel> Description </StyledLabel>
-
-      <TextField
-        fullWidth
-        multiline
-        size="small"
-        value={taskDescription}
-        onChange={handleChangeTaskDescription}
-        InputProps={{
-          sx: { typography: 'body2' },
-        }}
-      />
-    </Stack>
-  );
-
-  const renderAttachments = (
-    <Stack direction="row">
-      <StyledLabel>Attachments</StyledLabel>
-      <KanbanDetailsAttachments jobId={task.id} attachments={task.attachmenturls} />
-    </Stack>
-  );
-
-  const renderComments = <KanbanDetailsCommentList comments={task.comments} />;
+  // const renderEvents = ;
 
   return (
     <Drawer
-      open={openDetails}
-      onClose={onCloseDetails}
+      open={openPopOver}
+      onClose={onClosePopOver}
       anchor="right"
       slotProps={{
         backdrop: { invisible: true },
@@ -226,10 +100,8 @@ export default function KanbanDetails({
         },
       }}
     >
-      {renderHead}
-
+      {/* {renderHead} */}
       <Divider />
-
       <Scrollbar
         sx={{
           height: 1,
@@ -240,43 +112,15 @@ export default function KanbanDetails({
           },
         }}
       >
-        <Stack
-          spacing={3}
-          sx={{
-            pt: 3,
-            pb: 5,
-            px: 2.5,
-          }}
-        >
-          {renderName}
-
-          {renderPriority}
-          {renderLabel}
-          {renderDueDate}
-          {renderReporter}
-          {renderAssignee}
-
-          { /*  
-
-            */}
-          {renderAttachments}
-          {renderDescription}
-
-          {/* {} */}
-        </Stack>
-
-        {task.comments && !!task.comments.length && renderComments}
+        <JobDetails job={job} />
+        <EventsList jobId={job.id} />
       </Scrollbar>
-
-      <KanbanDetailsCommentInput />
     </Drawer>
   );
 }
 
-KanbanDetails.propTypes = {
-  onCloseDetails: PropTypes.func,
-  onDeleteTask: PropTypes.func,
-  onUpdateTask: PropTypes.func,
-  openDetails: PropTypes.bool,
-  task: PropTypes.object,
+PopOver.propTypes = {
+  onClosePopOver: PropTypes.func,
+  openPopOver: PropTypes.bool,
+  job: PropTypes.object,
 };
