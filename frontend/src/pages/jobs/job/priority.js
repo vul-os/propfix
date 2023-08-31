@@ -4,11 +4,10 @@ import { alpha } from '@mui/material/styles';
 import Stack from '@mui/material/Stack';
 import ButtonBase from '@mui/material/ButtonBase';
 // components
-import Iconify from '../../components/iconify';
+import Iconify from '../../../components/iconify';
 
 // ----------------------------------------------------------------------
-
-export default function KanbanDetailsPriority({ priority, onChangePriority }) {
+export default function Priority({ priority, onChangePriority }) {
   return (
     <Stack direction="row" flexWrap="wrap" spacing={1}>
       {['low', 'medium', 'hight'].map((option) => (
@@ -56,7 +55,7 @@ export default function KanbanDetailsPriority({ priority, onChangePriority }) {
     </Stack>
   );
 }
-KanbanDetailsPriority.propTypes = {
+Priority.propTypes = {
   priority: PropTypes.string,
   onChangePriority: PropTypes.func,
 };

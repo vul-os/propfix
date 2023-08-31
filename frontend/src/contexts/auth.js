@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useReducer, useRef } from 'react';
+import React, { createContext, useContext, useEffect, useReducer, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
 import { initializeApp } from 'firebase/app';
 import {
@@ -8,9 +8,13 @@ import {
   createUserWithEmailAndPassword,
   signOut as firebaseSignOut,
   signInWithPopup,
-  GoogleAuthProvider
+  GoogleAuthProvider,
+  sendPasswordResetEmail
 } from 'firebase/auth';
 
+import { jsonRpcRequest } from '../api/jsonrpc/client'; // Adjust the path based on your project's structure
+
+// Initialize Firebase with your configuration
 const firebaseConfig = {
   apiKey: "***REMOVED-FIREBASE-WEB-KEY***",
   authDomain: "prop-fix.firebaseapp.com",
@@ -28,16 +32,26 @@ const HANDLERS = {
   INITIALIZE: 'INITIALIZE',
   SIGN_IN: 'SIGN_IN',
   SIGN_OUT: 'SIGN_OUT',
-  SIGN_IN_WITH_GOOGLE: 'SIGN_IN_WITH_GOOGLE'
+  SIGN_IN_WITH_GOOGLE: 'SIGN_IN_WITH_GOOGLE',
+  SIGN_UP: 'SIGN_UP',
+  FORGOT_PASSWORD: 'FORGOT_PASSWORD',
+  FETCH_ORGANIZATIONS: 'FETCH_ORGANIZATIONS'
 };
 
 const initialState = {
   isAuthenticated: false,
   isLoading: true,
-  user: null
+  user: null,
+  passwordResetSent: false
 };
 
 const handlers = {
+  [HANDLERS.FORGOT_PASSWORD]: (state) => {
+    return {
+      ...state,
+      passwordResetSent: true
+    };
+  },
   [HANDLERS.INITIALIZE]: (state, action) => {
     const user = action.payload;
     return {
@@ -75,6 +89,21 @@ const handlers = {
       isAuthenticated: true,
       user
     };
+  },
+  [HANDLERS.SIGN_UP]: (state, action) => {
+    const user = action.payload;
+    return {
+      ...state,
+      isAuthenticated: true,
+      user
+    };
+  },
+  [HANDLERS.FETCH_ORGANIZATIONS]: (state, action) => {
+    const organizations = action.payload;
+    return {
+      ...state,
+      organizations
+    };
   }
 };
 
@@ -88,18 +117,35 @@ export const AuthProvider = (props) => {
   const [state, dispatch] = useReducer(reducer, initialState);
   const initialized = useRef(false);
 
+  const [activeOrganization, setActiveOrganization] = useState(null);
+  const [organizations, setOrganizations] = useState([]);
+
   const initialize = async () => {
     if (initialized.current) {
       return;
     }
     initialized.current = true;
 
-    onAuthStateChanged(auth, (user) => {
+    onAuthStateChanged(auth, async (user) => {
       if (user) {
         dispatch({
           type: HANDLERS.INITIALIZE,
           payload: user
         });
+
+        const idToken = await user.getIdToken();
+
+        // Fetch organizations using JSON-RPC
+        try {
+          const fetchedOrganizations = await jsonRpcRequest('Organizations.GetAllOrganizations', [{}], idToken);
+          setOrganizations(fetchedOrganizations.organizations); // Set the organizations
+          if (fetchedOrganizations && fetchedOrganizations.organizations) {
+            setActiveOrganization(fetchedOrganizations.organizations[0].id)
+          }
+          // ... (rest of the logic remains the same)
+        } catch (error) {
+          console.error('Error fetching organizations:', error);
+        }
       } else {
         dispatch({
           type: HANDLERS.INITIALIZE
@@ -107,7 +153,6 @@ export const AuthProvider = (props) => {
       }
     });
 
-    // Restoration of authentication state from browser storage (e.g., localStorage)
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
       dispatch({
@@ -165,6 +210,39 @@ export const AuthProvider = (props) => {
     });
   };
 
+  const signUp = async (email, password) => {
+    try {
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+
+      const user = userCredential.user;
+
+      dispatch({
+        type: HANDLERS.SIGN_UP,
+        payload: user
+      });
+    } catch (err) {
+      console.error(err);
+      throw new Error('Error signing up. Please check your input.');
+    }
+  };
+
+  const sendPasswordResetLink = async (email) => {
+    try {
+      await sendPasswordResetEmail(auth, email);
+
+      dispatch({
+        type: HANDLERS.FORGOT_PASSWORD
+      });
+    } catch (err) {
+      console.error(err);
+      throw new Error('Error sending password reset link. Please check your email.');
+    }
+  };
+
   const getIdToken = async () => {
     try {
       const currentUser = auth.currentUser;
@@ -186,7 +264,12 @@ export const AuthProvider = (props) => {
         signIn,
         signInWithGoogle,
         signOut,
-        getIdToken
+        signUp,
+        sendPasswordResetLink,
+        getIdToken,
+        activeOrganization,
+        setActiveOrganization,
+        organizations,
       }}
     >
       {children}

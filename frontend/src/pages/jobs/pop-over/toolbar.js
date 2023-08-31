@@ -7,20 +7,20 @@ import Tooltip from '@mui/material/Tooltip';
 import MenuItem from '@mui/material/MenuItem';
 import IconButton from '@mui/material/IconButton';
 // hooks
-import { useBoolean } from '../../hooks/use-boolean';
-import { useResponsive } from '../../hooks/use-responsive';
+import { useBoolean } from '../../../hooks/use-boolean';
+import { useResponsive } from '../../../hooks/use-responsive';
 // components
-import Iconify from '../../components/iconify';
-import { ConfirmDialog } from '../../components/custom-dialog';
-import CustomPopover, { usePopover } from '../../components/custom-popover';
+import Iconify from '../../../components/iconify';
+import { ConfirmDialog } from '../../../components/custom-dialog';
+import CustomPopover, { usePopover } from '../../../components/custom-popover';
 
 // ----------------------------------------------------------------------
 
-export default function KanbanDetailsToolbar({
-  taskName,
+export default function Toolbar({
+  jobName,
+  jobStatus,
   onDelete,
-  taskStatus,
-  onCloseDetails,
+  onClosePopUp,
 }) {
   const smUp = useResponsive('up', 'sm');
 
@@ -28,7 +28,7 @@ export default function KanbanDetailsToolbar({
 
   const popover = usePopover();
 
-  const [status, setStatus] = useState(taskStatus);
+  const [status, setStatus] = useState(jobStatus);
 
   const handleChangeStatus = useCallback(
     (newValue) => {
@@ -49,7 +49,7 @@ export default function KanbanDetailsToolbar({
       >
         {!smUp && (
           <Tooltip title="Back">
-            <IconButton onClick={onCloseDetails} sx={{ mr: 1 }}>
+            <IconButton onClick={onClosePopUp} sx={{ mr: 1 }}>
               <Iconify icon="eva:arrow-ios-back-fill" />
             </IconButton>
           </Tooltip>
@@ -65,7 +65,7 @@ export default function KanbanDetailsToolbar({
         </Button>
 
         <Stack direction="row" justifyContent="flex-end" flexGrow={1}>
-          <Tooltip title="Delete task">
+          <Tooltip title="Delete job">
             <IconButton onClick={confirm.onTrue}>
               <Iconify icon="solar:trash-bin-trash-bold" />
             </IconButton>
@@ -98,7 +98,7 @@ export default function KanbanDetailsToolbar({
         title="Delete"
         content={
           <>
-            Are you sure want to delete <strong> {taskName} </strong>?
+            Are you sure want to delete <strong> {jobName} </strong>?
           </>
         }
         action={
@@ -111,9 +111,9 @@ export default function KanbanDetailsToolbar({
   );
 }
 
-KanbanDetailsToolbar.propTypes = {
-  onCloseDetails: PropTypes.func,
+Toolbar.propTypes = {
+  jobName: PropTypes.string,
+  jobStatus: PropTypes.string,
+  onClosePopUp: PropTypes.func,
   onDelete: PropTypes.func,
-  taskName: PropTypes.string,
-  taskStatus: PropTypes.string,
 };

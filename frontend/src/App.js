@@ -14,50 +14,70 @@ import { SettingsProvider, SettingsDrawer } from './components/settings';
 import ThemeProvider from './theme';
 // components
 import ScrollToTop from './components/scroll-to-top';
+import SignUpPage from './pages/auth/signup-page'; // Update the path accordingly
+import ForgotPasswordPage from './pages/auth/forgot-password-page'; // Update the path accordingly
+
 // layouts
 import DashboardLayout from './layouts/dashboard';
 import LoginPage from './pages/auth/LoginPage';
 
 import Account from './pages/account/account';
-import { KanbanView } from './pages/kanban/view'//
-// import { OrderListView } from './pages/order/view'
-import JobDataGrid from './pages/data-grid/data-grid'
+import { KanbanView } from './pages/kanban/view';
+import JobDataGrid from './pages/jobs/data-grid/data-grid';
+import EventsList from './pages/jobs/events/events-list';
+
+// Import the Stepper component
+import Stepper from './pages/job-wizzard/stepper'; // Make sure this path is correct
 
 function App() {
   return (
     <HelmetProvider>
-        <Router>
+      <Router>
         <LocalizationProvider dateAdapter={AdapterDateFns}>
-        <SettingsProvider
-          defaultSettings={{
+          <SettingsProvider
+            defaultSettings={{
             themeMode: 'light', // 'light' | 'dark'
             themeDirection: 'ltr', //  'rtl' | 'ltr'
             themeContrast: 'default', // 'default' | 'bold'
             themeLayout: 'vertical', // 'vertical' | 'horizontal' | 'mini'
             themeColorPresets: 'default', // 'default' | 'cyan' | 'purple' | 'blue' | 'orange' | 'red'
-            themeStretch: false,
-          }}
-        >
-          <ThemeProvider>
-            <ScrollToTop />
-            <AuthProvider>
+              themeStretch: false,
+            }}
+          >
+            <ThemeProvider>
+              <ScrollToTop />
+              <AuthProvider>
                 <Routes>
                   <Route path="/auth/login" element={<LoginPage />} />
+                  <Route path="/auth/signup" element={<SignUpPage />} /> {/* New route */}
+                  <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} /> {/* New route */}
                   <Route 
                     path="/" 
                     element={
                       <AuthGuard>
                         <DashboardLayout><KanbanView /> </DashboardLayout>
                       </AuthGuard>
-                    } 
+                    }
                   />
-                  <Route 
-                    path="/jobs" 
+                  <Route
+                    path="/jobs"
                     element={
                       <AuthGuard>
                         <DashboardLayout><JobDataGrid /> </DashboardLayout>
                       </AuthGuard>
-                    } 
+                    }
+                  />
+                  <Route
+                    path="/events/*"
+                    element={
+                      <AuthGuard>
+                        <DashboardLayout>
+                          <Routes>
+                            <Route path=":jobId" element={<EventsList />} />
+                          </Routes>
+                        </DashboardLayout>
+                      </AuthGuard>
+                    }
                   />
                   <Route
                     path="/account/*"
@@ -72,12 +92,25 @@ function App() {
                       </AuthGuard>
                     }
                   />
+                  <Route
+                    path="/job-wizzard/*"
+                    element={
+                      <AuthGuard>
+                        <DashboardLayout>
+                          <Routes>
+                            {/* Add the route for the Stepper component */}
+                            <Route path="/" element={<Stepper />} />
+                          </Routes>
+                        </DashboardLayout>
+                      </AuthGuard>
+                    }
+                  />
                 </Routes>
-            </AuthProvider>
-          </ThemeProvider>
+              </AuthProvider>
+            </ThemeProvider>
           </SettingsProvider>
-      </LocalizationProvider>
-        </Router>
+        </LocalizationProvider>
+      </Router>
     </HelmetProvider>
   );
 }

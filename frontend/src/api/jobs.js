@@ -1,17 +1,13 @@
-import axios from 'axios';
 import config from '../config/config';
+import { jsonRpcRequest } from './jsonrpc/client';
 
-// Define the base URL for the API
 const API_BASE_URL = `${config.apiUrl}`;
 
-// Define the URL for the "jobs" endpoint
-const JOBS_URL = `${API_BASE_URL}/jobs`;
-
 // Function to fetch job data by ID
-export async function fetchJobById(jobId, idToken) {
+export async function getJob(jobId, idToken) {
   try {
-    const response = await axios.get(`${JOBS_URL}/${jobId}`, { headers: { Authorization: idToken } });
-    return response.data;
+    const params = [jobId, idToken];
+    return await jsonRpcRequest('Jobs.GetJob', params, idToken);
   } catch (error) {
     console.error('Error fetching job:', error);
     return null;
@@ -21,8 +17,8 @@ export async function fetchJobById(jobId, idToken) {
 // Function to create a new job
 export async function createJob(jobData, idToken) {
   try {
-    const response = await axios.post(JOBS_URL, jobData, { headers: { Authorization: idToken } });
-    return response.data;
+    const params = [jobData, idToken];
+    return await jsonRpcRequest('Jobs.CreateJob', params, idToken);
   } catch (error) {
     console.error('Error creating job:', error);
     return null;
@@ -32,8 +28,8 @@ export async function createJob(jobData, idToken) {
 // Function to update an existing job
 export async function updateJob(jobId, jobData, idToken) {
   try {
-    const response = await axios.put(`${JOBS_URL}/${jobId}`, jobData, { headers: { Authorization: idToken } });
-    return response.data;
+    const params = [jobId, jobData, idToken];
+    return await jsonRpcRequest('Jobs.UpdateJob', params, idToken);
   } catch (error) {
     console.error('Error updating job:', error);
     return null;
@@ -43,17 +39,29 @@ export async function updateJob(jobId, jobData, idToken) {
 // Function to delete a job by ID
 export async function deleteJob(jobId, idToken) {
   try {
-    await axios.delete(`${JOBS_URL}/${jobId}`, { headers: { Authorization: idToken } });
+    const params = [jobId, idToken];
+    await jsonRpcRequest('Jobs.DeleteJob', params, idToken);
   } catch (error) {
     console.error('Error deleting job:', error);
   }
 }
 
 // Function to fetch all jobs
-export async function fetchAllJobs(idToken) {
+export async function getAllJobs(idToken, organizationId) {
   try {
-    const response = await axios.get(JOBS_URL, { headers: { Authorization: idToken } });
-    return response.data;
+    const params = [{organizationId}];
+    return await jsonRpcRequest('Jobs.GetAllJobs', params, idToken);
+  } catch (error) {
+    console.error('Error fetching all jobs:', error);
+    return [];
+  }
+}
+
+export async function getBoard(idToken, organizationId) {
+  try {
+    const params = [{organizationId}];
+
+    return await jsonRpcRequest('Jobs.GetKanbanBoard', params, idToken);
   } catch (error) {
     console.error('Error fetching all jobs:', error);
     return [];

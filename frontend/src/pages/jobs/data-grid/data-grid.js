@@ -5,13 +5,11 @@ import Tooltip from '@mui/material/Tooltip';
 import Stack from '@mui/material/Stack';
 import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
-import Chip from '@mui/material/Chip'; // Import Chip
-
-import { fetchAllJobs } from '../../api/jobs';
-import { useAuthContext } from '../../contexts/auth';
-import KanbanDetails from '../pop-over/kanban-details';
-import KanbanDetailsPriority from '../pop-over/kanban-details-priority';
-import Iconify from '../../components/iconify';
+import Chip from '@mui/material/Chip';
+import { useAuthContext } from '../../../contexts/auth';
+import Iconify from '../../../components/iconify';
+import { getAllJobs } from '../../../api/jobs';
+import PopOver from '../pop-over';
 
 function JobDataGrid() {
   const [jobs, setJobs] = useState([]);
@@ -25,48 +23,46 @@ function JobDataGrid() {
   const fetchJobsData = async () => {
     try {
       const idToken = await getIdToken();
-      const allJobs = await fetchAllJobs(idToken);
-      setJobs(allJobs);
+      const allJobs = await getAllJobs(idToken, "");
+      setJobs(allJobs.jobs);
     } catch (error) {
       console.error('Error fetching jobs:', error);
     }
   };
 
-
-  // Custom renderer for the reporter and assignees columns
   const avatarRenderer = (params) => {
     const assignees = Array.isArray(params.value) ? params.value : [params.value];
     return (
       <Stack direction="row" spacing={2} alignItems="center" justifyContent="center">
         {assignees.map((assignee) => (
-          <Tooltip key={assignee.ID} title={assignee.Name}>
-            <Avatar src={assignee.AvatarURL} alt={assignee.Name} />
+          <Tooltip key={assignee?.ID} title={assignee?.Name || ''}>
+            <Avatar src={assignee?.AvatarURL} alt={assignee?.Name || ''} />
           </Tooltip>
         ))}
       </Stack>
     );
   };
-
+  
   const renderLabel = (params) => (
     <Stack direction="row">
       <span style={{ height: 24, lineHeight: '24px', width: 100, flexShrink: 0, color: '#616161', fontWeight: 'bold' }}>
         Labels
       </span>
-
-      {!!params.value.length && (
+  
+      {params && params.value && !!params.value.length && (
         <Stack direction="row" flexWrap="wrap" alignItems="center" spacing={1}>
           {params.value.map((label) => (
-            <Chip key={label} color="primary" label={label} size="small" variant="outlined" /> // Using Chip with variant outlined and primary color
+            <Chip key={label} color="primary" label={label} size="small" variant="outlined" />
           ))}
         </Stack>
       )}
     </Stack>
   );
-
+  
   const renderPriority = (params) => {
     let { value: priority } = params;
-    priority = priority.toLowerCase()
-
+    priority = priority.toLowerCase();
+  
     const getIcon = () => {
       if (priority === 'low') return 'solar:double-alt-arrow-down-bold-duotone';
       if (priority === 'medium') return 'solar:double-alt-arrow-right-bold-duotone';
@@ -99,13 +95,18 @@ function JobDataGrid() {
     { field: 'buildingId', headerName: 'Building ID', width: 200 },
     { field: 'name', headerName: 'Name', width: 250 },
     {
-        field: 'labels',
-        headerName: 'Labels',
-        width: 250,
-        renderCell: renderLabel, // Use renderLabel function
+      field: 'labels',
+      headerName: 'Labels',
+      width: 250,
+      renderCell: renderLabel,
     },
     { field: 'dueDate', headerName: 'Due Date', width: 200 },
-    { field: 'priority', headerName: 'Priority', width: 150, renderCell: renderPriority }, // Use renderPriority function
+    {
+      field: 'priority',
+      headerName: 'Priority',
+      width: 150,
+      renderCell: renderPriority,
+    },
     { field: 'description', headerName: 'Description', width: 400 },
     {
       field: 'reporter',
@@ -119,8 +120,6 @@ function JobDataGrid() {
       width: 250,
       renderCell: avatarRenderer,
     },
-
-
     { field: 'attachmentUrls', headerName: 'Attachment URLs', width: 300 },
     { field: 'cost', headerName: 'Cost', type: 'number', width: 150 },
     { field: 'createdAt', headerName: 'Created At', width: 200 },
@@ -145,10 +144,10 @@ function JobDataGrid() {
         onRowClick={handleRowClick}
       />
       {selectedRow && (
-        <KanbanDetails
-          task={selectedRow}
-          openDetails={selectedRow !== null}
-          onCloseDetails={() => setSelectedRow(null)}
+        <PopOver
+          job={selectedRow}
+          openPopOver={selectedRow !== null}
+          onClosePopOver={() => setSelectedRow(null)}
         />
       )}
     </Container>
