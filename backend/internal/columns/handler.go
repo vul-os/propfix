@@ -257,3 +257,87 @@ func (a *adaptor) RemoveJobs(r *http.Request, args *RemoveJobsRequest, reply *Re
 	reply.Success = true
 	return nil
 }
+
+// MoveJobsRequest is the request payload for moving jobs between columns
+type MoveJobsRequest struct {
+	SourceColumnID      string   `json:"sourceColumnId"`
+	DestinationColumnID string   `json:"destinationColumnId"`
+	JobIDsToMove        []string `json:"jobIds"`
+}
+
+// MoveJobsResponse is the response payload for the MoveJobs method
+type MoveJobsResponse struct {
+	Success bool `json:"success"`
+}
+
+// MoveJobs moves jobs from one column to another
+func (a *adaptor) MoveJobs(r *http.Request, args *MoveJobsRequest, reply *MoveJobsResponse) error {
+	ctx := context.Background()
+
+	// Fetch source column to get current job IDs
+	sourceColumn, err := a.columnStore.GetColumn(args.SourceColumnID)
+	if err != nil {
+		return fmt.Errorf("Failed to fetch source column: %v", err)
+	}
+
+	// Fetch destination column to get current job IDs
+	destColumn, err := a.columnStore.GetColumn(args.DestinationColumnID)
+	if err != nil {
+		return fmt.Errorf("Failed to fetch destination column: %v", err)
+	}
+
+	// Check permissions for both source and destination columns
+	ok, err := a.authz.CheckPermissionAndOrgs(r, "columns", "movejobs", sourceColumn.OrganizationID)
+	if err != nil || !ok {
+		return errors.New("not permitted")
+	}
+
+	ok, err = a.authz.CheckPermissionAndOrgs(r, "columns", "movejobs", destColumn.OrganizationID)
+	if err != nil || !ok {
+		return errors.New("not permitted")
+	}
+
+	// Remove job IDs from source column and add them to destination column
+	newSourceJobIDs := make([]string, 0)
+	newDestJobIDs := append(destColumn.JobIDs, args.JobIDsToMove...)
+	for _, id := range sourceColumn.JobIDs {
+		if !contains(args.JobIDsToMove, id) {
+			newSourceJobIDs = append(newSourceJobIDs, id)
+		}
+	}
+
+	// Update the source column with the new job IDs
+	query := `
+		UPDATE columns
+		SET job_ids = $1
+		WHERE id = $2
+	`
+	_, err = a.pool.Exec(ctx, query, newSourceJobIDs, args.SourceColumnID)
+	if err != nil {
+		return fmt.Errorf("Failed to update source column: %v", err)
+	}
+
+	// Update the destination column with the new job IDs
+	query = `
+		UPDATE columns
+		SET job_ids = $1
+		WHERE id = $2
+	`
+	_, err = a.pool.Exec(ctx, query, newDestJobIDs, args.DestinationColumnID)
+	if err != nil {
+		return fmt.Errorf("Failed to update destination column: %v", err)
+	}
+
+	reply.Success = true
+	return nil
+}
+
+// Helper function to check if a slice contains a particular string
+func contains(s []string, str string) bool {
+	for _, v := range s {
+		if v == str {
+			return true
+		}
+	}
+	return false
+}

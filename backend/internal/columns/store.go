@@ -3,7 +3,6 @@ package columns
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v4/pgxpool"
@@ -111,6 +110,18 @@ func (s *ColumnsStore) GetAllColumns(organizationID string) ([]Column, error) {
 	return columns, nil
 }
 
+func UniqueSlice(input []string) []string {
+	uniqueMap := make(map[string]bool)
+	var uniqueSlice []string
+	for _, val := range input {
+		if _, exists := uniqueMap[val]; !exists {
+			uniqueSlice = append(uniqueSlice, val)
+			uniqueMap[val] = true
+		}
+	}
+	return uniqueSlice
+}
+
 func (s *ColumnsStore) AddJobs(columnID string, jobIDs []string) error {
 	ctx := context.Background()
 
@@ -120,16 +131,19 @@ func (s *ColumnsStore) AddJobs(columnID string, jobIDs []string) error {
 		return fmt.Errorf("Failed to fetch existing column: %v", err)
 	}
 
-	// Append new job IDs to the existing ones
-	newJobIDs := append(existingColumn.JobIDs, jobIDs...)
+	// Combine existing and new job IDs
+	combinedJobIDs := append(existingColumn.JobIDs, jobIDs...)
 
-	// Update the column with the new job IDs
+	// Ensure the combined list is unique
+	uniqueJobIDs := UniqueSlice(combinedJobIDs)
+
+	// Update the column with the new unique job IDs
 	query := `
-		UPDATE columns
-		SET job_ids = $1
-		WHERE id = $2
-	`
-	_, err = s.pool.Exec(ctx, query, strings.Join(newJobIDs, ","), columnID)
+        UPDATE columns
+        SET job_ids = $1
+        WHERE id = $2
+    `
+	_, err = s.pool.Exec(ctx, query, uniqueJobIDs, columnID)
 	if err != nil {
 		return fmt.Errorf("Failed to add jobs to column: %v", err)
 	}
@@ -146,16 +160,16 @@ func (s *ColumnsStore) RemoveJobs(columnID string, jobIDsToRemove []string) erro
 		return fmt.Errorf("Failed to fetch existing column: %v", err)
 	}
 
-	// Create a map of existing job IDs for quick lookup
-	existingJobIDsMap := make(map[string]bool)
-	for _, id := range existingColumn.JobIDs {
-		existingJobIDsMap[id] = true
+	// Create a map for quick lookup of job IDs to remove
+	removeJobIDsMap := make(map[string]bool)
+	for _, id := range jobIDsToRemove {
+		removeJobIDsMap[id] = true
 	}
 
 	// Filter out job IDs to be removed
 	newJobIDs := make([]string, 0)
 	for _, id := range existingColumn.JobIDs {
-		if _, exists := existingJobIDsMap[id]; !exists {
+		if _, exists := removeJobIDsMap[id]; !exists {
 			newJobIDs = append(newJobIDs, id)
 		}
 	}
@@ -166,9 +180,68 @@ func (s *ColumnsStore) RemoveJobs(columnID string, jobIDsToRemove []string) erro
 		SET job_ids = $1
 		WHERE id = $2
 	`
-	_, err = s.pool.Exec(ctx, query, strings.Join(newJobIDs, ","), columnID)
+	_, err = s.pool.Exec(ctx, query, newJobIDs, columnID)
 	if err != nil {
 		return fmt.Errorf("Failed to remove jobs from column: %v", err)
+	}
+
+	return nil
+}
+
+func (s *ColumnsStore) AddJobToFirstColumn(organizationID, jobID string) error {
+	// Step 1: Get the ID of the first column
+	ctx := context.Background()
+	query := `
+        SELECT id
+        FROM columns
+        WHERE organization_id = $1 AND name = 'New Jobs'
+        LIMIT 1
+    `
+	var firstColumnID string
+	err := s.pool.QueryRow(ctx, query, organizationID).Scan(&firstColumnID)
+	if err != nil {
+		return fmt.Errorf("Failed to get first column ID: %v", err)
+	}
+	fmt.Println(firstColumnID, jobID)
+	err = s.AddJobs(firstColumnID, []string{jobID})
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	return nil
+}
+
+// MoveJob moves a job from one column to another
+func (s *ColumnsStore) MoveJob(fromColumnID, toColumnID, jobID string) error {
+	ctx := context.Background()
+
+	// Step 1: Remove job from source column
+	fromColumn, err := s.GetColumn(fromColumnID)
+	if err != nil {
+		return fmt.Errorf("Failed to fetch source column: %v", err)
+	}
+	newJobIDsFrom := []string{}
+	for _, id := range fromColumn.JobIDs {
+		if id != jobID {
+			newJobIDsFrom = append(newJobIDsFrom, id)
+		}
+	}
+	_, err = s.pool.Exec(ctx, "UPDATE columns SET job_ids = $1 WHERE id = $2", newJobIDsFrom, fromColumnID)
+	if err != nil {
+		return fmt.Errorf("Failed to update source column: %v", err)
+	}
+
+	// Step 2: Add job to destination column
+	toColumn, err := s.GetColumn(toColumnID)
+	if err != nil {
+		return fmt.Errorf("Failed to fetch destination column: %v", err)
+	}
+	newJobIDsTo := append(toColumn.JobIDs, jobID)
+	newJobIDsTo = UniqueSlice(newJobIDsTo) // Ensuring uniqueness
+
+	_, err = s.pool.Exec(ctx, "UPDATE columns SET job_ids = $1 WHERE id = $2", newJobIDsTo, toColumnID)
+	if err != nil {
+		return fmt.Errorf("Failed to update destination column: %v", err)
 	}
 
 	return nil
