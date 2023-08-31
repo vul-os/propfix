@@ -22,8 +22,8 @@ func (s *ColumnsStore) CreateColumn(column Column) (string, error) {
 	ctx := context.Background()
 	columnID := uuid.New().String()
 	query := `
-		INSERT INTO columns (id, name, job_ids, organization_id)
-		VALUES ($1, $2, $3, $4)
+		INSERT INTO columns (id, name, job_ids, organization_id, "order")
+		VALUES ($1, $2, $3, $4, 0)
 		RETURNING id
 	`
 
@@ -39,11 +39,11 @@ func (s *ColumnsStore) UpdateColumn(column Column) error {
 	ctx := context.Background()
 	query := `
 		UPDATE columns
-		SET name = $1, job_ids = $2, organization_id = $3
-		WHERE id = $4
+		SET name = $1, job_ids = $2, organization_id = $3, "order" = $4
+		WHERE id = $5
 	`
 
-	_, err := s.pool.Exec(ctx, query, column.Name, column.JobIDs, column.OrganizationID, column.ID)
+	_, err := s.pool.Exec(ctx, query, column.Name, column.JobIDs, column.OrganizationID, column.Order, column.ID)
 	if err != nil {
 		return fmt.Errorf("Failed to update column")
 	}
@@ -54,13 +54,13 @@ func (s *ColumnsStore) UpdateColumn(column Column) error {
 func (s *ColumnsStore) GetColumn(columnID string) (*Column, error) {
 	ctx := context.Background()
 	query := `
-		SELECT id, name, job_ids, organization_id
+		SELECT id, name, job_ids, organization_id, "order"
 		FROM columns
 		WHERE id = $1
 	`
 
 	var column Column
-	err := s.pool.QueryRow(ctx, query, columnID).Scan(&column.ID, &column.Name, &column.JobIDs, &column.OrganizationID)
+	err := s.pool.QueryRow(ctx, query, columnID).Scan(&column.ID, &column.Name, &column.JobIDs, &column.OrganizationID, &column.Order)
 	if err != nil {
 		return nil, fmt.Errorf("Column not found")
 	}
@@ -86,9 +86,10 @@ func (s *ColumnsStore) DeleteColumn(columnID string) error {
 func (s *ColumnsStore) GetAllColumns(organizationID string) ([]Column, error) {
 	ctx := context.Background()
 	query := `
-		SELECT id, name, job_ids, organization_id
+		SELECT id, name, job_ids, organization_id, "order"
 		FROM columns
 		WHERE organization_id = $1
+		ORDER BY "order"
 	`
 
 	rows, err := s.pool.Query(ctx, query, organizationID)
@@ -100,7 +101,7 @@ func (s *ColumnsStore) GetAllColumns(organizationID string) ([]Column, error) {
 	var columns []Column
 	for rows.Next() {
 		var column Column
-		err := rows.Scan(&column.ID, &column.Name, &column.JobIDs, &column.OrganizationID)
+		err := rows.Scan(&column.ID, &column.Name, &column.JobIDs, &column.OrganizationID, &column.Order)
 		if err != nil {
 			return nil, fmt.Errorf("Failed to scan column row: %v", err)
 		}
@@ -211,15 +212,28 @@ func (s *ColumnsStore) AddJobToFirstColumn(organizationID, jobID string) error {
 	return nil
 }
 
-// MoveJob moves a job from one column to another
 func (s *ColumnsStore) MoveJob(fromColumnID, toColumnID, jobID string) error {
 	ctx := context.Background()
 
-	// Step 1: Remove job from source column
+	// Step 1: Fetch both columns
 	fromColumn, err := s.GetColumn(fromColumnID)
 	if err != nil {
 		return fmt.Errorf("Failed to fetch source column: %v", err)
 	}
+	toColumn, err := s.GetColumn(toColumnID)
+	if err != nil {
+		return fmt.Errorf("Failed to fetch destination column: %v", err)
+	}
+
+	// Step 2: Remove duplicates from destination column
+	newJobIDsTo := []string{}
+	for _, id := range toColumn.JobIDs {
+		if !contains(fromColumn.JobIDs, id) {
+			newJobIDsTo = append(newJobIDsTo, id)
+		}
+	}
+
+	// Step 3: Remove job from source column
 	newJobIDsFrom := []string{}
 	for _, id := range fromColumn.JobIDs {
 		if id != jobID {
@@ -231,12 +245,8 @@ func (s *ColumnsStore) MoveJob(fromColumnID, toColumnID, jobID string) error {
 		return fmt.Errorf("Failed to update source column: %v", err)
 	}
 
-	// Step 2: Add job to destination column
-	toColumn, err := s.GetColumn(toColumnID)
-	if err != nil {
-		return fmt.Errorf("Failed to fetch destination column: %v", err)
-	}
-	newJobIDsTo := append(toColumn.JobIDs, jobID)
+	// Step 4: Add job to destination column
+	newJobIDsTo = append(newJobIDsTo, jobID)
 	newJobIDsTo = UniqueSlice(newJobIDsTo) // Ensuring uniqueness
 
 	_, err = s.pool.Exec(ctx, "UPDATE columns SET job_ids = $1 WHERE id = $2", newJobIDsTo, toColumnID)

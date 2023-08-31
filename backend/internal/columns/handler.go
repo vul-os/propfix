@@ -17,6 +17,7 @@ type Column struct {
 	ID             string   `json:"id"`
 	Name           string   `json:"name"`
 	JobIDs         []string `json:"jobIds"`
+	Order          int      `json:"order"`
 	OrganizationID string   `json:"organizationId"`
 }
 

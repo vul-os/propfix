@@ -54,6 +54,7 @@ func createColumnsTable(dbpool *pgxpool.Pool) error {
 		CREATE TABLE IF NOT EXISTS columns (
 			id TEXT PRIMARY KEY,
 			name TEXT NOT NULL,
+			order INTEGER
 			job_ids TEXT[],
 			organization_id TEXT
 		)
