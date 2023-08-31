@@ -2,7 +2,7 @@
 // LOOK HERE! Never put a training '/' eg: https://abc.com/ <- dont do that
 function getConfig() {
     const defaultConfig = {
-      apiUrl: 'https://us-central1-propfix.cloudfunctions.net/function-backend-go',
+      apiUrl: 'https://us-central1-propfix.cloudfunctions.net/function-backend-go/api/authenticated/',
     };
   
     const location = window.location.href;
@@ -15,9 +15,7 @@ function getConfig() {
           apiUrl: 'http://localhost:8080/api/authenticated/',
         };
       case location.includes('gitpod'):
-        return {
-          apiUrl: 'https://us-central1-propfix.cloudfunctions.net/function-backend-go',
-        };
+        return defaultConfig;
       default:
         return defaultConfig;
     }
