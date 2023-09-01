@@ -16,13 +16,15 @@ import { useAuthContext } from '../../../contexts/auth';
 export default function KanbanView() {
   const [board, setBoard] = useState(null);
   const [boardLoading, setBoardLoading] = useState(true);
-  const { getIdToken } = useAuthContext(); 
+  const { getIdToken, activeOrganization } = useAuthContext(); 
   useEffect(() => {
     async function fetchData() {
       try {
-        const token = await getIdToken(); 
-        const boardData = await getBoard(token, "8d3a2d83-ba07-48e9-a2db-af91247b3183");
-        setBoard(boardData.board);
+        if (activeOrganization) {
+          const token = await getIdToken(); 
+          const boardData = await getBoard(token, activeOrganization);
+          setBoard(boardData.board);
+        }
         setBoardLoading(false);
       } catch (error) {
         console.error('Error fetching board:', error);

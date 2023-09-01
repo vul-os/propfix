@@ -1,8 +1,8 @@
 // config.js
-// LOOK HERE! Never put a training '/' eg: https://abc.com/ <- dont do that
+// LOOK HERE! Never put a trailing '/' eg: https://abc.com/ <- dont do that
 function getConfig() {
     const defaultConfig = {
-      apiUrl: 'https://us-central1-propfix.cloudfunctions.net/function-backend-go/api/authenticated/',
+      apiUrl: 'https://us-central1-propfix.cloudfunctions.net/function-backend-go/api/authenticated',
     };
   
     const location = window.location.href;
