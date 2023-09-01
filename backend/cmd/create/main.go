@@ -54,7 +54,7 @@ func createColumnsTable(dbpool *pgxpool.Pool) error {
 		CREATE TABLE IF NOT EXISTS columns (
 			id TEXT PRIMARY KEY,
 			name TEXT NOT NULL,
-			order INTEGER
+			"order" INTEGER,
 			job_ids TEXT[],
 			organization_id TEXT
 		)
@@ -166,8 +166,8 @@ func createLabelsTable(dbpool *pgxpool.Pool) error {
 }
 
 func main() {
-	pgHost := "postgresql-141986-0.cloudclusters.net"
-	pgPort := "18850"
+	pgHost := "postgresql-142500-0.cloudclusters.net"
+	pgPort := "10082"
 	pgDatabase := "propfix"
 	pgUser := "propfixadmin"
 	pgPassword := "happy123"
