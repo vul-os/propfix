@@ -3,6 +3,7 @@ package buildings
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -66,6 +67,7 @@ func (a *adaptor) CreateBuilding(r *http.Request, args *CreateBuildingRequest, r
 
 	err = a.pool.QueryRow(ctx, query, buildingID, args.Building.BuildingName, args.Building.Address, args.Building.UnitNumberSystem, args.Building.Latitude, args.Building.Longitude, time.Now(), args.Building.OrganizationID).Scan(&buildingID)
 	if err != nil {
+		fmt.Println(err)
 		return errors.New("Failed to create building")
 	}
 
