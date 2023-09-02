@@ -13,5 +13,8 @@ steps:
    - 'deploy'
    - 'propfix-backend-go'
    - '--image'
-   - 'gcr.io/$PROJECT_ID/propfix-backend
-   
+   - 'gcr.io/$PROJECT_ID/propfix-backend-go:$COMMIT_SHA'
+   - '--region'
+   - 'us-central1'
+images:
+ - 'gcr.io/$PROJECT_ID/propfix-backend-go:$COMMIT_SHA'
