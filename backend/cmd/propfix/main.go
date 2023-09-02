@@ -12,9 +12,7 @@ import (
 func main() {
 	// How to run this code:
 	// > go run ./propfix/main.go
-	if isRunningInCloud() {
-		fmt.Println("Running in a cloud environment")
-	} else {
+	if !IsRunningOnCloudRun() {
 		// // // Set up local Environment
 		// Get the current working directory
 		cwd, err := os.Getwd()
@@ -42,22 +40,9 @@ func main() {
 	fmt.Println("Server is running. Press Ctrl+C to exit.")
 }
 
-func isRunningInCloud() bool {
-	// Check for common environment variables present in various cloud platforms
-	cloudEnvVariables := []string{
-		"AWS_LAMBDA_FUNCTION_NAME",
-		"GOOGLE_CLOUD_PROJECT",
-		"AZURE_FUNCTIONS_ENVIRONMENT",
-		"HEROKU_APP_NAME",
-		"IBM_CLOUD_REGION",
-		"GOOGLE_APPLICATION_CREDENTIALS",
-	}
-
-	for _, envVar := range cloudEnvVariables {
-		if os.Getenv(envVar) != "" {
-			return true
-		}
-	}
-
-	return false
+// IsRunningOnCloudRun checks if the application is running on Google Cloud Run
+func IsRunningOnCloudRun() bool {
+	_, kServiceExists := os.LookupEnv("K_SERVICE")
+	_, kRevisionExists := os.LookupEnv("K_REVISION")
+	return kServiceExists && kRevisionExists
 }
