@@ -14,7 +14,7 @@ import DialogContent from '@mui/material/DialogContent';
 import InputAdornment from '@mui/material/InputAdornment';
 import ListItemAvatar from '@mui/material/ListItemAvatar';
 // _mock
-import { _contacts } from '../../_mock';
+
 // components
 import Iconify from '../../components/iconify';
 import Scrollbar from '../../components/scrollbar';
@@ -24,11 +24,11 @@ import SearchNotFound from '../../components/search-not-found';
 
 const ITEM_HEIGHT = 64;
 
-export default function KanbanContactsDialog({ assignee = [], open, onClose }) {
-  const [searchContact, setSearchContact] = useState('');
+export default function MembersDialog({ members = [], open, onClose }) {
+  const [searchMember, setSearchMember] = useState('');
 
-  const handleSearchContacts = useCallback((event) => {
-    setSearchContact(event.target.value);
+  const handleSearchMember = useCallback((event) => {
+    setSearchMember(event.target.value);
   }, []);
 
   const dataFiltered = applyFilter({
@@ -47,8 +47,8 @@ export default function KanbanContactsDialog({ assignee = [], open, onClose }) {
       <Box sx={{ px: 3, py: 2.5 }}>
         <TextField
           fullWidth
-          value={searchContact}
-          onChange={handleSearchContacts}
+          value={searchMember}
+          onChange={handleSearchMember}
           placeholder="Search..."
           InputProps={{
             startAdornment: (
@@ -62,7 +62,7 @@ export default function KanbanContactsDialog({ assignee = [], open, onClose }) {
 
       <DialogContent sx={{ p: 0 }}>
         {notFound ? (
-          <SearchNotFound query={searchContact} sx={{ mt: 3, mb: 10 }} />
+          <SearchNotFound query={searchMember} sx={{ mt: 3, mb: 10 }} />
         ) : (
           <Scrollbar
             sx={{
@@ -117,7 +117,7 @@ export default function KanbanContactsDialog({ assignee = [], open, onClose }) {
   );
 }
 
-KanbanContactsDialog.propTypes = {
+MembersDialog.propTypes = {
   open: PropTypes.bool,
   onClose: PropTypes.func,
   assignee: PropTypes.array,
@@ -128,9 +128,9 @@ KanbanContactsDialog.propTypes = {
 function applyFilter({ inputData, query }) {
   if (query) {
     inputData = inputData.filter(
-      (contact) =>
-        contact.name.toLowerCase().indexOf(query.toLowerCase()) !== -1 ||
-        contact.email.toLowerCase().indexOf(query.toLowerCase()) !== -1
+      (member) =>
+        member.name.toLowerCase().indexOf(query.toLowerCase()) !== -1 ||
+        member.email.toLowerCase().indexOf(query.toLowerCase()) !== -1
     );
   }
 

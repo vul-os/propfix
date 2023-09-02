@@ -18,44 +18,7 @@ export default function KanbanColumn({ column, jobs, index }) {
   const openAddJob = useBoolean();
   const { getIdToken } = useAuthContext(); // Get the getIdToken function from the auth context
 
-  const handleAddJob = useCallback(
-    async (jobData) => {
-      try {
-        const token = await getIdToken(); // Get the JWT token from the auth context
-        // createJob(column.id, jobData, token); // Pass the token to the createJob function
 
-        openAddJob.onFalse();
-      } catch (error) {
-        console.error(error);
-      }
-    },
-    [column.id, getIdToken, openAddJob] // Include getIdToken in the dependencies array
-  );
-
-  const handleUpdateJob = useCallback(async (jobData) => {
-    try {
-      const token = await getIdToken(); // Get the JWT token from the auth context
-      // updateJob(jobData, token); // Pass the token to the updateJob function
-    } catch (error) {
-      console.error(error);
-    }
-  }, [getIdToken]);
-
-  const handleDeleteJob = useCallback(
-    async (jobId) => {
-      try {
-        const token = await getIdToken(); // Get the JWT token from the auth context
-        // deleteJob(column.id, jobId, token); // Pass the token to the deleteJob function
-
-        enqueueSnackbar('Delete success!', {
-          anchorOrigin: { vertical: 'top', horizontal: 'center' },
-        });
-      } catch (error) {
-        console.error(error);
-      }
-    },
-    [column.id, getIdToken, enqueueSnackbar]
-  );
 
   return (
     <Draggable draggableId={column.id} index={index}>
@@ -113,15 +76,13 @@ export default function KanbanColumn({ column, jobs, index }) {
                 >
                   {column.jobIds &&
                     column.jobIds.map((jobId, jobIndex) => {
-                      const job = jobs.find((job) => job && job.id === jobId);
-                      if (job) {
+                      const theJob = jobs.find((job) => job && job.id === jobId);
+                      if (theJob) {
                         return (
                           <KanbanJobItem
                             key={jobId}
                             index={jobIndex}
-                            job={job}
-                            onUpdateJob={handleUpdateJob}
-                            onDeleteJob={() => handleDeleteJob(jobId)}
+                            job={theJob}
                           />
                         );
                       }

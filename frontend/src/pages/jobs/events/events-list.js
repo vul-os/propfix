@@ -1,28 +1,22 @@
 import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import { useParams } from 'react-router-dom';
-import Paper from '@mui/material/Paper';
-import { useAuthContext } from '../../contexts/auth';
-import { getAllEvents } from '../../api/events';
+import Stack from '@mui/material/Stack';
+import { useAuthContext } from '../../../contexts/auth';
+import { getAllEvents } from '../../../api/events';
 import MessageStep from './message-step'; // Import the MessageStep component
 import CrudStep from './crud-step'; // Import the CrudStep component
 
-const styles = {
-  container: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '16px',
-    padding: '16px',
-  },
-};
 
-export default function EventsList() {
-  const { jobId } = useParams();
+export default function EventsList({ jobId }) {
+  // const { jobId } = useParams();
   const { getIdToken } = useAuthContext();
   const [events, setEvents] = useState([]);
 
   useEffect(() => {
-    fetchEvents();
+    if (jobId) {
+      fetchEvents();
+    }
   }, [jobId]);
 
   const fetchEvents = async () => {
@@ -36,8 +30,16 @@ export default function EventsList() {
   };
 
   return (
-    <div style={styles.container}>
-      {events.map((event) => (
+    <Stack
+      spacing={3}
+      flexGrow={1}
+      sx={{
+        py: 3,
+        px: 2.5,
+        bgcolor: 'background.neutral',
+      }}
+    >
+      {events && events.map((event) => (
         <div key={event.id} elevation={3}>
           {event.type === 'MESSAGE' ? (
             <MessageStep event={event} />
@@ -46,7 +48,7 @@ export default function EventsList() {
           )}
         </div>
       ))}
-    </div>
+    </Stack>
   );
 }
 

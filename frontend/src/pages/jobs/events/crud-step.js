@@ -5,7 +5,7 @@ import Typography from '@mui/material/Typography';
 import CreateIcon from '@mui/icons-material/Create'; // Material Icons
 import UpdateIcon from '@mui/icons-material/Update';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { fToNow } from '../../utils/format-time';
+import { fToNow } from '../../../utils/format-time';
 
 export default function CrudStep({ event }) {
   let icon;

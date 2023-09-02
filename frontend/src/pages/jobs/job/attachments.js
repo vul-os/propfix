@@ -2,13 +2,13 @@ import PropTypes from 'prop-types';
 import { useState, useCallback } from 'react';
 import Stack from '@mui/material/Stack';
 import CloseIcon from '@mui/icons-material/Close';
-import { UploadBox } from '../../components/upload';
+import { UploadBox } from '../../../components/upload';
 import 'regenerator-runtime/runtime';
-import { useAuthContext } from '../../contexts/auth'; 
+import { useAuthContext } from '../../../contexts/auth'; 
 
-import { uploadFile, getFile, deleteFile } from '../../api/attachments';
+import { uploadFile, getFile, deleteFile } from '../../../api/attachments';
 
-export default function KanbanDetailsAttachments({ jobId, attachments }) {
+export default function Attachments({ jobId, attachments }) {
   const [files, setFiles] = useState(attachments || []);
   const { getIdToken } = useAuthContext(); 
 
@@ -97,7 +97,7 @@ export default function KanbanDetailsAttachments({ jobId, attachments }) {
   );
 }
 
-KanbanDetailsAttachments.propTypes = {
+Attachments.propTypes = {
   jobId: PropTypes.string.isRequired,
   attachments: PropTypes.array,
 };
