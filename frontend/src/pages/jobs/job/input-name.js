@@ -4,7 +4,7 @@ import InputBase, { inputBaseClasses } from '@mui/material/InputBase';
 
 // ----------------------------------------------------------------------
 
-export default function KanbanInputName({ sx, ...other }) {
+export default function InputName({ sx, ...other }) {
   return (
     <InputBase
       sx={{
@@ -31,6 +31,6 @@ export default function KanbanInputName({ sx, ...other }) {
   );
 }
 
-KanbanInputName.propTypes = {
+InputName.propTypes = {
   sx: PropTypes.object,
 };

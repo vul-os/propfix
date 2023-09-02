@@ -8,14 +8,13 @@ import Typography from '@mui/material/Typography';
 import Paper from '@mui/material/Paper';
 import AvatarGroup, { avatarGroupClasses } from '@mui/material/AvatarGroup'; // Import AvatarGroup and avatarGroupClasses from MUI
 import { useBoolean } from '../../hooks/use-boolean';
+import PopOver from '../jobs/pop-over';
+import { bgBlur } from '../../theme/css';
 
-// Placeholder for bgBlur function or remove if not needed
-const bgBlur = (styles) => styles;
 
-export default function KanbanJobItem({ job, index, onDeleteJob, onUpdateJob, sx, ...other }) {
+export default function KanbanJobItem({ job, index, sx, ...other }) {
   const theme = useTheme();
   const openDetails = useBoolean();
-
   const renderInfo = (
     <Stack direction="row" alignItems="center">
       <AvatarGroup
@@ -48,7 +47,7 @@ export default function KanbanJobItem({ job, index, onDeleteJob, onUpdateJob, sx
               overflow: 'hidden',
               position: 'relative',
               bgcolor: 'background.default',
-              boxShadow: theme.customShadows.z1,
+              boxShadow: theme.customShadows.z20,
               '&:hover': {
                 boxShadow: theme.customShadows.z20,
               },
@@ -67,22 +66,31 @@ export default function KanbanJobItem({ job, index, onDeleteJob, onUpdateJob, sx
             {...other}
           >
             <Stack spacing={2} sx={{ px: 2, py: 2.5, position: 'relative' }}>
+              {/* {renderPriority} */}
+
+              <Typography variant="subtitle2">{job.name}</Typography>
+
+              {/* {renderInfo} */}
+            </Stack>
+            {/* <Stack spacing={2} sx={{ px: 2, py: 2.5, position: 'relative' }}>
               <Typography variant="subtitle2">{job.name}</Typography>
               {renderInfo}
-            </Stack>
+            </Stack> */}
           </Paper>
         )}
       </Draggable>
 
-      {/* Rest of the component */}
+      <PopOver
+        job={job}
+        openPopOver={openDetails.value}
+        onClosePopOver={openDetails.onFalse}
+      />
     </>
   );
 }
 
 KanbanJobItem.propTypes = {
   index: PropTypes.number,
-  onDeleteJob: PropTypes.func,
-  onUpdateJob: PropTypes.func,
   sx: PropTypes.object,
   job: PropTypes.object,
 };

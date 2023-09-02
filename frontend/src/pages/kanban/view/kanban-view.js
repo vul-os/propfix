@@ -5,7 +5,7 @@ import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
 
 import EmptyContent from '../../../components/empty-content';
-import { moveJob } from '../../../api/columns';
+import { moveJobs } from '../../../api/columns';
 import { getBoard } from '../../../api/jobs';
 import { hideScroll } from '../../../theme/css';
 
@@ -16,13 +16,15 @@ import { useAuthContext } from '../../../contexts/auth';
 export default function KanbanView() {
   const [board, setBoard] = useState(null);
   const [boardLoading, setBoardLoading] = useState(true);
-  const { getIdToken } = useAuthContext(); 
+  const { getIdToken, activeOrganization } = useAuthContext(); 
   useEffect(() => {
     async function fetchData() {
       try {
-        const token = await getIdToken(); 
-        const boardData = await getBoard(token, "8d3a2d83-ba07-48e9-a2db-af91247b3183");
-        setBoard(boardData.board);
+        if (activeOrganization) {
+          const token = await getIdToken(); 
+          const boardData = await getBoard(token, activeOrganization);
+          setBoard(boardData.board);
+        }
         setBoardLoading(false);
       } catch (error) {
         console.error('Error fetching board:', error);
@@ -37,6 +39,7 @@ export default function KanbanView() {
   const onDragEnd = useCallback(
     async ({ destination, source, draggableId, type }) => {
       const token = await getIdToken(); 
+      console.log(destination, source, draggableId)
       try {
         if (!destination) {
           return;
@@ -50,18 +53,20 @@ export default function KanbanView() {
         const destinationColumn = board?.columns[destination.droppableId];
 
         if (sourceColumn && destinationColumn) {
+          console.log("heree: ", sourceColumn, destinationColumn)
           // Get a copy of job ids from source column
-          const newStartJobIds = Array.from(sourceColumn.jobids || []);
+          const newStartJobIds = Array.from(sourceColumn.jobIds || []);
   
           // Remove the job id from source column
           newStartJobIds.splice(source.index, 1);
   
           // Get a copy of job ids from destination column
-          const newEndJobIds = Array.from(destinationColumn.jobids || []);
+          const newEndJobIds = Array.from(destinationColumn.jobIds || []);
   
           // Add the job id to the destination column
           newEndJobIds.splice(destination.index, 0, draggableId);
-  
+          console.log("heree: ", newStartJobIds, newEndJobIds)
+
           // Create new board state
           const newBoardState = {
             ...board,
@@ -69,33 +74,31 @@ export default function KanbanView() {
               ...board.columns,
               [source.droppableId]: {
                 ...sourceColumn,
-                jobids: newStartJobIds,
+                jobIds: newStartJobIds,
               },
               [destination.droppableId]: {
                 ...destinationColumn,
-                jobids: newEndJobIds,
+                jobIds: newEndJobIds,
               },
             },
           };
-  
           setBoard(newBoardState);
+          // actually do api request
+          await moveJobs(
+            sourceColumn.id,
+            destinationColumn.id,
+            [draggableId],
+            token 
+          );
         }
-  
-
-        // actually do api request
-        await moveJob(
-          sourceColumn.jobids[source.index],
-          sourceColumn.id,
-          destinationColumn.id,
-          token 
-        );
-
+   
+        
         console.info('Moving to a different list!');
       } catch (error) {
         console.error(error);
       }
     },
-    [getIdToken] 
+    [getIdToken, board] 
   );
   const renderSkeleton = (
     <Stack direction="row" alignItems="flex-start" spacing={3}>
@@ -123,15 +126,8 @@ export default function KanbanView() {
 
       {boardLoading && renderSkeleton}
 
-      {board?.ordered.length === 0 && (
-        <EmptyContent
-          filled
-          title="No Data"
-          sx={{
-            py: 10,
-            maxHeight: { md: 480 },
-          }}
-        />
+      {board && board?.ordered.length === 0 && (
+        <></>
       )}
 
       {!!board?.ordered.length && (
