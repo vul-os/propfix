@@ -7,7 +7,6 @@ import { getAllEvents } from '../../../api/events';
 import MessageStep from './message-step'; // Import the MessageStep component
 import CrudStep from './crud-step'; // Import the CrudStep component
 
-
 export default function EventsList({ jobId }) {
   // const { jobId } = useParams();
   const { getIdToken } = useAuthContext();
@@ -31,12 +30,9 @@ export default function EventsList({ jobId }) {
 
   return (
     <Stack
-      spacing={3}
       flexGrow={1}
       sx={{
-        py: 3,
-        px: 2.5,
-        bgcolor: 'background.neutral',
+        bgcolor: 'white', // Set the background color to white
       }}
     >
       {events && events.map((event) => (
