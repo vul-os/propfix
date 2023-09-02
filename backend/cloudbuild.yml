@@ -14,3 +14,4 @@ steps:
    - 'propfix-backend-go'
    - '--image'
    - 'gcr.io/$PROJECT_ID/propfix-backend
+   
