@@ -12,7 +12,7 @@ import (
 	jsonRpcServer "github.com/exolutionza/propfix-backend-go/internal/api/jsonRpc/server"
 	jsonRpcProvider "github.com/exolutionza/propfix-backend-go/internal/api/jsonRpc/service/provider"
 	"github.com/exolutionza/propfix-backend-go/internal/attachments"
-	"github.com/gorilla/mux"
+	"github.com/go-chi/chi"
 
 	firebase "firebase.google.com/go/v4"
 	"github.com/exolutionza/propfix-backend-go/internal/auth"
@@ -40,7 +40,6 @@ func Server() {
 	bucketName := "propfix-attachments"
 	serverAddress := "localhost"
 	serverPort := "8080"
-	attachmentPort := "8081"
 
 	pgConnString := fmt.Sprintf("user=%s password=%s host=%s port=%s dbname=%s sslmode=disable",
 		pgUser, pgPassword, pgHost, pgPort, pgDatabase)
@@ -82,13 +81,13 @@ func Server() {
 	rpcServerConfigs := []jsonRpcServer.RPCServerConfig{
 		{
 			Name:             "Public",
-			Path:             "/api/public",
+			Path:             "/public",
 			Middleware:       []func(http.Handler) http.Handler{},
 			ServiceProviders: []jsonRpcProvider.Provider{},
 		},
 		{
 			Name: "Authorized",
-			Path: "/api/authenticated",
+			Path: "/authenticated",
 			Middleware: []func(http.Handler) http.Handler{
 				auth.IsAuthenticated(authClient, *orgStore),
 			},
@@ -105,38 +104,35 @@ func Server() {
 		},
 		// Add more RPC server configurations for other services here
 	}
+	// Create a chi router for the main application
+	mainRouter := chi.NewRouter()
 
-	// Create a new server instance
-	rpcServer := jsonRpcServer.New(serverAddress, serverPort, rpcServerConfigs)
+	// Create an authenticated subrouter for file uploads
+	authenticatedRouter := chi.NewRouter()
+	authenticatedRouter.Use(auth.IsAuthenticated(authClient, *orgStore)) // Apply auth middleware
 
-	// Start server using goroutine
-	go func() {
-		if err := rpcServer.Start(); err != nil {
-			fmt.Println("Failed to start server:", err)
-		}
-	}()
-
-	// File upload server
+	// Create file upload handler
 	fileUploadHandler, _ := attachments.NewFileUploadHandler(bucket, eventStore) // Use your event store
 
-	router := mux.NewRouter()
-	authenticatedRouter := router.PathPrefix("/attachments").Subrouter()
-	authenticatedRouter.Use(auth.IsAuthenticated(authClient, *orgStore)) // Apply auth middleware to authenticated routes
+	// Attach file upload routes to authenticated subrouter
+	authenticatedRouter.Post("/upload/{jobid}", fileUploadHandler.UploadFile)
+	authenticatedRouter.Get("/download/{jobid}/{filename}", fileUploadHandler.GetFile)
+	authenticatedRouter.Delete("/delete/{jobid}/{filename}", fileUploadHandler.DeleteFile)
 
-	authenticatedRouter.HandleFunc("/upload/{jobid}", fileUploadHandler.UploadFile).Methods("POST")
-	authenticatedRouter.HandleFunc("/download/{jobid}/{filename}", fileUploadHandler.GetFile).Methods("GET")
-	authenticatedRouter.HandleFunc("/delete/{jobid}/{filename}", fileUploadHandler.DeleteFile).Methods("DELETE")
+	// Mount the authenticated subrouter onto the main router
+	mainRouter.Mount("/attachments", authenticatedRouter)
 
-	// Create an HTTP server with the router as the handler
-	httpServer := &http.Server{
-		Addr:    fmt.Sprintf("%s:%s", serverAddress, attachmentPort), // Replace with your desired address and port
-		Handler: router,
-	}
-	// Start the server using a goroutine
+	// Pass the sub-router to the JSON-RPC server
+	rpcServer := jsonRpcServer.New(serverAddress, serverPort, rpcServerConfigs)
+
+	mainRouter.Mount("/api", rpcServer.RootRouter)
+	// Mount the API sub-router to the main router
+	// Start server using goroutine
 	go func() {
-		if err := httpServer.ListenAndServe(); err != nil {
+		if err := http.ListenAndServe(rpcServer.Host+":"+rpcServer.Port, mainRouter); err != nil {
 			fmt.Println("Failed to start server:", err)
 		}
+
 	}()
 
 	// Add more routes as needed
