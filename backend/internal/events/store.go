@@ -123,16 +123,16 @@ func (s *EventsStore) DeleteAllEventsForJobID(jobID string) error {
 	return nil
 }
 
-func (s *EventsStore) GetAllEventsForJob(jobID string, visibility string) ([]Event, error) {
+func (s *EventsStore) GetAllEvents(jobID string, visibility string) ([]Event, error) {
 	ctx := context.Background()
 	query := `
 		SELECT id, type, job_id, member_id, data, created_at, visibility
 		FROM events
 		WHERE job_id = $1
 	`
-	if visibility == "public" {
-		query += " AND visibility = 'public'"
-	}
+	// if visibility == "public" {
+	// 	query += " AND visibility = 'public'"
+	// }
 
 	rows, err := s.pool.Query(ctx, query, jobID)
 	if err != nil {

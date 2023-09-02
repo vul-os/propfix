@@ -147,7 +147,7 @@ func (a *adaptor) GetAllEvents(r *http.Request, args *GetAllEventsRequest, resul
 	}
 
 	var events []Event
-	events, err = a.store.GetAllEventsForJob(args.JobID, accessType)
+	events, err = a.store.GetAllEvents(args.JobID, accessType)
 	if err != nil {
 		return fmt.Errorf("Failed to get public events: %v", err)
 	}

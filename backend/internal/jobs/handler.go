@@ -154,7 +154,11 @@ func (a *adaptor) CreateJob(r *http.Request, args *CreateJobRequest, result *Cre
 	if err != nil {
 		return err
 	}
-
+	// Get the ID of the first column and add the job to it
+	err = a.columnsStore.AddJobToFirstColumn(args.Job.OrganizationID, args.Job.ID)
+	if err != nil {
+		return err
+	}
 	result.ID = args.Job.ID
 	return nil
 }
