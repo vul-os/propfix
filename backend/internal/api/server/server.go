@@ -38,7 +38,7 @@ func Server() {
 	pgPassword := "happy123"
 
 	bucketName := "propfix-attachments"
-	serverAddress := "localhost"
+	serverAddress := "0.0.0.0"
 	serverPort := "8080"
 
 	pgConnString := fmt.Sprintf("user=%s password=%s host=%s port=%s dbname=%s sslmode=disable",
