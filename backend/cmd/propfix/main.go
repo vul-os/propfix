@@ -50,6 +50,7 @@ func isRunningInCloud() bool {
 		"AZURE_FUNCTIONS_ENVIRONMENT",
 		"HEROKU_APP_NAME",
 		"IBM_CLOUD_REGION",
+		"GOOGLE_APPLICATION_CREDENTIALS",
 	}
 
 	for _, envVar := range cloudEnvVariables {

@@ -81,6 +81,12 @@ func Server() {
 
 	rpcServerConfigs := []jsonRpcServer.RPCServerConfig{
 		{
+			Name:             "Public",
+			Path:             "/api/public",
+			Middleware:       []func(http.Handler) http.Handler{},
+			ServiceProviders: []jsonRpcProvider.Provider{},
+		},
+		{
 			Name: "Authorized",
 			Path: "/api/authenticated",
 			Middleware: []func(http.Handler) http.Handler{
