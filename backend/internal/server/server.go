@@ -1,4 +1,4 @@
-package router
+package server
 
 import (
 	"context"
@@ -30,7 +30,7 @@ import (
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
-func Router() {
+func Server() {
 	pgHost := "postgresql-142500-0.cloudclusters.net"
 	pgPort := "10082"
 	pgDatabase := "propfix"
