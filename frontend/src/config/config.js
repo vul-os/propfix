@@ -2,7 +2,7 @@
 // LOOK HERE! Never put a trailing '/' eg: https://abc.com/ <- dont do that
 function getConfig() {
     const defaultConfig = {
-      apiUrl: 'https://us-central1-propfix.cloudfunctions.net/function-backend-go/api/authenticated',
+      apiUrl: 'https://propfix-backend-go-mm4ahu6lbq-uc.a.run.app',
     };
   
     const location = window.location.href;
