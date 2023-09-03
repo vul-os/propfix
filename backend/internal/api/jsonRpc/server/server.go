@@ -13,9 +13,9 @@ import (
 )
 
 type server struct {
-	host             string
-	port             string
-	rootRouter       *chi.Mux
+	Host             string
+	Port             string
+	RootRouter       *chi.Mux
 	serviceProviders []jsonRPCServiceProvider.Provider
 }
 
@@ -33,12 +33,12 @@ func New(
 ) *server {
 	// create a new server
 	newServer := new(server)
-	newServer.host = host
-	newServer.port = port
+	newServer.Host = host
+	newServer.Port = port
 
 	// create chi root router and apply middleware
-	newServer.rootRouter = chi.NewRouter()
-	newServer.rootRouter.Use(preFlightAndCORSHandler)
+	newServer.RootRouter = chi.NewRouter()
+	newServer.RootRouter.Use(preFlightAndCORSHandler)
 
 	for _, rpcServerConfig := range rpcServerConfigs {
 		log.Info().Msg(fmt.Sprintf(
@@ -70,16 +70,16 @@ func New(
 		// put handler function
 		apiRouter.Post("/", func() netHttp.HandlerFunc { return rpcServer.ServeHTTP }())
 
-		newServer.rootRouter.Mount(rpcServerConfig.Path, apiRouter)
+		newServer.RootRouter.Mount(rpcServerConfig.Path, apiRouter)
 	}
 
 	return newServer
 }
 
-func (s *server) Start() error {
-	log.Info().Msg("starting json rpc server: " + s.host + ":" + s.port)
-	return netHttp.ListenAndServe(s.host+":"+s.port, s.rootRouter)
-}
+// func (s *server) Start() error {
+// 	log.Info().Msg("starting json rpc server: " + s.host + ":" + s.port)
+// 	return netHttp.ListenAndServe(s.host+":"+s.port, s.rootRouter)
+// }
 
 // todo: move to https://github.com/rs/cors
 func preFlightAndCORSHandler(next netHttp.Handler) netHttp.Handler {
