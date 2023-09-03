@@ -9,7 +9,7 @@ import (
 
 	"cloud.google.com/go/storage"
 	"github.com/exolutionza/propfix-backend-go/internal/events"
-	"github.com/gorilla/mux"
+	"github.com/go-chi/chi"
 )
 
 type FileUploadHandler struct {
@@ -25,8 +25,8 @@ func NewFileUploadHandler(bucket *storage.BucketHandle, eventsStore *events.Even
 }
 
 func (h *FileUploadHandler) UploadFile(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	jobID := vars["jobid"]
+	jobID := chi.URLParam(r, "jobid")
+	fmt.Println(jobID)
 
 	// Parse the file from the request
 	file, header, err := r.FormFile("file")
@@ -35,7 +35,7 @@ func (h *FileUploadHandler) UploadFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer file.Close()
-
+	fmt.Println(jobID, header.Filename)
 	// Create a new object in the bucket with the desired filename
 	objectName := fmt.Sprintf("%s/%s", jobID, header.Filename)
 	obj := h.bucket.Object(objectName)
@@ -69,9 +69,8 @@ func (h *FileUploadHandler) UploadFile(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *FileUploadHandler) GetFile(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	jobID := vars["jobid"]
-	filename := vars["filename"]
+	jobID := chi.URLParam(r, "jobid")
+	filename := chi.URLParam(r, "filename")
 
 	// Construct the object path in the bucket
 	objectName := fmt.Sprintf("%s/%s", jobID, filename)
@@ -94,9 +93,8 @@ func (h *FileUploadHandler) GetFile(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *FileUploadHandler) DeleteFile(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	jobID := vars["jobid"]
-	filename := vars["filename"]
+	jobID := chi.URLParam(r, "jobid")
+	filename := chi.URLParam(r, "filename")
 
 	// Construct the object path in the bucket
 	objectName := fmt.Sprintf("%s/%s", jobID, filename)

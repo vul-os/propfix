@@ -24,8 +24,7 @@ import (
 	"github.com/exolutionza/propfix-backend-go/internal/labels"
 	"github.com/exolutionza/propfix-backend-go/internal/organizations"
 	"github.com/exolutionza/propfix-backend-go/internal/permissions"
-
-	roles "github.com/exolutionza/propfix-backend-go/internal/roles"
+	"github.com/exolutionza/propfix-backend-go/internal/roles"
 
 	"github.com/jackc/pgx/v4/pgxpool"
 )
