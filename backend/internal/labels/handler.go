@@ -6,9 +6,7 @@ import (
 	"net/http"
 
 	jsonRpcProvider "github.com/exolutionza/propfix-backend-go/internal/api/jsonRpc/service/provider"
-
 	"github.com/exolutionza/propfix-backend-go/internal/authz"
-
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
@@ -155,5 +153,46 @@ func (a *adaptor) DeleteLabel(r *http.Request, args *DeleteLabelRequest, reply *
 	}
 
 	reply.Success = true
+	return nil
+}
+
+type GetAllLabelsRequest struct {
+	OrganizationID string `json:"organizationId"`
+}
+
+type GetAllLabelsResponse struct {
+	Labels []Label `json:"labels"`
+}
+
+func (a *adaptor) GetAllLabels(r *http.Request, args *GetAllLabelsRequest, reply *GetAllLabelsResponse) error {
+	ok, err := a.authz.CheckPermission(r, "labels", "getall")
+	if err != nil || !ok {
+		return errors.New("not permitted")
+	}
+
+	ctx := context.Background()
+	query := `
+		SELECT id, organization_id, name, color
+		FROM labels
+		WHERE organization_id = $1
+	`
+
+	rows, err := a.pool.Query(ctx, query, args.OrganizationID)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	labels := make([]Label, 0)
+	for rows.Next() {
+		var label Label
+		err := rows.Scan(&label.ID, &label.OrganizationID, &label.Name, &label.Color)
+		if err != nil {
+			return err
+		}
+		labels = append(labels, label)
+	}
+
+	reply.Labels = labels
 	return nil
 }
