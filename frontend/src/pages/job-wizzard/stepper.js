@@ -192,17 +192,11 @@ export default function HorizontalLinearStepper() {
   const handleFinish = async () => {
     const idToken = await getIdToken();
     console.log("kkkkkkk", selectedBuilding)
-    const jobData = {
-      name: job.name,
-      description: job.description,
+    const jobData = {...job, 
       labels: selectedLabels ? selectedLabels.map((l) => l.id) : [],
-      organizationId: selectedBuilding.organizationId,
-      attachments,
-      unitName: selectedBuilding.name,
-      tenantIdentifier: selectedBuilding.tenantIdentifier,
       buildingId: selectedBuilding.id,
-      assigneeIds: []
-    };
+      organizationId: selectedBuilding.organizationId
+    }
 
     const createdJob = await createJob(jobData, idToken);
 

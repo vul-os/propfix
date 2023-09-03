@@ -23,7 +23,7 @@ export default function JobCreateStep({
       <TextField
         label="unitIdentifier"
         placeholder="Unit Number, 'E601'"
-        value={job.name}
+        value={job.unitIdentifier}
         onChange={(e) => setJob({ ...job, unitIdentifier: e.target.value })}
         fullWidth
         style={{ marginBottom: '16px' }}
