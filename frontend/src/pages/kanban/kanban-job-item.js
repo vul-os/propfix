@@ -8,13 +8,11 @@ import Typography from '@mui/material/Typography';
 import Paper from '@mui/material/Paper';
 import AvatarGroup, { avatarGroupClasses } from '@mui/material/AvatarGroup'; // Import AvatarGroup and avatarGroupClasses from MUI
 import { useBoolean } from '../../hooks/use-boolean';
-import PopOver from '../jobs/pop-over';
 import { bgBlur } from '../../theme/css';
 
 
-export default function KanbanJobItem({ job, index, sx, ...other }) {
+export default function KanbanJobItem({ job, index, openPopUp, setOpenPopUp, setJob, sx, ...other }) {
   const theme = useTheme();
-  const openDetails = useBoolean();
   const renderInfo = (
     <Stack direction="row" alignItems="center">
       <AvatarGroup
@@ -40,7 +38,7 @@ export default function KanbanJobItem({ job, index, sx, ...other }) {
             ref={provided.innerRef}
             {...provided.draggableProps}
             {...provided.dragHandleProps}
-            onClick={openDetails.onTrue}
+            onClick={() => { setJob(job); setOpenPopUp(true)}}
             sx={{
               width: 1,
               borderRadius: 1.5,
@@ -51,7 +49,7 @@ export default function KanbanJobItem({ job, index, sx, ...other }) {
               '&:hover': {
                 boxShadow: theme.customShadows.z20,
               },
-              ...(openDetails.value && {
+              ...(openPopUp && {
                 boxShadow: theme.customShadows.z20,
               }),
               ...(snapshot.isDragging && {
@@ -79,12 +77,6 @@ export default function KanbanJobItem({ job, index, sx, ...other }) {
           </Paper>
         )}
       </Draggable>
-
-      <PopOver
-        job={job}
-        openPopOver={openDetails.value}
-        onClosePopOver={openDetails.onFalse}
-      />
     </>
   );
 }

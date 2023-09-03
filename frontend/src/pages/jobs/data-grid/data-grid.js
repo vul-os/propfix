@@ -6,29 +6,14 @@ import Stack from '@mui/material/Stack';
 import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
 import Chip from '@mui/material/Chip';
-import { useAuthContext } from '../../../contexts/auth';
 import Iconify from '../../../components/iconify';
-import { getAllJobs } from '../../../api/jobs';
 import PopOver from '../pop-over';
+import { useBoardContext } from '../../../contexts/board'; // Import the BoardProvider context
 
 function JobDataGrid() {
-  const [jobs, setJobs] = useState([]);
-  const { getIdToken, activeOrganization } = useAuthContext(); 
+  const { jobs, boardLoading } = useBoardContext(); // Use the BoardProvider context
+
   const [selectedRow, setSelectedRow] = useState(null);
-
-  useEffect(() => {
-    fetchJobsData();
-  }, []);
-
-  const fetchJobsData = async () => {
-    try {
-      const idToken = await getIdToken();
-      const allJobs = await getAllJobs(idToken, activeOrganization);
-      setJobs(allJobs.jobs);
-    } catch (error) {
-      console.error('Error fetching jobs:', error);
-    }
-  };
 
   const avatarRenderer = (params) => {
     const assignees = Array.isArray(params.value) ? params.value : [params.value];
@@ -135,6 +120,7 @@ function JobDataGrid() {
         Jobs
       </Typography>
 
+      {jobs && !boardLoading &&
       <DataGrid
         rows={jobs}
         columns={columns}
@@ -143,6 +129,8 @@ function JobDataGrid() {
         checkboxSelection
         onRowClick={handleRowClick}
       />
+      }
+
       {selectedRow && (
         <PopOver
           job={selectedRow}

@@ -13,12 +13,8 @@ import KanbanJobItem from './kanban-job-item';
 import { useAuthContext } from '../../contexts/auth';
 
 
-export default function KanbanColumn({ column, jobs, index }) {
-  const { enqueueSnackbar } = useSnackbar();
+export default function KanbanColumn({ column, jobs, openPopUp, setOpenPopUp, setJob, index }) {
   const openAddJob = useBoolean();
-  const { getIdToken } = useAuthContext(); // Get the getIdToken function from the auth context
-
-
 
   return (
     <Draggable draggableId={column.id} index={index}>
@@ -83,6 +79,9 @@ export default function KanbanColumn({ column, jobs, index }) {
                             key={jobId}
                             index={jobIndex}
                             job={theJob}
+                            openPopUp={openPopUp}
+                            setOpenPopUp={setOpenPopUp}
+                            setJob={setJob}
                           />
                         );
                       }

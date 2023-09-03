@@ -32,7 +32,6 @@ const StyledLabel = styled('span')(({ theme }) => ({
 // ----------------------------------------------------------------------
 
 export default function JobDetails({ job }) {
-  console.log("job", job)
   const [priority, setPriority] = useState(job.priority.toLowerCase());
 
   const [jobName, setJobName] = useState(job.name);
@@ -80,7 +79,7 @@ export default function JobDetails({ job }) {
     <Stack direction="row">
       <StyledLabel sx={{ height: 24, lineHeight: '24px' }}>Labels</StyledLabel>
 
-      {!!job.labels.length && (
+      {job.labels && job.labels.length && (
         <Stack direction="row" flexWrap="wrap" alignItems="center" spacing={1}>
           {job.labels.map((label) => (
             <Chip key={label} color="info" label={label} size="small" variant="soft" />

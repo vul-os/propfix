@@ -41,10 +41,13 @@ function enqueueSnackbar(message, options) {
 
 export default function PopOver({
   job,
+  columns,
   openPopOver,
   onClosePopOver,
 }) {
   const { getIdToken, user } = useAuthContext(); 
+  const [column, setColumn] = useState(null);
+
   const handleAddJob = useCallback(
     async (jobData) => {
       try {
@@ -96,7 +99,10 @@ export default function PopOver({
         jobName={job.name}
         jobStatus={job.status}
         onDelete={handleDeleteJob}
-        onClosePopOver={onClosePopOver}
+        onClosePopUp={() => null}
+        columns={columns}
+        column={column}
+        setColumn={setColumn}
       />
       <Divider />
       <Scrollbar
@@ -126,9 +132,3 @@ export default function PopOver({
     </Drawer>
   );
 }
-
-PopOver.propTypes = {
-  onClosePopOver: PropTypes.func,
-  openPopOver: PropTypes.bool,
-  job: PropTypes.object,
-};

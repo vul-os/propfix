@@ -12,30 +12,15 @@ import { hideScroll } from '../../../theme/css';
 import KanbanColumn from '../kanban-column';
 import { KanbanColumnSkeleton } from '../kanban-skeleton';
 import { useAuthContext } from '../../../contexts/auth'; 
+import { useBoardContext } from '../../../contexts/board'; 
+import PopOver from '../../jobs/pop-over';
 
 export default function KanbanView() {
-  const [board, setBoard] = useState(null);
-  const [boardLoading, setBoardLoading] = useState(true);
-  const { getIdToken, activeOrganization } = useAuthContext(); 
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        if (activeOrganization) {
-          const token = await getIdToken(); 
-          const boardData = await getBoard(token, activeOrganization);
-          setBoard(boardData.board);
-        }
-        setBoardLoading(false);
-      } catch (error) {
-        console.error('Error fetching board:', error);
-        setBoard(null);
-        setBoardLoading(false);
-      }
-    }
-
-    fetchData();
-  }, [getIdToken]);
-
+  const { board, setBoard, boardLoading } = useBoardContext(); // Use the BoardProvider context
+  const { getIdToken } = useAuthContext(); 
+  const [openPopUp, setOpenPopUp] = useState(false);
+  const [job, setJob] = useState({});
+  console.log("original board: ", board)
   const onDragEnd = useCallback(
     async ({ destination, source, draggableId, type }) => {
       const token = await getIdToken(); 
@@ -155,8 +140,11 @@ export default function KanbanView() {
                   return <KanbanColumn
                     index={index}
                     key={columnId}
+                    openPopUp={openPopUp}
+                    setOpenPopUp={setOpenPopUp}
                     column={column}
                     jobs={columnJobs}
+                    setJob={setJob}
                   />
                 })}
                 {provided.placeholder}
@@ -165,6 +153,11 @@ export default function KanbanView() {
           </Droppable>
         </DragDropContext>
       )}
+      <PopOver
+        job={job}
+        openPopOver={openPopUp}
+        onClosePopOver={() => setOpenPopUp(false)}
+      />
     </Container>
   );
 }
