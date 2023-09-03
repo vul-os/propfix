@@ -5,37 +5,26 @@ import Typography from '@mui/material/Typography';
 import { fToNow } from '../../../utils/format-time';
 
 const styles = {
-  containerWrapper: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center', // Center horizontally
-  },
-  verticalLine: {
-    width: '10px',
-    backgroundColor: '#ddd',
-    marginRight: '50%', // Set the marginRight to 75% of the parent's width
-    height: '15px', // Take up full height
-  },
   container: {
     display: 'flex',
     flexDirection: 'row',
     alignItems: 'flex-start',
-    position: 'relative',
+    gap: '8px',
+    padding: '12px',
   },
   userAvatar: {
     width: '32px',
     height: '32px',
+    backgroundColor: 'rgb(255, 26, 91)',
+    boxShadow: '0 3px 3px rgba(0, 0, 0, 0.9)',
   },
   messageBox: {
     position: 'relative',
     backgroundColor: 'white',
     border: '1px solid #ddd',
-    borderTop: '1px solid #ddd', // Add top border
     borderRadius: '8px',
     padding: '12px',
     boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
-    display: 'flex',
-    flexDirection: 'column',
   },
   notch: {
     position: 'absolute',
@@ -68,11 +57,10 @@ const styles = {
   },
   privateMessageBox: {
     backgroundColor: 'white',
-    border: '1px solid red',
+    border: '1px solid grey',
     borderRadius: '8px',
     padding: '12px',
-    paddingBottom: 0,
-    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+    boxShadow: '0 5px 5px rgba(0, 0, 0, 0.4)',
     position: 'relative',
   },
 };
@@ -84,22 +72,19 @@ export default function MessageStep({ event }) {
       : styles.privateMessageBox;
 
   return (
-    <div style={styles.containerWrapper}>
-      <div style={styles.verticalLine}/>
-      <div style={styles.container}>
-        <Avatar src="dummy-avatar-url" style={styles.userAvatar} />
-        <div style={{ ...messageBoxStyle, ...styles.messageBox }}>
-          <div style={styles.notch}/>
-          <div style={styles.titleSection}>
-            <Typography variant="subtitle2" style={styles.titleText}>
-              {event.data.username}
-            </Typography>
-            <Typography variant="caption" sx={{ color: 'text.disabled' }}>
-              Messaged {fToNow(event.createdAt)}
-            </Typography>
-          </div>
-          <Typography variant="body2">{event.data.message}</Typography>
+    <div style={styles.container}>
+      <Avatar src="dummy-avatar-url" style={styles.userAvatar} />
+      <div style={messageBoxStyle}>
+        <div style={styles.notch} />
+        <div style={styles.titleSection}>
+          <Typography variant="subtitle2" style={styles.titleText}>
+            {event.data.username}
+          </Typography>
+          <Typography variant="caption" sx={{ color: 'text.disabled' }}>
+            Messaged {fToNow(event.createdAt)}
+          </Typography>
         </div>
+        <Typography variant="body2">{event.data.message}</Typography>
       </div>
     </div>
   );
