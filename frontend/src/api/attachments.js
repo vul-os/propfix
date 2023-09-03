@@ -19,10 +19,12 @@ export async function uploadFile(jobId, file, token) {
         },
       }
     );
-
+    
     console.log('File uploaded successfully!', response.data);
+    return response.data
   } catch (error) {
     console.error('Error uploading file:', error);
+    return null;
   }
 }
 
