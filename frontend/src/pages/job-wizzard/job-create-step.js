@@ -4,28 +4,35 @@ import CloseIcon from '@mui/icons-material/Close';
 import Stack from '@mui/material/Stack';
 import { UploadBox } from '../../components/upload';
 
-export default function JobInfoStep({ jobInfo, handleJobInfoChange, handleRemoveFile, handleDrop }) {
+export default function JobCreateStep({
+  job,
+  setJob, // Changed handleJobInfoChange to setJob
+  nextStep,
+  handleDrop,
+  handleRemoveFile,
+  uploadedFiles,
+}) {
   return (
     <div>
       <TextField
         label="Description"
-        value={jobInfo.title}
-        onChange={(e) => handleJobInfoChange({ ...jobInfo, title: e.target.value })}
+        value={job.name}
+        onChange={(e) => setJob({ ...job, name: e.target.value })}
         fullWidth
         style={{ marginBottom: '16px' }}
       />
       <TextField
         label="Labels"
-        value={jobInfo.description}
-        onChange={(e) => handleJobInfoChange({ ...jobInfo, description: e.target.value })}
+        value={job.description}
+        onChange={(e) => setJob({ ...job, description: e.target.value })}
         fullWidth
         style={{ marginBottom: '16px' }}
       />
 
       {/* Attachments */}
       <Stack direction="row" flexWrap="wrap">
-        {jobInfo.attachments &&
-          jobInfo.attachments.map((attachment, index) => (
+        {job.attachments &&
+          job.attachments.map((attachment, index) => (
             <div
               key={index}
               style={{
@@ -35,8 +42,8 @@ export default function JobInfoStep({ jobInfo, handleJobInfoChange, handleRemove
               }}
             >
               <img
-                src={attachment.preview}
-                alt={attachment.name}
+                src={attachment}
+                alt={`Attachment ${index}`}
                 style={{ width: 64, height: 64 }}
               />
               <div
