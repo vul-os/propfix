@@ -77,6 +77,7 @@ func (h *FileUploadHandler) UploadFile(w http.ResponseWriter, r *http.Request) {
 	}
 	signedURL, err := h.bucket.SignedURL(objectName, opts)
 	if err != nil {
+		fmt.Println(err)
 		http.Error(w, "Failed to generate signed URL", http.StatusInternalServerError)
 		return
 	}
@@ -115,6 +116,7 @@ func (h *FileUploadHandler) GetFile(w http.ResponseWriter, r *http.Request) {
 	}
 	signedURL, err := h.bucket.SignedURL(objectName, opts)
 	if err != nil {
+		fmt.Println(err)
 		http.Error(w, "Failed to generate signed URL", http.StatusInternalServerError)
 		return
 	}
