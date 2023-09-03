@@ -1,7 +1,7 @@
 import config from '../config/config';
 import { jsonRpcRequest } from './jsonrpc/client';
 
-const API_BASE_URL = `${config.apiUrl}`;
+const API_BASE_URL = `${config.apiUrl}/api/authenticated`;
 
 export async function createEvent(eventData, idToken) {
   try {

@@ -7,10 +7,8 @@ import { UploadBox } from '../../components/upload';
 export default function JobCreateStep({
   job,
   setJob, // Changed handleJobInfoChange to setJob
-  nextStep,
   handleDrop,
   handleRemoveFile,
-  uploadedFiles,
 }) {
   return (
     <div>

@@ -1,7 +1,7 @@
 import axios from 'axios';
 import config from '../../config/config';
 
-const API_BASE_URL = `${config.apiUrl}`;
+const API_BASE_URL = `${config.apiUrl}/api/authenticated`;
 
 export async function jsonRpcRequest(method, params, idToken) {
   try {

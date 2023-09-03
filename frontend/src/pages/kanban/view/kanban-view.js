@@ -52,7 +52,7 @@ export default function KanbanView() {
         const sourceColumn = board?.columns[source.droppableId];
         const destinationColumn = board?.columns[destination.droppableId];
 
-        if (sourceColumn && destinationColumn) {
+        if (sourceColumn && destinationColumn && sourceColumn.id !== destinationColumn.id) {
           console.log("heree: ", sourceColumn, destinationColumn)
           // Get a copy of job ids from source column
           const newStartJobIds = Array.from(sourceColumn.jobIds || []);

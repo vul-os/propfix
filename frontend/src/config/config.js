@@ -2,7 +2,7 @@
 // LOOK HERE! Never put a trailing '/' eg: https://abc.com/ <- dont do that
 function getConfig() {
     const defaultConfig = {
-      apiUrl: 'https://us-central1-propfix.cloudfunctions.net/function-backend-go/api/authenticated',
+      apiUrl: 'https://us-central1-propfix.cloudfunctions.net/function-backend-go',
     };
   
     const location = window.location.href;
@@ -12,7 +12,7 @@ function getConfig() {
         return defaultConfig;
       case location.includes('localhost'):
         return {
-          apiUrl: 'http://localhost:8080/api/authenticated/',
+          apiUrl: 'http://localhost:8080',
         };
       case location.includes('gitpod'):
         return defaultConfig;

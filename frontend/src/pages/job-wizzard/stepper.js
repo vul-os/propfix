@@ -86,16 +86,16 @@ export default function HorizontalLinearStepper() {
     const jobData = {
       name: job.name,
       description: job.description,
-      labels: job.labels,
+      labels: [],
       organizationId: selectedBuilding.organizationId,
-      attachments: job.attachments,
+      attachments: [],
       unitName: selectedBuilding.name,
       tenantIdentifier: selectedBuilding.tenantIdentifier,
       buildingId: selectedBuilding.id,
-      assigneeIds: {}
+      assigneeIds: []
     };
 
-    const createdJob = await createJob({"job": jobData}, idToken);
+    const createdJob = await createJob(jobData, idToken);
 
     if (createdJob) {
       console.log('Job created successfully:', createdJob);
