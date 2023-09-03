@@ -9,8 +9,10 @@ import (
 	"syscall"
 
 	"cloud.google.com/go/storage"
+	internalCors "github.com/exolutionza/propfix-backend-go/internal/api/cors"
 	jsonRpcServer "github.com/exolutionza/propfix-backend-go/internal/api/jsonRpc/server"
 	jsonRpcProvider "github.com/exolutionza/propfix-backend-go/internal/api/jsonRpc/service/provider"
+
 	"github.com/exolutionza/propfix-backend-go/internal/attachments"
 	"github.com/go-chi/chi"
 
@@ -105,7 +107,7 @@ func Server() {
 		// Add more RPC server configurations for other services here
 	}
 	// Create a chi router for the main application
-	mainRouter := chi.NewRouter()
+	mainRouter := internalCors.SetupCORS()
 
 	// Create an authenticated subrouter for file uploads
 	authenticatedRouter := chi.NewRouter()
