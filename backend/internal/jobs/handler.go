@@ -329,6 +329,11 @@ type GetKanbanBoardResponse struct {
 }
 
 func (a *adaptor) GetKanbanBoard(r *http.Request, args *GetKanbanBoardRequest, result *GetKanbanBoardResponse) error {
+	// Define the GetKanbanBoardRequest struct
+	type GetKanbanBoardRequest struct {
+		OrganizationID string `json:"organizationId"`
+	}
+
 	// Fetch columns using the ColumnsStore
 	cols, err := a.columnsStore.GetAllColumns(args.OrganizationID)
 	if err != nil {
@@ -338,7 +343,7 @@ func (a *adaptor) GetKanbanBoard(r *http.Request, args *GetKanbanBoardRequest, r
 	fmt.Println(cols)
 
 	// Fetch jobs using the organization ID (simplified example)
-	jobs, err := a.GetJobsByOrganization(args.OrganizationID)
+	jobs, err := a.GetJobsByOrganization(r, args.OrganizationID)
 	if err != nil {
 		fmt.Println(err)
 		return err
@@ -379,12 +384,24 @@ func (a *adaptor) GetKanbanBoard(r *http.Request, args *GetKanbanBoardRequest, r
 	return nil
 }
 
-// todo: move into store.go
-func (a *adaptor) GetJobsByOrganization(orgID string) ([]Job, error) {
+func (a *adaptor) GetJobsByOrganization(r *http.Request, orgID string) ([]Job, error) {
 	ctx := context.Background()
-
-	// Query to fetch jobs based on organization ID
-	query := fmt.Sprintf("SELECT * FROM jobs WHERE organization_id = '%s'", orgID)
+	user, ok := r.Context().Value("user").(user.User)
+	if !ok {
+		return nil, errors.New("not permitted")
+	}
+	// Initialize query based on permissions
+	query := ""
+	ok = false
+	if orgID != "" {
+		ok, err := a.authz.CheckPermission(r, "jobs", "getall")
+		if err != nil || !ok {
+			return nil, errors.New("not permitted")
+		}
+		query = fmt.Sprintf("SELECT * FROM jobs WHERE organization_id = '%s'", orgID)
+	} else {
+		query = fmt.Sprintf("SELECT * FROM jobs WHERE tenant_identifier = '%s'", user.ID)
+	}
 
 	rows, err := a.dbpool.Query(ctx, query)
 	if err != nil {
@@ -405,6 +422,13 @@ func (a *adaptor) GetJobsByOrganization(orgID string) ([]Job, error) {
 		if err != nil {
 			return nil, err
 		}
+
+		// Clear cost and hours if hasPermissions is false
+		if !ok {
+			job.Cost = 0
+			job.Hours = 0
+		}
+
 		jobs = append(jobs, job)
 	}
 
