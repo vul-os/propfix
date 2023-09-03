@@ -1,5 +1,6 @@
 import React from 'react';
 import TextField from '@mui/material/TextField';
+import TextareaAutosize from '@mui/material/TextareaAutosize'; // Import TextareaAutosize
 import CloseIcon from '@mui/icons-material/Close';
 import Stack from '@mui/material/Stack';
 import { UploadBox } from '../../components/upload';
@@ -7,7 +8,7 @@ import LabelAutocomplete from './labels/label-autocomplete'; // Import your Labe
 
 export default function JobCreateStep({
   job,
-  setJob, // Changed handleJobInfoChange to setJob
+  setJob,
   labels,
   selectedLabels,
   setSelectedLabels,
@@ -17,12 +18,29 @@ export default function JobCreateStep({
   return (
     <div>
       <TextField
-        label="Description"
+        label="Name"
+        placeholder="Name" // Use the same placeholder for all fields
         value={job.name}
         onChange={(e) => setJob({ ...job, name: e.target.value })}
         fullWidth
         style={{ marginBottom: '16px' }}
       />
+     
+      {/* Description */}
+      <TextareaAutosize
+        minRows={4} // Set the minimum number of rows
+        maxRows={10} // Set the maximum number of rows (adjust as needed)
+        placeholder="Description" // Use the same placeholder for the description field
+        value={job.description} // Assuming your job object has a description field
+        onChange={(e) => setJob({ ...job, description: e.target.value })}
+        style={{
+          width: '100%',
+          marginBottom: '16px',
+          padding: '8px',
+          resize: 'vertical', // Allow vertical resizing
+        }}
+      />
+
       {/* Replaced the previous TextField for Labels with LabelAutocomplete */}
       <LabelAutocomplete
         labels={labels}
