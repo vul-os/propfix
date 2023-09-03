@@ -13,7 +13,7 @@ import PopOver from '../pop-over';
 
 function JobDataGrid() {
   const [jobs, setJobs] = useState([]);
-  const { getIdToken } = useAuthContext();
+  const { getIdToken, activeOrganization } = useAuthContext(); 
   const [selectedRow, setSelectedRow] = useState(null);
 
   useEffect(() => {
@@ -23,7 +23,7 @@ function JobDataGrid() {
   const fetchJobsData = async () => {
     try {
       const idToken = await getIdToken();
-      const allJobs = await getAllJobs(idToken, "");
+      const allJobs = await getAllJobs(idToken, activeOrganization);
       setJobs(allJobs.jobs);
     } catch (error) {
       console.error('Error fetching jobs:', error);
