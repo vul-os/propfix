@@ -3,10 +3,14 @@ import TextField from '@mui/material/TextField';
 import CloseIcon from '@mui/icons-material/Close';
 import Stack from '@mui/material/Stack';
 import { UploadBox } from '../../components/upload';
+import LabelAutocomplete from './labels/label-autocomplete'; // Import your LabelAutocomplete component
 
 export default function JobCreateStep({
   job,
   setJob, // Changed handleJobInfoChange to setJob
+  labels,
+  selectedLabels,
+  setSelectedLabels,
   handleDrop,
   handleRemoveFile,
 }) {
@@ -19,12 +23,11 @@ export default function JobCreateStep({
         fullWidth
         style={{ marginBottom: '16px' }}
       />
-      <TextField
-        label="Labels"
-        value={job.description}
-        onChange={(e) => setJob({ ...job, description: e.target.value })}
-        fullWidth
-        style={{ marginBottom: '16px' }}
+      {/* Replaced the previous TextField for Labels with LabelAutocomplete */}
+      <LabelAutocomplete
+        labels={labels}
+        selectedLabels={selectedLabels}
+        setSelectedLabels={setSelectedLabels}
       />
 
       {/* Attachments */}

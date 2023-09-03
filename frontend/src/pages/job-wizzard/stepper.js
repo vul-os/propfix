@@ -13,6 +13,7 @@ import BuildingSelectorStep from './building-selector-step'; // Import the Build
 import JobCreateStep from './job-create-step'; // Import the JobCreateStep component
 import ReviewSubmitStep from './review-submit-step';
 import { getAllBuildings } from '../../api/buildings';
+import { getAllLabels } from '../../api/labels';
 
 const BootstrapInput = styled(InputBase)(({ theme }) => ({
   // ... (styles for BootstrapInput)
@@ -27,6 +28,8 @@ export default function HorizontalLinearStepper() {
   const [job, setJob] = useState({});
   const [userLocation, setUserLocation] = useState(null);
   const [searchValue, setSearchValue] = useState("");
+  const [labels, setLabels] = useState([]);
+  const [selectedLabels, setSelectedLabels] = useState([]);
 
   const { getIdToken } = useAuthContext();
 
@@ -37,6 +40,10 @@ export default function HorizontalLinearStepper() {
   useEffect(() => {
     fetchBuildings();
   }, [searchValue, userLocation]);
+
+  useEffect(() => {
+    fetchLabels();
+  }, [selectedBuilding]);
 
   const fetchBuildings = async () => {
     try {
@@ -50,6 +57,22 @@ export default function HorizontalLinearStepper() {
 
       // Update the building state with fetched buildings
       setBuildings(fetchedBuildings.buildings );
+    } catch (error) {
+      console.error('Error fetching buildings:', error);
+    }
+  };
+
+  const fetchLabels = async () => {
+    try {
+      if (selectedBuilding && selectedBuilding.organizationId) {
+        const idToken = await getIdToken();
+        const fetchedLabels = await getAllLabels(
+          selectedBuilding.organizationId,
+          idToken
+        );
+        setLabels(fetchedLabels.labels);
+      }
+      // Update the building state with fetched buildings
     } catch (error) {
       console.error('Error fetching buildings:', error);
     }
@@ -134,6 +157,9 @@ export default function HorizontalLinearStepper() {
           <JobCreateStep
             job={job}
             setJob={setJob}
+            labels={labels}
+            selectedLabels={selectedLabels}
+            setSelectedLabels={setSelectedLabels}
           />
         );
       case 2:
