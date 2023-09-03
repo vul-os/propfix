@@ -306,7 +306,8 @@ func (a *adaptor) MoveJobs(r *http.Request, args *MoveJobsRequest, reply *MoveJo
 			newSourceJobIDs = append(newSourceJobIDs, id)
 		}
 	}
-
+	newSourceJobIDs = unique(newSourceJobIDs)
+	newDestJobIDs = unique(newDestJobIDs)
 	// Update the source column with the new job IDs
 	query := `
 		UPDATE columns
@@ -341,4 +342,18 @@ func contains(s []string, str string) bool {
 		}
 	}
 	return false
+}
+
+func unique(strings []string) []string {
+	seen := make(map[string]bool)
+	result := []string{}
+
+	for _, str := range strings {
+		if !seen[str] {
+			seen[str] = true
+			result = append(result, str)
+		}
+	}
+
+	return result
 }

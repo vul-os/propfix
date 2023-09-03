@@ -234,83 +234,6 @@ func (a *adaptor) DeleteJob(r *http.Request, args *DeleteJobRequest, result *Del
 	return nil
 }
 
-// JSON-RPC request for getting all jobs
-type GetAllJobsRequest struct {
-	OrganizationID string `json:"organizationId"`
-}
-
-// JSON-RPC response for getting all jobs
-type GetAllJobsResponse struct {
-	Jobs []Job `json:"jobs"`
-}
-
-func (a *adaptor) GetAllJobs(r *http.Request, args *GetAllJobsRequest, result *GetAllJobsResponse) error {
-	ctx := context.Background()
-	user, ok := r.Context().Value("user").(user.User)
-	if !ok {
-		return errors.New("not permitted")
-	}
-
-	var rows pgx.Rows
-	var sqlQuery string
-	var queryParams []interface{}
-
-	if args.OrganizationID != "" { // If organization ID is provided in the request
-		ok, err := a.authz.CheckPermission(r, "jobs", "getall")
-		if err != nil || !ok {
-			return errors.New("not permitted")
-		}
-
-		sqlQuery = `
-			SELECT id, name, organization_id, priority, description, tenant_identifier,
-			assignee_ids, unit_identifier, building_id, labels, attachments,
-			cost, hours, due_date, created_at
-			FROM jobs
-			WHERE organization_id = $1
-		`
-		queryParams = append(queryParams, args.OrganizationID)
-	} else {
-		sqlQuery = `
-			SELECT id, name, organization_id, priority, description, tenant_identifier,
-			assignee_ids, unit_identifier, building_id, labels, attachments,
-			cost, hours, due_date, created_at
-			FROM jobs
-			where tenant_identifier = $1
-		`
-		queryParams = append(queryParams, user.ID)
-	}
-
-	rows, err := a.dbpool.Query(ctx, sqlQuery, queryParams...)
-	if err != nil {
-		return err
-	}
-
-	defer rows.Close()
-
-	var jobs []Job
-	for rows.Next() {
-		var job Job
-		err := rows.Scan(
-			&job.ID, &job.Name, &job.OrganizationID, &job.Priority, &job.Description,
-			&job.TenantIdentifier, &job.AssigneeIDs, &job.UnitIdentifier,
-			&job.BuildingID, &job.Labels, &job.Attachments, &job.Cost, &job.Hours,
-			&job.DueDate, &job.CreatedAt,
-		)
-		if err != nil {
-			return err
-		}
-		if args.OrganizationID == "" {
-			job.Cost = 0
-			job.Hours = 0
-			job.Priority = ""
-		}
-		jobs = append(jobs, job)
-	}
-
-	result.Jobs = jobs
-	return nil
-}
-
 // Define the KanbanBoard struct for the response
 type KanbanBoard struct {
 	Columns map[string]columns.Column `json:"columns"`
@@ -392,17 +315,18 @@ func (a *adaptor) GetJobsByOrganization(r *http.Request, orgID string) ([]Job, e
 	}
 	// Initialize query based on permissions
 	query := ""
-	ok = false
+	permitted := false
 	if orgID != "" {
 		ok, err := a.authz.CheckPermission(r, "jobs", "getall")
 		if err != nil || !ok {
 			return nil, errors.New("not permitted")
 		}
-		query = fmt.Sprintf("SELECT * FROM jobs WHERE organization_id = '%s'", orgID)
+		permitted = true
+		query = fmt.Sprintf(`SELECT id, name, organization_id, priority, description, tenant_identifier, assignee_ids, unit_identifier, building_id, labels, attachments, cost, hours, due_date, created_at FROM jobs WHERE organization_id = '%s'`, orgID)
 	} else {
-		query = fmt.Sprintf("SELECT * FROM jobs WHERE tenant_identifier = '%s'", user.ID)
+		query = fmt.Sprintf(`SELECT id, name, organization_id, priority, description, tenant_identifier, assignee_ids, unit_identifier, building_id, labels, attachments, cost, hours, due_date, created_at FROM jobs WHERE tenant_identifier = '%s'`, user.ID)
 	}
-
+	fmt.Println(permitted, orgID)
 	rows, err := a.dbpool.Query(ctx, query)
 	if err != nil {
 		fmt.Println(err)
@@ -424,9 +348,10 @@ func (a *adaptor) GetJobsByOrganization(r *http.Request, orgID string) ([]Job, e
 		}
 
 		// Clear cost and hours if hasPermissions is false
-		if !ok {
+		if !permitted {
 			job.Cost = 0
 			job.Hours = 0
+			job.Priority = ""
 		}
 
 		jobs = append(jobs, job)
