@@ -24,8 +24,7 @@ import (
 	"github.com/exolutionza/propfix-backend-go/internal/labels"
 	"github.com/exolutionza/propfix-backend-go/internal/organizations"
 	"github.com/exolutionza/propfix-backend-go/internal/permissions"
-
-	roles "github.com/exolutionza/propfix-backend-go/internal/roles"
+	"github.com/exolutionza/propfix-backend-go/internal/roles"
 
 	"github.com/jackc/pgx/v4/pgxpool"
 )
@@ -77,6 +76,7 @@ func Server() {
 	orgStore := organizations.NewOrganizationStore(dbpool)
 	columnStore := columns.NewColumnsStore(dbpool)
 	eventStore := events.NewEventsStore(dbpool)
+	labelStore := labels.NewLabelStore(dbpool)
 
 	rpcServerConfigs := []jsonRpcServer.RPCServerConfig{
 		{
@@ -96,7 +96,7 @@ func Server() {
 				organizations.New(dbpool, authorizer),
 				permissions.New(dbpool, authorizer),
 				buildings.New(dbpool, authorizer),
-				labels.New(dbpool, authorizer),
+				labels.New(labelStore, authorizer),
 				jobs.New(dbpool, authorizer, columnStore),
 				events.New(authorizer, eventStore),
 				columns.New(dbpool, authorizer, columnStore),
