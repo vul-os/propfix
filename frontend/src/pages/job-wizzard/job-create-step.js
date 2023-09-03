@@ -1,10 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import TextField from '@mui/material/TextField';
-import TextareaAutosize from '@mui/material/TextareaAutosize'; // Import TextareaAutosize
+import TextareaAutosize from '@mui/material/TextareaAutosize';
 import CloseIcon from '@mui/icons-material/Close';
 import Stack from '@mui/material/Stack';
 import { UploadBox } from '../../components/upload';
-import LabelAutocomplete from './labels/label-autocomplete'; // Import your LabelAutocomplete component
+import LabelAutocomplete from './labels/label-autocomplete';
 
 export default function JobCreateStep({
   job,
@@ -12,89 +12,98 @@ export default function JobCreateStep({
   labels,
   selectedLabels,
   setSelectedLabels,
+  handleDelete,
   handleDrop,
-  handleRemoveFile,
+  files,
+  setFiles
 }) {
+ 
   return (
     <div>
       <TextField
+        label="unitIdentifier"
+        placeholder="Unit Number, 'E601'"
+        value={job.name}
+        onChange={(e) => setJob({ ...job, unitIdentifier: e.target.value })}
+        fullWidth
+        style={{ marginBottom: '16px' }}
+      />
+      <TextField
         label="Name"
-        placeholder="Name" // Use the same placeholder for all fields
+        placeholder="Job Name, 'Gyser Issue'"
         value={job.name}
         onChange={(e) => setJob({ ...job, name: e.target.value })}
         fullWidth
         style={{ marginBottom: '16px' }}
       />
-     
-      {/* Description */}
+
       <TextareaAutosize
-        minRows={4} // Set the minimum number of rows
-        maxRows={10} // Set the maximum number of rows (adjust as needed)
-        placeholder="Description" // Use the same placeholder for the description field
-        value={job.description} // Assuming your job object has a description field
+        minRows={4}
+        maxRows={10}
+        label="description"
+        placeholder="Description, 'I have had no hot water, cold water is working fine'"
+        value={job.description}
         onChange={(e) => setJob({ ...job, description: e.target.value })}
         style={{
           width: '100%',
           marginBottom: '16px',
           padding: '8px',
-          resize: 'vertical', // Allow vertical resizing
+          resize: 'vertical',
         }}
       />
 
-      {/* Replaced the previous TextField for Labels with LabelAutocomplete */}
       <LabelAutocomplete
         labels={labels}
         selectedLabels={selectedLabels}
         setSelectedLabels={setSelectedLabels}
       />
 
-      {/* Attachments */}
       <Stack direction="row" flexWrap="wrap">
-        {job.attachments &&
-          job.attachments.map((attachment, index) => (
+         {files && files.map((file, index) => (
+          <div
+            key={index}
+            style={{
+              position: 'relative',
+              marginRight: '10px',
+              marginBottom: '10px',
+            }}
+          >
+            <img
+              src={URL.createObjectURL(file)}
+              alt={`Uploaded File ${index}`}
+              style={{ width: 64, height: 64 }}
+            />
             <div
-              key={index}
+              className="close-icon-background"
               style={{
-                position: 'relative',
-                marginRight: '10px',
-                marginBottom: '10px',
+                position: 'absolute',
+                top: 4,
+                right: 4,
+                width: 20,
+                height: 20,
+                borderRadius: '50%',
+                background: 'rgba(33, 43, 54, 0.8)',
+                zIndex: 1,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
               }}
             >
-              <img
-                src={attachment}
-                alt={`Attachment ${index}`}
-                style={{ width: 64, height: 64 }}
-              />
-              <div
-                className="close-icon-background"
+              <CloseIcon
+                className="close-icon"
+                onClick={() => handleDelete(file)}
                 style={{
-                  position: 'absolute',
-                  top: 4,
-                  right: 4,
-                  width: 20,
-                  height: 20,
-                  borderRadius: '50%',
-                  background: 'rgba(33, 43, 54, 0.8)',
-                  zIndex: 1,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  color: 'white',
+                  fontSize: 14,
+                  textTransform: 'none',
                 }}
-              >
-                <CloseIcon
-                  className="close-icon"
-                  onClick={() => handleRemoveFile(attachment)}
-                  style={{
-                    cursor: 'pointer',
-                    color: 'white',
-                    fontSize: 14,
-                    textTransform: 'none',
-                  }}
-                />
-              </div>
+              />
             </div>
-          ))}
-        <UploadBox onDrop={handleDrop} />
+          </div>
+        ))}
+
+        <UploadBox onDrop={handleDrop} files={files} setFiles={setFiles} />
       </Stack>
     </div>
   );

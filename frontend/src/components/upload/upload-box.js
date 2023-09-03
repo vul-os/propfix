@@ -1,3 +1,4 @@
+import React, { useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { useDropzone } from 'react-dropzone';
 // @mui
@@ -8,9 +9,15 @@ import Iconify from '../iconify';
 
 // ----------------------------------------------------------------------
 
-export default function UploadBox({ placeholder, error, disabled, sx, ...other }) {
+export default function UploadBox({ placeholder, error, disabled, files, setFiles, sx, ...other }) {
+  const onDrop = useCallback((acceptedFiles) => {
+    // Update the files state with the selected files
+    setFiles(acceptedFiles);
+  }, [setFiles]);
+
   const { getRootProps, getInputProps, isDragActive, isDragReject } = useDropzone({
     disabled,
+    onDrop,
     ...other,
   });
 
@@ -62,4 +69,6 @@ UploadBox.propTypes = {
   error: PropTypes.bool,
   placeholder: PropTypes.object,
   sx: PropTypes.object,
+  files: PropTypes.array.isRequired,
+  setFiles: PropTypes.func.isRequired
 };

@@ -14,6 +14,7 @@ import JobCreateStep from './job-create-step'; // Import the JobCreateStep compo
 import ReviewSubmitStep from './review-submit-step';
 import { getAllBuildings } from '../../api/buildings';
 import { getAllLabels } from '../../api/labels';
+import { uploadFile, deleteFile } from '../../api/attachments';
 
 const BootstrapInput = styled(InputBase)(({ theme }) => ({
   // ... (styles for BootstrapInput)
@@ -30,6 +31,8 @@ export default function HorizontalLinearStepper() {
   const [searchValue, setSearchValue] = useState("");
   const [labels, setLabels] = useState([]);
   const [selectedLabels, setSelectedLabels] = useState([]);
+  const [attachments, setAttachments] = useState([]);
+  const [files, setFiles] = useState([]);
 
   const { getIdToken } = useAuthContext();
 
@@ -78,6 +81,69 @@ export default function HorizontalLinearStepper() {
     }
   };
 
+  function containsFilename(filename) {
+    console.log(attachments, filename);
+  
+    // Use the find() method to find the first string in the array that contains the filename
+    return attachments.find((attachment) => attachment.includes(filename));
+  }
+
+  function extractStringBeforeSlash(inputString) {
+    const parts = inputString.split('/');
+    
+    if (parts.length > 0) {
+      return parts[0];
+    }
+    
+    return inputString; // Return the original string if there are no slashes
+  }    
+  function extractStringAfterLastSlash(inputString) {
+    const parts = inputString.split('/');
+    const lastIndex = parts.length - 1;
+    
+    if (lastIndex >= 0) {
+      return parts[lastIndex];
+    }
+    
+    return inputString; // Return the original string if there are no slashes
+  }
+  
+  const removeFile = async (file) => {
+    try {
+      const idToken = await getIdToken();
+      console.log(file);
+      const res = containsFilename(file.name);
+      const resId = extractStringBeforeSlash(res);
+      const resFilename = extractStringAfterLastSlash(res);
+      console.log(resId);
+      if (res) {
+        const deletedFile = await deleteFile(
+          resId,
+          file.name,
+          idToken
+        );
+  
+        // Remove the file from attachments
+        const updatedAttachments = attachments.filter((attachment) => attachment !== res);
+  
+        // Set attachments to the updatedAttachments array
+        setAttachments(updatedAttachments);
+  
+        // Remove the file from files list based on resFilename using filter
+        const updatedFiles = files.filter((f) => extractStringAfterLastSlash(f.name) !== resFilename);
+  
+        // Update the state or variables using setFiles function
+        setFiles(updatedFiles);
+      }
+      // Update the building state with fetched buildings if needed
+    } catch (error) {
+      console.error('Error removing file:', error);
+    }
+  };
+  
+  
+  
+
   const getUserLocation = () => {
     if ('geolocation' in navigator) {
       navigator.geolocation.getCurrentPosition(
@@ -95,6 +161,26 @@ export default function HorizontalLinearStepper() {
     }
   }; //
 
+  const handleDrop = async (acceptedFiles) => {
+    try {
+      const idToken = await getIdToken();
+      const fetchedLabels = await uploadFile(
+          "tennant",
+          acceptedFiles[0],
+          idToken
+      );
+      const updatedFiles = [...files, ...acceptedFiles];
+      const updatedAttachments = [...attachments, fetchedLabels.objectName]
+      console.log(fetchedLabels.objectName, acceptedFiles, updatedAttachments)
+      setFiles(updatedFiles);
+      setAttachments(updatedAttachments);
+      // Update the building state with fetched buildings
+    } catch (error) {
+      console.error('Error adding file:', error);
+    }
+
+  };
+
   const handleNext = () => {
     if (isStepValid()) setActiveStep(activeStep + 1);
   };
@@ -109,9 +195,9 @@ export default function HorizontalLinearStepper() {
     const jobData = {
       name: job.name,
       description: job.description,
-      labels: [],
+      labels: selectedLabels ? selectedLabels.map((l) => l.id) : [],
       organizationId: selectedBuilding.organizationId,
-      attachments: [],
+      attachments,
       unitName: selectedBuilding.name,
       tenantIdentifier: selectedBuilding.tenantIdentifier,
       buildingId: selectedBuilding.id,
@@ -160,6 +246,10 @@ export default function HorizontalLinearStepper() {
             labels={labels}
             selectedLabels={selectedLabels}
             setSelectedLabels={setSelectedLabels}
+            handleDrop={handleDrop}
+            handleDelete={removeFile}
+            files={files}
+            setFiles={setFiles}
           />
         );
       case 2:
