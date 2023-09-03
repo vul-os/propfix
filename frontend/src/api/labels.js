@@ -1,0 +1,53 @@
+import config from '../config/config';
+import { jsonRpcRequest } from './jsonrpc/client';
+
+const API_BASE_URL = `${config.apiUrl}/api/authenticated`;
+
+export async function createLabel(labelData, idToken) {
+  try {
+    const params = [labelData, idToken];
+    return await jsonRpcRequest('Labels.CreateLabel', params, idToken);
+  } catch (error) {
+    console.error('Error creating label:', error);
+    return null;
+  }
+}
+
+export async function updateLabel(labelId, labelData, idToken) {
+  try {
+    const params = [labelId, labelData, idToken];
+    return await jsonRpcRequest('Labels.UpdateLabel', params, idToken);
+  } catch (error) {
+    console.error('Error updating label:', error);
+    return null;
+  }
+}
+
+export async function deleteLabel(labelId, idToken) {
+  try {
+    const params = [labelId, idToken];
+    await jsonRpcRequest('Labels.DeleteLabel', params, idToken);
+  } catch (error) {
+    console.error('Error deleting label:', error);
+  }
+}
+
+export async function getAllLabels(organizationId, idToken) {
+  try {
+    const params = [{ organizationId }];
+    return await jsonRpcRequest('Labels.GetAllLabels', params, idToken);
+  } catch (error) {
+    console.error('Error fetching labels:', error);
+    return [];
+  }
+}
+
+export async function getLabel(labelId, organizationId, idToken) {
+  try {
+    const params = [{ id: labelId, organizationId }, idToken];
+    return await jsonRpcRequest('Labels.GetLabel', params, idToken);
+  } catch (error) {
+    console.error('Error fetching label:', error);
+    return null;
+  }
+}

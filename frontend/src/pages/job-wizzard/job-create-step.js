@@ -1,31 +1,57 @@
 import React from 'react';
 import TextField from '@mui/material/TextField';
+import TextareaAutosize from '@mui/material/TextareaAutosize'; // Import TextareaAutosize
 import CloseIcon from '@mui/icons-material/Close';
 import Stack from '@mui/material/Stack';
 import { UploadBox } from '../../components/upload';
+import LabelAutocomplete from './labels/label-autocomplete'; // Import your LabelAutocomplete component
 
-export default function JobInfoStep({ jobInfo, handleJobInfoChange, handleRemoveFile, handleDrop }) {
+export default function JobCreateStep({
+  job,
+  setJob,
+  labels,
+  selectedLabels,
+  setSelectedLabels,
+  handleDrop,
+  handleRemoveFile,
+}) {
   return (
     <div>
       <TextField
-        label="Description"
-        value={jobInfo.title}
-        onChange={(e) => handleJobInfoChange({ ...jobInfo, title: e.target.value })}
+        label="Name"
+        placeholder="Name" // Use the same placeholder for all fields
+        value={job.name}
+        onChange={(e) => setJob({ ...job, name: e.target.value })}
         fullWidth
         style={{ marginBottom: '16px' }}
       />
-      <TextField
-        label="Labels"
-        value={jobInfo.description}
-        onChange={(e) => handleJobInfoChange({ ...jobInfo, description: e.target.value })}
-        fullWidth
-        style={{ marginBottom: '16px' }}
+     
+      {/* Description */}
+      <TextareaAutosize
+        minRows={4} // Set the minimum number of rows
+        maxRows={10} // Set the maximum number of rows (adjust as needed)
+        placeholder="Description" // Use the same placeholder for the description field
+        value={job.description} // Assuming your job object has a description field
+        onChange={(e) => setJob({ ...job, description: e.target.value })}
+        style={{
+          width: '100%',
+          marginBottom: '16px',
+          padding: '8px',
+          resize: 'vertical', // Allow vertical resizing
+        }}
+      />
+
+      {/* Replaced the previous TextField for Labels with LabelAutocomplete */}
+      <LabelAutocomplete
+        labels={labels}
+        selectedLabels={selectedLabels}
+        setSelectedLabels={setSelectedLabels}
       />
 
       {/* Attachments */}
       <Stack direction="row" flexWrap="wrap">
-        {jobInfo.attachments &&
-          jobInfo.attachments.map((attachment, index) => (
+        {job.attachments &&
+          job.attachments.map((attachment, index) => (
             <div
               key={index}
               style={{
@@ -35,8 +61,8 @@ export default function JobInfoStep({ jobInfo, handleJobInfoChange, handleRemove
               }}
             >
               <img
-                src={attachment.preview}
-                alt={attachment.name}
+                src={attachment}
+                alt={`Attachment ${index}`}
                 style={{ width: 64, height: 64 }}
               />
               <div

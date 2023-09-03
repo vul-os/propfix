@@ -5,73 +5,45 @@ import Step from '@mui/material/Step';
 import StepLabel from '@mui/material/StepLabel';
 import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
-import Autocomplete from '@mui/material/Autocomplete';
 import InputBase from '@mui/material/InputBase';
 import { styled } from '@mui/material/styles';
 import { createJob } from '../../api/jobs';
-import { useAuthContext } from '../../contexts/auth'; 
-import UnitInfoStep from './unitinfo';
-import JobInfoStep from './jobinfo';
-import ReviewSubmitStep from './reviewsubmit';
+import { useAuthContext } from '../../contexts/auth';
+import BuildingSelectorStep from './building-selector-step'; // Import the BuildingSelector component
+import JobCreateStep from './job-create-step'; // Import the JobCreateStep component
+import ReviewSubmitStep from './review-submit-step';
 import { getAllBuildings } from '../../api/buildings';
+import { getAllLabels } from '../../api/labels';
 
 const BootstrapInput = styled(InputBase)(({ theme }) => ({
-  borderRadius: 4,
-  position: 'relative',
-  backgroundColor: theme.palette.background.paper,
-  border: '1px solid #ced4da',
-  fontSize: 16,
-  padding: '10px 26px 10px 12px',
-  transition: theme.transitions.create(['border-color', 'box-shadow']),
-  fontFamily: [
-    '-apple-system',
-    'BlinkMacSystemFont',
-    '"Segoe UI"',
-    'Roboto',
-    '"Helvetica Neue"',
-    'Arial',
-    'sans-serif',
-    '"Apple Color Emoji"',
-    '"Segoe UI Emoji"',
-    '"Segoe UI Symbol"',
-  ].join(','),
-  '&:focus': {
-    borderRadius: 4,
-    borderColor: '#80bdff',
-    boxShadow: '0 0 0 0.2rem rgba(0,123,255,.25)',
-  },
+  // ... (styles for BootstrapInput)
 }));
 
-const steps = ['UNIT INFO', 'JOB INFO', 'REVIEW & SUBMIT'];
+const steps = ['BUILDING SELECTION', 'JOB CREATION', 'REVIEW & SUBMIT'];
 
 export default function HorizontalLinearStepper() {
-  const initialUnitInfo = {
-    unitName: '',
-    tenantIdentifier: '',
-    unitIdentifier: '',
-    buildingId: '',
-  };
-
-  const initialJobInfo = {
-    title: '',
-    description: '',
-    labels: [],
-    attachments: [], 
-  };
-
   const [activeStep, setActiveStep] = useState(0);
-  const [unitInfo, setUnitInfo] = useState(initialUnitInfo);
-  const [jobInfo, setJobInfo] = useState(initialJobInfo);
-  const [buildings, setBuildings] = useState([]);
+  const [buildings, setBuildings] = useState({});
+  const [selectedBuilding, setSelectedBuilding] = useState([]);
+  const [job, setJob] = useState({});
   const [userLocation, setUserLocation] = useState(null);
-  const [selectedBuilding, setSelectedBuilding] = useState('');
+  const [searchValue, setSearchValue] = useState("");
+  const [labels, setLabels] = useState([]);
+  const [selectedLabels, setSelectedLabels] = useState([]);
 
   const { getIdToken } = useAuthContext();
 
   useEffect(() => {
-    fetchBuildings();
     getUserLocation();
   }, []);
+
+  useEffect(() => {
+    fetchBuildings();
+  }, [searchValue, userLocation]);
+
+  useEffect(() => {
+    fetchLabels();
+  }, [selectedBuilding]);
 
   const fetchBuildings = async () => {
     try {
@@ -79,10 +51,28 @@ export default function HorizontalLinearStepper() {
       const fetchedBuildings = await getAllBuildings(
         userLocation?.latitude,
         userLocation?.longitude,
-        '',
+        searchValue,
         idToken
       );
-      setBuildings(fetchedBuildings);
+
+      // Update the building state with fetched buildings
+      setBuildings(fetchedBuildings.buildings );
+    } catch (error) {
+      console.error('Error fetching buildings:', error);
+    }
+  };
+
+  const fetchLabels = async () => {
+    try {
+      if (selectedBuilding && selectedBuilding.organizationId) {
+        const idToken = await getIdToken();
+        const fetchedLabels = await getAllLabels(
+          selectedBuilding.organizationId,
+          idToken
+        );
+        setLabels(fetchedLabels.labels);
+      }
+      // Update the building state with fetched buildings
     } catch (error) {
       console.error('Error fetching buildings:', error);
     }
@@ -103,72 +93,46 @@ export default function HorizontalLinearStepper() {
     } else {
       console.error('Geolocation is not supported in this browser.');
     }
-  };
+  }; //
 
   const handleNext = () => {
-    setActiveStep(activeStep + 1);
+    if (isStepValid()) setActiveStep(activeStep + 1);
   };
 
   const handleBack = () => {
     setActiveStep(activeStep - 1);
   };
 
-  const handleSubmit = async () => {
-    if (activeStep === steps.length - 1) {
-      try {
-        const idToken = await getIdToken();
-  
-        const combinedData = {
-          unitName: unitInfo.unitName,
-          tenantIdentifier: unitInfo.tenantIdentifier,
-          unitIdentifier: unitInfo.unitIdentifier,
-          buildingId: unitInfo.buildingId,
-          title: jobInfo.title,
-          labels: jobInfo.labels,
-          attachments: jobInfo.attachments, 
-        };
-  
-        const createdJob = await createJob({"job": combinedData}, idToken);
-  
-        if (createdJob) {
-          console.log('Job created successfully:', createdJob);
-        } else {
-          console.error('Error creating job');
-        }
-  
-        setUnitInfo(initialUnitInfo);
-        setJobInfo(initialJobInfo);
-  
-        setActiveStep(0);
-      } catch (error) {
-        console.error('Error creating job:', error);
-      }
+  const handleFinish = async () => {
+    const idToken = await getIdToken();
+    console.log("kkkkkkk", selectedBuilding)
+    const jobData = {
+      name: job.name,
+      description: job.description,
+      labels: [],
+      organizationId: selectedBuilding.organizationId,
+      attachments: [],
+      unitName: selectedBuilding.name,
+      tenantIdentifier: selectedBuilding.tenantIdentifier,
+      buildingId: selectedBuilding.id,
+      assigneeIds: []
+    };
+
+    const createdJob = await createJob(jobData, idToken);
+
+    if (createdJob) {
+      console.log('Job created successfully:', createdJob);
     } else {
-      handleNext();
+      console.error('Job creation failed.');
     }
-  };
-
-  const handleUnitInfoChange = (newUnitInfo) => {
-    setUnitInfo(newUnitInfo);
-  };
-
-  const handleJobInfoChange = (newJobInfo) => {
-    setJobInfo(newJobInfo);
   };
 
   const isStepValid = () => {
     switch (activeStep) {
       case 0:
-        return (
-          unitInfo.unitName !== '' &&
-          unitInfo.tenantIdentifier !== '' &&
-          unitInfo.unitIdentifier !== '' &&
-          unitInfo.buildingId !== ''
-        );
+        return selectedBuilding.buildingId !== '';
       case 1:
-        return (
-          jobInfo.title !== '' && jobInfo.description !== ''
-        );
+        return job.title !== '' && job.description !== '';
       default:
         return true;
     }
@@ -178,39 +142,28 @@ export default function HorizontalLinearStepper() {
     switch (step) {
       case 0:
         return (
-          <div>
-            <UnitInfoStep
-              unitInfo={unitInfo}
-              handleUnitInfoChange={handleUnitInfoChange}
-            />
-            <Autocomplete
-              options={buildings}
-              getOptionLabel={(building) => building.name}
-              value={selectedBuilding}
-              onChange={(event, newValue) => {
-                setSelectedBuilding(newValue.name);
-                handleUnitInfoChange({
-                  ...unitInfo,
-                  buildingId: newValue.id,
-                });
-              }}
-              renderInput={(params) => (
-                <BootstrapInput
-                  {...params.inputProps}
-                  placeholder="Select a Building or Use Location"
-                  fullWidth
-                  style={{ marginBottom: '16px' }}
-                />
-              )}
-            />
-          </div>
+          <BuildingSelectorStep
+            selectedBuilding={selectedBuilding}
+            setSelectedBuilding={setSelectedBuilding} // Use setSelectedBuilding directly
+            buildings={buildings} // Change buildingInfoData to building
+            searchValue={searchValue}
+            setSearchValue={setSearchValue}
+            handleLocationButtonClick={getUserLocation}
+            nextStep={handleNext}
+          />
         );
       case 1:
         return (
-          <JobInfoStep jobInfo={jobInfo} handleJobInfoChange={handleJobInfoChange} />
+          <JobCreateStep
+            job={job}
+            setJob={setJob}
+            labels={labels}
+            selectedLabels={selectedLabels}
+            setSelectedLabels={setSelectedLabels}
+          />
         );
       case 2:
-        return <ReviewSubmitStep unitInfo={unitInfo} jobInfo={jobInfo} />;
+        return <ReviewSubmitStep building={selectedBuilding} job={job} />;
       default:
         return 'Unknown step';
     }
@@ -226,7 +179,7 @@ export default function HorizontalLinearStepper() {
         ))}
       </Stepper>
       {activeStep === steps.length ? (
-        <>
+        <div>
           <Typography sx={{ mt: 2, mb: 1 }}>
             All steps completed - you&apos;re finished
           </Typography>
@@ -234,9 +187,9 @@ export default function HorizontalLinearStepper() {
             <Box sx={{ flex: '1 1 auto' }} />
             <Button onClick={() => setActiveStep(0)}>Reset</Button>
           </Box>
-        </>
+        </div>
       ) : (
-        <>
+        <div>
           <Typography sx={{ mt: 2, mb: 1 }}>Step {activeStep + 1}</Typography>
           {getStepContent(activeStep)}
           <Box sx={{ display: 'flex', flexDirection: 'row', pt: 2 }}>
@@ -249,11 +202,15 @@ export default function HorizontalLinearStepper() {
               Back
             </Button>
             <Box sx={{ flex: '1 1 auto' }} />
-            <Button onClick={handleSubmit} disabled={!isStepValid()}>
+            <Button
+              variant="contained"
+              onClick={activeStep === steps.length - 1 ? handleFinish : handleNext}
+              disabled={!isStepValid()}
+            >
               {activeStep === steps.length - 1 ? 'Finish' : 'Next'}
             </Button>
           </Box>
-        </>
+        </div>
       )}
     </Box>
   );
