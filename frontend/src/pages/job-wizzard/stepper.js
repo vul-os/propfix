@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Box from '@mui/material/Box';
+import { useNavigate } from 'react-router-dom';
 import Stepper from '@mui/material/Stepper';
 import Step from '@mui/material/Step';
 import StepLabel from '@mui/material/StepLabel';
@@ -9,8 +10,8 @@ import InputBase from '@mui/material/InputBase';
 import { styled } from '@mui/material/styles';
 import { createJob } from '../../api/jobs';
 import { useAuthContext } from '../../contexts/auth';
-import BuildingSelectorStep from './building-selector-step'; // Import the BuildingSelector component
-import JobCreateStep from './job-create-step'; // Import the JobCreateStep component
+import BuildingSelectorStep from './building-selector-step';
+import JobCreateStep from './job-create-step';
 import ReviewSubmitStep from './review-submit-step';
 import { getAllBuildings } from '../../api/buildings';
 import { getAllLabels } from '../../api/labels';
@@ -35,6 +36,7 @@ export default function HorizontalLinearStepper() {
   const [files, setFiles] = useState([]);
 
   const { getIdToken } = useAuthContext();
+  const navigate = useNavigate();
 
   useEffect(() => {
     getUserLocation();
@@ -57,9 +59,7 @@ export default function HorizontalLinearStepper() {
         searchValue,
         idToken
       );
-
-      // Update the building state with fetched buildings
-      setBuildings(fetchedBuildings.buildings );
+      setBuildings(fetchedBuildings.buildings);
     } catch (error) {
       console.error('Error fetching buildings:', error);
     }
@@ -75,74 +75,53 @@ export default function HorizontalLinearStepper() {
         );
         setLabels(fetchedLabels.labels);
       }
-      // Update the building state with fetched buildings
     } catch (error) {
       console.error('Error fetching buildings:', error);
     }
   };
 
   function containsFilename(filename) {
-    console.log(attachments, filename);
-  
-    // Use the find() method to find the first string in the array that contains the filename
     return attachments.find((attachment) => attachment.includes(filename));
   }
 
   function extractStringBeforeSlash(inputString) {
     const parts = inputString.split('/');
-    
     if (parts.length > 0) {
       return parts[0];
     }
-    
-    return inputString; // Return the original string if there are no slashes
-  }    
+    return inputString;
+  }
+
   function extractStringAfterLastSlash(inputString) {
     const parts = inputString.split('/');
     const lastIndex = parts.length - 1;
-    
     if (lastIndex >= 0) {
       return parts[lastIndex];
     }
-    
-    return inputString; // Return the original string if there are no slashes
+    return inputString;
   }
-  
+
   const removeFile = async (file) => {
     try {
       const idToken = await getIdToken();
-      console.log(file);
       const res = containsFilename(file.name);
       const resId = extractStringBeforeSlash(res);
       const resFilename = extractStringAfterLastSlash(res);
-      console.log(resId);
       if (res) {
         const deletedFile = await deleteFile(
           resId,
           file.name,
           idToken
         );
-  
-        // Remove the file from attachments
         const updatedAttachments = attachments.filter((attachment) => attachment !== res);
-  
-        // Set attachments to the updatedAttachments array
         setAttachments(updatedAttachments);
-  
-        // Remove the file from files list based on resFilename using filter
         const updatedFiles = files.filter((f) => extractStringAfterLastSlash(f.name) !== resFilename);
-  
-        // Update the state or variables using setFiles function
         setFiles(updatedFiles);
       }
-      // Update the building state with fetched buildings if needed
     } catch (error) {
       console.error('Error removing file:', error);
     }
   };
-  
-  
-  
 
   const getUserLocation = () => {
     if ('geolocation' in navigator) {
@@ -159,26 +138,23 @@ export default function HorizontalLinearStepper() {
     } else {
       console.error('Geolocation is not supported in this browser.');
     }
-  }; //
+  };
 
   const handleDrop = async (acceptedFiles) => {
     try {
       const idToken = await getIdToken();
       const fetchedLabels = await uploadFile(
-          "tennant",
-          acceptedFiles[0],
-          idToken
+        "tennant",
+        acceptedFiles[0],
+        idToken
       );
       const updatedFiles = [...files, ...acceptedFiles];
       const updatedAttachments = [...attachments, fetchedLabels.objectName]
-      console.log(fetchedLabels.objectName, acceptedFiles, updatedAttachments)
       setFiles(updatedFiles);
       setAttachments(updatedAttachments);
-      // Update the building state with fetched buildings
     } catch (error) {
       console.error('Error adding file:', error);
     }
-
   };
 
   const handleNext = () => {
@@ -191,8 +167,8 @@ export default function HorizontalLinearStepper() {
 
   const handleFinish = async () => {
     const idToken = await getIdToken();
-    console.log("kkkkkkk", selectedBuilding)
-    const jobData = {...job, 
+    const jobData = {
+      ...job,
       labels: selectedLabels ? selectedLabels.map((l) => l.id) : [],
       buildingId: selectedBuilding.id,
       organizationId: selectedBuilding.organizationId
@@ -202,6 +178,7 @@ export default function HorizontalLinearStepper() {
 
     if (createdJob) {
       console.log('Job created successfully:', createdJob);
+      navigate('/jobs'); // Navigate to the "jobs" page
     } else {
       console.error('Job creation failed.');
     }
@@ -224,8 +201,8 @@ export default function HorizontalLinearStepper() {
         return (
           <BuildingSelectorStep
             selectedBuilding={selectedBuilding}
-            setSelectedBuilding={setSelectedBuilding} // Use setSelectedBuilding directly
-            buildings={buildings} // Change buildingInfoData to building
+            setSelectedBuilding={setSelectedBuilding}
+            buildings={buildings}
             searchValue={searchValue}
             setSearchValue={setSearchValue}
             handleLocationButtonClick={getUserLocation}
