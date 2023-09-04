@@ -20,7 +20,7 @@ export default function KanbanView() {
   const { getIdToken } = useAuthContext(); 
   const [openPopUp, setOpenPopUp] = useState(false);
   const [job, setJob] = useState({});
-  console.log("original board: ", board)
+
   const onDragEnd = useCallback(
     async ({ destination, source, draggableId, type }) => {
       const token = await getIdToken(); 
