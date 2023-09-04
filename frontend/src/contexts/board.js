@@ -9,7 +9,6 @@ export const BoardProvider = ({ children }) => {
     const [board, setBoard] = useState(null);
     const [boardLoading, setBoardLoading] = useState(true);
     const [jobs, setJobs] = useState([]);
-    const [reloadBoard, setReloadBoard] = useState(0); // New state variable
   
     useEffect(() => {
       async function fetchData() {
@@ -31,14 +30,14 @@ export const BoardProvider = ({ children }) => {
       }
   
       fetchData();
-    }, [getIdToken, activeOrganization, reloadBoard]); // Add reloadBoard to the dependency list
+    }, [getIdToken, activeOrganization]); // Add reloadBoard to the dependency list
   
-    const reFetchBoard = () => {
-      setReloadBoard(prev => prev + 1); // Trigger a re-fetch
-    };
+    // const reFetchBoard = () => {
+    //   setReloadBoard(prev => prev + 1); // Trigger a re-fetch
+    // };
   
     return (
-      <BoardContext.Provider value={{ board, setBoard, boardLoading, jobs, reFetchBoard }}> 
+      <BoardContext.Provider value={{ board, setBoard, boardLoading, jobs }}> 
         {children}
       </BoardContext.Provider>
     );

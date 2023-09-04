@@ -20,9 +20,10 @@ export default function Toolbar({
   job,
   onDelete,
   onClosePopUp,
+  onChangeColumn,
   columns,
   selectedColumnMap,
-  setColumnByJobId
+  setColumnByJobId,
 }) {
   const smUp = useResponsive('up', 'sm');
   const confirm = useBoolean();
@@ -30,10 +31,13 @@ export default function Toolbar({
 
   const selectedColumn = job && job.id && selectedColumnMap[job.id]
   
-  const handleChangeColumn = useCallback(
+  const handleChangeCol = useCallback(
     (newValue) => {
       popover.onClose();
-      if (job && job.id) setColumnByJobId(job.id, newValue);
+      if (job && job.id) {
+        onChangeColumn(job.id, newValue, selectedColumn)
+        setColumnByJobId(job.id, newValue);
+      }
     },
     [popover]
   );
@@ -89,7 +93,7 @@ export default function Toolbar({
             key={columns[k].id}
             selected={handleSelectedCheck(k)}
             onClick={() => {
-              handleChangeColumn(columns[k]);
+              handleChangeCol(columns[k]);
             }}
           >
             {columns[k].name}
