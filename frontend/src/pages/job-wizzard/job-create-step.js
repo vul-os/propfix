@@ -4,7 +4,7 @@ import TextareaAutosize from '@mui/material/TextareaAutosize';
 import CloseIcon from '@mui/icons-material/Close';
 import Stack from '@mui/material/Stack';
 import { UploadBox } from '../../components/upload';
-import LabelAutocomplete from '../labels/label-autocomplete';
+import LabelAutocomplete from './labels/label-autocomplete';
 
 export default function JobCreateStep({
   job,
