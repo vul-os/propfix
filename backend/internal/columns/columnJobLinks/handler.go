@@ -18,9 +18,10 @@ type ColumnJobLink struct {
 }
 
 type ColumnWithJobIds struct {
-	ID     string   `json:"id"`
-	Name   string   `json:"name"`
-	JobIds []string `json:"jobIds"`
+	ID         string   `json:"id"`
+	Name       string   `json:"name"`
+	OrderIndex int      `json:"orderIndex"`
+	JobIds     []string `json:"jobIds"`
 }
 
 const Name = "ColumnJobLinks"

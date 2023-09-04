@@ -275,12 +275,12 @@ func (a *adaptor) GetKanbanBoard(r *http.Request, args *GetKanbanBoardRequest, r
 	columnsMap := make(map[string]columnJobLinks.ColumnWithJobIds)
 	for _, col := range cols {
 		columnsMap[col.ID] = columnJobLinks.ColumnWithJobIds{
-			ID:     col.ID,
-			Name:   col.Name,
-			JobIds: col.JobIds,
+			ID:         col.ID,
+			Name:       col.Name,
+			JobIds:     col.JobIds,
+			OrderIndex: col.OrderIndex,
 		}
 	}
-	fmt.Println(columnsMap)
 
 	// Create an ordered list of column IDs
 	var orderedColumns []string
@@ -321,7 +321,6 @@ func (a *adaptor) GetJobsByOrganization(r *http.Request, orgID string) ([]Job, e
 	} else {
 		query = fmt.Sprintf(`SELECT id, name, organization_id, priority, description, tenant_identifier, assignee_ids, unit_identifier, building_id, labels, attachments, cost, hours, due_date, created_at FROM jobs WHERE tenant_identifier = '%s'`, user.ID)
 	}
-	fmt.Println(permitted, orgID)
 	rows, err := a.dbpool.Query(ctx, query)
 	if err != nil {
 		fmt.Println(err)

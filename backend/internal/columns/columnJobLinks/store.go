@@ -2,7 +2,6 @@ package columnJobLinks
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"time"
@@ -121,56 +120,55 @@ func (s *Store) GetAllColumns(organizationID string) ([]ColumnWithJobIds, error)
 	ctx := context.Background()
 
 	query := `
-		SELECT c.id, c.name, j.job_id
-		FROM columns c
-		LEFT JOIN ColumnJobLinks j ON c.id = j.column_id
-		WHERE c.organization_id = $1
-		ORDER BY c.name, j.order_index
-	`
+        SELECT c.id, c.name, c.order_index, j.job_id
+        FROM columns c
+        LEFT JOIN ColumnJobLinks j ON c.id = j.column_id
+        WHERE c.organization_id = $1
+        ORDER BY c.order_index ASC
+    `
 
 	rows, err := s.pool.Query(ctx, query, organizationID)
 	if err != nil {
-		return nil, errors.New("Failed to execute query")
+		return nil, fmt.Errorf("failed to execute query: %w", err)
 	}
 	defer rows.Close()
 
 	columnMap := make(map[string]*ColumnWithJobIds)
-	var columns []ColumnWithJobIds
 
 	for rows.Next() {
-		var columnID, name string
-		var jobID sql.NullString
+		var columnID, name, jobID string
+		var orderIndex int
 
-		err := rows.Scan(&columnID, &name, &jobID)
-		if err != nil {
-			fmt.Println(err)
-			return nil, errors.New("Failed to scan row")
+		if err := rows.Scan(&columnID, &name, &orderIndex, &jobID); err != nil {
+			return nil, fmt.Errorf("failed to scan row: %w", err)
 		}
 
-		// Check if the column already exists in the map
-		if column, exists := columnMap[columnID]; exists {
-			if jobID.Valid {
-				column.JobIds = append(column.JobIds, jobID.String)
-			}
-		} else {
-			var newJobIds []string
-			if jobID.Valid {
-				newJobIds = append(newJobIds, jobID.String)
-			}
-			newColumn := ColumnWithJobIds{
-				ID:     columnID,
-				Name:   name,
-				JobIds: newJobIds,
-			}
+		_, exists := columnMap[columnID]
 
-			columnMap[columnID] = &newColumn
-			columns = append(columns, newColumn)
+		if !exists {
+			newColumn := &ColumnWithJobIds{
+				ID:         columnID,
+				Name:       name,
+				OrderIndex: orderIndex,
+				JobIds:     []string{},
+			}
+			columnMap[columnID] = newColumn
 		}
+
+		if jobID != "" {
+			columnMap[columnID].JobIds = append(columnMap[columnID].JobIds, jobID)
+
+		}
+	}
+	var finalColumns []ColumnWithJobIds
+	for _, column := range columnMap {
+		fmt.Println(*column)
+		finalColumns = append(finalColumns, *column)
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, errors.New("Error iterating through rows")
+		return nil, fmt.Errorf("error iterating through rows: %w", err)
 	}
 
-	return columns, nil
+	return finalColumns, nil
 }
