@@ -33,10 +33,10 @@ export default function CrudStep({ event }) {
         </Stack>
         <Typography variant="body2">
           <Stack direction="row" alignItems="center" spacing={1}>
-            <Avatar sx={{ bgcolor: 'rgb(255, 26, 91)',  boxShadow: '0 3px 3px rgba(0, 0, 0, 0.7)', width: 30, height: 30, border: '1px solid grey', marginLeft: '15px', padding: '1px' }}>
+            <Avatar sx={{ bgcolor: 'rgb(255, 26, 91)',  boxShadow: '0 3px 3px rgba(0, 0, 0, 0.9)', width: 25, height: 25, border: '1px solid grey', marginLeft: '15px', padding: '1px',  }}>
               {icon}
             </Avatar>
-            <p style={{ marginLeft: '10px', textAlign: 'center', textTransform: 'capitalize', fontSize: '15px' }}>{action} the event</p> {/* Adjust the fontSize value as needed */}
+            <p style={{ marginLeft: '20px', textAlign: 'center', textTransform: 'capitalize', fontSize: '15px' }}>{action} the event</p> {/* Adjust the fontSize value as needed */}
           </Stack>
         </Typography>
       </Stack>
