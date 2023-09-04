@@ -22,7 +22,6 @@ func main() {
 
 		// Define the relative path to the keyfile
 		keyfilePath := "keyfile.json"
-
 		// Construct the absolute file path
 		absolutePath := filepath.Join(cwd, keyfilePath)
 

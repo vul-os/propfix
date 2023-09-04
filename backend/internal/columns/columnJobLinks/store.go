@@ -2,6 +2,7 @@ package columnJobLinks
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"time"
@@ -136,7 +137,8 @@ func (s *Store) GetAllColumns(organizationID string) ([]ColumnWithJobIds, error)
 	columnMap := make(map[string]*ColumnWithJobIds)
 
 	for rows.Next() {
-		var columnID, name, jobID string
+		var columnID, name string
+		var jobID sql.NullString
 		var orderIndex int
 
 		if err := rows.Scan(&columnID, &name, &orderIndex, &jobID); err != nil {
@@ -155,10 +157,10 @@ func (s *Store) GetAllColumns(organizationID string) ([]ColumnWithJobIds, error)
 			columnMap[columnID] = newColumn
 		}
 
-		if jobID != "" {
-			columnMap[columnID].JobIds = append(columnMap[columnID].JobIds, jobID)
-
+		if jobID.Valid && jobID.String != "" {
+			columnMap[columnID].JobIds = append(columnMap[columnID].JobIds, jobID.String)
 		}
+
 	}
 	var finalColumns []ColumnWithJobIds
 	for _, column := range columnMap {

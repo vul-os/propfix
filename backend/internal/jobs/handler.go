@@ -7,9 +7,11 @@ import (
 	"net/http"
 	"time"
 
+	"firebase.google.com/go/v4/auth"
 	jsonRpcProvider "github.com/exolutionza/propfix-backend-go/internal/api/jsonRpc/service/provider"
 	"github.com/exolutionza/propfix-backend-go/internal/authz"
 	"github.com/exolutionza/propfix-backend-go/internal/columns/columnJobLinks"
+	"github.com/exolutionza/propfix-backend-go/internal/labels"
 	"github.com/exolutionza/propfix-backend-go/internal/user"
 
 	"github.com/jackc/pgx/v4"
@@ -38,7 +40,9 @@ type Job struct {
 type adaptor struct {
 	dbpool              *pgxpool.Pool
 	authz               *authz.Authz
+	authClient          *auth.Client
 	columnJobLinksStore *columnJobLinks.Store
+	labelsStore         *labels.Store
 }
 
 const Name = "Jobs"
@@ -50,12 +54,16 @@ func (a *adaptor) Name() jsonRpcProvider.Name {
 func New(
 	dbpool *pgxpool.Pool,
 	authz *authz.Authz,
+	authClient *auth.Client,
 	cjls *columnJobLinks.Store,
+	ls *labels.Store,
 ) *adaptor {
 	return &adaptor{
 		dbpool:              dbpool,
+		authClient:          authClient,
 		authz:               authz,
 		columnJobLinksStore: cjls,
+		labelsStore:         ls,
 	}
 }
 
@@ -236,9 +244,11 @@ func (a *adaptor) DeleteJob(r *http.Request, args *DeleteJobRequest, result *Del
 
 // Define the KanbanBoard struct for the response
 type KanbanBoard struct {
-	Columns map[string]columnJobLinks.ColumnWithJobIds `json:"columns"`
-	Jobs    map[string]Job                             `json:"jobs"`
-	Ordered []string                                   `json:"ordered"`
+	Columns   map[string]columnJobLinks.ColumnWithJobIds `json:"columns"`
+	Jobs      map[string]Job                             `json:"jobs"`
+	Assignees map[string]user.User                       `json:"assignees"`
+	Labels    map[string]labels.Label                    `json:"labels"`
+	Ordered   []string                                   `json:"ordered"`
 }
 
 // Define the GetKanbanBoardRequest struct
@@ -265,6 +275,23 @@ func (a *adaptor) GetKanbanBoard(r *http.Request, args *GetKanbanBoardRequest, r
 		fmt.Println(err)
 		return err
 	}
+
+	assignees, err := a.GetAllMemberIDs(args.OrganizationID, a.authClient)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	allLabels, err := a.labelsStore.GetAllLabels(args.OrganizationID)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	retLabels := make(map[string]labels.Label)
+	for _, l := range allLabels {
+		retLabels[l.ID] = l
+	}
+
 	// Create a map to store jobs by their IDs
 	jobsMap := make(map[string]Job)
 	for _, job := range jobs {
@@ -291,9 +318,11 @@ func (a *adaptor) GetKanbanBoard(r *http.Request, args *GetKanbanBoardRequest, r
 	// Build the response structure
 	response := GetKanbanBoardResponse{
 		Board: KanbanBoard{
-			Columns: columnsMap,
-			Jobs:    jobsMap,
-			Ordered: orderedColumns,
+			Columns:   columnsMap,
+			Jobs:      jobsMap,
+			Ordered:   orderedColumns,
+			Assignees: assignees,
+			Labels:    retLabels,
 		},
 	}
 
@@ -356,4 +385,47 @@ func (a *adaptor) GetJobsByOrganization(r *http.Request, orgID string) ([]Job, e
 	}
 
 	return jobs, nil
+}
+
+// TODO: Move somewhere else
+func (s *adaptor) GetAllMemberIDs(organizationID string, authClient *auth.Client) (map[string]user.User, error) {
+	ctx := context.Background()
+	query := `
+		SELECT DISTINCT unnest(members) AS unique_member_id
+		FROM organizations
+		WHERE id = $1
+	`
+	rows, err := s.dbpool.Query(ctx, query, organizationID)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to execute query: %v", err)
+	}
+	defer rows.Close()
+
+	var memberIDs []string
+	for rows.Next() {
+		var memberID string
+		if err := rows.Scan(&memberID); err != nil {
+			return nil, fmt.Errorf("Failed to scan row: %v", err)
+		}
+		memberIDs = append(memberIDs, memberID)
+	}
+	fmt.Println(memberIDs)
+
+	users := make(map[string]user.User) // Initialize the map
+	for _, userID := range memberIDs {
+		u, err := authClient.GetUser(ctx, userID)
+		if err != nil {
+			fmt.Println(err)
+			return nil, err
+		}
+		newU := user.User{
+			ID:          u.UID,
+			DisplayName: u.DisplayName,
+			Email:       u.Email,
+			PhotoURL:    u.PhotoURL,
+		}
+		users[u.UID] = newU
+	}
+
+	return users, nil
 }
