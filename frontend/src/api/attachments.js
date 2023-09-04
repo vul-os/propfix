@@ -1,7 +1,7 @@
 import axios from 'axios';
 import config from '../config/config';
 
-const API_BASE_URL = `${config.apiUrl}`;
+const API_BASE_URL = `${config.apiUrl}/attachments`;
 
 // Function to upload a file
 export async function uploadFile(jobId, file, token) {
@@ -10,7 +10,7 @@ export async function uploadFile(jobId, file, token) {
     formData.append('file', file);
 
     const response = await axios.post(
-      `${API_BASE_URL}/file/${jobId}`,
+      `${API_BASE_URL}/upload/${jobId}`,
       formData,
       {
         headers: {
@@ -19,17 +19,19 @@ export async function uploadFile(jobId, file, token) {
         },
       }
     );
-
+    
     console.log('File uploaded successfully!', response.data);
+    return response.data
   } catch (error) {
     console.error('Error uploading file:', error);
+    return null;
   }
 }
 
 // Function to get a file
 export async function getFile(jobId, filename, idToken) {
   try {
-    const response = await axios.get(`${API_BASE_URL}/file/${jobId}/${filename}`, {
+    const response = await axios.get(`${API_BASE_URL}/download/${jobId}/${filename}`, {
       headers: {
         Authorization: idToken,
       },
@@ -47,7 +49,7 @@ export async function getFile(jobId, filename, idToken) {
 // Function to delete a file
 export async function deleteFile(jobId, filename, idToken) {
   try {
-    await axios.delete(`${API_BASE_URL}/file/${jobId}/${filename}`, {
+    await axios.delete(`${API_BASE_URL}/delete/${jobId}/${filename}`, {
       headers: {
         Authorization: idToken,
       },

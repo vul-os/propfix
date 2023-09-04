@@ -1,7 +1,7 @@
 import config from '../config/config';
 import { jsonRpcRequest } from './jsonRpcHelper'; // Adjust the path based on your project's structure
 
-const API_BASE_URL = `${config.apiUrl}`;
+const API_BASE_URL = `${config.apiUrl}/api/authenticated`;
 
 // Function to fetch organization data by ID
 export async function getOrganization(organizationId, idToken) {

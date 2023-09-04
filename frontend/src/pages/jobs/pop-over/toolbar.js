@@ -21,19 +21,18 @@ export default function Toolbar({
   jobStatus,
   onDelete,
   onClosePopUp,
+  columns,
+  column,
+  setColumn
 }) {
   const smUp = useResponsive('up', 'sm');
-
   const confirm = useBoolean();
-
   const popover = usePopover();
 
-  const [status, setStatus] = useState(jobStatus);
-
-  const handleChangeStatus = useCallback(
+  const handleChangeColumn = useCallback(
     (newValue) => {
       popover.onClose();
-      setStatus(newValue);
+      setColumn(newValue);
     },
     [popover]
   );
@@ -61,7 +60,7 @@ export default function Toolbar({
           endIcon={<Iconify icon="eva:arrow-ios-downward-fill" width={16} sx={{ ml: -0.5 }} />}
           onClick={popover.onOpen}
         >
-          {status}
+          {column}
         </Button>
 
         <Stack direction="row" justifyContent="flex-end" flexGrow={1}>
@@ -79,17 +78,18 @@ export default function Toolbar({
         arrow="top-right"
         sx={{ width: 140 }}
       >
-        {['To Do', 'In Progress', 'Ready To Test', 'Done'].map((option) => (
-          <MenuItem
-            key={option}
-            selected={status === option}
+        {columns && Object.keys(columns).map((k) => {
+          return <MenuItem
+            key={columns[k].id}
+            selected={column === columns[k].name}
             onClick={() => {
-              handleChangeStatus(option);
+              handleChangeColumn(column);
             }}
           >
-            {option}
+            {column}
           </MenuItem>
-        ))}
+        })
+        }
       </CustomPopover>
 
       <ConfirmDialog

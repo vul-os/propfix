@@ -7,6 +7,7 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './contexts/auth';
 import { AuthGuard } from './gaurd/auth-gaurd';
+import { BoardProvider } from './contexts/board'; // Import BoardProvider
 
 import { SettingsProvider, SettingsDrawer } from './components/settings';
 
@@ -36,11 +37,11 @@ function App() {
         <LocalizationProvider dateAdapter={AdapterDateFns}>
           <SettingsProvider
             defaultSettings={{
-            themeMode: 'light', // 'light' | 'dark'
-            themeDirection: 'ltr', //  'rtl' | 'ltr'
-            themeContrast: 'default', // 'default' | 'bold'
-            themeLayout: 'vertical', // 'vertical' | 'horizontal' | 'mini'
-            themeColorPresets: 'default', // 'default' | 'cyan' | 'purple' | 'blue' | 'orange' | 'red'
+              themeMode: 'light',
+              themeDirection: 'ltr',
+              themeContrast: 'default',
+              themeLayout: 'vertical',
+              themeColorPresets: 'default',
               themeStretch: false,
             }}
           >
@@ -49,13 +50,15 @@ function App() {
               <AuthProvider>
                 <Routes>
                   <Route path="/auth/login" element={<LoginPage />} />
-                  <Route path="/auth/signup" element={<SignUpPage />} /> {/* New route */}
-                  <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} /> {/* New route */}
-                  <Route 
-                    path="/" 
+                  <Route path="/auth/signup" element={<SignUpPage />} />
+                  <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
+                  <Route
+                    path="/"
                     element={
                       <AuthGuard>
-                        <DashboardLayout><KanbanView /> </DashboardLayout>
+                        <BoardProvider>
+                          <DashboardLayout><KanbanView /></DashboardLayout>
+                        </BoardProvider>
                       </AuthGuard>
                     }
                   />
@@ -63,7 +66,9 @@ function App() {
                     path="/jobs"
                     element={
                       <AuthGuard>
-                        <DashboardLayout><JobDataGrid /> </DashboardLayout>
+                        <BoardProvider>
+                          <DashboardLayout><JobDataGrid /></DashboardLayout>
+                        </BoardProvider>
                       </AuthGuard>
                     }
                   />
@@ -71,11 +76,13 @@ function App() {
                     path="/events/*"
                     element={
                       <AuthGuard>
-                        <DashboardLayout>
-                          <Routes>
-                            <Route path=":jobId" element={<EventsList />} />
-                          </Routes>
-                        </DashboardLayout>
+                        <BoardProvider>
+                          <DashboardLayout>
+                            <Routes>
+                              <Route path=":jobId" element={<EventsList />} />
+                            </Routes>
+                          </DashboardLayout>
+                        </BoardProvider>
                       </AuthGuard>
                     }
                   />
@@ -83,12 +90,14 @@ function App() {
                     path="/account/*"
                     element={
                       <AuthGuard>
-                        <DashboardLayout>
-                          <Routes>
-                            <Route path="/" element={<Account />} />
-                            <Route path=":accountVar" element={<Account />} />
-                          </Routes>
-                        </DashboardLayout>
+                        <BoardProvider>
+                          <DashboardLayout>
+                            <Routes>
+                              <Route path="/" element={<Account />} />
+                              <Route path=":accountVar" element={<Account />} />
+                            </Routes>
+                          </DashboardLayout>
+                        </BoardProvider>
                       </AuthGuard>
                     }
                   />
@@ -96,12 +105,13 @@ function App() {
                     path="/job-wizzard/*"
                     element={
                       <AuthGuard>
-                        <DashboardLayout>
-                          <Routes>
-                            {/* Add the route for the Stepper component */}
-                            <Route path="/" element={<Stepper />} />
-                          </Routes>
-                        </DashboardLayout>
+                        <BoardProvider>
+                          <DashboardLayout>
+                            <Routes>
+                              <Route path="/" element={<Stepper />} />
+                            </Routes>
+                          </DashboardLayout>
+                        </BoardProvider>
                       </AuthGuard>
                     }
                   />
