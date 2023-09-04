@@ -11,7 +11,7 @@ const styles = {
   container: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '16px',
+    // gap: '16px',
     padding: '16px',
   },
   // Add a vertical line style
@@ -61,7 +61,7 @@ export default function EventsList({ jobId }) {
         events.map((event, index) => (
           <React.Fragment key={event.id}>
             <div style={styles.messageBoxContainer}>
-              {index !== 0 && <div style={styles.verticalLine}/> /* Vertical line */}
+             
               <div key={event.id} elevation={3}>
                 {event.type === 'MESSAGE' ? (
                   <MessageStep event={event} />
@@ -69,7 +69,7 @@ export default function EventsList({ jobId }) {
                   <CrudStep event={event} />
                 )}
               </div>
-              {index !== events.length - 1 && <div style={styles.duplicatedVerticalLine}/> /* Duplicated vertical line */}
+              {<div style={styles.duplicatedVerticalLine}/> /* Duplicated vertical line */}
             </div>
           </React.Fragment>
         ))}

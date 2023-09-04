@@ -1,11 +1,12 @@
 import React from 'react';
 import Avatar from '@mui/material/Avatar';
-import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import CreateIcon from '@mui/icons-material/Create'; // Material Icons
 import UpdateIcon from '@mui/icons-material/Update';
 import DeleteIcon from '@mui/icons-material/Delete';
+import Box from '@mui/material/Box';
 import { fToNow } from '../../../utils/format-time';
+
 
 export default function CrudStep({ event }) {
   let icon;
@@ -23,23 +24,39 @@ export default function CrudStep({ event }) {
   }
 
   return (
-    <Stack direction="row" spacing={2}>
-      <Stack spacing={0.5} flexGrow={1}>
-        <Stack direction="row" alignItems="center" justifyContent="space-between">
-          <Typography variant="subtitle2">{event.name}</Typography>
-          <Typography variant="caption" sx={{ color: 'text.disabled' }}>
-            {fToNow(event.createdAt)}
-          </Typography>
-        </Stack>
-        <Typography variant="body2">
-          <Stack direction="row" alignItems="center" spacing={1}>
-            <Avatar sx={{ bgcolor: 'rgb(255, 26, 91)',  boxShadow: '0 3px 3px rgba(0, 0, 0, 0.9)', width: 25, height: 25, border: '1px solid grey', marginLeft: '15px', padding: '1px',  }}>
-              {icon}
-            </Avatar>
-            <p style={{ marginLeft: '20px', textAlign: 'center', textTransform: 'capitalize', fontSize: '15px' }}>{action} the event</p> {/* Adjust the fontSize value as needed */}
-          </Stack>
-        </Typography>
-      </Stack>
-    </Stack>
+    <Box display="flex" alignItems="center" sx={{
+      paddingTop: '35px', 
+      paddingLeft: '20px',
+      paddingRight: '20px',
+    }}>
+      <Avatar
+        sx={{
+          bgcolor: 'rgb(255, 26, 91)',
+          boxShadow: '0 3px 3px rgba(0, 0, 0, 0.9)',
+          width: 25,
+          height: 25,
+          border: '1px solid grey',
+          marginLeft: '20%',
+        }}
+      >
+        {icon}
+      </Avatar>
+      <Typography
+        style={{
+          textTransform: 'capitalize',
+          fontSize: '12px', // Adjust the font size for this Typography component
+          marginLeft: '45px',
+        }}
+      >
+        {action} the event
+      </Typography>
+      <Typography variant="caption" sx={{
+        color: 'text.disabled',
+        marginRight: '10px',
+        fontSize: '12px', // Adjust the font size for this Typography component
+      }}>
+        {fToNow(event.createdAt)}
+      </Typography>
+    </Box>
   );
 }
