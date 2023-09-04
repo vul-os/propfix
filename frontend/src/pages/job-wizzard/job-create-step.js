@@ -36,21 +36,17 @@ export default function JobCreateStep({
         fullWidth
         style={{ marginBottom: '16px' }}
       />
-
-      <TextareaAutosize
-        minRows={4}
-        maxRows={10}
+      <TextField
         label="description"
         placeholder="Description, 'I have had no hot water, cold water is working fine'"
         value={job.description}
         onChange={(e) => setJob({ ...job, description: e.target.value })}
-        style={{
-          width: '100%',
-          marginBottom: '16px',
-          padding: '8px',
-          resize: 'vertical',
-        }}
+        fullWidth
+        style={{ marginBottom: '16px' }}
       />
+      
+      
+
 
       <LabelAutocomplete
         labels={labels}
