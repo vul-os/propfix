@@ -12,8 +12,10 @@ import { useBoardContext } from '../../../contexts/board'; // Import the BoardPr
 
 function JobDataGrid() {
   const { jobs, boardLoading } = useBoardContext(); // Use the BoardProvider context
+  // const [job, setJob] = useState({});
 
   const [selectedRow, setSelectedRow] = useState(null);
+
 
   const avatarRenderer = (params) => {
     const assignees = Array.isArray(params.value) ? params.value : [params.value];

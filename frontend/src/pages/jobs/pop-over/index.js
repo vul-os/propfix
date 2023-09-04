@@ -1,5 +1,5 @@
 import PropTypes from 'prop-types';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 
@@ -47,8 +47,20 @@ export default function PopOver({
 }) {
   const { getIdToken, user } = useAuthContext(); 
   const { board, setBoard, boardLoading } = useBoardContext(); // Use the BoardProvider context
-
   const [selectedColumnMap, setSelectedColumnMap] = useState({});
+
+
+  useEffect(() => {
+    const initialSelectedColumnMap = board && board.jobs && board.columns
+    ? Object.fromEntries(
+        Object.values(board.jobs).map((job) => {
+          const columnObject = Object.values(board.columns).find((col) => col && col.jobIds && col.jobIds.includes(job.id)) || null;
+          return [job.id, columnObject];
+        })
+      )
+    : {};
+    setSelectedColumnMap(initialSelectedColumnMap)
+  }, [board])
 
   const setColumnByJobId = (jobId, columnValue) => {
     setSelectedColumnMap(prevMap => ({
@@ -56,20 +68,6 @@ export default function PopOver({
       [jobId]: columnValue
     }));
   };
-
-  const handleAddJob = useCallback(
-    async (jobData) => {
-      try {
-        const token = await getIdToken(); // Get the JWT token from the auth context
-        // createJob(column.id, jobData, token); // Pass the token to the createJob function
-
-        // openAddJob.onFalse();
-      } catch (error) {
-        console.error(error);
-      }
-    },
-    [getIdToken] // Include getIdToken in the dependencies array
-  );
 
   const handleDeleteJob = useCallback(
     async (jobId) => {
@@ -87,8 +85,58 @@ export default function PopOver({
     [getIdToken, enqueueSnackbar]
   );
 
-  const onCloseColumn = (jobId, selectedColumn) => {
-    
+  const onChangeColumn = (jobId, newSelectedColumn, selectedColumn) => {
+
+  
+      if (newSelectedColumn && newSelectedColumn.jobIds) {
+        // Get a copy of job ids from source column
+        const newStartJobIds = Array.from(selectedColumn && selectedColumn.jobIds || []).filter(id => id !== jobId);
+        // Get a copy of job ids from destination column
+        const newEndJobIds = [...Array.from(newSelectedColumn.jobIds || []), jobId];
+
+        let newBoardState = {
+          ...board,
+          columns: {
+            ...board.columns,
+            [newSelectedColumn.id]: {
+              ...newSelectedColumn,
+              jobIds: newEndJobIds,
+            },
+          },
+        };
+        if (newStartJobIds.length > 0) {
+          // Create new board state
+          newBoardState = {
+            ...board,
+            columns: {
+              ...board.columns,
+              [selectedColumn.id]: {
+                ...selectedColumn,
+                jobIds: newStartJobIds,
+              },
+              [newSelectedColumn.id]: {
+                ...newSelectedColumn,
+                jobIds: newEndJobIds,
+              },
+            },
+          };
+        }
+        console.log("heree: ", newStartJobIds, newEndJobIds)
+        setBoard(newBoardState);
+      }
+
+          // actually do api request
+          // await moveJob(
+          //   sourceColumn.id,
+          //   destinationColumn.id,
+          //   draggableId,
+          //   destination.index,
+          //   token 
+          // );
+  }
+
+  const onClosePopUp = () => {
+
   }
 
   return (
@@ -111,7 +159,8 @@ export default function PopOver({
       <Toolbar
         job={job}
         onDelete={handleDeleteJob}
-        onClosePopUp={onCloseColumn}
+        onChangeColumn={onChangeColumn}
+        onClosePopUp={onClosePopUp}
         columns={board && board.columns}
         selectedColumnMap={selectedColumnMap}
         setColumnByJobId={setColumnByJobId}
