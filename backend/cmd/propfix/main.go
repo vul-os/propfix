@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/exolutionza/propfix-backend-go/internal/api/server"
+	"github.com/exolutionza/propfix-backend-go/internal/server"
 )
 
 func main() {

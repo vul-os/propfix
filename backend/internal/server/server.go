@@ -12,6 +12,7 @@ import (
 	internalCors "github.com/exolutionza/propfix-backend-go/internal/api/cors"
 	jsonRpcServer "github.com/exolutionza/propfix-backend-go/internal/api/jsonRpc/server"
 	jsonRpcProvider "github.com/exolutionza/propfix-backend-go/internal/api/jsonRpc/service/provider"
+	"github.com/exolutionza/propfix-backend-go/internal/columns/columnJobLinks"
 
 	"github.com/exolutionza/propfix-backend-go/internal/attachments"
 	"github.com/go-chi/chi"
@@ -77,6 +78,7 @@ func Server() {
 
 	orgStore := organizations.NewOrganizationStore(dbpool)
 	columnStore := columns.NewColumnsStore(dbpool)
+	columnJobLinksStore := columnJobLinks.NewColumnJobLinkStore(dbpool)
 	eventStore := events.NewEventsStore(dbpool)
 	labelStore := labels.NewLabelStore(dbpool)
 
@@ -99,9 +101,10 @@ func Server() {
 				permissions.New(dbpool, authorizer),
 				buildings.New(dbpool, authorizer),
 				labels.New(labelStore, authorizer),
-				jobs.New(dbpool, authorizer, columnStore),
+				jobs.New(dbpool, authorizer, columnJobLinksStore),
 				events.New(authorizer, eventStore),
 				columns.New(dbpool, authorizer, columnStore),
+				columnJobLinks.New(columnJobLinksStore, authorizer),
 			},
 		},
 		// Add more RPC server configurations for other services here

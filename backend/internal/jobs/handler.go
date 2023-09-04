@@ -9,7 +9,7 @@ import (
 
 	jsonRpcProvider "github.com/exolutionza/propfix-backend-go/internal/api/jsonRpc/service/provider"
 	"github.com/exolutionza/propfix-backend-go/internal/authz"
-	"github.com/exolutionza/propfix-backend-go/internal/columns"
+	"github.com/exolutionza/propfix-backend-go/internal/columns/columnJobLinks"
 	"github.com/exolutionza/propfix-backend-go/internal/user"
 
 	"github.com/jackc/pgx/v4"
@@ -36,9 +36,9 @@ type Job struct {
 }
 
 type adaptor struct {
-	dbpool       *pgxpool.Pool
-	authz        *authz.Authz
-	columnsStore *columns.ColumnsStore
+	dbpool              *pgxpool.Pool
+	authz               *authz.Authz
+	columnJobLinksStore *columnJobLinks.Store
 }
 
 const Name = "Jobs"
@@ -50,12 +50,12 @@ func (a *adaptor) Name() jsonRpcProvider.Name {
 func New(
 	dbpool *pgxpool.Pool,
 	authz *authz.Authz,
-	cs *columns.ColumnsStore,
+	cjls *columnJobLinks.Store,
 ) *adaptor {
 	return &adaptor{
-		dbpool:       dbpool,
-		authz:        authz,
-		columnsStore: cs,
+		dbpool:              dbpool,
+		authz:               authz,
+		columnJobLinksStore: cjls,
 	}
 }
 
@@ -155,7 +155,7 @@ func (a *adaptor) CreateJob(r *http.Request, args *CreateJobRequest, result *Cre
 		return err
 	}
 	// Get the ID of the first column and add the job to it
-	err = a.columnsStore.AddJobToFirstColumn(args.Job.OrganizationID, args.Job.ID)
+	err = a.columnJobLinksStore.AddJobToFirstColumn(args.Job.OrganizationID, args.Job.ID)
 	if err != nil {
 		return err
 	}
@@ -236,9 +236,9 @@ func (a *adaptor) DeleteJob(r *http.Request, args *DeleteJobRequest, result *Del
 
 // Define the KanbanBoard struct for the response
 type KanbanBoard struct {
-	Columns map[string]columns.Column `json:"columns"`
-	Jobs    map[string]Job            `json:"jobs"`
-	Ordered []string                  `json:"ordered"`
+	Columns map[string]columnJobLinks.ColumnWithJobIds `json:"columns"`
+	Jobs    map[string]Job                             `json:"jobs"`
+	Ordered []string                                   `json:"ordered"`
 }
 
 // Define the GetKanbanBoardRequest struct
@@ -252,18 +252,12 @@ type GetKanbanBoardResponse struct {
 }
 
 func (a *adaptor) GetKanbanBoard(r *http.Request, args *GetKanbanBoardRequest, result *GetKanbanBoardResponse) error {
-	// Define the GetKanbanBoardRequest struct
-	type GetKanbanBoardRequest struct {
-		OrganizationID string `json:"organizationId"`
-	}
-
 	// Fetch columns using the ColumnsStore
-	cols, err := a.columnsStore.GetAllColumns(args.OrganizationID)
+	cols, err := a.columnJobLinksStore.GetAllColumns(args.OrganizationID)
 	if err != nil {
 		fmt.Println(err)
 		return err
 	}
-	fmt.Println(cols)
 
 	// Fetch jobs using the organization ID (simplified example)
 	jobs, err := a.GetJobsByOrganization(r, args.OrganizationID)
@@ -278,14 +272,15 @@ func (a *adaptor) GetKanbanBoard(r *http.Request, args *GetKanbanBoardRequest, r
 	}
 
 	// Create a map to store columns by their IDs
-	columnsMap := make(map[string]columns.Column)
+	columnsMap := make(map[string]columnJobLinks.ColumnWithJobIds)
 	for _, col := range cols {
-		columnsMap[col.ID] = columns.Column{
+		columnsMap[col.ID] = columnJobLinks.ColumnWithJobIds{
 			ID:     col.ID,
 			Name:   col.Name,
-			JobIDs: col.JobIDs,
+			JobIds: col.JobIds,
 		}
 	}
+	fmt.Println(columnsMap)
 
 	// Create an ordered list of column IDs
 	var orderedColumns []string
