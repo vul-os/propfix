@@ -21,7 +21,7 @@ const styles = {
     position: 'relative', // Position relative to place the line
   },
   // vertical line style
-  duplicatedVerticalLine: {
+  verticalLine: {
     width: '1px',
     backgroundColor: 'grey',
     marginRight: '80%', // Set marginRight to 0 to join the lines
@@ -61,7 +61,7 @@ export default function EventsList({ jobId }) {
         events.map((event, index) => (
           <React.Fragment key={event.id}>
             <div style={styles.messageBoxContainer}>
-             
+              {index !== 0 && <div style={styles.verticalLine}/> }
               <div key={event.id} elevation={3}>
                 {event.type === 'MESSAGE' ? (
                   <MessageStep event={event} />
@@ -69,7 +69,6 @@ export default function EventsList({ jobId }) {
                   <CrudStep event={event} />
                 )}
               </div>
-              {<div style={styles.duplicatedVerticalLine}/> /* Duplicated vertical line */}
             </div>
           </React.Fragment>
         ))}
