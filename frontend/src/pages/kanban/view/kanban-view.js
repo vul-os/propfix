@@ -5,7 +5,7 @@ import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
 
 import EmptyContent from '../../../components/empty-content';
-import { moveJobs } from '../../../api/columns';
+import { moveJob } from '../../../api/columnJobLinks';
 import { getBoard } from '../../../api/jobs';
 import { hideScroll } from '../../../theme/css';
 
@@ -69,10 +69,11 @@ export default function KanbanView() {
           };
           setBoard(newBoardState);
           // actually do api request
-          await moveJobs(
+          await moveJob(
             sourceColumn.id,
             destinationColumn.id,
-            [draggableId],
+            draggableId,
+            destination.index,
             token 
           );
         }
