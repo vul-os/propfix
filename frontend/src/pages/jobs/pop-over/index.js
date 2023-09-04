@@ -10,6 +10,7 @@ import Divider from '@mui/material/Divider';
 import Stack from '@mui/material/Stack';
 
 import { useAuthContext } from '../../../contexts/auth'; 
+import { useBoardContext } from '../../../contexts/board'; 
 
 import Scrollbar from '../../../components/scrollbar';
 
@@ -45,6 +46,17 @@ export default function PopOver({
   onClosePopOver,
 }) {
   const { getIdToken, user } = useAuthContext(); 
+  const { board, setBoard, boardLoading } = useBoardContext(); // Use the BoardProvider context
+
+  const [selectedColumnMap, setSelectedColumnMap] = useState({});
+
+  const setColumnByJobId = (jobId, columnValue) => {
+    setSelectedColumnMap(prevMap => ({
+      ...prevMap,
+      [jobId]: columnValue
+    }));
+  };
+
   const handleAddJob = useCallback(
     async (jobData) => {
       try {
@@ -75,6 +87,10 @@ export default function PopOver({
     [getIdToken, enqueueSnackbar]
   );
 
+  const onCloseColumn = (jobId, selectedColumn) => {
+    
+  }
+
   return (
     <Drawer
       open={openPopOver}
@@ -93,10 +109,12 @@ export default function PopOver({
       }}
     >
       <Toolbar
-        jobName={job.name}
-        jobStatus={job.status}
+        job={job}
         onDelete={handleDeleteJob}
-        onClosePopOver={onClosePopOver}
+        onClosePopUp={onCloseColumn}
+        columns={board && board.columns}
+        selectedColumnMap={selectedColumnMap}
+        setColumnByJobId={setColumnByJobId}
       />
       <Divider />
       <Scrollbar
@@ -126,9 +144,3 @@ export default function PopOver({
     </Drawer>
   );
 }
-
-PopOver.propTypes = {
-  onClosePopOver: PropTypes.func,
-  openPopOver: PropTypes.bool,
-  job: PropTypes.object,
-};

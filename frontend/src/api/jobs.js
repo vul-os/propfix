@@ -1,7 +1,7 @@
 import config from '../config/config';
 import { jsonRpcRequest } from './jsonrpc/client';
 
-const API_BASE_URL = `${config.apiUrl}`;
+const API_BASE_URL = `${config.apiUrl}/api/authenticated`;
 
 // Function to fetch job data by ID
 export async function getJob(jobId, idToken) {
@@ -15,9 +15,9 @@ export async function getJob(jobId, idToken) {
 }
 
 // Function to create a new job
-export async function createJob(jobData, idToken) {
+export async function createJob(job, idToken) {
   try {
-    const params = [jobData, idToken];
+    const params = [{job}];
     return await jsonRpcRequest('Jobs.CreateJob', params, idToken);
   } catch (error) {
     console.error('Error creating job:', error);

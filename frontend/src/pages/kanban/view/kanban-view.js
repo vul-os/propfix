@@ -5,36 +5,21 @@ import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
 
 import EmptyContent from '../../../components/empty-content';
-import { moveJobs } from '../../../api/columns';
+import { moveJob } from '../../../api/columnJobLinks';
 import { getBoard } from '../../../api/jobs';
 import { hideScroll } from '../../../theme/css';
 
 import KanbanColumn from '../kanban-column';
 import { KanbanColumnSkeleton } from '../kanban-skeleton';
 import { useAuthContext } from '../../../contexts/auth'; 
+import { useBoardContext } from '../../../contexts/board'; 
+import PopOver from '../../jobs/pop-over';
 
 export default function KanbanView() {
-  const [board, setBoard] = useState(null);
-  const [boardLoading, setBoardLoading] = useState(true);
-  const { getIdToken, activeOrganization } = useAuthContext(); 
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        if (activeOrganization) {
-          const token = await getIdToken(); 
-          const boardData = await getBoard(token, activeOrganization);
-          setBoard(boardData.board);
-        }
-        setBoardLoading(false);
-      } catch (error) {
-        console.error('Error fetching board:', error);
-        setBoard(null);
-        setBoardLoading(false);
-      }
-    }
-
-    fetchData();
-  }, [getIdToken]);
+  const { board, setBoard, boardLoading } = useBoardContext(); // Use the BoardProvider context
+  const { getIdToken } = useAuthContext(); 
+  const [openPopUp, setOpenPopUp] = useState(false);
+  const [job, setJob] = useState({});
 
   const onDragEnd = useCallback(
     async ({ destination, source, draggableId, type }) => {
@@ -52,7 +37,7 @@ export default function KanbanView() {
         const sourceColumn = board?.columns[source.droppableId];
         const destinationColumn = board?.columns[destination.droppableId];
 
-        if (sourceColumn && destinationColumn) {
+        if (sourceColumn && destinationColumn && sourceColumn.id !== destinationColumn.id) {
           console.log("heree: ", sourceColumn, destinationColumn)
           // Get a copy of job ids from source column
           const newStartJobIds = Array.from(sourceColumn.jobIds || []);
@@ -84,10 +69,11 @@ export default function KanbanView() {
           };
           setBoard(newBoardState);
           // actually do api request
-          await moveJobs(
+          await moveJob(
             sourceColumn.id,
             destinationColumn.id,
-            [draggableId],
+            draggableId,
+            destination.index,
             token 
           );
         }
@@ -155,8 +141,11 @@ export default function KanbanView() {
                   return <KanbanColumn
                     index={index}
                     key={columnId}
+                    openPopUp={openPopUp}
+                    setOpenPopUp={setOpenPopUp}
                     column={column}
                     jobs={columnJobs}
+                    setJob={setJob}
                   />
                 })}
                 {provided.placeholder}
@@ -165,6 +154,11 @@ export default function KanbanView() {
           </Droppable>
         </DragDropContext>
       )}
+      <PopOver
+        job={job}
+        openPopOver={openPopUp}
+        onClosePopOver={() => setOpenPopUp(false)}
+      />
     </Container>
   );
 }

@@ -17,26 +17,31 @@ import CustomPopover, { usePopover } from '../../../components/custom-popover';
 // ----------------------------------------------------------------------
 
 export default function Toolbar({
-  jobName,
-  jobStatus,
+  job,
   onDelete,
   onClosePopUp,
+  columns,
+  selectedColumnMap,
+  setColumnByJobId
 }) {
   const smUp = useResponsive('up', 'sm');
-
   const confirm = useBoolean();
-
   const popover = usePopover();
 
-  const [status, setStatus] = useState(jobStatus);
-
-  const handleChangeStatus = useCallback(
+  const selectedColumn = job && job.id && selectedColumnMap[job.id]
+  
+  const handleChangeColumn = useCallback(
     (newValue) => {
       popover.onClose();
-      setStatus(newValue);
+      if (job && job.id) setColumnByJobId(job.id, newValue);
     },
     [popover]
   );
+
+  const handleSelectedCheck = (k) => {
+    console.log(k, selectedColumn, columns)
+    return selectedColumn && (selectedColumn.name === columns[k].name)
+  }
 
   return (
     <>
@@ -49,7 +54,7 @@ export default function Toolbar({
       >
         {!smUp && (
           <Tooltip title="Back">
-            <IconButton onClick={onClosePopUp} sx={{ mr: 1 }}>
+            <IconButton onClick={() => onClosePopUp(job.id, selectedColumn)} sx={{ mr: 1 }}>
               <Iconify icon="eva:arrow-ios-back-fill" />
             </IconButton>
           </Tooltip>
@@ -61,7 +66,7 @@ export default function Toolbar({
           endIcon={<Iconify icon="eva:arrow-ios-downward-fill" width={16} sx={{ ml: -0.5 }} />}
           onClick={popover.onOpen}
         >
-          {status}
+          {selectedColumn && selectedColumn.name}
         </Button>
 
         <Stack direction="row" justifyContent="flex-end" flexGrow={1}>
@@ -79,17 +84,18 @@ export default function Toolbar({
         arrow="top-right"
         sx={{ width: 140 }}
       >
-        {['To Do', 'In Progress', 'Ready To Test', 'Done'].map((option) => (
-          <MenuItem
-            key={option}
-            selected={status === option}
+        {columns && Object.keys(columns).map((k) => {
+          return <MenuItem
+            key={columns[k].id}
+            selected={handleSelectedCheck(k)}
             onClick={() => {
-              handleChangeStatus(option);
+              handleChangeColumn(columns[k]);
             }}
           >
-            {option}
+            {columns[k].name}
           </MenuItem>
-        ))}
+        })
+        }
       </CustomPopover>
 
       <ConfirmDialog
@@ -98,7 +104,7 @@ export default function Toolbar({
         title="Delete"
         content={
           <>
-            Are you sure want to delete <strong> {jobName} </strong>?
+            Are you sure want to delete <strong> {job.name} </strong>?
           </>
         }
         action={
