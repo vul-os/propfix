@@ -24,6 +24,7 @@ export default function Toolbar({
   columns,
   selectedColumnMap,
   setColumnByJobId,
+  members,
 }) {
   const smUp = useResponsive('up', 'sm');
   const confirm = useBoolean();
