@@ -16,6 +16,7 @@ import InputName from './input-name';
 import Priority from './priority';
 import Attachments from './attachments';
 import EventsList from '../events/events-list';
+import extractEmailUsername from '../../utility/email'
 
 dayjs.extend(utc);
 
@@ -31,7 +32,9 @@ const StyledLabel = styled('span')(({ theme }) => ({
 
 // ----------------------------------------------------------------------
 
-export default function JobDetails({ job }) {
+export default function JobDetails({ job, members }) {
+  const assignees = job?.assigneeIds?.map((jobId) => members && members[jobId])
+  console.log("assignees", assignees)
   const [priority, setPriority] = useState(job.priority.toLowerCase());
 
   const [jobName, setJobName] = useState(job.name);
@@ -89,24 +92,37 @@ export default function JobDetails({ job }) {
     </Stack>
   );
 
-  // const renderReporter = (
-  //   <Stack direction="row" alignItems="center">
-  //     <StyledLabel>Reporter</StyledLabel>
-  //     <Avatar alt={job.reporter.name} src={job.reporter.avatarUrl} />
-  //   </Stack>
-  // );
+  const renderAssignee = (
+    <Stack direction="row">
+      <StyledLabel sx={{ height: 40, lineHeight: '40px' }}>Assignee</StyledLabel>
 
-  // const renderAssignee = (
-  //   <Stack direction="row">
-  //     <StyledLabel sx={{ height: 40, lineHeight: '40px' }}>Assignee</StyledLabel>
+      <Stack direction="row" flexWrap="wrap" alignItems="center" spacing={1}>
+        {assignees && assignees.map((user) => {
+            const username = user?.displayName ? user.displayName : extractEmailUsername(user?.email)
+            return <Avatar key={user?.id} alt={username} src={user?.photoUrl} />
 
-  //     <Stack direction="row" flexWrap="wrap" alignItems="center" spacing={1}>
-  //       {job.assignees.map((user) => (
-  //         <Avatar key={user.id} alt={user.name} src={user.avatarUrl} />
-  //       ))}
-  //     </Stack>
-  //   </Stack>
-  // );
+        })}
+
+        {/* <Tooltip title="Add assignee">
+          <IconButton
+            onClick={contacts.onTrue}
+            sx={{
+              bgcolor: (theme) => alpha(theme.palette.grey[500], 0.08),
+              border: (theme) => `dashed 1px ${theme.palette.divider}`,
+            }}
+          >
+            <Iconify icon="mingcute:add-line" />
+          </IconButton>
+        </Tooltip>
+
+        <KanbanContactsDialog
+          assignee={task.assignee}
+          open={contacts.value}
+          onClose={contacts.onFalse}
+        /> */}
+      </Stack>
+    </Stack>
+  );
 
   const renderDueDate = (
     <Stack direction="row" alignItems="center">
@@ -156,8 +172,8 @@ export default function JobDetails({ job }) {
       {renderPriority}
       {renderLabel}
       {renderDueDate}
-      {/* {renderReporter}
-      {renderAssignee} */}
+      {/* {renderReporter} */}
+      {renderAssignee}
       {renderAttachments}
       {renderDescription}
     </Stack>

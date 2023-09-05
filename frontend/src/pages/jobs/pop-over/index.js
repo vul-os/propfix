@@ -86,14 +86,14 @@ export default function PopOver({
   );
 
   const onChangeColumn = (jobId, newSelectedColumn, selectedColumn) => {
-      console.log("dddddd", newSelectedColumn, selectedColumn, jobId)
+      console.log("dddddd", newSelectedColumn, selectedColumn,)
   
       if (newSelectedColumn && newSelectedColumn.jobIds) {
         // Get a copy of job ids from source column
         const newStartJobIds = Array.from(selectedColumn && selectedColumn.jobIds || []).filter(id => id !== jobId);
         // Get a copy of job ids from destination column
         const newEndJobIds = [...Array.from(newSelectedColumn.jobIds || []), jobId];
-        console.log("fdddd", newEndJobIds, newStartJobIds, newStartJobIds.length)
+        console.log("fdddd", newEndJobIds, newStartJobIds)
         let newBoardState = {
           ...board,
           columns: {
@@ -104,7 +104,7 @@ export default function PopOver({
             },
           },
         };
-        if (newStartJobIds.length > 0) {
+        if (selectedColumn?.id && newSelectedColumn?.id) {
           // Create new board state
           newBoardState = {
             ...board,
@@ -184,7 +184,7 @@ export default function PopOver({
             px: 2.5,
           }}
         >
-          <JobDetails job={job} />
+          <JobDetails job={job} members={board?.members} />
           <EventsList jobId={job.id} />
         </Stack>
       </Scrollbar>
