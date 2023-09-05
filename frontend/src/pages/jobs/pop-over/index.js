@@ -86,14 +86,14 @@ export default function PopOver({
   );
 
   const onChangeColumn = (jobId, newSelectedColumn, selectedColumn) => {
-
+      console.log("dddddd", newSelectedColumn, selectedColumn, jobId)
   
       if (newSelectedColumn && newSelectedColumn.jobIds) {
         // Get a copy of job ids from source column
         const newStartJobIds = Array.from(selectedColumn && selectedColumn.jobIds || []).filter(id => id !== jobId);
         // Get a copy of job ids from destination column
         const newEndJobIds = [...Array.from(newSelectedColumn.jobIds || []), jobId];
-        console.log(newEndJobIds, newStartJobIds)
+        console.log("fdddd", newEndJobIds, newStartJobIds, newStartJobIds.length)
         let newBoardState = {
           ...board,
           columns: {
@@ -121,7 +121,7 @@ export default function PopOver({
             },
           };
         }
-        console.log("heree: ", newStartJobIds, newEndJobIds)
+        console.log("here212121e: ", newStartJobIds, newEndJobIds)
         setBoard(newBoardState);
       }
 
