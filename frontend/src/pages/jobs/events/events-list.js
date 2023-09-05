@@ -12,8 +12,8 @@ const styles = {
   container: {
     display: 'flex',
     flexDirection: 'column',
-    // gap: '16px',
-    padding: '16px',
+    margin: '0', // Remove margin
+    padding: '0', // Remove padding
   },
   // Add a vertical line style
   messageBoxContainer: {
@@ -32,6 +32,11 @@ const styles = {
     right: '0', // Position the line to the right
     top: '0', // Position the line at the top
     zIndex: '-1', // Set the z-index to -1
+  },
+  eventsHeading: {
+    textAlign: 'center', // Center the text
+    margin: '0 0 0 10px', // Set margin-left to 10px
+    padding: '0', // Remove padding
   },
 };
 
@@ -77,6 +82,7 @@ export default function EventsList({ jobId }) {
 
   return (
     <div style={styles.container}>
+      <h2 style={styles.eventsHeading}>Events</h2> {/* Centered "Events" heading */}
       {events &&
         events.map((event, index) => (
           <RenderEvent event={event} index={index} />

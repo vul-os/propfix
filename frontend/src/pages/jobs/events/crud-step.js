@@ -22,11 +22,18 @@ const styles = {
     width: '20%',
   },
   avatar: {
-    width: 30,
-    height: 30,
-    backgroundColor: 'rgb(255, 26, 91)',
-    boxShadow: '0 0 3px 2px rgba(255, 26, 91, 0.5)', // Updated box shadow
-    border: '1px solid lightgrey',
+    backgroundColor: '#F2F3F4',
+    border: '1px solid white',
+    padding: '15px', // Adjust padding to center the smaller icon
+    marginLeft: '40px',
+    width: '20px',
+    height: '20px',
+
+  },
+  icon: {
+    color: 'black', // Set the icon color to black
+    width: 120, // Adjust the width to make the icon smaller
+    height: 20, // Adjust the height to make the icon smaller
   },
 };
 
@@ -35,13 +42,13 @@ export default function CrudStep({ event, member }) {
   let action;
   console.log(member);
   if (event.type === 'CREATE') {
-    icon = <CreateIcon />;
+    icon = <CreateIcon style={styles.icon} />;
     action = 'created';
   } else if (event.type === 'UPDATE') {
-    icon = <UpdateIcon />;
+    icon = <UpdateIcon style={styles.icon} />;
     action = 'updated';
   } else if (event.type === 'DELETE') {
-    icon = <DeleteIcon />;
+    icon = <DeleteIcon style={styles.icon} />;
     action = 'deleted';
   }
 
@@ -51,14 +58,16 @@ export default function CrudStep({ event, member }) {
       <Avatar style={styles.avatar}>
         {icon}
       </Avatar>
-      <Typography variant="subtitle2" style={{ color: '#a8a8a8',  paddingLeft: '50px' }}>
+      <Typography variant="caption" style={{ fontSize: '12px', color: '#a8a8a8', paddingLeft: '50px' }}>
+        {fToNow(event.createdAt)}
+      </Typography>
+
+            <Typography variant="subtitle2" style={{ fontSize: '12px', color: '#a8a8a8', paddingLeft: '50px' }}>
         {member && member.displayName ? member.displayName : extractEmailUsername(member.email)}
       </Typography>
-      <Typography variant="subtitle2" style={{ color: '#a8a8a8',  paddingLeft: '50px' }}>
+
+      <Typography variant="subtitle2" style={{ fontSize: '12px',  color: '#a8a8a8', paddingLeft: '50px' }}>
         {`${action} the event`}
-      </Typography>
-      <Typography variant="caption" style={{ color: '#a8a8a8', paddingLeft: '50px'}}>
-        {fToNow(event.createdAt)}
       </Typography>
     </div>
   );
