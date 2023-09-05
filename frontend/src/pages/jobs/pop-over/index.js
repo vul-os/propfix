@@ -93,7 +93,7 @@ export default function PopOver({
         const newStartJobIds = Array.from(selectedColumn && selectedColumn.jobIds || []).filter(id => id !== jobId);
         // Get a copy of job ids from destination column
         const newEndJobIds = [...Array.from(newSelectedColumn.jobIds || []), jobId];
-
+        console.log(newEndJobIds, newStartJobIds)
         let newBoardState = {
           ...board,
           columns: {

@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 import { useParams } from 'react-router-dom';
 import Paper from '@mui/material/Paper';
 import { useAuthContext } from '../../../contexts/auth';
+import { useBoardContext } from '../../../contexts/board'; 
 import { getAllEvents } from '../../../api/events';
 import MessageStep from './message-step'; // Import the MessageStep component
 import CrudStep from './crud-step'; // Import the CrudStep component
@@ -35,9 +36,11 @@ const styles = {
 };
 
 export default function EventsList({ jobId }) {
+  const { board } = useBoardContext(); // Use the BoardProvider context
   // const { jobId } = useParams();
   const { getIdToken } = useAuthContext();
   const [events, setEvents] = useState([]);
+
 
   useEffect(() => {
     if (jobId) {
@@ -55,22 +58,26 @@ export default function EventsList({ jobId }) {
     }
   };
 
+  const RenderEvent = ({event, index}) => {
+    const member = board && board.members && event && event.memberId && board.members[event.memberId]
+    return member && <React.Fragment key={event.id}>
+    <div style={styles.messageBoxContainer}>
+      {index !== 0 && <div style={styles.verticalLine}/> }
+      <div key={event.id} elevation={3}>
+        {event.type === 'MESSAGE' ? (
+          <MessageStep event={event} member={member} />
+        ) : (
+          <CrudStep event={event} member={member} />
+        )}
+      </div>
+    </div>
+  </React.Fragment> 
+  }
   return (
     <div style={styles.container}>
       {events &&
         events.map((event, index) => (
-          <React.Fragment key={event.id}>
-            <div style={styles.messageBoxContainer}>
-              {index !== 0 && <div style={styles.verticalLine}/> }
-              <div key={event.id} elevation={3}>
-                {event.type === 'MESSAGE' ? (
-                  <MessageStep event={event} />
-                ) : (
-                  <CrudStep event={event} />
-                )}
-              </div>
-            </div>
-          </React.Fragment>
+          <RenderEvent event={event} index={index} />
         ))}
     </div>
   );
