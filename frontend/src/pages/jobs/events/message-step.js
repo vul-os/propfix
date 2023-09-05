@@ -3,7 +3,6 @@ import PropTypes from 'prop-types';
 import Avatar from '@mui/material/Avatar';
 import Typography from '@mui/material/Typography';
 import { fToNow } from '../../../utils/format-time';
-import extractEmailUsername from '../../utility/email'
 
 const styles = {
   container: {
@@ -88,7 +87,7 @@ export default function MessageStep({ event, member }) {
         <div style={styles.notch} />
         <div style={styles.titleSection}>
           <Typography variant="subtitle2" style={styles.titleText}>
-            {member && member.displayName ? member.displayName : extractEmailUsername(member.email)}
+            {member?.displayName}
           </Typography>
           <Typography variant="caption" sx={{ color: 'text.disabled' }}>
             Messaged {fToNow(event.createdAt)}

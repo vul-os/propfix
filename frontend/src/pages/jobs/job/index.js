@@ -2,21 +2,25 @@ import React, { useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
-
-// @mui
 import { styled, alpha } from '@mui/material/styles';
 import Chip from '@mui/material/Chip';
 import Stack from '@mui/material/Stack';
 import Avatar from '@mui/material/Avatar';
 import TextField from '@mui/material/TextField';
 import { DatePicker } from '@mui/lab';
-
-// components
+import Drawer from '@mui/material/Drawer';
+import Button from '@mui/material/Button';
+import Tooltip from '@mui/material/Tooltip';
+import IconButton from '@mui/material/IconButton';
+import { useBoolean } from '../../../hooks/use-boolean';
 import InputName from './input-name';
 import Priority from './priority';
 import Attachments from './attachments';
 import EventsList from '../events/events-list';
-import extractEmailUsername from '../../utility/email'
+import Iconify from '../../../components/iconify';
+import MembersDialog from './members-dialog';
+
+// ----------------------------------------------------------------------
 
 dayjs.extend(utc);
 
@@ -35,6 +39,7 @@ const StyledLabel = styled('span')(({ theme }) => ({
 export default function JobDetails({ job, members }) {
   const assignees = job?.assigneeIds?.map((jobId) => members && members[jobId])
   console.log("assignees", assignees)
+  const contacts = useBoolean();
   const [priority, setPriority] = useState(job.priority.toLowerCase());
 
   const [jobName, setJobName] = useState(job.name);
@@ -97,13 +102,9 @@ export default function JobDetails({ job, members }) {
       <StyledLabel sx={{ height: 40, lineHeight: '40px' }}>Assignee</StyledLabel>
 
       <Stack direction="row" flexWrap="wrap" alignItems="center" spacing={1}>
-        {assignees && assignees.map((user) => {
-            const username = user?.displayName ? user.displayName : extractEmailUsername(user?.email)
-            return <Avatar key={user?.id} alt={username} src={user?.photoUrl} />
+        {assignees && assignees.map((user) => (<Avatar key={user?.id} alt={user?.displayName} src={user?.photoUrl} />))}
 
-        })}
-
-        {/* <Tooltip title="Add assignee">
+        <Tooltip title="Add assignee">
           <IconButton
             onClick={contacts.onTrue}
             sx={{
@@ -115,11 +116,12 @@ export default function JobDetails({ job, members }) {
           </IconButton>
         </Tooltip>
 
-        <KanbanContactsDialog
-          assignee={task.assignee}
+        <MembersDialog
+          members={Object.values(members)}
+          assignees={assignees}
           open={contacts.value}
           onClose={contacts.onFalse}
-        /> */}
+        />
       </Stack>
     </Stack>
   );
