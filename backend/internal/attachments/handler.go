@@ -2,6 +2,7 @@ package attachments
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -9,12 +10,18 @@ import (
 
 	"cloud.google.com/go/storage"
 	"github.com/exolutionza/propfix-backend-go/internal/events"
-	"github.com/gorilla/mux"
+	"github.com/go-chi/chi"
+	"github.com/google/uuid" // Import the UUID package
 )
 
 type FileUploadHandler struct {
 	bucket      *storage.BucketHandle
 	eventsStore *events.EventsStore
+}
+
+type UploadResponse struct {
+	SignedURL  string `json:"signedUrl"`
+	ObjectName string `json:"objectName"`
 }
 
 func NewFileUploadHandler(bucket *storage.BucketHandle, eventsStore *events.EventsStore) (*FileUploadHandler, error) {
@@ -25,8 +32,19 @@ func NewFileUploadHandler(bucket *storage.BucketHandle, eventsStore *events.Even
 }
 
 func (h *FileUploadHandler) UploadFile(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	jobID := vars["jobid"]
+	jobID := chi.URLParam(r, "jobid")
+
+	// Check if jobID is null or undefined and generate a UUID if needed
+	if jobID == "" || jobID == "tennant" {
+		newUUID, err := uuid.NewRandom()
+		if err != nil {
+			http.Error(w, "Failed to generate UUID", http.StatusInternalServerError)
+			return
+		}
+		jobID = newUUID.String()
+	}
+
+	fmt.Println(jobID)
 
 	// Parse the file from the request
 	file, header, err := r.FormFile("file")
@@ -35,7 +53,7 @@ func (h *FileUploadHandler) UploadFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer file.Close()
-
+	fmt.Println(jobID, header.Filename)
 	// Create a new object in the bucket with the desired filename
 	objectName := fmt.Sprintf("%s/%s", jobID, header.Filename)
 	obj := h.bucket.Object(objectName)
@@ -59,19 +77,33 @@ func (h *FileUploadHandler) UploadFile(w http.ResponseWriter, r *http.Request) {
 	}
 	signedURL, err := h.bucket.SignedURL(objectName, opts)
 	if err != nil {
+		fmt.Println(err)
 		http.Error(w, "Failed to generate signed URL", http.StatusInternalServerError)
 		return
 	}
 
-	// Return the signed URL in the response
+	// Create the response struct
+	response := UploadResponse{
+		SignedURL:  signedURL,
+		ObjectName: objectName,
+	}
+
+	// Marshal the response struct into JSON
+	jsonResponse, err := json.Marshal(response)
+	if err != nil {
+		http.Error(w, "Failed to marshal JSON response", http.StatusInternalServerError)
+		return
+	}
+
+	// Set response headers and write the JSON response
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	fmt.Fprintln(w, signedURL)
+	w.Write(jsonResponse)
 }
 
 func (h *FileUploadHandler) GetFile(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	jobID := vars["jobid"]
-	filename := vars["filename"]
+	jobID := chi.URLParam(r, "jobid")
+	filename := chi.URLParam(r, "filename")
 
 	// Construct the object path in the bucket
 	objectName := fmt.Sprintf("%s/%s", jobID, filename)
@@ -84,19 +116,33 @@ func (h *FileUploadHandler) GetFile(w http.ResponseWriter, r *http.Request) {
 	}
 	signedURL, err := h.bucket.SignedURL(objectName, opts)
 	if err != nil {
+		fmt.Println(err)
 		http.Error(w, "Failed to generate signed URL", http.StatusInternalServerError)
 		return
 	}
 
-	// Return the signed URL in the response
+	// Create the response struct
+	response := UploadResponse{
+		SignedURL:  signedURL,
+		ObjectName: objectName,
+	}
+
+	// Marshal the response struct into JSON
+	jsonResponse, err := json.Marshal(response)
+	if err != nil {
+		http.Error(w, "Failed to marshal JSON response", http.StatusInternalServerError)
+		return
+	}
+
+	// Set response headers and write the JSON response
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(signedURL))
+	w.Write(jsonResponse)
 }
 
 func (h *FileUploadHandler) DeleteFile(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	jobID := vars["jobid"]
-	filename := vars["filename"]
+	jobID := chi.URLParam(r, "jobid")
+	filename := chi.URLParam(r, "filename")
 
 	// Construct the object path in the bucket
 	objectName := fmt.Sprintf("%s/%s", jobID, filename)

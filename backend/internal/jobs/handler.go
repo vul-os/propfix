@@ -5,11 +5,14 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"sort"
 	"time"
 
+	"firebase.google.com/go/v4/auth"
 	jsonRpcProvider "github.com/exolutionza/propfix-backend-go/internal/api/jsonRpc/service/provider"
 	"github.com/exolutionza/propfix-backend-go/internal/authz"
-	"github.com/exolutionza/propfix-backend-go/internal/columns"
+	"github.com/exolutionza/propfix-backend-go/internal/columns/columnJobLinks"
+	"github.com/exolutionza/propfix-backend-go/internal/labels"
 	"github.com/exolutionza/propfix-backend-go/internal/user"
 
 	"github.com/jackc/pgx/v4"
@@ -36,9 +39,11 @@ type Job struct {
 }
 
 type adaptor struct {
-	dbpool       *pgxpool.Pool
-	authz        *authz.Authz
-	columnsStore *columns.ColumnsStore
+	dbpool              *pgxpool.Pool
+	authz               *authz.Authz
+	authClient          *auth.Client
+	columnJobLinksStore *columnJobLinks.Store
+	labelsStore         *labels.Store
 }
 
 const Name = "Jobs"
@@ -50,12 +55,16 @@ func (a *adaptor) Name() jsonRpcProvider.Name {
 func New(
 	dbpool *pgxpool.Pool,
 	authz *authz.Authz,
-	cs *columns.ColumnsStore,
+	authClient *auth.Client,
+	cjls *columnJobLinks.Store,
+	ls *labels.Store,
 ) *adaptor {
 	return &adaptor{
-		dbpool:       dbpool,
-		authz:        authz,
-		columnsStore: cs,
+		dbpool:              dbpool,
+		authClient:          authClient,
+		authz:               authz,
+		columnJobLinksStore: cjls,
+		labelsStore:         ls,
 	}
 }
 
@@ -155,7 +164,7 @@ func (a *adaptor) CreateJob(r *http.Request, args *CreateJobRequest, result *Cre
 		return err
 	}
 	// Get the ID of the first column and add the job to it
-	err = a.columnsStore.AddJobToFirstColumn(args.Job.OrganizationID, args.Job.ID)
+	err = a.columnJobLinksStore.AddJobToFirstColumn(args.Job.OrganizationID, args.Job.ID)
 	if err != nil {
 		return err
 	}
@@ -234,88 +243,13 @@ func (a *adaptor) DeleteJob(r *http.Request, args *DeleteJobRequest, result *Del
 	return nil
 }
 
-// JSON-RPC request for getting all jobs
-type GetAllJobsRequest struct {
-	OrganizationID string `json:"organizationId"`
-}
-
-// JSON-RPC response for getting all jobs
-type GetAllJobsResponse struct {
-	Jobs []Job `json:"jobs"`
-}
-
-func (a *adaptor) GetAllJobs(r *http.Request, args *GetAllJobsRequest, result *GetAllJobsResponse) error {
-	ctx := context.Background()
-	user, ok := r.Context().Value("user").(user.User)
-	if !ok {
-		return errors.New("not permitted")
-	}
-
-	var rows pgx.Rows
-	var sqlQuery string
-	var queryParams []interface{}
-
-	if args.OrganizationID != "" { // If organization ID is provided in the request
-		ok, err := a.authz.CheckPermission(r, "jobs", "getall")
-		if err != nil || !ok {
-			return errors.New("not permitted")
-		}
-
-		sqlQuery = `
-			SELECT id, name, organization_id, priority, description, tenant_identifier,
-			assignee_ids, unit_identifier, building_id, labels, attachments,
-			cost, hours, due_date, created_at
-			FROM jobs
-			WHERE organization_id = $1
-		`
-		queryParams = append(queryParams, args.OrganizationID)
-	} else {
-		sqlQuery = `
-			SELECT id, name, organization_id, priority, description, tenant_identifier,
-			assignee_ids, unit_identifier, building_id, labels, attachments,
-			cost, hours, due_date, created_at
-			FROM jobs
-			where tenant_identifier = $1
-		`
-		queryParams = append(queryParams, user.ID)
-	}
-
-	rows, err := a.dbpool.Query(ctx, sqlQuery, queryParams...)
-	if err != nil {
-		return err
-	}
-
-	defer rows.Close()
-
-	var jobs []Job
-	for rows.Next() {
-		var job Job
-		err := rows.Scan(
-			&job.ID, &job.Name, &job.OrganizationID, &job.Priority, &job.Description,
-			&job.TenantIdentifier, &job.AssigneeIDs, &job.UnitIdentifier,
-			&job.BuildingID, &job.Labels, &job.Attachments, &job.Cost, &job.Hours,
-			&job.DueDate, &job.CreatedAt,
-		)
-		if err != nil {
-			return err
-		}
-		if args.OrganizationID == "" {
-			job.Cost = 0
-			job.Hours = 0
-			job.Priority = ""
-		}
-		jobs = append(jobs, job)
-	}
-
-	result.Jobs = jobs
-	return nil
-}
-
 // Define the KanbanBoard struct for the response
 type KanbanBoard struct {
-	Columns map[string]columns.Column `json:"columns"`
-	Jobs    map[string]Job            `json:"jobs"`
-	Ordered []string                  `json:"ordered"`
+	Columns map[string]columnJobLinks.ColumnWithJobIds `json:"columns"`
+	Jobs    map[string]Job                             `json:"jobs"`
+	Members map[string]user.User                       `json:"members"`
+	Labels  map[string]labels.Label                    `json:"labels"`
+	Ordered []string                                   `json:"ordered"`
 }
 
 // Define the GetKanbanBoardRequest struct
@@ -330,19 +264,35 @@ type GetKanbanBoardResponse struct {
 
 func (a *adaptor) GetKanbanBoard(r *http.Request, args *GetKanbanBoardRequest, result *GetKanbanBoardResponse) error {
 	// Fetch columns using the ColumnsStore
-	cols, err := a.columnsStore.GetAllColumns(args.OrganizationID)
+	cols, err := a.columnJobLinksStore.GetAllColumns(args.OrganizationID)
 	if err != nil {
 		fmt.Println(err)
 		return err
 	}
-	fmt.Println(cols)
 
 	// Fetch jobs using the organization ID (simplified example)
-	jobs, err := a.GetJobsByOrganization(args.OrganizationID)
+	jobs, err := a.GetJobsByOrganization(r, args.OrganizationID)
 	if err != nil {
 		fmt.Println(err)
 		return err
 	}
+
+	members, err := a.GetAllMemberIDs(args.OrganizationID, a.authClient)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	allLabels, err := a.labelsStore.GetAllLabels(args.OrganizationID)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	retLabels := make(map[string]labels.Label)
+	for _, l := range allLabels {
+		retLabels[l.ID] = l
+	}
+
 	// Create a map to store jobs by their IDs
 	jobsMap := make(map[string]Job)
 	for _, job := range jobs {
@@ -350,14 +300,20 @@ func (a *adaptor) GetKanbanBoard(r *http.Request, args *GetKanbanBoardRequest, r
 	}
 
 	// Create a map to store columns by their IDs
-	columnsMap := make(map[string]columns.Column)
+	columnsMap := make(map[string]columnJobLinks.ColumnWithJobIds)
 	for _, col := range cols {
-		columnsMap[col.ID] = columns.Column{
-			ID:     col.ID,
-			Name:   col.Name,
-			JobIDs: col.JobIDs,
+		columnsMap[col.ID] = columnJobLinks.ColumnWithJobIds{
+			ID:         col.ID,
+			Name:       col.Name,
+			JobIds:     col.JobIds,
+			OrderIndex: col.OrderIndex,
 		}
 	}
+
+	// Sort columns by OrderIndex
+	sort.Slice(cols, func(i, j int) bool {
+		return cols[i].OrderIndex < cols[j].OrderIndex
+	})
 
 	// Create an ordered list of column IDs
 	var orderedColumns []string
@@ -371,6 +327,8 @@ func (a *adaptor) GetKanbanBoard(r *http.Request, args *GetKanbanBoardRequest, r
 			Columns: columnsMap,
 			Jobs:    jobsMap,
 			Ordered: orderedColumns,
+			Members: members,
+			Labels:  retLabels,
 		},
 	}
 
@@ -379,13 +337,25 @@ func (a *adaptor) GetKanbanBoard(r *http.Request, args *GetKanbanBoardRequest, r
 	return nil
 }
 
-// todo: move into store.go
-func (a *adaptor) GetJobsByOrganization(orgID string) ([]Job, error) {
+func (a *adaptor) GetJobsByOrganization(r *http.Request, orgID string) ([]Job, error) {
 	ctx := context.Background()
-
-	// Query to fetch jobs based on organization ID
-	query := fmt.Sprintf("SELECT * FROM jobs WHERE organization_id = '%s'", orgID)
-
+	user, ok := r.Context().Value("user").(user.User)
+	if !ok {
+		return nil, errors.New("not permitted")
+	}
+	// Initialize query based on permissions
+	query := ""
+	permitted := false
+	if orgID != "" {
+		ok, err := a.authz.CheckPermission(r, "jobs", "getall")
+		if err != nil || !ok {
+			return nil, errors.New("not permitted")
+		}
+		permitted = true
+		query = fmt.Sprintf(`SELECT id, name, organization_id, priority, description, tenant_identifier, assignee_ids, unit_identifier, building_id, labels, attachments, cost, hours, due_date, created_at FROM jobs WHERE organization_id = '%s'`, orgID)
+	} else {
+		query = fmt.Sprintf(`SELECT id, name, organization_id, priority, description, tenant_identifier, assignee_ids, unit_identifier, building_id, labels, attachments, cost, hours, due_date, created_at FROM jobs WHERE tenant_identifier = '%s'`, user.ID)
+	}
 	rows, err := a.dbpool.Query(ctx, query)
 	if err != nil {
 		fmt.Println(err)
@@ -405,6 +375,14 @@ func (a *adaptor) GetJobsByOrganization(orgID string) ([]Job, error) {
 		if err != nil {
 			return nil, err
 		}
+
+		// Clear cost and hours if hasPermissions is false
+		if !permitted {
+			job.Cost = 0
+			job.Hours = 0
+			job.Priority = ""
+		}
+
 		jobs = append(jobs, job)
 	}
 
@@ -413,4 +391,47 @@ func (a *adaptor) GetJobsByOrganization(orgID string) ([]Job, error) {
 	}
 
 	return jobs, nil
+}
+
+// TODO: Move somewhere else
+func (s *adaptor) GetAllMemberIDs(organizationID string, authClient *auth.Client) (map[string]user.User, error) {
+	ctx := context.Background()
+	query := `
+		SELECT DISTINCT unnest(members) AS unique_member_id
+		FROM organizations
+		WHERE id = $1
+	`
+	rows, err := s.dbpool.Query(ctx, query, organizationID)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to execute query: %v", err)
+	}
+	defer rows.Close()
+
+	var memberIDs []string
+	for rows.Next() {
+		var memberID string
+		if err := rows.Scan(&memberID); err != nil {
+			return nil, fmt.Errorf("Failed to scan row: %v", err)
+		}
+		memberIDs = append(memberIDs, memberID)
+	}
+	fmt.Println(memberIDs)
+
+	users := make(map[string]user.User) // Initialize the map
+	for _, userID := range memberIDs {
+		u, err := authClient.GetUser(ctx, userID)
+		if err != nil {
+			fmt.Println(err)
+			return nil, err
+		}
+		newU := user.User{
+			ID:          u.UID,
+			DisplayName: u.DisplayName,
+			Email:       u.Email,
+			PhotoURL:    u.PhotoURL,
+		}
+		users[u.UID] = newU
+	}
+
+	return users, nil
 }

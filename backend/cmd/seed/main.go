@@ -54,9 +54,26 @@ func createColumnsTable(dbpool *pgxpool.Pool) error {
 		CREATE TABLE IF NOT EXISTS columns (
 			id TEXT PRIMARY KEY,
 			name TEXT NOT NULL,
-			"order" INTEGER,
-			job_ids TEXT[],
+			order_index INTEGER,
 			organization_id TEXT
+		)
+	`)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func createColumnJobLinksTable(dbpool *pgxpool.Pool) error {
+	ctx := context.Background()
+
+	_, err := dbpool.Exec(ctx, `
+		CREATE TABLE IF NOT EXISTS ColumnJobLinks (
+			id TEXT PRIMARY KEY,
+			column_id TEXT NOT NULL,
+			job_id TEXT NOT NULL,
+			order_index INTEGER NOT NULL,
+			date_updated TIMESTAMPTZ NOT NULL
 		)
 	`)
 	if err != nil {
@@ -160,7 +177,7 @@ func createLabelsTable(dbpool *pgxpool.Pool) error {
 		)
 	`)
 	if err != nil {
-		return err
+		return fmt.Errorf("Error creating table: %v", err)
 	}
 	return nil
 }
@@ -221,5 +238,12 @@ func main() {
 		log.Fatal("Error creating labels table: ", err)
 	}
 
+	err = createColumnJobLinksTable(dbpool)
+	if err != nil {
+		log.Fatal("Error creating labels table: ", err)
+	}
 	// Call other create table functions here
+
+	// ALTER TABLE ColumnJobLinks ADD CONSTRAINT unique_job_column UNIQUE(job_id, column_id);
+
 }
