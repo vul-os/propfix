@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"sort"
 	"time"
 
 	"firebase.google.com/go/v4/auth"
@@ -244,11 +245,11 @@ func (a *adaptor) DeleteJob(r *http.Request, args *DeleteJobRequest, result *Del
 
 // Define the KanbanBoard struct for the response
 type KanbanBoard struct {
-	Columns   map[string]columnJobLinks.ColumnWithJobIds `json:"columns"`
-	Jobs      map[string]Job                             `json:"jobs"`
-	Assignees map[string]user.User                       `json:"assignees"`
-	Labels    map[string]labels.Label                    `json:"labels"`
-	Ordered   []string                                   `json:"ordered"`
+	Columns map[string]columnJobLinks.ColumnWithJobIds `json:"columns"`
+	Jobs    map[string]Job                             `json:"jobs"`
+	Members map[string]user.User                       `json:"members"`
+	Labels  map[string]labels.Label                    `json:"labels"`
+	Ordered []string                                   `json:"ordered"`
 }
 
 // Define the GetKanbanBoardRequest struct
@@ -276,7 +277,7 @@ func (a *adaptor) GetKanbanBoard(r *http.Request, args *GetKanbanBoardRequest, r
 		return err
 	}
 
-	assignees, err := a.GetAllMemberIDs(args.OrganizationID, a.authClient)
+	members, err := a.GetAllMemberIDs(args.OrganizationID, a.authClient)
 	if err != nil {
 		fmt.Println(err)
 		return err
@@ -309,6 +310,11 @@ func (a *adaptor) GetKanbanBoard(r *http.Request, args *GetKanbanBoardRequest, r
 		}
 	}
 
+	// Sort columns by OrderIndex
+	sort.Slice(cols, func(i, j int) bool {
+		return cols[i].OrderIndex < cols[j].OrderIndex
+	})
+
 	// Create an ordered list of column IDs
 	var orderedColumns []string
 	for _, col := range cols {
@@ -318,11 +324,11 @@ func (a *adaptor) GetKanbanBoard(r *http.Request, args *GetKanbanBoardRequest, r
 	// Build the response structure
 	response := GetKanbanBoardResponse{
 		Board: KanbanBoard{
-			Columns:   columnsMap,
-			Jobs:      jobsMap,
-			Ordered:   orderedColumns,
-			Assignees: assignees,
-			Labels:    retLabels,
+			Columns: columnsMap,
+			Jobs:    jobsMap,
+			Ordered: orderedColumns,
+			Members: members,
+			Labels:  retLabels,
 		},
 	}
 

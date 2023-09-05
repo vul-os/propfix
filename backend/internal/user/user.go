@@ -1,9 +1,9 @@
 package user
 
 type User struct {
-	ID              string
-	DisplayName     string
-	Email           string
-	PhotoURL        string
-	OrganizationIds []string
+	ID              string   `json:"id"`
+	DisplayName     string   `json:"displayName"`
+	Email           string   `json:"email"`
+	PhotoURL        string   `json:"photoUrl"`
+	OrganizationIds []string `json:"organizationIds"`
 }
