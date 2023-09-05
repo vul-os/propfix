@@ -17,6 +17,8 @@ import ThemeProvider from './theme';
 import ScrollToTop from './components/scroll-to-top';
 import SignUpPage from './pages/auth/signup-page'; // Update the path accordingly
 import ForgotPasswordPage from './pages/auth/forgot-password-page'; // Update the path accordingly
+import LabelsPage from './pages/labels/labels'; // Replace with the actual path
+
 
 // layouts
 import DashboardLayout from './layouts/dashboard';
@@ -68,6 +70,16 @@ function App() {
                       <AuthGuard>
                         <BoardProvider>
                           <DashboardLayout><JobDataGrid /></DashboardLayout>
+                        </BoardProvider>
+                      </AuthGuard>
+                    }
+                  />
+                   <Route
+                    path="/labels"
+                    element={
+                      <AuthGuard>
+                        <BoardProvider>
+                          <DashboardLayout><LabelsPage /></DashboardLayout>
                         </BoardProvider>
                       </AuthGuard>
                     }
