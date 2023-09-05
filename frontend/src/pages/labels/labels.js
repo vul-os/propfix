@@ -21,21 +21,25 @@ export default function LabelsPage() {
   const fetchLabels = async () => {
     try {
       const token = await getIdToken();
-      const response = await getAllLabels(activeOrganization.id, token);
-      setLabels(response.labels);
+      const response = await getAllLabels(activeOrganization, token);
+      setLabels(response?.labels || []);
     } catch (error) {
       console.error('Error fetching labels:', error);
     }
   }
-  useEffect(() => {
-    fetchLabels();
-  }, []);
 
-  const handleEditClick = (label) => {
+  useEffect(() => {
+ console.log(activeOrganization)
+    if (activeOrganization) {
+      fetchLabels();
+    }
+  }, [activeOrganization]);
+
+  function handleEditClick(label) {
     setIsEditing(true);
     setEditLabel(label);
     setNewLabel(label.name);
-  };
+  }
 
   const handleCancel = () => {
     setIsEditing(false);
