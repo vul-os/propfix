@@ -1,17 +1,40 @@
 import React from 'react';
 import Avatar from '@mui/material/Avatar';
 import Typography from '@mui/material/Typography';
-import CreateIcon from '@mui/icons-material/Create'; // Material Icons
+import CreateIcon from '@mui/icons-material/Create';
 import UpdateIcon from '@mui/icons-material/Update';
 import DeleteIcon from '@mui/icons-material/Delete';
-import Box from '@mui/material/Box';
-import { fToNow } from '../../../utils/format-time';
+import { fToNow } from '../../../utils/format-time';  // Adjust this import path as needed
+import extractEmailUsername from './utils'
+
+const styles = {
+  container: {
+    display: 'flex',
+    width: 'calc(100% - 40px)', // Adjusting for the padding
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingTop: '35px',
+    paddingLeft: '20px',
+    paddingRight: '20px',
+    boxSizing: 'border-box', // Make sure padding is included in width
+  },
+  blankDiv: {
+    width: '20%',
+  },
+  avatar: {
+    width: 25,
+    height: 25,
+    backgroundColor: 'rgb(255, 26, 91)',
+    boxShadow: '0 3px 3px rgba(0, 0, 0, 0.9)',
+    border: '1px solid grey',
+  },
+};
 
 
-export default function CrudStep({ event }) {
+export default function CrudStep({ event, member }) {
   let icon;
   let action;
-
+  console.log(member)
   if (event.type === 'CREATE') {
     icon = <CreateIcon />;
     action = 'created';
@@ -24,39 +47,20 @@ export default function CrudStep({ event }) {
   }
 
   return (
-    <Box display="flex" alignItems="center" sx={{
-      paddingTop: '35px', 
-      paddingLeft: '20px',
-      paddingRight: '20px',
-    }}>
-      <Avatar
-        sx={{
-          bgcolor: 'rgb(255, 26, 91)',
-          boxShadow: '0 3px 3px rgba(0, 0, 0, 0.9)',
-          width: 25,
-          height: 25,
-          border: '1px solid grey',
-          marginLeft: '20%',
-        }}
-      >
+    <div style={styles.container}>
+      <div style={styles.blankDiv}/> {/* Blank div */}
+      <Avatar style={styles.avatar}>
         {icon}
       </Avatar>
-      <Typography
-        style={{
-          textTransform: 'capitalize',
-          fontSize: '12px', // Adjust the font size for this Typography component
-          marginLeft: '45px',
-        }}
-      >
-        {action} the event
+      <Typography variant="subtitle2" style={{ paddingLeft: '4px' }}>
+        { member && member.displayName ? member.displayName : extractEmailUsername(member.email) }
       </Typography>
-      <Typography variant="caption" sx={{
-        color: 'text.disabled',
-        marginRight: '10px',
-        fontSize: '12px', // Adjust the font size for this Typography component
-      }}>
-        {fToNow(event.createdAt)}
+      <Typography variant="subtitle2" style={{ paddingLeft: '4px' }}>
+        {`${action} the event`}
       </Typography>
-    </Box>
+      <Typography variant="caption" style={{ color: 'grey', paddingLeft: '4px' }}>
+        { fToNow(event.createdAt) }
+      </Typography>
+    </div>
   );
 }
