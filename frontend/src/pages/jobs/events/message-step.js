@@ -16,15 +16,17 @@ const styles = {
     gap: '8px',
   },
   userAvatar: {
-    width: '32px',
-    height: '32px',
+    width: '36px',
+    height: '36px',
+    backgroundColor: 'rgb(255, 26, 91)',
+    border: '1px solid lightgrey',
+    marginTop: '15px',
   },
   messageBox: {
     position: 'relative',
     backgroundColor: 'white',
     border: '1px solid #ddd',
     borderRadius: '8px',
-
     boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
     paddingTop: '20px',
     paddingLeft: '20px',
@@ -32,14 +34,15 @@ const styles = {
   },
   notch: {
     position: 'absolute',
-    top: '50%',
+    marginTop: '20px',
     left: '-8px',
     transform: 'translateY(-50%) rotate(45deg)',
     width: '16px',
     height: '16px',
     backgroundColor: 'white',
-    border: '1px solid #ddd',
+    border: '1px solid #cacaca',
     zIndex: -1,
+    
   },
   titleSection: {
     display: 'flex',
@@ -47,9 +50,11 @@ const styles = {
     backgroundColor: '#f5f5f5',
     padding: '8px',
     borderRadius: '4px 4px 0 0',
+    
   },
   titleText: {
     marginRight: '8px',
+    
   },
   publicMessageBox: {
     backgroundColor: 'white',
@@ -61,11 +66,12 @@ const styles = {
   },
   privateMessageBox: {
     backgroundColor: 'white',
-    border: '1px solid red',
+    border: '1px solid #BEBFC5',
     borderRadius: '8px',
     padding: '12px',
-    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+    boxShadow: '0 7px 9px rgba(0, 0, 0, 0.5)',
     position: 'relative',
+    marginLeft: '9px',
   },
 };
 
@@ -77,12 +83,12 @@ export default function MessageStep({ event, member }) {
 
   return (
     <div style={styles.container}>
-      <Avatar src="dummy-avatar-url" style={styles.userAvatar} />
+      <Avatar src={member?.photoUrl} style={styles.userAvatar} />
       <div style={messageBoxStyle}>
         <div style={styles.notch} />
         <div style={styles.titleSection}>
           <Typography variant="subtitle2" style={styles.titleText}>
-          { member && member.displayName ? member.displayName : extractEmailUsername(member.email) }
+            {member && member.displayName ? member.displayName : extractEmailUsername(member.email)}
           </Typography>
           <Typography variant="caption" sx={{ color: 'text.disabled' }}>
             Messaged {fToNow(event.createdAt)}

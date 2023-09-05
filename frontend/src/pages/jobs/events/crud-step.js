@@ -4,8 +4,8 @@ import Typography from '@mui/material/Typography';
 import CreateIcon from '@mui/icons-material/Create';
 import UpdateIcon from '@mui/icons-material/Update';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { fToNow } from '../../../utils/format-time';  // Adjust this import path as needed
-import extractEmailUsername from '../../utility/email'
+import { fToNow } from '../../../utils/format-time'; // Adjust this import path as needed
+import extractEmailUsername from '../../utility/email';
 
 const styles = {
   container: {
@@ -22,19 +22,18 @@ const styles = {
     width: '20%',
   },
   avatar: {
-    width: 25,
-    height: 25,
+    width: 30,
+    height: 30,
     backgroundColor: 'rgb(255, 26, 91)',
-    boxShadow: '0 3px 3px rgba(0, 0, 0, 0.9)',
-    border: '1px solid grey',
+    boxShadow: '0 0 3px 2px rgba(255, 26, 91, 0.5)', // Updated box shadow
+    border: '1px solid lightgrey',
   },
 };
-
 
 export default function CrudStep({ event, member }) {
   let icon;
   let action;
-  console.log(member)
+  console.log(member);
   if (event.type === 'CREATE') {
     icon = <CreateIcon />;
     action = 'created';
@@ -48,18 +47,18 @@ export default function CrudStep({ event, member }) {
 
   return (
     <div style={styles.container}>
-      <div style={styles.blankDiv}/> {/* Blank div */}
+      <div style={styles.blankDiv} /> {/* Blank div */}
       <Avatar style={styles.avatar}>
         {icon}
       </Avatar>
-      <Typography variant="subtitle2" style={{ paddingLeft: '4px' }}>
-        { member && member.displayName ? member.displayName : extractEmailUsername(member.email) }
+      <Typography variant="subtitle2" style={{ color: '#a8a8a8',  paddingLeft: '50px' }}>
+        {member && member.displayName ? member.displayName : extractEmailUsername(member.email)}
       </Typography>
-      <Typography variant="subtitle2" style={{ paddingLeft: '4px' }}>
+      <Typography variant="subtitle2" style={{ color: '#a8a8a8',  paddingLeft: '50px' }}>
         {`${action} the event`}
       </Typography>
-      <Typography variant="caption" style={{ color: 'grey', paddingLeft: '4px' }}>
-        { fToNow(event.createdAt) }
+      <Typography variant="caption" style={{ color: '#a8a8a8', paddingLeft: '50px'}}>
+        {fToNow(event.createdAt)}
       </Typography>
     </div>
   );
