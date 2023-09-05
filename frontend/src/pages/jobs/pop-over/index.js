@@ -184,7 +184,7 @@ export default function PopOver({
             px: 2.5,
           }}
         >
-          <JobDetails job={job} members={board?.members} />
+          <JobDetails job={job} members={board?.members} labels={board?.labels} />
           <EventsList jobId={job.id} />
         </Stack>
       </Scrollbar>

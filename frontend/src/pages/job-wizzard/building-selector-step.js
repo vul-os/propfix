@@ -1,8 +1,8 @@
 import React from 'react';
 import { TextField, IconButton, InputAdornment } from '@mui/material';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
-import Buildings from './buildings/buildings'; // Import the Buildings component
-import BuildingCard from './buildings/building-card'; // Import the BuildingCard component
+import Buildings from '../buildings/buildings'; // Import the Buildings component
+import BuildingCard from '../buildings/building-card'; // Import the BuildingCard component
 
 export default function BuildingSelectorStep({
   selectedBuilding, // Use selectedBuilding directly

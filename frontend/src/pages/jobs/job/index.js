@@ -7,7 +7,7 @@ import Chip from '@mui/material/Chip';
 import Stack from '@mui/material/Stack';
 import Avatar from '@mui/material/Avatar';
 import TextField from '@mui/material/TextField';
-import { DatePicker } from '@mui/lab';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import Drawer from '@mui/material/Drawer';
 import Button from '@mui/material/Button';
 import Tooltip from '@mui/material/Tooltip';
@@ -19,6 +19,8 @@ import Attachments from './attachments';
 import EventsList from '../events/events-list';
 import Iconify from '../../../components/iconify';
 import MembersDialog from './members-dialog';
+
+import LabelAutocomplete from '../../labels/label-autocomplete';
 
 // ----------------------------------------------------------------------
 
@@ -36,17 +38,18 @@ const StyledLabel = styled('span')(({ theme }) => ({
 
 // ----------------------------------------------------------------------
 
-export default function JobDetails({ job, members }) {
+export default function JobDetails({ job, members, labels }) {
   const assignees = job?.assigneeIds?.map((jobId) => members && members[jobId])
   console.log("assignees", assignees)
+
   const contacts = useBoolean();
+
   const [priority, setPriority] = useState(job.priority.toLowerCase());
-
   const [jobName, setJobName] = useState(job.name);
-
   const [jobDescription, setJobDescription] = useState(job.description);
-
   const [dueDate, setDueDate] = useState(new Date()); // Initialize with today's date
+  const [selectedLabels, setSelectedLabels] = useState([]);
+
 
   const handleChangeJobDescription = useCallback((event) => {
     setJobDescription(event.target.value);
@@ -64,8 +67,6 @@ export default function JobDetails({ job, members }) {
       console.error(error);
     }
   }, []);
-
-
 
   const renderName = (
     <InputName
@@ -86,14 +87,19 @@ export default function JobDetails({ job, members }) {
   const renderLabel = (
     <Stack direction="row">
       <StyledLabel sx={{ height: 24, lineHeight: '24px' }}>Labels</StyledLabel>
-
-      {job.labels && job.labels.length && (
+      <LabelAutocomplete 
+        labels={Object.values(labels)}
+        selectedLabels={selectedLabels}
+        setSelectedLabels={setSelectedLabels}
+        textFieldProps={{size: "small"}}
+      />
+      {/* {job.labels && job.labels.length && (
         <Stack direction="row" flexWrap="wrap" alignItems="center" spacing={1}>
           {job.labels.map((label) => (
             <Chip key={label} color="info" label={label} size="small" variant="soft" />
           ))}
         </Stack>
-      )}
+      )} */}
     </Stack>
   );
 
@@ -145,11 +151,11 @@ export default function JobDetails({ job, members }) {
         fullWidth
         multiline
         size="small"
-        value={jobDescription}
-        onChange={handleChangeJobDescription}
         InputProps={{
           sx: { typography: 'body2' },
         }}
+        value={jobDescription}
+        onChange={handleChangeJobDescription}
       />
     </Stack>
   );
