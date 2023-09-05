@@ -37,6 +37,7 @@ const styles = {
     textAlign: 'center', // Center the text
     margin: '0 0 0 10px', // Set margin-left to 10px
     padding: '0', // Remove padding
+    marginRight: '14em',
   },
 };
 
