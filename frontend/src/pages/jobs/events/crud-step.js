@@ -1,66 +1,66 @@
 import React from 'react';
 import Avatar from '@mui/material/Avatar';
-import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-import CreateIcon from '@mui/icons-material/Create'; // Material Icons
+import CreateIcon from '@mui/icons-material/Create';
 import UpdateIcon from '@mui/icons-material/Update';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { fToNow } from '../../../utils/format-time';
+import { fToNow } from '../../../utils/format-time';  // Adjust this import path as needed
+import extractEmailUsername from './utils'
 
 const styles = {
-  containerWrapper: {
+  container: {
     display: 'flex',
-    flexDirection: 'row', // Change the flexDirection to 'row'
-    alignItems: 'center', // Align items in the center vertically
+    width: 'calc(100% - 40px)', // Adjusting for the padding
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingTop: '35px',
+    paddingLeft: '20px',
+    paddingRight: '20px',
+    boxSizing: 'border-box', // Make sure padding is included in width
   },
-  verticalLine: {
-    width: '2px',
-    backgroundColor: '#ddd',
-    height: '15px', // Take up full height
-    marginRight: '16px', // Adjust the margin as needed
+  blankDiv: {
+    width: '20%',
   },
-  iconContainer: {
-    display: 'flex',
-    flexDirection: 'column', // Align icon and content vertically
-    alignItems: 'center', // Center icon and content horizontally
-    marginLeft: '16px', // Add a margin to align the icon and line horizontally
-  },
-  icon: {
-    width: '24px',
-    height: '24px',
+  avatar: {
+    width: 25,
+    height: 25,
+    backgroundColor: 'rgb(255, 26, 91)',
+    boxShadow: '0 3px 3px rgba(0, 0, 0, 0.9)',
+    border: '1px solid grey',
   },
 };
 
-export default function CrudStep({ event }) {
+
+export default function CrudStep({ event, member }) {
   let icon;
   let action;
-
+  console.log(member)
   if (event.type === 'CREATE') {
-    icon = <CreateIcon style={styles.icon} />;
+    icon = <CreateIcon />;
     action = 'created';
   } else if (event.type === 'UPDATE') {
-    icon = <UpdateIcon style={styles.icon} />;
+    icon = <UpdateIcon />;
     action = 'updated';
   } else if (event.type === 'DELETE') {
-    icon = <DeleteIcon style={styles.icon} />;
+    icon = <DeleteIcon />;
     action = 'deleted';
   }
 
   return (
-    <Stack direction="row" spacing={2}>
-      <div style={styles.verticalLine}/>
-      <div style={styles.containerWrapper}>
-        <div style={styles.iconContainer}>{icon}</div>
-        <Stack spacing={0.5} flexGrow={1}>
-          <Typography variant="subtitle2">{event.name}</Typography>
-          <Typography variant="caption" sx={{ color: 'text.disabled' }}>
-            {fToNow(event.createdAt)}
-          </Typography>
-          <Typography variant="body2">
-            {action} the event
-          </Typography>
-        </Stack>
-      </div>
-    </Stack>
+    <div style={styles.container}>
+      <div style={styles.blankDiv}/> {/* Blank div */}
+      <Avatar style={styles.avatar}>
+        {icon}
+      </Avatar>
+      <Typography variant="subtitle2" style={{ paddingLeft: '4px' }}>
+        { member && member.displayName ? member.displayName : extractEmailUsername(member.email) }
+      </Typography>
+      <Typography variant="subtitle2" style={{ paddingLeft: '4px' }}>
+        {`${action} the event`}
+      </Typography>
+      <Typography variant="caption" style={{ color: 'grey', paddingLeft: '4px' }}>
+        { fToNow(event.createdAt) }
+      </Typography>
+    </div>
   );
 }

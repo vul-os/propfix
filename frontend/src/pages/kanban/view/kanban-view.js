@@ -20,7 +20,7 @@ export default function KanbanView() {
   const { getIdToken } = useAuthContext(); 
   const [openPopUp, setOpenPopUp] = useState(false);
   const [job, setJob] = useState({});
-  console.log("original board: ", board)
+
   const onDragEnd = useCallback(
     async ({ destination, source, draggableId, type }) => {
       const token = await getIdToken(); 
@@ -133,21 +133,33 @@ export default function KanbanView() {
                   ...hideScroll.x,
                 }}
               >
-                {board && Object.keys(board.jobs).length > 0 && board?.ordered.map((columnId, index) => {
+              {
+              // Ensure that 'board' exists and has jobs before rendering
+              board && Object.keys(board.jobs).length > 0 && board?.ordered.map((columnId, index) => {
+
+                  // Fetch the specific column object based on 'columnId'
                   const column = board?.columns[columnId];
+
+                  // Fetch the jobIds for the specific column and find the corresponding jobs
                   const columnJobs = column && column.jobIds && board.jobs
-                  ? column.jobIds.map(jobId => board.jobs[jobId])
-                  : [];
-                  return <KanbanColumn
-                    index={index}
-                    key={columnId}
-                    openPopUp={openPopUp}
-                    setOpenPopUp={setOpenPopUp}
-                    column={column}
-                    jobs={columnJobs}
-                    setJob={setJob}
-                  />
-                })}
+                    ? column.jobIds.map(jobId => board.jobs[jobId])
+                    : [];
+
+                  // Render the KanbanColumn component
+                  return (
+                    <KanbanColumn
+                      index={index}
+                      key={columnId}
+                      openPopUp={openPopUp}
+                      setOpenPopUp={setOpenPopUp}
+                      column={column}
+                      jobs={columnJobs}
+                      setJob={setJob}
+                    />
+                  );
+                })
+              }
+
                 {provided.placeholder}
               </Stack>
             )}

@@ -3,24 +3,17 @@ import PropTypes from 'prop-types';
 import Avatar from '@mui/material/Avatar';
 import Typography from '@mui/material/Typography';
 import { fToNow } from '../../../utils/format-time';
+import extractEmailUsername from './utils'
 
 const styles = {
-  containerWrapper: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center', // Center horizontally
-  },
-  verticalLine: {
-    width: '10px',
-    backgroundColor: '#ddd',
-    marginRight: '50%', // Set the marginRight to 75% of the parent's width
-    height: '15px', // Take up full height
-  },
   container: {
     display: 'flex',
     flexDirection: 'row',
     alignItems: 'flex-start',
-    position: 'relative',
+    paddingTop: '35px',
+    paddingLeft: '20px',
+    paddingRight: '20px',
+    gap: '8px',
   },
   userAvatar: {
     width: '32px',
@@ -30,12 +23,12 @@ const styles = {
     position: 'relative',
     backgroundColor: 'white',
     border: '1px solid #ddd',
-    borderTop: '1px solid #ddd', // Add top border
     borderRadius: '8px',
-    padding: '12px',
+
     boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
-    display: 'flex',
-    flexDirection: 'column',
+    paddingTop: '20px',
+    paddingLeft: '20px',
+    paddingRight: '20px',
   },
   notch: {
     position: 'absolute',
@@ -71,35 +64,31 @@ const styles = {
     border: '1px solid red',
     borderRadius: '8px',
     padding: '12px',
-    paddingBottom: 0,
     boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
     position: 'relative',
   },
 };
 
-export default function MessageStep({ event }) {
+export default function MessageStep({ event, member }) {
   const messageBoxStyle =
     event.data.visibility === 'public'
       ? styles.publicMessageBox
       : styles.privateMessageBox;
 
   return (
-    <div style={styles.containerWrapper}>
-      <div style={styles.verticalLine}/>
-      <div style={styles.container}>
-        <Avatar src="dummy-avatar-url" style={styles.userAvatar} />
-        <div style={{ ...messageBoxStyle, ...styles.messageBox }}>
-          <div style={styles.notch}/>
-          <div style={styles.titleSection}>
-            <Typography variant="subtitle2" style={styles.titleText}>
-              {event.data.username}
-            </Typography>
-            <Typography variant="caption" sx={{ color: 'text.disabled' }}>
-              Messaged {fToNow(event.createdAt)}
-            </Typography>
-          </div>
-          <Typography variant="body2">{event.data.message}</Typography>
+    <div style={styles.container}>
+      <Avatar src="dummy-avatar-url" style={styles.userAvatar} />
+      <div style={messageBoxStyle}>
+        <div style={styles.notch} />
+        <div style={styles.titleSection}>
+          <Typography variant="subtitle2" style={styles.titleText}>
+          { member && member.displayName ? member.displayName : extractEmailUsername(member.email) }
+          </Typography>
+          <Typography variant="caption" sx={{ color: 'text.disabled' }}>
+            Messaged {fToNow(event.createdAt)}
+          </Typography>
         </div>
+        <Typography variant="body2">{event.data.message}</Typography>
       </div>
     </div>
   );

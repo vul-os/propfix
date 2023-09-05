@@ -1,16 +1,46 @@
 import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import { useParams } from 'react-router-dom';
-import Stack from '@mui/material/Stack';
+import Paper from '@mui/material/Paper';
 import { useAuthContext } from '../../../contexts/auth';
+import { useBoardContext } from '../../../contexts/board'; 
 import { getAllEvents } from '../../../api/events';
 import MessageStep from './message-step'; // Import the MessageStep component
 import CrudStep from './crud-step'; // Import the CrudStep component
 
+const styles = {
+  container: {
+    display: 'flex',
+    flexDirection: 'column',
+    // gap: '16px',
+    padding: '16px',
+  },
+  // Add a vertical line style
+  messageBoxContainer: {
+    display: 'flex', // Use flex to align content horizontally
+    alignItems: 'center', // Vertically center the content
+    position: 'relative', // Position relative to place the line
+  },
+  // vertical line style
+  verticalLine: {
+    width: '1px',
+    backgroundColor: 'grey',
+    marginRight: '80%', // Set marginRight to 0 to join the lines
+    border: '1px solid lightgrey', // Add the border
+    height: '100%', // Extend the line to cover the full height
+    position: 'absolute', // Position the line absolutely
+    right: '0', // Position the line to the right
+    top: '0', // Position the line at the top
+    zIndex: '-1', // Set the z-index to -1
+  },
+};
+
 export default function EventsList({ jobId }) {
+  const { board } = useBoardContext(); // Use the BoardProvider context
   // const { jobId } = useParams();
   const { getIdToken } = useAuthContext();
   const [events, setEvents] = useState([]);
+
 
   useEffect(() => {
     if (jobId) {
@@ -28,23 +58,28 @@ export default function EventsList({ jobId }) {
     }
   };
 
+  const RenderEvent = ({event, index}) => {
+    const member = board && board.members && event && event.memberId && board.members[event.memberId]
+    return member && <React.Fragment key={event.id}>
+    <div style={styles.messageBoxContainer}>
+      {index !== 0 && <div style={styles.verticalLine}/> }
+      <div key={event.id} elevation={3}>
+        {event.type === 'MESSAGE' ? (
+          <MessageStep event={event} member={member} />
+        ) : (
+          <CrudStep event={event} member={member} />
+        )}
+      </div>
+    </div>
+  </React.Fragment> 
+  }
   return (
-    <Stack
-      flexGrow={1}
-      sx={{
-        bgcolor: 'white', // Set the background color to white
-      }}
-    >
-      {events && events.map((event) => (
-        <div key={event.id} elevation={3}>
-          {event.type === 'MESSAGE' ? (
-            <MessageStep event={event} />
-          ) : (
-            <CrudStep event={event} />
-          )}
-        </div>
-      ))}
-    </Stack>
+    <div style={styles.container}>
+      {events &&
+        events.map((event, index) => (
+          <RenderEvent event={event} index={index} />
+        ))}
+    </div>
   );
 }
 

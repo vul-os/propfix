@@ -17,12 +17,12 @@ import { jsonRpcRequest } from '../api/jsonrpc/client'; // Adjust the path based
 // Initialize Firebase with your configuration
 const firebaseConfig = {
   apiKey: "***REMOVED-FIREBASE-WEB-KEY***",
-  authDomain: "prop-fix.firebaseapp.com",
-  projectId: "prop-fix",
-  storageBucket: "prop-fix.appspot.com",
-  messagingSenderId: "319029773219",
-  appId: "1:319029773219:web:c1a50cb46bb4374bcf1016",
-  measurementId: "G-LE895GYYSC"
+  authDomain: "propfix.firebaseapp.com",
+  projectId: "propfix",
+  storageBucket: "propfix.appspot.com",
+  messagingSenderId: "746591168335",
+  appId: "1:746591168335:web:f3cf7df2f1d57596cf073a",
+  measurementId: "G-GG76DD6CSR"
 };
 
 const app = initializeApp(firebaseConfig);
