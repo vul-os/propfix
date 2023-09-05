@@ -62,7 +62,7 @@ export default function CrudStep({ event, member }) {
       </Typography>
 
             <Typography variant="subtitle2" style={{ fontSize: '12px', color: '#a8a8a8', paddingLeft: '50px' }}>
-        {member && member.displayName ? member.displayName : extractEmailUsername(member.email)}
+        {member && member?.displayName }
       </Typography>
 
       <Typography variant="subtitle2" style={{ fontSize: '12px',  color: '#a8a8a8', paddingLeft: '50px' }}>
