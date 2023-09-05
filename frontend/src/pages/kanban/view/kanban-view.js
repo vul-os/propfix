@@ -112,11 +112,11 @@ export default function KanbanView() {
 
       {boardLoading && renderSkeleton}
 
-      {board && board?.ordered.length === 0 && (
+      {board && board?.ordered?.length === 0 && (
         <></>
       )}
 
-      {!!board?.ordered.length && (
+      {!!board?.ordered?.length && (
         <DragDropContext onDragEnd={onDragEnd}>
           <Droppable droppableId="board" type="COLUMN" direction="horizontal">
             {(provided) => (
@@ -135,7 +135,7 @@ export default function KanbanView() {
               >
               {
               // Ensure that 'board' exists and has jobs before rendering
-              board && Object.keys(board.jobs).length > 0 && board?.ordered.map((columnId, index) => {
+              board && Object.keys(board.jobs)?.length > 0 && board?.ordered.map((columnId, index) => {
 
                   // Fetch the specific column object based on 'columnId'
                   const column = board?.columns[columnId];
@@ -155,6 +155,7 @@ export default function KanbanView() {
                       column={column}
                       jobs={columnJobs}
                       setJob={setJob}
+                      members={board?.members ? board.members : {}}
                     />
                   );
                 })

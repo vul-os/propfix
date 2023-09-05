@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import Avatar from '@mui/material/Avatar';
 import Typography from '@mui/material/Typography';
 import { fToNow } from '../../../utils/format-time';
-import extractEmailUsername from './utils'
+import extractEmailUsername from '../../utility/email'
 
 const styles = {
   container: {
