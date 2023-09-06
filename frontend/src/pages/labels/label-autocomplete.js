@@ -27,10 +27,11 @@ export default function LabelAutocomplete({ labels, selectedLabels, setSelectedL
         renderTags={(value, getTagProps) =>
           value.map((option) => (
             <Chip
-              key={option.id}
-              label={option.name}
-              style={{ backgroundColor: option.color, color: '#fff' }}
+              key={option?.id}
+              label={option?.name}
+              style={{ backgroundColor: option?.color, color: '#fff' }}
               {...getTagProps({ index: 0 })}
+              {...textFieldProps}
             />
           ))
         }
