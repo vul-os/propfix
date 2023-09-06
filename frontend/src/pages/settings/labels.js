@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import Autocomplete from '@mui/material/Autocomplete';
 import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
+import IconButton from '@mui/material/IconButton';
+import EditIcon from '@mui/icons-material/Edit';
 import Chip from '@mui/material/Chip';
 import Popover from '@mui/material/Popover';
 import Typography from '@mui/material/Typography';
@@ -17,8 +19,6 @@ import TableCell from '@mui/material/TableCell';
 import TableBody from '@mui/material/TableBody';
 import { getAllLabels } from '../../api/labels'; // Import your JSON-RPC function here
 import { useAuthContext } from '../../contexts/auth'; // Make sure to update this path
-
-// ... (previous code)
 
 export default function Labels() {
   const [labels, setLabels] = useState([]);
@@ -44,11 +44,11 @@ export default function Labels() {
     }
   }, [activeOrganization]);
 
-  function handleEditClick(label) {
+  const handleEditClick = (label) => {
     setIsEditing(true);
     setEditLabel(label);
     setNewLabel(label.name);
-  }
+  };
 
   const handleCancel = () => {
     setIsEditing(false);
@@ -67,10 +67,11 @@ export default function Labels() {
 
   return (
     <div className="labels-page">
-      <Typography variant="h4">Labels ({labels.length})</Typography> {/* Updated title with label count */}
+      <Typography variant="h4">
+        Labels ({labels.length})
+      </Typography>
 
-      {/* Labels List */}
-      <TableContainer component={Paper}>
+      <TableContainer sx={{ marginTop: '10px' }} component={Paper}>
         <Table aria-label="labels table">
           <TableHead>
             <TableRow>
@@ -83,72 +84,65 @@ export default function Labels() {
             {labels.map((label) => (
               <TableRow key={label.id}>
                 <TableCell>
-                  <Chip
-                    id={label.id}
-                    label={label.name}
-                    className="github-chip"
-                    style={{ backgroundColor: label.color }}
-                  />
+                  {isEditing && editLabel === label ? (
+                    <TextField
+                      label="Label Name"
+                      variant="outlined"
+                      fullWidth
+                      value={newLabel}
+                      onChange={(e) => setNewLabel(e.target.value)}
+                    />
+                  ) : (
+                    <Chip
+                      id={label.id}
+                      label={label.name}
+                      className="github-chip"
+                      style={{ backgroundColor: label.color }}
+                    />
+                  )}
                 </TableCell>
                 <TableCell>{label.color}</TableCell>
                 <TableCell>
-                  <Button
-                    variant="outlined"
-                    className="github-edit-button"
-                    onClick={() => handleEditClick(label)}
-                  >
-                    Edit
-                  </Button>
+                  {isEditing && editLabel === label ? (
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      startIcon={<SaveIcon />}
+                      onClick={handleSaveChanges}
+                    >
+                      Save Changes
+                    </Button>
+                  ) : (
+                    <IconButton
+                      color="primary"
+                      onClick={() => handleEditClick(label)}
+                      aria-label="Edit"
+                    >
+                      <EditIcon />
+                      <Typography
+                        variant="body2"
+                        style={{ marginLeft: '4px' }}
+                      >
+                        Edit
+                      </Typography>
+                    </IconButton>
+                  )}
+                  {isEditing && editLabel === label && (
+                    <Button
+                      variant="outlined"
+                      color="default"
+                      startIcon={<CancelIcon />}
+                      onClick={handleCancel}
+                    >
+                      Cancel
+                    </Button>
+                  )}
                 </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </TableContainer>
-
-      {/* Edit Dropdown */}
-      <Popover
-        open={isEditing}
-        anchorEl={editLabel ? document.getElementById(editLabel.id) : null}
-        onClose={handleCancel}
-        anchorOrigin={{
-          vertical: 'bottom',
-          horizontal: 'center',
-        }}
-        transformOrigin={{
-          vertical: 'top',
-          horizontal: 'center',
-        }}
-      >
-        <div className="popover-content">
-          <Typography variant="h6">Edit Label</Typography>
-          <TextField
-            label="Label Name"
-            variant="outlined"
-            fullWidth
-            value={newLabel}
-            onChange={(e) => setNewLabel(e.target.value)}
-          />
-          <div className="popover-button">
-            <Button
-              variant="contained"
-              color="primary"
-              startIcon={<SaveIcon />}
-              onClick={handleSaveChanges}
-            >
-              Save Changes
-            </Button>
-            <Button
-              variant="outlined"
-              color="default"
-              startIcon={<CancelIcon />}
-              onClick={handleCancel}
-            >
-              Cancel
-            </Button>
-          </div>
-        </div>
-      </Popover>
     </div>
   );
 }
