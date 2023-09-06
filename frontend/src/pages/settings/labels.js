@@ -7,17 +7,27 @@ import Popover from '@mui/material/Popover';
 import Typography from '@mui/material/Typography';
 import CancelIcon from '@mui/icons-material/Cancel';
 import SaveIcon from '@mui/icons-material/Save';
+import MenuItem from '@mui/material/MenuItem';
+import Paper from '@mui/material/Paper';
+import TableContainer from '@mui/material/TableContainer';
+import Table from '@mui/material/Table';
+import TableHead from '@mui/material/TableHead';
+import TableRow from '@mui/material/TableRow';
+import TableCell from '@mui/material/TableCell';
+import TableBody from '@mui/material/TableBody';
 import { getAllLabels } from '../../api/labels'; // Import your JSON-RPC function here
 import { useAuthContext } from '../../contexts/auth'; // Make sure to update this path
 
-export default function LabelsPage() {
+// ... (previous code)
+
+export default function Labels() {
   const [labels, setLabels] = useState([]);
   const [selectedLabels, setSelectedLabels] = useState([]);
   const [isEditing, setIsEditing] = useState(false);
   const [editLabel, setEditLabel] = useState(null);
   const [newLabel, setNewLabel] = useState('');
   const { getIdToken, activeOrganization } = useAuthContext();
-  
+
   const fetchLabels = async () => {
     try {
       const token = await getIdToken();
@@ -26,10 +36,9 @@ export default function LabelsPage() {
     } catch (error) {
       console.error('Error fetching labels:', error);
     }
-  }
+  };
 
   useEffect(() => {
- console.log(activeOrganization)
     if (activeOrganization) {
       fetchLabels();
     }
@@ -58,28 +67,44 @@ export default function LabelsPage() {
 
   return (
     <div className="labels-page">
-      <Typography variant="h4">Labels</Typography>
+      <Typography variant="h4">Labels ({labels.length})</Typography> {/* Updated title with label count */}
 
       {/* Labels List */}
-      <div className="labels-list">
-        {labels.map((label) => (
-          <div key={label.id} className="label-item">
-            <Chip
-              id={label.id}
-              label={label.name}
-              className="github-chip"
-              style={{ backgroundColor: label.color }}
-            />
-            <Button
-              variant="outlined"
-              className="github-edit-button"
-              onClick={() => handleEditClick(label)}
-            >
-              Edit
-            </Button>
-          </div>
-        ))}
-      </div>
+      <TableContainer component={Paper}>
+        <Table aria-label="labels table">
+          <TableHead>
+            <TableRow>
+              <TableCell>Label Name</TableCell>
+              <TableCell>Color</TableCell>
+              <TableCell>Actions</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {labels.map((label) => (
+              <TableRow key={label.id}>
+                <TableCell>
+                  <Chip
+                    id={label.id}
+                    label={label.name}
+                    className="github-chip"
+                    style={{ backgroundColor: label.color }}
+                  />
+                </TableCell>
+                <TableCell>{label.color}</TableCell>
+                <TableCell>
+                  <Button
+                    variant="outlined"
+                    className="github-edit-button"
+                    onClick={() => handleEditClick(label)}
+                  >
+                    Edit
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
 
       {/* Edit Dropdown */}
       <Popover
