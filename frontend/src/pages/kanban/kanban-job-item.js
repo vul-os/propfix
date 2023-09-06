@@ -10,14 +10,12 @@ import AvatarGroup, { avatarGroupClasses } from '@mui/material/AvatarGroup'; // 
 import Iconify from '../../components/iconify/iconify';
 import { useBoolean } from '../../hooks/use-boolean';
 import { bgBlur } from '../../theme/css';
-import extractEmailUsername from '../utility/email'
 
 
 export default function KanbanJobItem({ job, members, index, openPopUp, setOpenPopUp, setJob, sx, ...other }) {
   const theme = useTheme();
 
   const priority = job && job.priority && job?.priority?.toLowerCase()
-
   const renderPriority = (
     <Iconify
       icon={
@@ -53,10 +51,8 @@ export default function KanbanJobItem({ job, members, index, openPopUp, setOpenP
       }}
     >
       {assignees.map((user) => {
-        console.log(user)
-        const username = user?.displayName ? user.displayName : extractEmailUsername(user?.email)
 
-        return <Avatar key={user.id} alt={username} src={user?.photoUrl} />
+        return <Avatar key={user?.id} alt={ user?.displayName} src={user?.photoUrl} />
       })}
     </AvatarGroup>
   }

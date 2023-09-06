@@ -5,7 +5,6 @@ import CreateIcon from '@mui/icons-material/Create';
 import UpdateIcon from '@mui/icons-material/Update';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { fToNow } from '../../../utils/format-time'; // Adjust this import path as needed
-import extractEmailUsername from '../../utility/email';
 
 const styles = {
   container: {
@@ -63,7 +62,7 @@ export default function CrudStep({ event, member }) {
       </Typography>
 
             <Typography variant="subtitle2" style={{ fontSize: '12px', color: '#a8a8a8', paddingLeft: '50px' }}>
-        {member && member.displayName ? member.displayName : extractEmailUsername(member.email)}
+        {member && member?.displayName }
       </Typography>
 
       <Typography variant="subtitle2" style={{ fontSize: '12px',  color: '#a8a8a8', paddingLeft: '50px' }}>

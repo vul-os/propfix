@@ -80,7 +80,6 @@ export function defaultProps(theme) {
     },
     MuiStack: {
       defaultProps: {
-        useFlexGap: true,
       },
     },
     MuiAppBar: {

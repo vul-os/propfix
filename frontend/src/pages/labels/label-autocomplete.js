@@ -4,7 +4,7 @@ import TextField from '@mui/material/TextField';
 import Stack from '@mui/material/Stack';
 import Chip from '@mui/material/Chip';
 
-export default function LabelAutocomplete({ labels, selectedLabels, setSelectedLabels }) {
+export default function LabelAutocomplete({ labels, selectedLabels, setSelectedLabels, textFieldProps }) {
   return (
     <Stack spacing={3} sx={{ width: 500 }}>
       <Autocomplete
@@ -20,17 +20,18 @@ export default function LabelAutocomplete({ labels, selectedLabels, setSelectedL
           <TextField
             {...params}
             variant="outlined"
-            label="Select Labels"
             placeholder="Labels"
+            {...textFieldProps}
           />
         )}
         renderTags={(value, getTagProps) =>
           value.map((option) => (
             <Chip
-              key={option.id}
-              label={option.name}
-              style={{ backgroundColor: option.color, color: '#fff' }}
+              key={option?.id}
+              label={option?.name}
+              style={{ backgroundColor: option?.color, color: '#fff' }}
               {...getTagProps({ index: 0 })}
+              {...textFieldProps}
             />
           ))
         }

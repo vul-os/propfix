@@ -28,9 +28,14 @@ export const BoardProvider = ({ children }) => {
           setBoardLoading(false);
         }
       }
-  
       fetchData();
     }, [getIdToken, activeOrganization]); // Add reloadBoard to the dependency list
+  
+    useEffect(() => {
+        if (board && board.jobs) {
+            setJobs(Object.values(board.jobs));
+        }
+    }, [board])
   
     // const reFetchBoard = () => {
     //   setReloadBoard(prev => prev + 1); // Trigger a re-fetch
