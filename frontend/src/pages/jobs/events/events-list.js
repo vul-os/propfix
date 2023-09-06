@@ -2,50 +2,62 @@ import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import { useParams } from 'react-router-dom';
 import Paper from '@mui/material/Paper';
+import { useMediaQuery, useTheme, makeStyles } from '@mui/material';
 import { useAuthContext } from '../../../contexts/auth';
-import { useBoardContext } from '../../../contexts/board'; 
+import { useBoardContext } from '../../../contexts/board';
 import { getAllEvents } from '../../../api/events';
-import MessageStep from './message-step'; // Import the MessageStep component
-import CrudStep from './crud-step'; // Import the CrudStep component
+import MessageStep from './message-step';
+import CrudStep from './crud-step';
 
-const styles = {
+const useStyles = makeStyles((theme) => ({
   container: {
     display: 'flex',
     flexDirection: 'column',
-    margin: '0', // Remove margin
-    padding: '0', // Remove padding
+    margin: '0',
+    padding: '0',
   },
-  // Add a vertical line style
   messageBoxContainer: {
-    display: 'flex', // Use flex to align content horizontally
-    alignItems: 'center', // Vertically center the content
-    position: 'relative', // Position relative to place the line
+    display: 'flex',
+    alignItems: 'center',
+    position: 'relative',
   },
-  // vertical line style
   verticalLine: {
     width: '1px',
-    backgroundColor: 'lightgrey', // Updated background color to lighter grey
-    marginRight: '75%', // Set marginRight to 0 to join the lines
-    border: '1px solid #E5E4E2', // Add the border
-    height: '100%', // Extend the line to cover the full height
-    position: 'absolute', // Position the line absolutely
-    right: '0', // Position the line to the right
-    top: '0', // Position the line at the top
-    zIndex: '-1', // Set the z-index to -1
+    backgroundColor: 'lightgrey',
+    marginRight: '75%',
+    border: '1px solid #E5E4E2',
+    height: '100%',
+    position: 'absolute',
+    right: '0',
+    top: '0',
+    zIndex: '-1',
   },
   eventsHeading: {
-    textAlign: 'center', // Center the text
-    margin: '0 0 0 10px', // Set margin-left to 10px
-    padding: '0', // Remove padding
-    marginRight: '14em',
+    textAlign: 'center',
+    margin: '0 0 0 10px',
+    padding: '0',
+    [theme.breakpoints.down('sm')]: {
+      marginLeft: '30px', // Move the margin left to 30px on screens less than or equal to 599px
+    },
+    [theme.breakpoints.up('md')]: {
+      marginRight: '14em',
+    },
   },
-};
+  'avatar-left': {
+    marginLeft: '30px', // Move the icon avatar 30px to the left
+  },
+}));
 
 export default function EventsList({ jobId }) {
-  const { board } = useBoardContext(); // Use the BoardProvider context
-  // const { jobId } = useParams();
+  const { board } = useBoardContext();
   const { getIdToken } = useAuthContext();
   const [events, setEvents] = useState([]);
+  const theme = useTheme();
+  const isTablet = useMediaQuery(theme.breakpoints.down('sm'));
+  const isLaptop = useMediaQuery(theme.breakpoints.up('md'));
+  const isDesktop = useMediaQuery(theme.breakpoints.up('lg'));
+  const isMobile = useMediaQuery('(max-width: 559px)'); // Check for screens with a width less than or equal to 559px
+  const classes = useStyles();
 
   useEffect(() => {
     if (jobId) {
@@ -63,13 +75,17 @@ export default function EventsList({ jobId }) {
     }
   };
 
-  const RenderEvent = ({event, index}) => {
+  const RenderEvent = ({ event, index }) => {
     const member = board && board.members && event && event.memberId && board.members[event.memberId];
     return member && (
       <React.Fragment key={event.id}>
-        <div style={styles.messageBoxContainer}>
-          {index !== 0 && <div style={styles.verticalLine}/> }
-          <div key={event.id} elevation={3}>
+        <div style={EventsList.messageBoxContainer}>
+          {index !== 0 && <div style={EventsList.verticalLine} />}
+          <div
+            key={event.id}
+            elevation={3}
+            className={isMobile ? classes['avatar-left'] : ''}
+          >
             {event.type === 'MESSAGE' ? (
               <MessageStep event={event} member={member} />
             ) : (
@@ -82,8 +98,8 @@ export default function EventsList({ jobId }) {
   };
 
   return (
-    <div style={styles.container}>
-      <h2 style={styles.eventsHeading}>Events</h2> {/* Centered "Events" heading */}
+    <div style={EventsList.container}>
+      <h2 style={classes.eventsHeading}>Events</h2>
       {events &&
         events.map((event, index) => (
           <RenderEvent event={event} index={index} />
