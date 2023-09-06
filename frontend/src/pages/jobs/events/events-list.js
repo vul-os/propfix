@@ -12,8 +12,8 @@ const styles = {
   container: {
     display: 'flex',
     flexDirection: 'column',
-    // gap: '16px',
-    padding: '16px',
+    margin: '0', // Remove margin
+    padding: '0', // Remove padding
   },
   // Add a vertical line style
   messageBoxContainer: {
@@ -24,14 +24,20 @@ const styles = {
   // vertical line style
   verticalLine: {
     width: '1px',
-    backgroundColor: 'grey',
-    marginRight: '80%', // Set marginRight to 0 to join the lines
-    border: '1px solid lightgrey', // Add the border
+    backgroundColor: 'lightgrey', // Updated background color to lighter grey
+    marginRight: '75%', // Set marginRight to 0 to join the lines
+    border: '1px solid #E5E4E2', // Add the border
     height: '100%', // Extend the line to cover the full height
     position: 'absolute', // Position the line absolutely
     right: '0', // Position the line to the right
     top: '0', // Position the line at the top
     zIndex: '-1', // Set the z-index to -1
+  },
+  eventsHeading: {
+    textAlign: 'center', // Center the text
+    margin: '0 0 0 10px', // Set margin-left to 10px
+    padding: '0', // Remove padding
+    marginRight: '14em',
   },
 };
 
@@ -40,7 +46,6 @@ export default function EventsList({ jobId }) {
   // const { jobId } = useParams();
   const { getIdToken } = useAuthContext();
   const [events, setEvents] = useState([]);
-
 
   useEffect(() => {
     if (jobId) {
@@ -59,22 +64,26 @@ export default function EventsList({ jobId }) {
   };
 
   const RenderEvent = ({event, index}) => {
-    const member = board && board.members && event && event.memberId && board.members[event.memberId]
-    return member && <React.Fragment key={event.id}>
-    <div style={styles.messageBoxContainer}>
-      {index !== 0 && <div style={styles.verticalLine}/> }
-      <div key={event.id} elevation={3}>
-        {event.type === 'MESSAGE' ? (
-          <MessageStep event={event} member={member} />
-        ) : (
-          <CrudStep event={event} member={member} />
-        )}
-      </div>
-    </div>
-  </React.Fragment> 
-  }
+    const member = board && board.members && event && event.memberId && board.members[event.memberId];
+    return member && (
+      <React.Fragment key={event.id}>
+        <div style={styles.messageBoxContainer}>
+          {index !== 0 && <div style={styles.verticalLine}/> }
+          <div key={event.id} elevation={3}>
+            {event.type === 'MESSAGE' ? (
+              <MessageStep event={event} member={member} />
+            ) : (
+              <CrudStep event={event} member={member} />
+            )}
+          </div>
+        </div>
+      </React.Fragment>
+    );
+  };
+
   return (
     <div style={styles.container}>
+      <h2 style={styles.eventsHeading}>Events</h2> {/* Centered "Events" heading */}
       {events &&
         events.map((event, index) => (
           <RenderEvent event={event} index={index} />

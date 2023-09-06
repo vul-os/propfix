@@ -4,8 +4,7 @@ import Typography from '@mui/material/Typography';
 import CreateIcon from '@mui/icons-material/Create';
 import UpdateIcon from '@mui/icons-material/Update';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { fToNow } from '../../../utils/format-time';  // Adjust this import path as needed
-import extractEmailUsername from './utils'
+import { fToNow } from '../../../utils/format-time'; // Adjust this import path as needed
 
 const styles = {
   container: {
@@ -22,44 +21,52 @@ const styles = {
     width: '20%',
   },
   avatar: {
-    width: 25,
-    height: 25,
-    backgroundColor: 'rgb(255, 26, 91)',
-    boxShadow: '0 3px 3px rgba(0, 0, 0, 0.9)',
-    border: '1px solid grey',
+    backgroundColor: '#F2F3F4',
+    border: '1px solid white',
+    padding: '15px', // Adjust padding to center the smaller icon
+    marginLeft: '40px',
+    width: '20px',
+    height: '20px',
+
+  },
+  icon: {
+    color: 'black', // Set the icon color to black
+    width: 120, // Adjust the width to make the icon smaller
+    height: 20, // Adjust the height to make the icon smaller
   },
 };
-
 
 export default function CrudStep({ event, member }) {
   let icon;
   let action;
-  console.log(member)
+  console.log(member);
   if (event.type === 'CREATE') {
-    icon = <CreateIcon />;
+    icon = <CreateIcon style={styles.icon} />;
     action = 'created';
   } else if (event.type === 'UPDATE') {
-    icon = <UpdateIcon />;
+    icon = <UpdateIcon style={styles.icon} />;
     action = 'updated';
   } else if (event.type === 'DELETE') {
-    icon = <DeleteIcon />;
+    icon = <DeleteIcon style={styles.icon} />;
     action = 'deleted';
   }
 
   return (
     <div style={styles.container}>
-      <div style={styles.blankDiv}/> {/* Blank div */}
+      <div style={styles.blankDiv} /> {/* Blank div */}
       <Avatar style={styles.avatar}>
         {icon}
       </Avatar>
-      <Typography variant="subtitle2" style={{ paddingLeft: '4px' }}>
-        { member && member.displayName ? member.displayName : extractEmailUsername(member.email) }
+      <Typography variant="caption" style={{ fontSize: '12px', color: '#a8a8a8', paddingLeft: '50px' }}>
+        {fToNow(event.createdAt)}
       </Typography>
-      <Typography variant="subtitle2" style={{ paddingLeft: '4px' }}>
+
+            <Typography variant="subtitle2" style={{ fontSize: '12px', color: '#a8a8a8', paddingLeft: '50px' }}>
+        {member && member?.displayName }
+      </Typography>
+
+      <Typography variant="subtitle2" style={{ fontSize: '12px',  color: '#a8a8a8', paddingLeft: '50px' }}>
         {`${action} the event`}
-      </Typography>
-      <Typography variant="caption" style={{ color: 'grey', paddingLeft: '4px' }}>
-        { fToNow(event.createdAt) }
       </Typography>
     </div>
   );
