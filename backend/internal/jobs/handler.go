@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"sort"
+	"strings"
 	"time"
 
 	"firebase.google.com/go/v4/auth"
@@ -263,6 +264,20 @@ type GetKanbanBoardResponse struct {
 }
 
 func (a *adaptor) GetKanbanBoard(r *http.Request, args *GetKanbanBoardRequest, result *GetKanbanBoardResponse) error {
+	ok := false
+	user, ok := r.Context().Value("user").(user.User)
+	if !ok {
+		return errors.New("not permitted")
+	}
+	identifier := user.ID
+	if args.OrganizationID != "" {
+		ok, err := a.authz.CheckPermission(r, "jobs", "getall")
+		if err != nil || !ok {
+			return errors.New("not permitted")
+		}
+		identifier = args.OrganizationID
+	}
+
 	// Fetch columns using the ColumnsStore
 	cols, err := a.columnJobLinksStore.GetAllColumns(args.OrganizationID)
 	if err != nil {
@@ -271,7 +286,7 @@ func (a *adaptor) GetKanbanBoard(r *http.Request, args *GetKanbanBoardRequest, r
 	}
 
 	// Fetch jobs using the organization ID (simplified example)
-	jobs, err := a.GetJobsByOrganization(r, args.OrganizationID)
+	jobs, err := a.GetJobsByOrganization(identifier, ok)
 	if err != nil {
 		fmt.Println(err)
 		return err
@@ -337,24 +352,14 @@ func (a *adaptor) GetKanbanBoard(r *http.Request, args *GetKanbanBoardRequest, r
 	return nil
 }
 
-func (a *adaptor) GetJobsByOrganization(r *http.Request, orgID string) ([]Job, error) {
+func (a *adaptor) GetJobsByOrganization(identifier string, permitted bool) ([]Job, error) {
 	ctx := context.Background()
-	user, ok := r.Context().Value("user").(user.User)
-	if !ok {
-		return nil, errors.New("not permitted")
-	}
 	// Initialize query based on permissions
 	query := ""
-	permitted := false
-	if orgID != "" {
-		ok, err := a.authz.CheckPermission(r, "jobs", "getall")
-		if err != nil || !ok {
-			return nil, errors.New("not permitted")
-		}
-		permitted = true
-		query = fmt.Sprintf(`SELECT id, name, organization_id, priority, description, tenant_identifier, assignee_ids, unit_identifier, building_id, labels, attachments, cost, hours, due_date, created_at FROM jobs WHERE organization_id = '%s'`, orgID)
+	if permitted {
+		query = fmt.Sprintf(`SELECT id, name, organization_id, priority, description, tenant_identifier, assignee_ids, unit_identifier, building_id, labels, attachments, cost, hours, due_date, created_at FROM jobs WHERE organization_id = '%s'`, identifier)
 	} else {
-		query = fmt.Sprintf(`SELECT id, name, organization_id, priority, description, tenant_identifier, assignee_ids, unit_identifier, building_id, labels, attachments, cost, hours, due_date, created_at FROM jobs WHERE tenant_identifier = '%s'`, user.ID)
+		query = fmt.Sprintf(`SELECT id, name, organization_id, priority, description, tenant_identifier, assignee_ids, unit_identifier, building_id, labels, attachments, cost, hours, due_date, created_at FROM jobs WHERE tenant_identifier = '%s'`, identifier)
 	}
 	rows, err := a.dbpool.Query(ctx, query)
 	if err != nil {
@@ -424,9 +429,13 @@ func (s *adaptor) GetAllMemberIDs(organizationID string, authClient *auth.Client
 			fmt.Println(err)
 			return nil, err
 		}
+		name := u.DisplayName
+		if name == "" {
+			name = ExtractEmailUsername(u.Email)
+		}
 		newU := user.User{
 			ID:          u.UID,
-			DisplayName: u.DisplayName,
+			DisplayName: name,
 			Email:       u.Email,
 			PhotoURL:    u.PhotoURL,
 		}
@@ -434,4 +443,20 @@ func (s *adaptor) GetAllMemberIDs(organizationID string, authClient *auth.Client
 	}
 
 	return users, nil
+}
+
+// ExtractEmailUsername extracts the username from an email address
+func ExtractEmailUsername(email string) string {
+	if email == "" {
+		return ""
+	}
+	// Split the email by '@' and take the first part
+	splitEmail := strings.Split(email, "@")
+	if len(splitEmail) == 0 {
+		return ""
+	}
+	username := splitEmail[0]
+
+	// Trim the spaces
+	return strings.TrimSpace(username)
 }
