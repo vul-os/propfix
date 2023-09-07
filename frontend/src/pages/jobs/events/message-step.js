@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 import Avatar from '@mui/material/Avatar';
 import Typography from '@mui/material/Typography';
 import Chip from '@mui/material/Chip'; // Import Chip component
+import FaceIcon from '@mui/icons-material/Face';
 import { fToNow } from '../../../utils/format-time';
 
 const styles = {
@@ -55,10 +56,10 @@ const styles = {
   },
   publicMessageBox: {
     backgroundColor: 'white',
-    border: '1px solid green',
+    border: '1px solid #BEBFC5',
     borderRadius: '8px',
     padding: '12px',
-    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+    boxShadow: '0 7px 9px rgba(0, 0, 0, 0.5)',
     position: 'relative',
   },
   privateMessageBox: {
@@ -80,9 +81,14 @@ const styles = {
 
 export default function MessageStep({ event, member }) {
   const messageBoxStyle =
-    event.data.visibility === 'public'
+    event.visibility === 'public'
       ? styles.publicMessageBox
       : styles.privateMessageBox;
+  
+  const renderVisibility = 
+      event.visibility === 'public'
+      ? <Chip label="Public" sx={{backgroundColor:'rgb(255, 26, 91)', borderRadius:'8px', marginRight:'10px'}}  />
+      : <Chip label="Private" sx={{backgroundColor: 'black', borderRadius:'8px', marginRight:'10px' }} />
 
   return (
     <div style={styles.container}>
@@ -90,10 +96,7 @@ export default function MessageStep({ event, member }) {
       <div style={messageBoxStyle}>
         <div style={styles.notch} />
         <div style={styles.titleSection}>
-          {/* Add label */}
-          <Typography variant="body2" style={styles.label}>
-            {event.data.visibility === 'public' ? 'Public' : 'Private'}
-          </Typography>
+          {renderVisibility }
           <Typography variant="subtitle2" style={styles.titleText}>
             {member?.displayName}
           </Typography>
@@ -117,3 +120,4 @@ MessageStep.propTypes = {
     }).isRequired,
   }).isRequired,
 };
+
