@@ -47,7 +47,7 @@ export default function JobDetails({ job, members, labels }) {
   }, []);
 
   const contacts = useBoolean();
-  const assignees = useMemo(() => newJob.assigneeIds.map((jobId) => members && members[jobId]), [newJob.assigneeIds, members]);
+  const assignees = useMemo(() => newJob?.assigneeIds?.map((jobId) => members && members[jobId]), [newJob?.assigneeIds, members]);
 
   const renderName = useMemo(() => (
     <InputName
@@ -69,7 +69,7 @@ export default function JobDetails({ job, members, labels }) {
       <StyledLabel sx={{ height: 24, lineHeight: '24px' }}>Labels</StyledLabel>
       <LabelAutocomplete 
         labels={Object.values(labels)} // Assuming `labels` prop is also an object with label IDs as keys
-        selectedLabels={newJob?.labels.map((id) => labels[id])} // Assuming `newJob.labels` is an array of label IDs
+        selectedLabels={newJob?.labels?.map((id) => labels[id])} // Assuming `newJob.labels` is an array of label IDs
         setSelectedLabels={(newSelectedLabels) => {
           const newSelectedLabelIds = newSelectedLabels.map(label => label.id); // Assuming the label object has an 'id' field
           setNewJob(prevJob => ({
