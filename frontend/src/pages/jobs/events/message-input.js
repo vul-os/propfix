@@ -5,17 +5,24 @@ import Button from '@mui/material/Button';
 import Avatar from '@mui/material/Avatar';
 import InputBase from '@mui/material/InputBase';
 import Switch from '@mui/material/Switch';
-import { createEvent } from '../../../api/events';
-import { useAuthContext } from '../../../contexts/auth';
 
-export default function CommentInput({ user }) {
+export default function MessageInput({ user, createMessage }) {
   const [isPublic, setIsPublic] = useState(false); // State for the switch
-  const { getIdToken } = useAuthContext();
+  const [message, setMessage] = useState(""); // State for the switch
+
   const handleSwitchChange = () => {
     setIsPublic(!isPublic);
   };
 
-
+  const handleMessageSend = async () => {
+    try {
+      console.log("message", message)
+        await createMessage(message, isPublic);
+        setMessage(""); // optionally, clear the message after sending
+    } catch (error) {
+        console.error("Failed to send message:", error);
+    }
+}
 
 
   return (
@@ -46,7 +53,15 @@ export default function CommentInput({ user }) {
           },
         }}
       >
-        <InputBase fullWidth multiline rows={2} placeholder="Type a message" sx={{ px: 1, flexGrow: 1 }} />
+      <InputBase 
+          onChange={(e) => setMessage(e.target.value)} 
+          value={message}  // This will bind the input's value to the state
+          fullWidth 
+          multiline 
+          rows={2} 
+          placeholder="Type a message" 
+          sx={{ px: 1, flexGrow: 1 }} 
+      />
 
         <Stack direction="row" alignItems="center" justifyContent="space-between">
           {/* Switch component */}
@@ -69,6 +84,7 @@ export default function CommentInput({ user }) {
                 color: 'black',
               },
             }}
+            onClick={handleMessageSend}
           >
             {isPublic ? 'Public' : 'Private'} Message
           </Button>
