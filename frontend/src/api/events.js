@@ -3,9 +3,9 @@ import { jsonRpcRequest } from './jsonrpc/client';
 
 const API_BASE_URL = `${config.apiUrl}/api/authenticated`;
 
-export async function createEvent(eventData, idToken) {
+export async function createEvent(event, idToken) {
   try {
-    const params = [eventData, idToken];
+    const params = [{event}];
     return await jsonRpcRequest('Events.CreateEvent', params, idToken);
   } catch (error) {
     console.error('Error creating event:', error);
