@@ -12,6 +12,7 @@ import Stack from '@mui/material/Stack';
 import { useAuthContext } from '../../../contexts/auth'; 
 import { useBoardContext } from '../../../contexts/board'; 
 import { getAllEvents, createEvent } from '../../../api/events';
+import { updateJob, deleteJob } from '../../../api/jobs';
 
 import Scrollbar from '../../../components/scrollbar';
 
@@ -49,9 +50,12 @@ export default function PopOver({
   const { getIdToken, user } = useAuthContext(); 
   const { board, setBoard, boardLoading } = useBoardContext(); // Use the BoardProvider context
   const [selectedColumnMap, setSelectedColumnMap] = useState({});
+  const [newJob, setNewJob] = useState({...job});
+  console.log("thejob", job, newJob)
 
   const [events, setEvents] = useState([]); // State for the switch
 
+  
   useEffect(() => {
     const initialSelectedColumnMap = board && board.jobs && board.columns
     ? Object.fromEntries(
@@ -64,20 +68,37 @@ export default function PopOver({
     setSelectedColumnMap(initialSelectedColumnMap)
   }, [board])
 
-  const setColumnByJobId = (jobId, columnValue) => {
-    setSelectedColumnMap(prevMap => ({
-      ...prevMap,
-      [jobId]: columnValue
-    }));
-  };
+  useEffect(() => {
+    if (job.id) {
+      setEvents([]);
+      setNewJob({...job})
+      fetchEvents();
+    }
 
-  const handleDeleteJob = useCallback(
-    async (jobId) => {
+  }, [job]);
+
+
+  const handleUpdateJob = useCallback(
+    async (newJob) => {
       try {
         const token = await getIdToken(); // Get the JWT token from the auth context
-        // deleteJob(jobId, token); // Pass the token to the deleteJob function
+        const res = await updateJob(newJob, token); // Pass the token to the deleteJob function
+        if (!!res.success) enqueueSnackbar('Job updated!', {
+          anchorOrigin: { vertical: 'top', horizontal: 'center' },
+        });
+      } catch (error) {
+        console.error(error);
+      }
+    },
+    [getIdToken, enqueueSnackbar]
+  );
 
-        enqueueSnackbar('Delete success!', {
+  const handleDeleteJob = useCallback(
+    async (newJob) => {
+      try {
+        const token = await getIdToken(); // Get the JWT token from the auth context
+        const res = await deleteJob(job.id, token); // Pass the token to the deleteJob function
+        if (!!res.success) enqueueSnackbar('Job deleted!', {
           anchorOrigin: { vertical: 'top', horizontal: 'center' },
         });
       } catch (error) {
@@ -125,27 +146,33 @@ export default function PopOver({
         }
         console.log("here212121e: ", newStartJobIds, newEndJobIds)
         setBoard(newBoardState);
+        setSelectedColumnMap(prevMap => ({
+          ...prevMap,
+          [job.id]: newSelectedColumn
+        }));
+        // actually do api request
+        // await moveJob(
+        //   sourceColumn.id,
+        //   destinationColumn.id,
+        //   draggableId,
+        //   destination.index,
+        //   token 
+        // );
       }
 
-          // actually do api request
-          // await moveJob(
-          //   sourceColumn.id,
-          //   destinationColumn.id,
-          //   draggableId,
-          //   destination.index,
-          //   token 
-          // );
   }
 
-  const onClosePopUp = () => {
-
+  const onClose = () => {
+    onClosePopOver()
+    handleUpdateJob(newJob)
+    setBoard({
+      ...board,
+      jobs: {
+        ...board.jobs,
+        [newJob.id]: newJob,
+      },
+    })
   }
-
-  useEffect(() => {
-    if (job.id) {
-      fetchEvents();
-    }
-  }, [job.id]);
 
   const fetchEvents = async () => {
     try {
@@ -179,7 +206,7 @@ export default function PopOver({
   return (
     <Drawer
       open={openPopOver}
-      onClose={onClosePopOver}
+      onClose={onClose}
       anchor="right"
       slotProps={{
         backdrop: { invisible: true },
@@ -196,11 +223,9 @@ export default function PopOver({
       <Toolbar
         job={job}
         onDelete={handleDeleteJob}
-        onChangeColumn={onChangeColumn}
-        onClosePopUp={onClosePopUp}
         columns={board && board.columns}
-        selectedColumnMap={selectedColumnMap}
-        setColumnByJobId={setColumnByJobId}
+        onChangeColumn={onChangeColumn}
+        selectedColumn={job && selectedColumnMap[job.id]}
       />
       <Divider />
       <Scrollbar
@@ -221,7 +246,7 @@ export default function PopOver({
             px: 2.5,
           }}
         >
-          <JobDetails job={job} members={board?.members} labels={board?.labels} />
+          <JobDetails job={newJob} setJob={setNewJob} members={board?.members} labels={board?.labels} />
           <EventsList events={events} members={board?.members}/>
         </Stack>
       </Scrollbar>

@@ -28,51 +28,45 @@ const StyledLabel = styled('span')(({ theme }) => ({
   fontWeight: theme.typography.fontWeightSemiBold,
 }));
 
-export default function JobDetails({ job, members, labels }) {
-  const [newJob, setNewJob] = useState({
-    ...job,
-    priority: job.priority.toLowerCase(),
-    dueDate: dayjs.utc(job.dueDate).toDate(),
-    createdAt: dayjs.utc(job.createdAt).toDate()
-  });
-  
+export default function JobDetails({ job, setJob, members, labels }) {
+  const contacts = useBoolean();
+  const assignees = useMemo(() => job?.assigneeIds?.map((jobId) => members && members[jobId]), [job?.assigneeIds, members]);
+
+  console.log("yooooooooooo", members, labels, job?.labels?.map((id) => labels[id]))
   const handleUpdateField = useCallback((field) => {
     return (event) => {
       const value = event.target ? event.target.value : event;
-      setNewJob(prevJob => ({
+      setJob(prevJob => ({
         ...prevJob,
         [field]: value,
       }));
     };
   }, []);
 
-  const contacts = useBoolean();
-  const assignees = useMemo(() => newJob?.assigneeIds?.map((jobId) => members && members[jobId]), [newJob?.assigneeIds, members]);
-
   const renderName = useMemo(() => (
     <InputName
       placeholder="Task name"
-      value={newJob.name}
+      value={job.name}
       onChange={handleUpdateField('name')}
     />
-  ), [newJob.name, handleUpdateField]);
+  ), [job.name, handleUpdateField]);
 
   const renderPriority = useMemo(() => (
     <Stack direction="row" alignItems="center">
       <StyledLabel>Priority</StyledLabel>
-      <Priority priority={newJob.priority} onChangePriority={handleUpdateField('priority')} />
+      <Priority priority={job?.priority?.toLowerCase()} onChangePriority={handleUpdateField('priority')} />
     </Stack>
-  ), [newJob.priority, handleUpdateField]);
+  ), [job.priority, handleUpdateField]);
 
   const renderLabel = useMemo(() => (
     <Stack direction="row">
       <StyledLabel sx={{ height: 24, lineHeight: '24px' }}>Labels</StyledLabel>
       <LabelAutocomplete 
-        labels={Object.values(labels)} // Assuming `labels` prop is also an object with label IDs as keys
-        selectedLabels={newJob?.labels?.map((id) => labels[id])} // Assuming `newJob.labels` is an array of label IDs
+        labels={labels ? Object.values(labels) : []}
+        selectedLabels={job?.labels ? job.labels.map(id => labels[id]) : []}
         setSelectedLabels={(newSelectedLabels) => {
           const newSelectedLabelIds = newSelectedLabels.map(label => label.id); // Assuming the label object has an 'id' field
-          setNewJob(prevJob => ({
+          setJob(prevJob => ({
             ...prevJob,
             labels: newSelectedLabelIds,
           }));
@@ -80,7 +74,7 @@ export default function JobDetails({ job, members, labels }) {
         textFieldProps={{size: "small"}}
       />
     </Stack>
-  ), [newJob.labels, handleUpdateField, labels]);
+  ), [job.labels, setJob, labels]);
   
   
   const renderAssignee = useMemo(() => (
@@ -115,12 +109,17 @@ export default function JobDetails({ job, members, labels }) {
     <Stack direction="row" alignItems="center">
       <StyledLabel> Due date </StyledLabel>
       <DatePicker
-        value={newJob.dueDate}
-        onChange={handleUpdateField('dueDate')}
+        value={job?.dueDate && dayjs.utc(job.dueDate).toDate()}
+        onChange={ (newDD) => {
+          setJob(prevJob => ({
+            ...prevJob,
+            dueDate: newDD,
+          }));
+        }}
         renderInput={(params) => <TextField {...params} size="small" />}
       />
     </Stack>
-  ), [newJob.dueDate, handleUpdateField]);
+  ), [job.dueDate, handleUpdateField]);
 
   const renderDescription = useMemo(() => (
     <Stack direction="row">
@@ -132,11 +131,11 @@ export default function JobDetails({ job, members, labels }) {
         InputProps={{
           sx: { typography: 'body2' },
         }}
-        value={newJob.description}
+        value={job.description}
         onChange={handleUpdateField('description')}
       />
     </Stack>
-  ), [newJob.description, handleUpdateField]);
+  ), [job.description, handleUpdateField]);
 
   const renderUnitIdentifier = useMemo(() => (
     <Stack direction="row">
@@ -147,21 +146,21 @@ export default function JobDetails({ job, members, labels }) {
         InputProps={{
           sx: { typography: 'body2' },
         }}
-        value={newJob.unitIdentifier}
+        value={job.unitIdentifier}
         onChange={handleUpdateField('unitIdentifier')}
       />
     </Stack>
-  ), [newJob.unitIdentifier, handleUpdateField]);
+  ), [job.unitIdentifier, handleUpdateField]);
 
   const renderAttachments = useMemo(() => (
     <Stack direction="row">
       <StyledLabel>Attachments</StyledLabel>
-      <Attachments jobId={newJob.id} attachments={newJob.attachmenturls} />
+      <Attachments jobId={job.id} attachments={job.attachmenturls} />
     </Stack>
-  ), [newJob.id, newJob.attachmenturls]);
+  ), [job.id, job.attachmenturls]);
 
   return (
-    newJob && members && labels && <Stack
+    job && members && labels && <Stack
       spacing={3}
       sx={{
         pt: 3,

@@ -85,23 +85,9 @@ export default function EventsList({ events, members }) {
       <h2 style={eventsHeadingStyle}>Events</h2>
       {events &&
         events.map((event, index) => (
-          <RenderEvent event={event} index={index} />
+          <RenderEvent key={index} event={event} index={index} />
         ))}
     </div>
   );
 }
 
-EventsList.propTypes = {
-  events: PropTypes.arrayOf(
-    PropTypes.shape({
-      id: PropTypes.string.isRequired,
-      type: PropTypes.oneOf(['MESSAGE']).isRequired,
-      createdAt: PropTypes.string.isRequired,
-      data: PropTypes.shape({
-        visibility: PropTypes.oneOf(['public', 'private']),
-        message: PropTypes.string,
-        messageType: PropTypes.oneOf(['create', 'update', 'delete']),
-      }),
-    })
-  ),
-};

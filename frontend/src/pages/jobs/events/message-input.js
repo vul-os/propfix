@@ -54,6 +54,7 @@ export default function MessageInput({ user, createMessage }) {
         }}
       >
       <InputBase 
+          key="messageInput"
           onChange={(e) => setMessage(e.target.value)} 
           value={message}  // This will bind the input's value to the state
           fullWidth 
@@ -73,6 +74,7 @@ export default function MessageInput({ user, createMessage }) {
 
           {/* Button */}
           <Button
+            key="buttonSend"
             variant="contained"
             sx={{
               backgroundColor: '#000000',
