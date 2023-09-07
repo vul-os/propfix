@@ -2,6 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import Avatar from '@mui/material/Avatar';
 import Typography from '@mui/material/Typography';
+import Chip from '@mui/material/Chip'; // Import Chip component
 import { fToNow } from '../../../utils/format-time';
 
 const styles = {
@@ -41,7 +42,6 @@ const styles = {
     backgroundColor: 'white',
     border: '1px solid #cacaca',
     zIndex: -1,
-    
   },
   titleSection: {
     display: 'flex',
@@ -49,11 +49,9 @@ const styles = {
     backgroundColor: '#f5f5f5',
     padding: '8px',
     borderRadius: '4px 4px 0 0',
-    
   },
   titleText: {
-    marginRight: '8px',
-    
+    marginRight: '20px',
   },
   publicMessageBox: {
     backgroundColor: 'white',
@@ -72,6 +70,12 @@ const styles = {
     position: 'relative',
     marginLeft: '9px',
   },
+  label: {
+    backgroundColor: '#f5f5f5',
+    borderRadius: '4px',
+    padding: '0', // Remove padding for labels
+    marginRight: '10px',
+  },
 };
 
 export default function MessageStep({ event, member }) {
@@ -86,6 +90,10 @@ export default function MessageStep({ event, member }) {
       <div style={messageBoxStyle}>
         <div style={styles.notch} />
         <div style={styles.titleSection}>
+          {/* Add label */}
+          <Typography variant="body2" style={styles.label}>
+            {event.data.visibility === 'public' ? 'Public' : 'Private'}
+          </Typography>
           <Typography variant="subtitle2" style={styles.titleText}>
             {member?.displayName}
           </Typography>
