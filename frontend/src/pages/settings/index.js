@@ -6,6 +6,7 @@ import Tab from '@mui/material/Tab';
 import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
 import Profile from './profile';
+import Labels from './labels';
 
 function TabPanel(props) {
   const { children, value, index, ...other } = props;
@@ -33,7 +34,7 @@ TabPanel.propTypes = {
   value: PropTypes.number.isRequired,
 };
 
-export default function Account() {
+export default function Settings() {
   const [value, setValue] = useState(0);
   const { accountVar } = useParams();
 
@@ -49,6 +50,7 @@ export default function Account() {
 
   const tabs = [
     { label: 'Profile', content: <Profile /> },
+    { label: 'Labels', content: <Labels /> },
   ];
 
   return (

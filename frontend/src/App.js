@@ -17,14 +17,13 @@ import ThemeProvider from './theme';
 import ScrollToTop from './components/scroll-to-top';
 import SignUpPage from './pages/auth/signup-page'; // Update the path accordingly
 import ForgotPasswordPage from './pages/auth/forgot-password-page'; // Update the path accordingly
-import LabelsPage from './pages/labels/labels'; // Replace with the actual path
 
 
 // layouts
 import DashboardLayout from './layouts/dashboard';
 import LoginPage from './pages/auth/LoginPage';
 
-import Account from './pages/account/account';
+import Settings from './pages/settings';
 import { KanbanView } from './pages/kanban/view';
 import JobDataGrid from './pages/jobs/data-grid/data-grid';
 import EventsList from './pages/jobs/events/events-list';
@@ -74,16 +73,6 @@ function App() {
                       </AuthGuard>
                     }
                   />
-                   <Route
-                    path="/labels"
-                    element={
-                      <AuthGuard>
-                        <BoardProvider>
-                          <DashboardLayout><LabelsPage /></DashboardLayout>
-                        </BoardProvider>
-                      </AuthGuard>
-                    }
-                  />
                   <Route
                     path="/events/*"
                     element={
@@ -105,8 +94,8 @@ function App() {
                         <BoardProvider>
                           <DashboardLayout>
                             <Routes>
-                              <Route path="/" element={<Account />} />
-                              <Route path=":accountVar" element={<Account />} />
+                              <Route path="/" element={<Settings />} />
+                              <Route path=":accountVar" element={<Settings />} />
                             </Routes>
                           </DashboardLayout>
                         </BoardProvider>
