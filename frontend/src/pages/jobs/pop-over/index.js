@@ -11,6 +11,7 @@ import Stack from '@mui/material/Stack';
 
 import { useAuthContext } from '../../../contexts/auth'; 
 import { useBoardContext } from '../../../contexts/board'; 
+import { getAllEvents, createEvent } from '../../../api/events';
 
 import Scrollbar from '../../../components/scrollbar';
 
@@ -18,7 +19,7 @@ import Scrollbar from '../../../components/scrollbar';
 import { useBoolean } from '../../../hooks/use-boolean';
 // components
 import EventsList from '../events/events-list';
-import CommentInput from '../events/comment-input';
+import MessageInput from '../events/message-input';
 
 import Toolbar from './toolbar';
 import JobDetails from '../job';
@@ -49,6 +50,7 @@ export default function PopOver({
   const { board, setBoard, boardLoading } = useBoardContext(); // Use the BoardProvider context
   const [selectedColumnMap, setSelectedColumnMap] = useState({});
 
+  const [events, setEvents] = useState([]); // State for the switch
 
   useEffect(() => {
     const initialSelectedColumnMap = board && board.jobs && board.columns
@@ -139,6 +141,41 @@ export default function PopOver({
 
   }
 
+  useEffect(() => {
+    if (job.id) {
+      fetchEvents();
+    }
+  }, [job.id]);
+
+  const fetchEvents = async () => {
+    try {
+      const idToken = await getIdToken();
+      const allEvents = await getAllEvents(job.id, idToken);
+      setEvents(allEvents.events);
+    } catch (error) {
+      console.error('Error fetching events:', error);
+    }
+  };
+
+  const createMessage = async (message, visibility) => {
+      try {
+          if (message !== "" ) {
+              const newEvent = {
+                "type": "MESSAGE",
+                "jobId": job.id,
+                "visibility": visibility ? "public" : "private",
+                "data": { "message": message }
+            };
+            const idToken = await getIdToken();
+            const rEvent = await createEvent(newEvent, idToken);
+            if (!!rEvent?.event) setEvents([...events, rEvent.event]);
+          }
+      } catch (error) {
+          console.error('Error fetching events:', error);
+      }
+  };
+
+
   return (
     <Drawer
       open={openPopOver}
@@ -185,10 +222,10 @@ export default function PopOver({
           }}
         >
           <JobDetails job={job} members={board?.members} labels={board?.labels} />
-          <EventsList jobId={job.id} />
+          <EventsList events={events} members={board?.members}/>
         </Stack>
       </Scrollbar>
-      <CommentInput user={user} />
+      <MessageInput user={user} createMessage={createMessage} />
 
     </Drawer>
   );
