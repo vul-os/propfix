@@ -31,12 +31,18 @@ func IsAuthenticated(authClient *auth.Client, orgStore organizations.Organizatio
 			}
 
 			claims := make(Claims)
+			fmt.Println(token)
+
 			for k, v := range token.Claims {
 				claims[k] = v
 			}
-			fmt.Println(claims)
-			user := user.User{
-				ID: token.UID,
+			user := user.User{}
+			if uid, ok := claims["user_id"].(string); ok {
+				user.ID = uid
+			} else if uid, ok := claims["uid"].(string); ok {
+				user.ID = uid
+			} else {
+				user.ID = token.UID
 			}
 
 			if name, ok := claims["name"].(string); ok {

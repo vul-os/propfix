@@ -53,7 +53,7 @@ func (a *adaptor) CreateEvent(r *http.Request, args *CreateEventRequest, result 
 	if !ok || accessType == "" {
 		return errors.New("not permitted")
 	}
-	fmt.Println(accessType)
+	fmt.Println(user)
 	eventID, err := a.store.CreateEvent(args.Event, accessType, user.ID)
 	if err != nil {
 		return fmt.Errorf("Failed to create event: %v", err)

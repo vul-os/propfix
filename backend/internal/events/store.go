@@ -31,7 +31,7 @@ type Event struct {
 
 func (s *EventsStore) CreateEvent(event Event, accessType string, userId string) (string, error) {
 	// Perform basic validation on the event data before insertion
-	if event.Type == "" || event.JobID == "" || event.MemberID == "" {
+	if event.Type == "" || event.JobID == "" || userId == "" {
 		return "", fmt.Errorf("Type, Data, JobID, and MemberID are required fields")
 	}
 
