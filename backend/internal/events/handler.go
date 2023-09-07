@@ -37,7 +37,7 @@ type CreateEventRequest struct {
 }
 
 type CreateEventResponse struct {
-	ID string `json:"id"`
+	Event Event `json:"event"`
 }
 
 func (a *adaptor) CreateEvent(r *http.Request, args *CreateEventRequest, result *CreateEventResponse) error {
@@ -54,12 +54,17 @@ func (a *adaptor) CreateEvent(r *http.Request, args *CreateEventRequest, result 
 		return errors.New("not permitted")
 	}
 	fmt.Println(user)
-	eventID, err := a.store.CreateEvent(args.Event, accessType, user.ID)
+	eventID, createdAt, err := a.store.CreateEvent(args.Event, accessType, user.ID)
 	if err != nil {
 		return fmt.Errorf("Failed to create event: %v", err)
 	}
 
-	result.ID = eventID
+	newEvent := args.Event
+	newEvent.ID = eventID
+	newEvent.CreatedAt = createdAt
+	newEvent.MemberID = user.ID
+
+	result.Event = newEvent
 	return nil
 }
 

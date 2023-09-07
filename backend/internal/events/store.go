@@ -29,10 +29,10 @@ type Event struct {
 	CreatedAt  time.Time   `json:"createdAt"`
 }
 
-func (s *EventsStore) CreateEvent(event Event, accessType string, userId string) (string, error) {
+func (s *EventsStore) CreateEvent(event Event, accessType string, userId string) (string, time.Time, error) {
 	// Perform basic validation on the event data before insertion
 	if event.Type == "" || event.JobID == "" || userId == "" {
-		return "", fmt.Errorf("Type, Data, JobID, and MemberID are required fields")
+		return "", time.Time{}, fmt.Errorf("Type, Data, JobID, and MemberID are required fields")
 	}
 
 	// Generate a UUID and set it as the ID field
@@ -47,10 +47,10 @@ func (s *EventsStore) CreateEvent(event Event, accessType string, userId string)
 
 	_, err := s.pool.Exec(ctx, query, event.ID, event.Type, event.JobID, userId, event.Data, event.CreatedAt, accessType)
 	if err != nil {
-		return "", fmt.Errorf("Failed to create event: %v", err)
+		return "", time.Time{}, fmt.Errorf("Failed to create event: %v", err)
 	}
 
-	return event.ID, nil
+	return event.ID, event.CreatedAt, nil
 }
 
 func (s *EventsStore) GetEvent(eventID string) (*Event, error) {
