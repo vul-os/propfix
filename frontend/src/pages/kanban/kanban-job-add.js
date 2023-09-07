@@ -5,60 +5,56 @@ import Paper from '@mui/material/Paper';
 import ClickAwayListener from '@mui/material/ClickAwayListener';
 import InputBase, { inputBaseClasses } from '@mui/material/InputBase';
 // _mock
-import { _mock } from '../../_mock';
 // utils
-import uuidv4 from '../../utils/uuidv4';
 
 // ----------------------------------------------------------------------
 
-export default function KanbanTaskAdd({ status, onAddTask, onCloseAddTask }) {
+export default function KanbanJobAdd({ onAddJob, onCloseAddJob }) {
   const [name, setName] = useState('');
 
-  const defaultTask = useMemo(
+  const defaultJob = useMemo(
     () => ({
-      id: uuidv4(),
-      status,
-      name: name.trim(),
-      priority: 'medium',
-      attachments: [],
-      labels: [],
-      comments: [],
-      assignee: [],
-      due: [null, null],
-      reporter: {
-        id: _mock.id(16),
-        name: _mock.fullName(16),
-        avatarUrl: _mock.image.avatar(16),
-      },
+      name,
+      "priority": "High",
+      "description": "",
+      "tenantIdentifier": "",
+      "assigneeIds": [],
+      "unitIdentifier": "",
+      "buildingId": "",
+      "labels": [],
+      "attachments": [],
+      "cost": 0,
+      "hours": 0,
+      "dueDate": ""
     }),
-    [name, status]
+    [name]
   );
 
-  const handleKeyUpAddTask = useCallback(
+  const handleKeyUpAddJob = useCallback(
     (event) => {
       if (event.key === 'Enter') {
         if (name) {
-          onAddTask(defaultTask);
+          onAddJob(defaultJob);
         }
       }
     },
-    [defaultTask, name, onAddTask]
+    [defaultJob, name, onAddJob]
   );
 
-  const handleClickAddTask = useCallback(() => {
+  const handleClickAddJob = useCallback(() => {
     if (name) {
-      onAddTask(defaultTask);
+      onAddJob(defaultJob);
     } else {
-      onCloseAddTask();
+      onCloseAddJob();
     }
-  }, [defaultTask, name, onAddTask, onCloseAddTask]);
+  }, [defaultJob, name, onAddJob, onCloseAddJob]);
 
   const handleChangeName = useCallback((event) => {
     setName(event.target.value);
   }, []);
 
   return (
-    <ClickAwayListener onClickAway={handleClickAddTask}>
+    <ClickAwayListener onClickAway={handleClickAddJob}>
       <Paper
         sx={{
           borderRadius: 1.5,
@@ -70,10 +66,10 @@ export default function KanbanTaskAdd({ status, onAddTask, onCloseAddTask }) {
           autoFocus
           multiline
           fullWidth
-          placeholder="Task name"
+          placeholder="Job name"
           value={name}
           onChange={handleChangeName}
-          onKeyUp={handleKeyUpAddTask}
+          onKeyUp={handleKeyUpAddJob}
           sx={{
             px: 2,
             height: 56,
@@ -86,9 +82,3 @@ export default function KanbanTaskAdd({ status, onAddTask, onCloseAddTask }) {
     </ClickAwayListener>
   );
 }
-
-KanbanTaskAdd.propTypes = {
-  onAddTask: PropTypes.func,
-  onCloseAddTask: PropTypes.func,
-  status: PropTypes.string,
-};
