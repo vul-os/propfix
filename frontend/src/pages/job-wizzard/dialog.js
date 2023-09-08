@@ -30,7 +30,6 @@ function CreateJobDialog({open, onClose}) {
         <DialogContent>
           <Stepper />
         </DialogContent>
-        <DialogActions/>
       </Dialog>
     </div>
   );

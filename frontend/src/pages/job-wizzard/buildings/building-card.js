@@ -1,5 +1,6 @@
 import React from 'react';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
+import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 
 function BuildingCard({ building, onSelectBuilding }) {
   const handleClick = () => {
@@ -17,20 +18,25 @@ function BuildingCard({ building, onSelectBuilding }) {
         }
       }}
       style={{
-        width: '300px', // Set a fixed width for the cards
+        width: '80%',
         margin: '10px',
         cursor: 'pointer',
-        boxShadow: '0px 0px 5px rgba(0, 0, 0, 0.3)',
         borderRadius: '8px',
         padding: '10px',
         backgroundColor: '#fff',
         border: '1px solid #ccc',
       }}
     >
-      <h3 style={{ marginBottom: '10px' }}>{building.name}</h3>
+      {/* Icon and Name Row */}
+      <div style={{ display: 'flex', alignItems: 'center', marginBottom: '5px' }}>
+        <AccountCircleIcon style={{ fontSize: '24px', marginRight: '10px' }} />
+        <h3 style={{ fontSize: '18px', margin: '0' }}>{building.buildingName}</h3>
+      </div>
+
+      {/* Location Icon and Address Row */}
       <div style={{ display: 'flex', alignItems: 'center' }}>
-        <LocationOnIcon style={{ marginRight: '5px' }} />
-        <p style={{ fontSize: '0.8rem' }}>{building.address}</p>
+        <LocationOnIcon style={{ fontSize: '24px', marginRight: '10px' }} />
+        <p style={{ fontSize: '16px', margin: '0' }}>{building.address}</p>
       </div>
     </div>
   );
