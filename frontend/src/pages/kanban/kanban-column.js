@@ -45,7 +45,7 @@ export default function KanbanColumn({ column, jobs, setJob, members, openPopUp,
         onClick={openAddJob.onToggle}
         sx={{ fontSize: 14 }}
       >
-        {openAddJob.value ? 'Close' : 'Add Task'}
+        {openAddJob.value ? 'Close' : 'Add Job'}
       </Button>
     </Stack>
   );

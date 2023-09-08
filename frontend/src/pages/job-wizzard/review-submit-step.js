@@ -8,7 +8,7 @@ import BuildingCard from './buildings/building-card';
 export default function ReviewSubmitStep({ building, job }) {
   return (
     <Stack spacing={2}>
-      <Typography variant="h6" sx={{ /* Title styling */ }}>
+      <Typography variant="h6" sx={{ paddingTop: "18px" }}>
         Review Your Information
       </Typography>
 
