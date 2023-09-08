@@ -5,11 +5,9 @@ import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import EditIcon from '@mui/icons-material/Edit';
 import Chip from '@mui/material/Chip';
-import Popover from '@mui/material/Popover';
 import Typography from '@mui/material/Typography';
 import CancelIcon from '@mui/icons-material/Cancel';
 import SaveIcon from '@mui/icons-material/Save';
-import MenuItem from '@mui/material/MenuItem';
 import Paper from '@mui/material/Paper';
 import TableContainer from '@mui/material/TableContainer';
 import Table from '@mui/material/Table';
@@ -21,8 +19,6 @@ import { getAllLabels } from '../../api/labels'; // Import your JSON-RPC functio
 import { useAuthContext } from '../../contexts/auth'; // Make sure to update this path
 
 export default function Labels() {
-  const [labels, setLabels] = useState([]);
-  const [selectedLabels, setSelectedLabels] = useState([]);
   const [isEditing, setIsEditing] = useState(false);
   const [editLabel, setEditLabel] = useState(null);
   const [newLabel, setNewLabel] = useState('');
@@ -126,16 +122,6 @@ export default function Labels() {
                         Edit
                       </Typography>
                     </IconButton>
-                  )}
-                  {isEditing && editLabel === label && (
-                    <Button
-                      variant="outlined"
-                      color="default"
-                      startIcon={<CancelIcon />}
-                      onClick={handleCancel}
-                    >
-                      Cancel
-                    </Button>
                   )}
                 </TableCell>
               </TableRow>
