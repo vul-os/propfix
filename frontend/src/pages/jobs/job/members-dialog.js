@@ -16,15 +16,15 @@ import ListItemAvatar from '@mui/material/ListItemAvatar';
 // _mock
 
 // components
-import Iconify from '../../components/iconify';
-import Scrollbar from '../../components/scrollbar';
-import SearchNotFound from '../../components/search-not-found';
+import Iconify from '../../../components/iconify';
+import Scrollbar from '../../../components/scrollbar';
+import SearchNotFound from '../../../components/search-not-found';
 
 // ----------------------------------------------------------------------
 
 const ITEM_HEIGHT = 64;
 
-export default function MembersDialog({ members = [], open, onClose }) {
+export default function MembersDialog({ members = [], assignees = [], open, onClose }) {
   const [searchMember, setSearchMember] = useState('');
 
   const handleSearchMember = useCallback((event) => {
@@ -32,16 +32,16 @@ export default function MembersDialog({ members = [], open, onClose }) {
   }, []);
 
   const dataFiltered = applyFilter({
-    inputData: _contacts,
-    query: searchContact,
+    inputData: members,
+    query: searchMember,
   });
 
-  const notFound = !dataFiltered.length && !!searchContact;
+  const notFound = !dataFiltered.length && !!searchMember;
 
   return (
     <Dialog fullWidth maxWidth="xs" open={open} onClose={onClose}>
       <DialogTitle sx={{ pb: 0 }}>
-        Contacts <Typography component="span">({_contacts.length})</Typography>
+        Members <Typography component="span">({members.length})</Typography>
       </DialogTitle>
 
       <Box sx={{ px: 3, py: 2.5 }}>
@@ -71,7 +71,7 @@ export default function MembersDialog({ members = [], open, onClose }) {
             }}
           >
             {dataFiltered.map((contact) => {
-              const checked = assignee.map((person) => person.name).includes(contact.name);
+              const checked = assignees.map((person) => person.id).includes(contact.id);
 
               return (
                 <ListItem
@@ -95,7 +95,7 @@ export default function MembersDialog({ members = [], open, onClose }) {
                   sx={{ height: ITEM_HEIGHT }}
                 >
                   <ListItemAvatar>
-                    <Avatar src={contact.avatarUrl} />
+                    <Avatar src={contact.photoUrl} />
                   </ListItemAvatar>
 
                   <ListItemText
@@ -104,7 +104,7 @@ export default function MembersDialog({ members = [], open, onClose }) {
                       sx: { mb: 0.25 },
                     }}
                     secondaryTypographyProps={{ typography: 'caption' }}
-                    primary={contact.name}
+                    primary={contact.displayName}
                     secondary={contact.email}
                   />
                 </ListItem>
@@ -129,7 +129,7 @@ function applyFilter({ inputData, query }) {
   if (query) {
     inputData = inputData.filter(
       (member) =>
-        member.name.toLowerCase().indexOf(query.toLowerCase()) !== -1 ||
+        member.displayName.toLowerCase().indexOf(query.toLowerCase()) !== -1 ||
         member.email.toLowerCase().indexOf(query.toLowerCase()) !== -1
     );
   }

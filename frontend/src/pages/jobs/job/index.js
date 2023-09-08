@@ -1,25 +1,24 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import PropTypes from 'prop-types';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
-
-// @mui
 import { styled, alpha } from '@mui/material/styles';
 import Chip from '@mui/material/Chip';
 import Stack from '@mui/material/Stack';
 import Avatar from '@mui/material/Avatar';
 import TextField from '@mui/material/TextField';
-import { DatePicker } from '@mui/lab';
-
-// components
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import Tooltip from '@mui/material/Tooltip';
+import IconButton from '@mui/material/IconButton';
+import { useBoolean } from '../../../hooks/use-boolean';
 import InputName from './input-name';
 import Priority from './priority';
 import Attachments from './attachments';
-import EventsList from '../events/events-list';
+import Iconify from '../../../components/iconify';
+import MembersDialog from './members-dialog';
+import LabelAutocomplete from '../../labels/label-autocomplete';
 
 dayjs.extend(utc);
-
-// ----------------------------------------------------------------------
 
 const StyledLabel = styled('span')(({ theme }) => ({
   ...theme.typography.caption,
@@ -29,123 +28,139 @@ const StyledLabel = styled('span')(({ theme }) => ({
   fontWeight: theme.typography.fontWeightSemiBold,
 }));
 
-// ----------------------------------------------------------------------
+export default function JobDetails({ job, setJob, members, labels }) {
+  const contacts = useBoolean();
+  const assignees = useMemo(() => job?.assigneeIds?.map((jobId) => members && members[jobId]), [job?.assigneeIds, members]);
 
-export default function JobDetails({ job }) {
-  console.log("job", job)
-  const [priority, setPriority] = useState(job.priority.toLowerCase());
-
-  const [jobName, setJobName] = useState(job.name);
-
-  const [jobDescription, setJobDescription] = useState(job.description);
-
-  const [dueDate, setDueDate] = useState(new Date()); // Initialize with today's date
-
-  const handleChangeJobDescription = useCallback((event) => {
-    setJobDescription(event.target.value);
+  console.log("yooooooooooo", members, labels, job?.labels?.map((id) => labels[id]))
+  const handleUpdateField = useCallback((field) => {
+    return (event) => {
+      const value = event.target ? event.target.value : event;
+      setJob(prevJob => ({
+        ...prevJob,
+        [field]: value,
+      }));
+    };
   }, []);
 
-  const handleChangePriority = useCallback((newValue) => {
-    setPriority(newValue);
-  }, []);
-
-  const handleUpdateJob = useCallback(async (jobData) => {
-    try {
-      // const token = await getIdToken(); // Get the JWT token from the auth context
-      // updateJob(jobData, token); // Pass the token to the updateJob function
-    } catch (error) {
-      console.error(error);
-    }
-  }, []);
-
-
-
-  const renderName = (
+  const renderName = useMemo(() => (
     <InputName
       placeholder="Task name"
-      value={jobName}
-      onChange={(event) => setJobName(event.target.value)}
-      onKeyUp={handleUpdateJob}
+      value={job.name}
+      onChange={handleUpdateField('name')}
     />
-  );
+  ), [job.name, handleUpdateField]);
 
-  const renderPriority = (
+  const renderPriority = useMemo(() => (
     <Stack direction="row" alignItems="center">
       <StyledLabel>Priority</StyledLabel>
-      <Priority priority={priority} onChangePriority={handleChangePriority} />
+      <Priority priority={job?.priority?.toLowerCase()} onChangePriority={handleUpdateField('priority')} />
     </Stack>
-  );
+  ), [job.priority, handleUpdateField]);
 
-  const renderLabel = (
+  const renderLabel = useMemo(() => (
     <Stack direction="row">
       <StyledLabel sx={{ height: 24, lineHeight: '24px' }}>Labels</StyledLabel>
-
-      {!!job.labels.length && (
-        <Stack direction="row" flexWrap="wrap" alignItems="center" spacing={1}>
-          {job.labels.map((label) => (
-            <Chip key={label} color="info" label={label} size="small" variant="soft" />
-          ))}
-        </Stack>
-      )}
+      <LabelAutocomplete 
+        labels={labels ? Object.values(labels) : []}
+        selectedLabels={job?.labels ? job.labels.map(id => labels[id]) : []}
+        setSelectedLabels={(newSelectedLabels) => {
+          const newSelectedLabelIds = newSelectedLabels.map(label => label.id); // Assuming the label object has an 'id' field
+          setJob(prevJob => ({
+            ...prevJob,
+            labels: newSelectedLabelIds,
+          }));
+        }}
+        textFieldProps={{size: "small"}}
+      />
     </Stack>
-  );
+  ), [job.labels, setJob, labels]);
+  
+  
+  const renderAssignee = useMemo(() => (
+    <Stack direction="row">
+      <StyledLabel sx={{ height: 40, lineHeight: '40px' }}>Assignee</StyledLabel>
+      <Stack direction="row" flexWrap="wrap" alignItems="center" spacing={1}>
+        {assignees && assignees.map((user) => (
+          <Avatar key={user?.id} alt={user?.displayName} src={user?.photoUrl} />
+        ))}
+        <Tooltip title="Add assignee">
+          <IconButton
+            onClick={contacts.onTrue}
+            sx={{
+              bgcolor: (theme) => alpha(theme.palette.grey[500], 0.08),
+              border: (theme) => `dashed 1px ${theme.palette.divider}`,
+            }}
+          >
+            <Iconify icon="mingcute:add-line" />
+          </IconButton>
+        </Tooltip>
+        <MembersDialog
+          members={Object.values(members)}
+          assignees={assignees}
+          open={contacts.value}
+          onClose={contacts.onFalse}
+        />
+      </Stack>
+    </Stack>
+  ), [assignees, contacts]);
 
-  // const renderReporter = (
-  //   <Stack direction="row" alignItems="center">
-  //     <StyledLabel>Reporter</StyledLabel>
-  //     <Avatar alt={job.reporter.name} src={job.reporter.avatarUrl} />
-  //   </Stack>
-  // );
-
-  // const renderAssignee = (
-  //   <Stack direction="row">
-  //     <StyledLabel sx={{ height: 40, lineHeight: '40px' }}>Assignee</StyledLabel>
-
-  //     <Stack direction="row" flexWrap="wrap" alignItems="center" spacing={1}>
-  //       {job.assignees.map((user) => (
-  //         <Avatar key={user.id} alt={user.name} src={user.avatarUrl} />
-  //       ))}
-  //     </Stack>
-  //   </Stack>
-  // );
-
-  const renderDueDate = (
+  const renderDueDate = useMemo(() => (
     <Stack direction="row" alignItems="center">
       <StyledLabel> Due date </StyledLabel>
       <DatePicker
-        value={dueDate}
-        onChange={(newValue) => setDueDate(newValue)}
-        renderInput={(params) => <TextField {...params} />}
+        value={job?.dueDate && dayjs.utc(job.dueDate).toDate()}
+        onChange={ (newDD) => {
+          setJob(prevJob => ({
+            ...prevJob,
+            dueDate: newDD,
+          }));
+        }}
+        renderInput={(params) => <TextField {...params} size="small" />}
       />
     </Stack>
-  );
+  ), [job.dueDate, handleUpdateField]);
 
-  const renderDescription = (
+  const renderDescription = useMemo(() => (
     <Stack direction="row">
       <StyledLabel> Description </StyledLabel>
-
       <TextField
         fullWidth
         multiline
         size="small"
-        value={jobDescription}
-        onChange={handleChangeJobDescription}
         InputProps={{
           sx: { typography: 'body2' },
         }}
+        value={job.description}
+        onChange={handleUpdateField('description')}
       />
     </Stack>
-  );
+  ), [job.description, handleUpdateField]);
 
-  const renderAttachments = (
+  const renderUnitIdentifier = useMemo(() => (
+    <Stack direction="row">
+      <StyledLabel> Unit Number </StyledLabel>
+      <TextField
+        fullWidth
+        size="small"
+        InputProps={{
+          sx: { typography: 'body2' },
+        }}
+        value={job.unitIdentifier}
+        onChange={handleUpdateField('unitIdentifier')}
+      />
+    </Stack>
+  ), [job.unitIdentifier, handleUpdateField]);
+
+  const renderAttachments = useMemo(() => (
     <Stack direction="row">
       <StyledLabel>Attachments</StyledLabel>
       <Attachments jobId={job.id} attachments={job.attachmenturls} />
     </Stack>
-  );
+  ), [job.id, job.attachmenturls]);
 
   return (
-    <Stack
+    job && members && labels && <Stack
       spacing={3}
       sx={{
         pt: 3,
@@ -154,17 +169,19 @@ export default function JobDetails({ job }) {
       }}
     >
       {renderName}
+      {renderUnitIdentifier}
       {renderPriority}
       {renderLabel}
       {renderDueDate}
-      {/* {renderReporter}
-      {renderAssignee} */}
-      {renderAttachments}
+      {renderAssignee}
       {renderDescription}
+      {renderAttachments}
     </Stack>
   );
 }
 
 JobDetails.propTypes = {
   job: PropTypes.object,
+  members: PropTypes.object,
+  labels: PropTypes.object,
 };

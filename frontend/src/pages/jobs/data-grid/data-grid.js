@@ -5,30 +5,24 @@ import Tooltip from '@mui/material/Tooltip';
 import Stack from '@mui/material/Stack';
 import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
+import Fab from '@mui/material/Fab';
+import AddIcon from '@mui/icons-material/Add';
 import Chip from '@mui/material/Chip';
-import { useAuthContext } from '../../../contexts/auth';
 import Iconify from '../../../components/iconify';
-import { getAllJobs } from '../../../api/jobs';
 import PopOver from '../pop-over';
+import { useBoardContext } from '../../../contexts/board'; // Import the BoardProvider context
+import CreateJobDialog from '../../job-wizzard/dialog'
 
 function JobDataGrid() {
-  const [jobs, setJobs] = useState([]);
-  const { getIdToken } = useAuthContext();
+  const { jobs, boardLoading } = useBoardContext(); // Use the BoardProvider context
+  // const [job, setJob] = useState({});
+  const [open, setOpen] = useState(false);
+
   const [selectedRow, setSelectedRow] = useState(null);
 
-  useEffect(() => {
-    fetchJobsData();
-  }, []);
-
-  const fetchJobsData = async () => {
-    try {
-      const idToken = await getIdToken();
-      const allJobs = await getAllJobs(idToken, "");
-      setJobs(allJobs.jobs);
-    } catch (error) {
-      console.error('Error fetching jobs:', error);
-    }
-  };
+  const onClose = () => {
+    setOpen(false)
+  }
 
   const avatarRenderer = (params) => {
     const assignees = Array.isArray(params.value) ? params.value : [params.value];
@@ -135,6 +129,7 @@ function JobDataGrid() {
         Jobs
       </Typography>
 
+      {jobs && !boardLoading &&
       <DataGrid
         rows={jobs}
         columns={columns}
@@ -143,6 +138,8 @@ function JobDataGrid() {
         checkboxSelection
         onRowClick={handleRowClick}
       />
+      }
+
       {selectedRow && (
         <PopOver
           job={selectedRow}
@@ -150,6 +147,15 @@ function JobDataGrid() {
           onClosePopOver={() => setSelectedRow(null)}
         />
       )}
+        <Fab 
+          color="primary" 
+          aria-label="add" 
+          style={{position: 'fixed', bottom: '16px', right: '16px'}} 
+          onClick={() => setOpen(true)} // Set dialog to open when FAB is clicked
+        >
+          <AddIcon />
+        </Fab>
+      <CreateJobDialog open={open} onClose={onClose} />
     </Container>
   );
 }

@@ -6,19 +6,49 @@ import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
-
+import Iconify from '../../components/iconify';
 import { useBoolean } from '../../hooks/use-boolean';
 import { useSnackbar } from '../../components/snackbar';
 import KanbanJobItem from './kanban-job-item';
 import { useAuthContext } from '../../contexts/auth';
+import KanbanJobAdd from './kanban-job-add';
 
-
-export default function KanbanColumn({ column, jobs, index }) {
-  const { enqueueSnackbar } = useSnackbar();
+export default function KanbanColumn({ column, jobs, setJob, members, openPopUp, setOpenPopUp, index }) {
   const openAddJob = useBoolean();
-  const { getIdToken } = useAuthContext(); // Get the getIdToken function from the auth context
 
+  const renderAddJob = (
+    <Stack
+      spacing={2}
+      sx={{
+        pb: 3,
+      }}
+    >
+      {openAddJob.value && (
+        <KanbanJobAdd
+          status={column.name}
+          onAddTask={() => null}
+          onCloseAddTask={openAddJob.onFalse}
+        />
+      )}
 
+      <Button
+        fullWidth
+        size="large"
+        color="inherit"
+        startIcon={
+          <Iconify
+            icon={openAddJob.value ? 'solar:close-circle-broken' : 'mingcute:add-line'}
+            width={18}
+            sx={{ mr: -0.5 }}
+          />
+        }
+        onClick={openAddJob.onToggle}
+        sx={{ fontSize: 14 }}
+      >
+        {openAddJob.value ? 'Close' : 'Add Job'}
+      </Button>
+    </Stack>
+  );
 
   return (
     <Draggable draggableId={column.id} index={index}>
@@ -83,6 +113,10 @@ export default function KanbanColumn({ column, jobs, index }) {
                             key={jobId}
                             index={jobIndex}
                             job={theJob}
+                            openPopUp={openPopUp}
+                            setOpenPopUp={setOpenPopUp}
+                            setJob={setJob}
+                            members={members}
                           />
                         );
                       }
@@ -92,6 +126,8 @@ export default function KanbanColumn({ column, jobs, index }) {
                 </Stack>
               )}
             </Droppable>
+
+            {renderAddJob}
           </Stack>
         </Paper>
       )}

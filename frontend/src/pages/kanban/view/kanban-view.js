@@ -5,36 +5,21 @@ import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
 
 import EmptyContent from '../../../components/empty-content';
-import { moveJobs } from '../../../api/columns';
+import { moveJob } from '../../../api/columnJobLinks';
 import { getBoard } from '../../../api/jobs';
 import { hideScroll } from '../../../theme/css';
 
 import KanbanColumn from '../kanban-column';
 import { KanbanColumnSkeleton } from '../kanban-skeleton';
 import { useAuthContext } from '../../../contexts/auth'; 
+import { useBoardContext } from '../../../contexts/board'; 
+import PopOver from '../../jobs/pop-over';
 
 export default function KanbanView() {
-  const [board, setBoard] = useState(null);
-  const [boardLoading, setBoardLoading] = useState(true);
-  const { getIdToken, activeOrganization } = useAuthContext(); 
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        if (activeOrganization) {
-          const token = await getIdToken(); 
-          const boardData = await getBoard(token, activeOrganization);
-          setBoard(boardData.board);
-        }
-        setBoardLoading(false);
-      } catch (error) {
-        console.error('Error fetching board:', error);
-        setBoard(null);
-        setBoardLoading(false);
-      }
-    }
-
-    fetchData();
-  }, [getIdToken]);
+  const { board, setBoard, boardLoading } = useBoardContext(); // Use the BoardProvider context
+  const { getIdToken } = useAuthContext(); 
+  const [openPopUp, setOpenPopUp] = useState(false);
+  const [job, setJob] = useState({});
 
   const onDragEnd = useCallback(
     async ({ destination, source, draggableId, type }) => {
@@ -84,10 +69,11 @@ export default function KanbanView() {
           };
           setBoard(newBoardState);
           // actually do api request
-          await moveJobs(
+          await moveJob(
             sourceColumn.id,
             destinationColumn.id,
-            [draggableId],
+            draggableId,
+            destination.index,
             token 
           );
         }
@@ -126,11 +112,11 @@ export default function KanbanView() {
 
       {boardLoading && renderSkeleton}
 
-      {board && board?.ordered.length === 0 && (
+      {board && board?.ordered?.length === 0 && (
         <></>
       )}
 
-      {!!board?.ordered.length && (
+      {!!board?.ordered?.length && (
         <DragDropContext onDragEnd={onDragEnd}>
           <Droppable droppableId="board" type="COLUMN" direction="horizontal">
             {(provided) => (
@@ -147,24 +133,45 @@ export default function KanbanView() {
                   ...hideScroll.x,
                 }}
               >
-                {board && Object.keys(board.jobs).length > 0 && board?.ordered.map((columnId, index) => {
+              {
+              // Ensure that 'board' exists and has jobs before rendering
+              board && Object.keys(board.jobs)?.length > 0 && board?.ordered.map((columnId, index) => {
+
+                  // Fetch the specific column object based on 'columnId'
                   const column = board?.columns[columnId];
+
+                  // Fetch the jobIds for the specific column and find the corresponding jobs
                   const columnJobs = column && column.jobIds && board.jobs
-                  ? column.jobIds.map(jobId => board.jobs[jobId])
-                  : [];
-                  return <KanbanColumn
-                    index={index}
-                    key={columnId}
-                    column={column}
-                    jobs={columnJobs}
-                  />
-                })}
+                    ? column.jobIds.map(jobId => board.jobs[jobId])
+                    : [];
+
+                  // Render the KanbanColumn component
+                  return (
+                    <KanbanColumn
+                      index={index}
+                      key={columnId}
+                      openPopUp={openPopUp}
+                      setOpenPopUp={setOpenPopUp}
+                      column={column}
+                      jobs={columnJobs}
+                      setJob={setJob}
+                      members={board?.members ? board.members : {}}
+                    />
+                  );
+                })
+              }
+
                 {provided.placeholder}
               </Stack>
             )}
           </Droppable>
         </DragDropContext>
       )}
+      <PopOver
+        job={job}
+        openPopOver={openPopUp}
+        onClosePopOver={() => setOpenPopUp(false)}
+      />
     </Container>
   );
 }

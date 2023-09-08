@@ -17,10 +17,6 @@ import { getAllBuildings } from '../../api/buildings';
 import { getAllLabels } from '../../api/labels';
 import { uploadFile, deleteFile } from '../../api/attachments';
 
-const BootstrapInput = styled(InputBase)(({ theme }) => ({
-  // ... (styles for BootstrapInput)
-}));
-
 const steps = ['BUILDING SELECTION', 'JOB CREATION', 'REVIEW & SUBMIT'];
 
 export default function HorizontalLinearStepper() {
@@ -178,7 +174,6 @@ export default function HorizontalLinearStepper() {
 
     if (createdJob) {
       console.log('Job created successfully:', createdJob);
-      navigate('/jobs'); // Navigate to the "jobs" page
     } else {
       console.error('Job creation failed.');
     }
@@ -251,7 +246,6 @@ export default function HorizontalLinearStepper() {
         </div>
       ) : (
         <div>
-          <Typography sx={{ mt: 2, mb: 1 }}>Step {activeStep + 1}</Typography>
           {getStepContent(activeStep)}
           <Box sx={{ display: 'flex', flexDirection: 'row', pt: 2 }}>
             <Button

@@ -7,28 +7,98 @@ import Avatar from '@mui/material/Avatar';
 import Typography from '@mui/material/Typography';
 import Paper from '@mui/material/Paper';
 import AvatarGroup, { avatarGroupClasses } from '@mui/material/AvatarGroup'; // Import AvatarGroup and avatarGroupClasses from MUI
+import Iconify from '../../components/iconify/iconify';
 import { useBoolean } from '../../hooks/use-boolean';
-import PopOver from '../jobs/pop-over';
 import { bgBlur } from '../../theme/css';
 
 
-export default function KanbanJobItem({ job, index, sx, ...other }) {
+export default function KanbanJobItem({ job, members, index, openPopUp, setOpenPopUp, setJob, sx, ...other }) {
   const theme = useTheme();
-  const openDetails = useBoolean();
+
+  const priority = job && job.priority && job?.priority?.toLowerCase()
+  const renderPriority = (
+    <Iconify
+      icon={
+        (priority === 'low' && 'solar:double-alt-arrow-down-bold-duotone') ||
+        (priority === 'medium' && 'solar:double-alt-arrow-right-bold-duotone') ||
+        'solar:double-alt-arrow-up-bold-duotone'
+      }
+      sx={{
+        position: 'absolute',
+        top: 4,
+        right: 4,
+        ...(priority === 'low' && {
+          color: 'info.main',
+        }),
+        ...(priority === 'medium' && {
+          color: 'warning.main',
+        }),
+        ...(priority === 'hight' && {
+          color: 'error.main',
+        }),
+      }}
+    />
+  );
+
+  const RenderAvatarGroup = () => {
+    const assignees = job?.assigneeIds?.map((jobId) => members && members[jobId])
+    return assignees && <AvatarGroup
+      sx={{
+        [`& .${avatarGroupClasses.avatar}`]: {
+          width: 24,
+          height: 24,
+        },
+      }}
+    >
+      {assignees.map((user) => {
+
+        return <Avatar key={user?.id} alt={ user?.displayName} src={user?.photoUrl} />
+      })}
+    </AvatarGroup>
+  }
+  
+
+  // const renderImg = (
+  //   <Box
+  //     sx={{
+  //       p: theme.spacing(1, 1, 0, 1),
+  //     }}
+  //   >
+  //     <Box
+  //       component="img"
+  //       alt={job.attachments[0]}
+  //       src={job.attachments[0]}
+  //       sx={{
+  //         borderRadius: 1.5,
+  //         ...(openDetails.value && {
+  //           opacity: 0.8,
+  //         }),
+  //       }}
+  //     />
+  //   </Box>
+  // );
+
   const renderInfo = (
     <Stack direction="row" alignItems="center">
-      <AvatarGroup
+      <Stack
+        flexGrow={1}
+        direction="row"
+        alignItems="center"
         sx={{
-          [`& .${avatarGroupClasses.avatar}`]: {
-            width: 24,
-            height: 24,
-          },
+          typography: 'caption',
+          color: 'text.disabled',
         }}
       >
-        {job.assignees && job.assignees.map((user) => (
-          <Avatar key={user.id} alt={user.name} src={user.avatarUrl} />
-        ))}
-      </AvatarGroup>
+        {/* <Iconify width={16} icon="solar:chat-round-dots-bold" sx={{ mr: 0.25 }} />
+        <Box component="span" sx={{ mr: 1 }}>
+          {job.comments.length}
+        </Box> */}
+
+        <Iconify width={16} icon="eva:attach-2-fill" sx={{ mr: 0.25 }} />
+        <Box component="span">{job?.attachments?.length}</Box>
+      </Stack>
+
+      <RenderAvatarGroup />
     </Stack>
   );
 
@@ -40,7 +110,7 @@ export default function KanbanJobItem({ job, index, sx, ...other }) {
             ref={provided.innerRef}
             {...provided.draggableProps}
             {...provided.dragHandleProps}
-            onClick={openDetails.onTrue}
+            onClick={() => { setJob(job); setOpenPopUp(true)}}
             sx={{
               width: 1,
               borderRadius: 1.5,
@@ -51,7 +121,7 @@ export default function KanbanJobItem({ job, index, sx, ...other }) {
               '&:hover': {
                 boxShadow: theme.customShadows.z20,
               },
-              ...(openDetails.value && {
+              ...(openPopUp && {
                 boxShadow: theme.customShadows.z20,
               }),
               ...(snapshot.isDragging && {
@@ -66,11 +136,11 @@ export default function KanbanJobItem({ job, index, sx, ...other }) {
             {...other}
           >
             <Stack spacing={2} sx={{ px: 2, py: 2.5, position: 'relative' }}>
-              {/* {renderPriority} */}
+              {renderPriority}
 
-              <Typography variant="subtitle2">{job.name}</Typography>
+              <Typography sx={{marginTop: '0px !important'}} variant="subtitle2">{job.name}</Typography>
 
-              {/* {renderInfo} */}
+              {renderInfo}
             </Stack>
             {/* <Stack spacing={2} sx={{ px: 2, py: 2.5, position: 'relative' }}>
               <Typography variant="subtitle2">{job.name}</Typography>
@@ -79,12 +149,6 @@ export default function KanbanJobItem({ job, index, sx, ...other }) {
           </Paper>
         )}
       </Draggable>
-
-      <PopOver
-        job={job}
-        openPopOver={openDetails.value}
-        onClosePopOver={openDetails.onFalse}
-      />
     </>
   );
 }

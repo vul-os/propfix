@@ -17,26 +17,37 @@ import CustomPopover, { usePopover } from '../../../components/custom-popover';
 // ----------------------------------------------------------------------
 
 export default function Toolbar({
-  jobName,
-  jobStatus,
+  job,
   onDelete,
-  onClosePopUp,
+  columns,
+  onChangeColumn,
+  selectedColumn,
 }) {
   const smUp = useResponsive('up', 'sm');
-
   const confirm = useBoolean();
+  const [open, setOpen] = useState(false);
+  const onOpen = useCallback((event) => {
+    setOpen(event.currentTarget);
+  }, []);
 
-  const popover = usePopover();
-
-  const [status, setStatus] = useState(jobStatus);
-
-  const handleChangeStatus = useCallback(
+  const onClose = useCallback(() => {
+    setOpen(false);
+  }, []);
+  
+  const handleChangeCol = useCallback(
     (newValue) => {
-      popover.onClose();
-      setStatus(newValue);
+      onClose();
+      if (job && job.id) {
+        onChangeColumn(job.id, newValue, selectedColumn)
+      }
     },
-    [popover]
+    [open]
   );
+
+  const handleSelectedCheck = (k) => {
+    console.log(k, selectedColumn, columns)
+    return selectedColumn && (selectedColumn.name === columns[k].name)
+  }
 
   return (
     <>
@@ -49,7 +60,7 @@ export default function Toolbar({
       >
         {!smUp && (
           <Tooltip title="Back">
-            <IconButton onClick={onClosePopUp} sx={{ mr: 1 }}>
+            <IconButton onClick={() => setOpen(null)} sx={{ mr: 1 }}>
               <Iconify icon="eva:arrow-ios-back-fill" />
             </IconButton>
           </Tooltip>
@@ -59,9 +70,9 @@ export default function Toolbar({
           size="small"
           variant="soft"
           endIcon={<Iconify icon="eva:arrow-ios-downward-fill" width={16} sx={{ ml: -0.5 }} />}
-          onClick={popover.onOpen}
+          onClick={onOpen}
         >
-          {status}
+          {selectedColumn && selectedColumn.name}
         </Button>
 
         <Stack direction="row" justifyContent="flex-end" flexGrow={1}>
@@ -74,22 +85,23 @@ export default function Toolbar({
       </Stack>
 
       <CustomPopover
-        open={popover.open}
-        onClose={popover.onClose}
+        open={open}
+        onClose={onClose}
         arrow="top-right"
         sx={{ width: 140 }}
       >
-        {['To Do', 'In Progress', 'Ready To Test', 'Done'].map((option) => (
-          <MenuItem
-            key={option}
-            selected={status === option}
+        {columns && Object.keys(columns).map((k) => {
+          return <MenuItem
+            key={columns[k].id}
+            selected={handleSelectedCheck(k)}
             onClick={() => {
-              handleChangeStatus(option);
+              handleChangeCol(columns[k]);
             }}
           >
-            {option}
+            {columns[k].name}
           </MenuItem>
-        ))}
+        })
+        }
       </CustomPopover>
 
       <ConfirmDialog
@@ -98,7 +110,7 @@ export default function Toolbar({
         title="Delete"
         content={
           <>
-            Are you sure want to delete <strong> {jobName} </strong>?
+            Are you sure want to delete <strong> {job.name} </strong>?
           </>
         }
         action={
@@ -111,9 +123,3 @@ export default function Toolbar({
   );
 }
 
-Toolbar.propTypes = {
-  jobName: PropTypes.string,
-  jobStatus: PropTypes.string,
-  onClosePopUp: PropTypes.func,
-  onDelete: PropTypes.func,
-};

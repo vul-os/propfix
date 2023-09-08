@@ -1,27 +1,17 @@
-// config.js
-// LOOK HERE! Never put a trailing '/' eg: https://abc.com/ <- dont do that
 function getConfig() {
-    const defaultConfig = {
-      apiUrl: 'https://us-central1-propfix.cloudfunctions.net/function-backend-go',
-    };
-  
-    const location = window.location.href;
-    
-    switch (true) {
-      case location.includes('propfix'):
-        return defaultConfig;
-      case location.includes('localhost'):
-        return {
-          apiUrl: 'http://localhost:8080',
-        };
-      case location.includes('gitpod'):
-        return defaultConfig;
-      default:
-        return defaultConfig;
-    }
-  }
-  
+  const defaultConfig = {
+    apiUrl: 'https://propfix-backend-go-mm4ahu6lbq-uc.a.run.app',
+  };
 
-  const config = getConfig();
+  const location = window.location.href;
+  
+  if (location.includes('localhost')) {
+    return { apiUrl: 'http://localhost:8080' };
+  } 
+  return defaultConfig;
 
-  export default config;  
+}
+
+const config = getConfig();
+
+export default config;
