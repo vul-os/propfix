@@ -17,7 +17,7 @@ import { getAllBuildings } from '../../api/buildings';
 import { getAllLabels } from '../../api/labels';
 import { uploadFile, deleteFile } from '../../api/attachments';
 
-const steps = ['BUILDING SELECTION', 'JOB CREATION', 'REVIEW & SUBMIT'];
+const steps = ['Building Selection', 'Job Creation', 'Review & Submit'];
 
 export default function HorizontalLinearStepper() {
   const [activeStep, setActiveStep] = useState(0);
@@ -245,7 +245,7 @@ export default function HorizontalLinearStepper() {
           </Box>
         </div>
       ) : (
-        <div>
+        <div style={{ padding: '16px' }}> {/* Add padding to create space */}
           {getStepContent(activeStep)}
           <Box sx={{ display: 'flex', flexDirection: 'row', pt: 2 }}>
             <Button

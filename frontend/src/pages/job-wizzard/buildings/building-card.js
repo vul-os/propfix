@@ -17,8 +17,8 @@ function BuildingCard({ building, onSelectBuilding }) {
         }
       }}
       style={{
+        width: '300px', // Set a fixed width for the cards
         margin: '10px',
-        minWidth: '200px',
         cursor: 'pointer',
         boxShadow: '0px 0px 5px rgba(0, 0, 0, 0.3)',
         borderRadius: '8px',
