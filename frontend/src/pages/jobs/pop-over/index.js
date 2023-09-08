@@ -195,7 +195,11 @@ export default function PopOver({
             };
             const idToken = await getIdToken();
             const rEvent = await createEvent(newEvent, idToken);
-            if (!!rEvent?.event) setEvents([...events, rEvent.event]);
+            if (!!rEvent?.event) {
+              let oldEvents = []
+              if (events) oldEvents = [...events]
+              setEvents([...oldEvents, rEvent.event]);
+            }
           }
       } catch (error) {
           console.error('Error fetching events:', error);
