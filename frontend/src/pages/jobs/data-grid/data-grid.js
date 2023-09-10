@@ -16,21 +16,23 @@ import CreateJobDialog from '../../job-wizzard/dialog';
 
 
 function JobDataGrid() {
-  const { jobs, boardLoading } = useBoardContext(); // Use the BoardProvider context
+  const { board, jobs, boardLoading } = useBoardContext(); // Use the BoardProvider context
   const [open, setOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState(null);
+
 
   const onClose = () => {
     setOpen(false);
   }
 
   const avatarRenderer = (params) => {
+    const members = board?.members
     const assignees = Array.isArray(params.value) ? params.value : [params.value];
     return (
       <Stack direction="row" spacing={2} alignItems="center" justifyContent="center">
-        {assignees.map((assignee) => (
-          <Tooltip key={assignee?.ID} title={assignee?.Name || ''}>
-            <Avatar src={assignee?.AvatarURL} alt={assignee?.Name || ''} />
+        {members && assignees.length > 0 && assignees.map((assigneeId) => ( members[assigneeId]?.displayName &&
+          <Tooltip key={assigneeId} title={members[assigneeId]?.displayName || ''}>
+            <Avatar src={members[assigneeId]?.photoUrl} alt={members[assigneeId]?.displayName || ''} />
           </Tooltip>
         ))}
       </Stack>
@@ -38,15 +40,11 @@ function JobDataGrid() {
   };
   
   const renderLabel = (params) => (
-    <Stack direction="row">
-      <span style={{ height: 24, lineHeight: '24px', width: 100, flexShrink: 0, color: '#616161', fontWeight: 'bold' }}>
-        Labels
-      </span>
-  
+    <Stack direction="row"> 
       {params && params.value && !!params.value.length && (
         <Stack direction="row" flexWrap="wrap" alignItems="center" spacing={1}>
-          {params.value.map((label) => (
-            <Chip key={label} color="primary" label={label} size="small" variant="outlined" />
+          {params.value.map((labelId) => (
+            <Chip key={labelId} style={{ backgroundColor: board?.labels[labelId] ? board.labels[labelId].color : "red"}} label={board?.labels[labelId] ? board.labels[labelId].name : ""} size="small" variant="outlined" />
           ))}
         </Stack>
       )}
@@ -117,14 +115,14 @@ function JobDataGrid() {
       renderCell: renderPriority,
     },
     { field: 'description', headerName: 'Description', width: 400 },
+    // {
+    //   field: 'reporter',
+    //   headerName: 'Reporter',
+    //   width: 200,
+    //   renderCell: avatarRenderer,
+    // },
     {
-      field: 'reporter',
-      headerName: 'Reporter',
-      width: 200,
-      renderCell: avatarRenderer,
-    },
-    {
-      field: 'assignees',
+      field: 'assigneeIds',
       headerName: 'Assignees',
       width: 250,
       renderCell: avatarRenderer,

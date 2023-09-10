@@ -13,7 +13,7 @@ export async function createBuilding(buildingData, idToken) {
   }
 }
 
-export async function updateBuilding(buildingId, buildingData, idToken) {
+export async function updateBuilding(building, idToken) {
   try {
     const params = [buildingId, buildingData, idToken];
     return await jsonRpcRequest('Buildings.UpdateBuilding', params, idToken);
