@@ -16,7 +16,7 @@ const urlIcon = (url) =>
 
 const navConfig = [
   {
-    title: 'Kanban',
+    title: 'Board',
     path: '/',
     breadcrumbsIcon: <HomeIcon />,
     icon: icon('ic_analytics'),
