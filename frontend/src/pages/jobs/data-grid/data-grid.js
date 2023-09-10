@@ -8,6 +8,8 @@ import Typography from '@mui/material/Typography';
 import Fab from '@mui/material/Fab';
 import AddIcon from '@mui/icons-material/Add';
 import Chip from '@mui/material/Chip';
+import Box from '@mui/material/Box';
+
 import EventIcon from '@mui/icons-material/Event';
 import Iconify from '../../../components/iconify';
 import PopOver from '../pop-over';
@@ -141,16 +143,19 @@ function JobDataGrid() {
         Jobs
       </Typography>
 
-      {jobs && !boardLoading && (
-        <DataGrid
-          rows={jobs}
-          columns={columns}
-          pageSize={10}
-          rowsPerPageOptions={[10]}
-          checkboxSelection
-          onRowClick={handleRowClick}
-        />
-      )}
+      <Box sx={{}}>
+        {jobs && !boardLoading && (
+          <DataGrid
+            rows={jobs}
+            columns={columns}
+            pageSize={10}
+            rowsPerPageOptions={[10]}
+            checkboxSelection
+            onRowClick={handleRowClick}
+            style={{ height: '100%' }} // Set height to 100%
+          />
+        )}
+      </Box>
 
       {selectedRow && (
         <PopOver
@@ -162,7 +167,7 @@ function JobDataGrid() {
       <Fab 
         color="primary" 
         aria-label="add" 
-        style={{ position: 'fixed', bottom: '16px', right: '16px' }} 
+        style={{ position: 'fixed', top: '120px', right: '16px' }} 
         onClick={() => setOpen(true)} // Set dialog to open when FAB is clicked
       >
         <AddIcon />
