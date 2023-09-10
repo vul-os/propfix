@@ -27,9 +27,7 @@ func (h *adaptor) Name() jsonRpcProvider.Name {
 }
 
 type CreateLabelRequest struct {
-	OrganizationID string `json:"organizationId"`
-	Name           string `json:"name"`
-	Color          string `json:"color"`
+	Label Label `json:"label"`
 }
 
 type CreateLabelResponse struct {
@@ -37,12 +35,12 @@ type CreateLabelResponse struct {
 }
 
 func (h *adaptor) CreateLabel(r *http.Request, args *CreateLabelRequest, reply *CreateLabelResponse) error {
-	ok, err := h.authz.CheckPermissionAndOrgs(r, "labels", "create", args.OrganizationID)
+	ok, err := h.authz.CheckPermissionAndOrgs(r, "labels", "create", args.Label.OrganizationID)
 	if err != nil || !ok {
 		return errors.New("not permitted")
 	}
 
-	labelID, err := h.store.CreateLabel(args.OrganizationID, args.Name, args.Color)
+	labelID, err := h.store.CreateLabel(args.Label)
 	if err != nil {
 		return err
 	}
@@ -129,11 +127,6 @@ type GetAllLabelsResponse struct {
 }
 
 func (h *adaptor) GetAllLabels(r *http.Request, args *GetAllLabelsRequest, reply *GetAllLabelsResponse) error {
-	// ok, err := h.store.authz.CheckPermission(r, "labels", "getall")
-	// if err != nil || !ok {
-	// 	return errors.New("not permitted")
-	// }
-
 	labels, err := h.store.GetAllLabels(args.OrganizationID)
 	if err != nil {
 		return err

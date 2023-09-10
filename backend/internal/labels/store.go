@@ -25,7 +25,7 @@ func NewLabelStore(pool *pgxpool.Pool) *Store {
 	}
 }
 
-func (s *Store) CreateLabel(organizationID, name, color string) (string, error) {
+func (s *Store) CreateLabel(label Label) (string, error) {
 	ctx := context.Background()
 	labelID := uuid.New().String()
 	query := `
@@ -34,7 +34,7 @@ func (s *Store) CreateLabel(organizationID, name, color string) (string, error) 
         RETURNING id
     `
 
-	err := s.pool.QueryRow(ctx, query, labelID, organizationID, name, color).Scan(&labelID)
+	err := s.pool.QueryRow(ctx, query, labelID, label.OrganizationID, label.Name, label.Color).Scan(&labelID)
 	if err != nil {
 		return "", errors.New("Failed to create label")
 	}

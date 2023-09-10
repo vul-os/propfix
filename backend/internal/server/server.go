@@ -82,6 +82,7 @@ func Server() {
 	columnJobLinksStore := columnJobLinks.NewColumnJobLinkStore(dbpool)
 	eventStore := events.NewEventsStore(dbpool)
 	labelStore := labels.NewLabelStore(dbpool)
+	buildingsStore := buildings.NewBuildingsStore(dbpool)
 
 	rpcServerConfigs := []jsonRpcServer.RPCServerConfig{
 		{
@@ -100,9 +101,9 @@ func Server() {
 				roles.New(dbpool, authorizer),
 				organizations.New(dbpool, authorizer),
 				permissions.New(dbpool, authorizer),
-				buildings.New(dbpool, authorizer),
+				buildings.New(buildingsStore, authorizer),
 				labels.New(labelStore, authorizer),
-				jobs.New(dbpool, authorizer, authClient, columnJobLinksStore, labelStore),
+				jobs.New(dbpool, authorizer, authClient, columnJobLinksStore, labelStore, buildingsStore),
 				events.New(authorizer, eventStore),
 				columns.New(dbpool, authorizer, columnStore),
 				columnJobLinks.New(columnJobLinksStore, authorizer),

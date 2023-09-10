@@ -12,6 +12,7 @@ import (
 	"firebase.google.com/go/v4/auth"
 	jsonRpcProvider "github.com/exolutionza/propfix-backend-go/internal/api/jsonRpc/service/provider"
 	"github.com/exolutionza/propfix-backend-go/internal/authz"
+	"github.com/exolutionza/propfix-backend-go/internal/buildings"
 	"github.com/exolutionza/propfix-backend-go/internal/columns/columnJobLinks"
 	"github.com/exolutionza/propfix-backend-go/internal/labels"
 	"github.com/exolutionza/propfix-backend-go/internal/user"
@@ -45,6 +46,7 @@ type adaptor struct {
 	authClient          *auth.Client
 	columnJobLinksStore *columnJobLinks.Store
 	labelsStore         *labels.Store
+	buildingsStore      *buildings.Store
 }
 
 const Name = "Jobs"
@@ -59,6 +61,7 @@ func New(
 	authClient *auth.Client,
 	cjls *columnJobLinks.Store,
 	ls *labels.Store,
+	bs *buildings.Store,
 ) *adaptor {
 	return &adaptor{
 		dbpool:              dbpool,
@@ -66,6 +69,7 @@ func New(
 		authz:               authz,
 		columnJobLinksStore: cjls,
 		labelsStore:         ls,
+		buildingsStore:      bs,
 	}
 }
 
@@ -246,11 +250,12 @@ func (a *adaptor) DeleteJob(r *http.Request, args *DeleteJobRequest, result *Del
 
 // Define the KanbanBoard struct for the response
 type KanbanBoard struct {
-	Columns map[string]columnJobLinks.ColumnWithJobIds `json:"columns"`
-	Jobs    map[string]Job                             `json:"jobs"`
-	Members map[string]user.User                       `json:"members"`
-	Labels  map[string]labels.Label                    `json:"labels"`
-	Ordered []string                                   `json:"ordered"`
+	Columns   map[string]columnJobLinks.ColumnWithJobIds `json:"columns"`
+	Jobs      map[string]Job                             `json:"jobs"`
+	Members   map[string]user.User                       `json:"members"`
+	Labels    map[string]labels.Label                    `json:"labels"`
+	Buildings map[string]buildings.Building              `json:"buildings"`
+	Ordered   []string                                   `json:"ordered"`
 }
 
 // Define the GetKanbanBoardRequest struct
@@ -298,6 +303,16 @@ func (a *adaptor) GetKanbanBoard(r *http.Request, args *GetKanbanBoardRequest, r
 		return err
 	}
 
+	allBuildings, err := a.buildingsStore.GetAll("", 0, 0, args.OrganizationID)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	retBuildings := make(map[string]buildings.Building)
+	for _, b := range allBuildings {
+		retBuildings[b.ID] = b
+	}
+
 	allLabels, err := a.labelsStore.GetAllLabels(args.OrganizationID)
 	if err != nil {
 		fmt.Println(err)
@@ -339,11 +354,12 @@ func (a *adaptor) GetKanbanBoard(r *http.Request, args *GetKanbanBoardRequest, r
 	// Build the response structure
 	response := GetKanbanBoardResponse{
 		Board: KanbanBoard{
-			Columns: columnsMap,
-			Jobs:    jobsMap,
-			Ordered: orderedColumns,
-			Members: members,
-			Labels:  retLabels,
+			Columns:   columnsMap,
+			Jobs:      jobsMap,
+			Ordered:   orderedColumns,
+			Members:   members,
+			Labels:    retLabels,
+			Buildings: retBuildings,
 		},
 	}
 
