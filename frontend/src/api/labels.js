@@ -13,9 +13,9 @@ export async function createLabel(labelData, idToken) {
   }
 }
 
-export async function updateLabel(labelId, labelData, idToken) {
+export async function updateLabel(label, idToken) {
   try {
-    const params = [labelId, labelData, idToken];
+    const params = [{label}];
     return await jsonRpcRequest('Labels.UpdateLabel', params, idToken);
   } catch (error) {
     console.error('Error updating label:', error);
