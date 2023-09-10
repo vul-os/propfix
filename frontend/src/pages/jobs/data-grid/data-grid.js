@@ -8,10 +8,12 @@ import Typography from '@mui/material/Typography';
 import Fab from '@mui/material/Fab';
 import AddIcon from '@mui/icons-material/Add';
 import Chip from '@mui/material/Chip';
+import EventIcon from '@mui/icons-material/Event';
 import Iconify from '../../../components/iconify';
 import PopOver from '../pop-over';
 import { useBoardContext } from '../../../contexts/board'; // Import the BoardProvider context
-import CreateJobDialog from '../../job-wizard/dialog';
+import CreateJobDialog from '../../job-wizzard/dialog';
+
 
 function JobDataGrid() {
   const { jobs, boardLoading } = useBoardContext(); // Use the BoardProvider context
@@ -50,6 +52,16 @@ function JobDataGrid() {
       )}
     </Stack>
   );
+
+  const renderDate = (params) => {
+    const formattedDate = formatDate(params.value);
+    return (
+      <Stack direction="row" alignItems="center">
+        <EventIcon sx={{ marginRight: 0.5 }} />
+        {formattedDate}
+      </Stack>
+    );
+  };
   
   const renderPriority = (params) => {
     let { value: priority } = params;
@@ -97,7 +109,7 @@ function JobDataGrid() {
       width: 250,
       renderCell: renderLabel,
     },
-    { field: 'dueDate', headerName: 'Due Date', width: 200, valueFormatter: (params) => formatDate(params.value) },
+    { field: 'dueDate', headerName: 'Due Date', width: 200, renderCell: renderDate},
     {
       field: 'priority',
       headerName: 'Priority',
@@ -118,7 +130,7 @@ function JobDataGrid() {
       renderCell: avatarRenderer,
     },
     { field: 'cost', headerName: 'Cost', type: 'number', width: 150 },
-    { field: 'createdAt', headerName: 'Created At', width: 200, valueFormatter: (params) => formatDate(params.value) },
+    { field: 'createdAt', headerName: 'Created At', width: 200, renderCell: renderDate },
   ];
 
   const handleRowClick = (params) => {
@@ -163,3 +175,4 @@ function JobDataGrid() {
 }
 
 export default JobDataGrid;
+
