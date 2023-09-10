@@ -11,17 +11,15 @@ import Chip from '@mui/material/Chip';
 import Iconify from '../../../components/iconify';
 import PopOver from '../pop-over';
 import { useBoardContext } from '../../../contexts/board'; // Import the BoardProvider context
-import CreateJobDialog from '../../job-wizzard/dialog'
+import CreateJobDialog from '../../job-wizard/dialog';
 
 function JobDataGrid() {
   const { jobs, boardLoading } = useBoardContext(); // Use the BoardProvider context
-  // const [job, setJob] = useState({});
   const [open, setOpen] = useState(false);
-
   const [selectedRow, setSelectedRow] = useState(null);
 
   const onClose = () => {
-    setOpen(false)
+    setOpen(false);
   }
 
   const avatarRenderer = (params) => {
@@ -83,6 +81,11 @@ function JobDataGrid() {
     );
   };
 
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString();
+  };
+
   const columns = [
     { field: 'id', headerName: 'ID', width: 150 },
     { field: 'unitIdentifier', headerName: 'Unit Identifier', width: 200 },
@@ -94,7 +97,7 @@ function JobDataGrid() {
       width: 250,
       renderCell: renderLabel,
     },
-    { field: 'dueDate', headerName: 'Due Date', width: 200 },
+    { field: 'dueDate', headerName: 'Due Date', width: 200, valueFormatter: (params) => formatDate(params.value) },
     {
       field: 'priority',
       headerName: 'Priority',
@@ -114,9 +117,8 @@ function JobDataGrid() {
       width: 250,
       renderCell: avatarRenderer,
     },
-    { field: 'attachmentUrls', headerName: 'Attachment URLs', width: 300 },
     { field: 'cost', headerName: 'Cost', type: 'number', width: 150 },
-    { field: 'createdAt', headerName: 'Created At', width: 200 },
+    { field: 'createdAt', headerName: 'Created At', width: 200, valueFormatter: (params) => formatDate(params.value) },
   ];
 
   const handleRowClick = (params) => {
@@ -129,16 +131,16 @@ function JobDataGrid() {
         Jobs
       </Typography>
 
-      {jobs && !boardLoading &&
-      <DataGrid
-        rows={jobs}
-        columns={columns}
-        pageSize={10}
-        rowsPerPageOptions={[10]}
-        checkboxSelection
-        onRowClick={handleRowClick}
-      />
-      }
+      {jobs && !boardLoading && (
+        <DataGrid
+          rows={jobs}
+          columns={columns}
+          pageSize={10}
+          rowsPerPageOptions={[10]}
+          checkboxSelection
+          onRowClick={handleRowClick}
+        />
+      )}
 
       {selectedRow && (
         <PopOver
@@ -147,14 +149,14 @@ function JobDataGrid() {
           onClosePopOver={() => setSelectedRow(null)}
         />
       )}
-        <Fab 
-          color="primary" 
-          aria-label="add" 
-          style={{position: 'fixed', bottom: '16px', right: '16px'}} 
-          onClick={() => setOpen(true)} // Set dialog to open when FAB is clicked
-        >
-          <AddIcon />
-        </Fab>
+      <Fab 
+        color="primary" 
+        aria-label="add" 
+        style={{ position: 'fixed', bottom: '16px', right: '16px' }} 
+        onClick={() => setOpen(true)} // Set dialog to open when FAB is clicked
+      >
+        <AddIcon />
+      </Fab>
       <CreateJobDialog open={open} onClose={onClose} />
     </Container>
   );
