@@ -1,10 +1,14 @@
 package organizations
 
 import (
+	"context"
 	"errors"
+	"log"
 	"net/http"
 
+	"firebase.google.com/go/v4/auth"
 	jsonRpcProvider "github.com/exolutionza/propfix-backend-go/internal/api/jsonRpc/service/provider"
+	"github.com/exolutionza/propfix-backend-go/internal/mail"
 
 	"github.com/exolutionza/propfix-backend-go/internal/authz"
 	"github.com/exolutionza/propfix-backend-go/internal/user"
@@ -13,8 +17,10 @@ import (
 )
 
 type adaptor struct {
-	authz *authz.Authz
-	store *OrganizationStore
+	authz      *authz.Authz
+	store      *OrganizationStore
+	mailClient *mail.MailgunClient
+	authClient *auth.Client
 }
 
 const Name = "Organizations"
@@ -26,10 +32,14 @@ func (a *adaptor) Name() jsonRpcProvider.Name {
 func New(
 	st *OrganizationStore,
 	authz *authz.Authz,
+	authn *auth.Client,
+	m *mail.MailgunClient,
 ) *adaptor {
 	return &adaptor{
-		authz: authz,
-		store: st,
+		authz:      authz,
+		authClient: authn,
+		store:      st,
+		mailClient: m,
 	}
 }
 
@@ -127,10 +137,19 @@ func (a *adaptor) InviteMember(r *http.Request, args *InviteMemberRequest, resul
 	if err != nil || !ok {
 		return errors.New("not permitted")
 	}
+	org, err := a.store.GetOrganizationByID(args.OrganizationId)
+	if err != nil {
+		return err
+	}
 
 	err = a.store.AddPendingMember(args.OrganizationId, args.Email)
 	if err != nil {
 		return err
+	}
+
+	err = a.mailClient.SendInvite(args.Email, args.OrganizationId, org.Name)
+	if err != nil {
+		return errors.New("failed to send invitation email")
 	}
 
 	result.Status = "Invitation sent"
@@ -171,5 +190,63 @@ func (a *adaptor) AcceptMemberInvite(r *http.Request, args *AcceptMemberInviteRe
 	}
 
 	result.Status = "Successfully joined the organization"
+	return nil
+}
+
+func (a *adaptor) fetchUserData(userIDs []string) ([]user.User, error) {
+	ctx := context.Background()
+
+	// Assuming you have a UserStore or some other method to fetch user data
+	var userData []user.User
+
+	for _, userID := range userIDs {
+		u, err := a.authClient.GetUser(ctx, userID)
+		if err != nil {
+			log.Printf("Error fetching user by ID: %v\n", err)
+			return nil, err
+		}
+
+		// Convert Firebase Auth user data into your user.User struct
+		userRecord := user.User{
+			ID:          u.UID,
+			DisplayName: u.DisplayName,
+			Email:       u.Email,
+			PhotoURL:    u.PhotoURL,
+		}
+
+		userData = append(userData, userRecord)
+	}
+
+	return userData, nil
+}
+
+type GetAllMembersRequest struct {
+	OrganizationId string `json:"organizationId"`
+}
+
+type GetAllMembersResponse struct {
+	Members        []user.User `json:"members"`
+	PendingMembers []string    `json:"pending_members"`
+}
+
+func (a *adaptor) GetAllMembers(r *http.Request, args *GetAllMembersRequest, result *GetAllMembersResponse) error {
+	ok, err := a.authz.CheckPermission(r, "organizations", "get")
+	if err != nil || !ok {
+		return errors.New("not permitted")
+	}
+
+	mems, pMems, err := a.store.GetAllMembers(args.OrganizationId)
+	if err != nil {
+		return err
+	}
+
+	membersData, err := a.fetchUserData(mems)
+	if err != nil {
+		return err
+	}
+
+	result.Members = membersData
+	result.PendingMembers = pMems
+
 	return nil
 }

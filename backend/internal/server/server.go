@@ -29,6 +29,8 @@ import (
 	"github.com/exolutionza/propfix-backend-go/internal/permissions"
 	"github.com/exolutionza/propfix-backend-go/internal/roles"
 
+	"github.com/exolutionza/propfix-backend-go/internal/mail"
+
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
@@ -43,6 +45,11 @@ func Server() {
 	serverAddress := "0.0.0.0"
 	serverPort := "8080"
 
+	sendEmailAddress := "Spha <noreply@mail.propfix.co>"
+	mailgunApiKey := "***REMOVED-MAILGUN-API-KEY***"
+	mailgunDomain := "mail.propfix.co"
+	frontendUrl := "propfix.co"
+
 	pgConnString := fmt.Sprintf("user=%s password=%s host=%s port=%s dbname=%s sslmode=disable",
 		pgUser, pgPassword, pgHost, pgPort, pgDatabase)
 
@@ -52,6 +59,8 @@ func Server() {
 		return
 	}
 	defer dbpool.Close()
+
+	mgClient := mail.NewMailgunClient(mailgunDomain, sendEmailAddress, mailgunApiKey, frontendUrl)
 
 	conf := &firebase.Config{
 		ProjectID: "propfix",
@@ -99,7 +108,7 @@ func Server() {
 			},
 			ServiceProviders: []jsonRpcProvider.Provider{
 				roles.New(dbpool, authorizer),
-				organizations.New(orgStore, authorizer),
+				organizations.New(orgStore, authorizer, authClient, mgClient),
 				permissions.New(dbpool, authorizer),
 				buildings.New(buildingsStore, authorizer),
 				labels.New(labelStore, authorizer),

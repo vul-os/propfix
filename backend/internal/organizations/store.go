@@ -247,3 +247,23 @@ func (s *OrganizationStore) CheckPendingMember(orgID, email string) (bool, error
 
 	return exists, nil
 }
+
+func (s *OrganizationStore) GetAllMembers(orgID string) ([]string, []string, error) {
+	ctx := context.Background()
+
+	query := `
+        SELECT members, pending_members
+        FROM organizations
+        WHERE id = $1
+    `
+
+	var members []string
+	var pendingMembers []string
+	err := s.pool.QueryRow(ctx, query, orgID).Scan(&members, &pendingMembers)
+	if err != nil {
+		fmt.Println("Error getting members for organization:", err)
+		return nil, nil, err
+	}
+
+	return members, pendingMembers, nil
+}
