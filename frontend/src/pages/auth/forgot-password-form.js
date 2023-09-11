@@ -26,7 +26,6 @@ export default function ForgotPasswordForm({ onSuccess }) {
 
   return (
     <Stack spacing={3}>
-      <Typography variant="h4">Forgot Password</Typography>
       <Typography variant="body1">
         Enter your email address to receive a password reset link.
       </Typography>
