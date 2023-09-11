@@ -99,7 +99,7 @@ func Server() {
 			},
 			ServiceProviders: []jsonRpcProvider.Provider{
 				roles.New(dbpool, authorizer),
-				organizations.New(dbpool, authorizer),
+				organizations.New(orgStore, authorizer),
 				permissions.New(dbpool, authorizer),
 				buildings.New(buildingsStore, authorizer),
 				labels.New(labelStore, authorizer),
