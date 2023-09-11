@@ -4,6 +4,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import Typography from '@mui/material/Typography';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
+import AccountCircleIcon from '@mui/icons-material/AccountCircle'; // Import the profile icon
 import { useAuthContext } from '../../contexts/auth';
 import { getAllBuildings } from '../../api/buildings';
 
@@ -30,7 +31,7 @@ export default function Buildings() {
   return (
     <div className="buildings-page">
       <Typography variant="h4">Buildings ({buildings.length})</Typography>
-      <div className="building-cards" style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+      <div className="building-cards" style={{ display: 'flex', flexWrap: 'wrap', gap: '20px' }}>
         {buildings.map((building) => (
           <div
             key={building.id}
@@ -43,11 +44,11 @@ export default function Buildings() {
               }
             }}
             style={{
-              width: 'calc(33.33% - 10px)', // Three cards per row with 10px gap
+              flex: '1 0 calc(33.33% - 20px)', // Three cards per row with 20px gap
               cursor: 'pointer',
               boxShadow: '0px 0px 5px rgba(0, 0, 0, 0.3)',
               borderRadius: '8px',
-              padding: '10px',
+              padding: '20px',
               backgroundColor: '#fff',
               border: '1px solid #ccc',
               display: 'flex',
@@ -55,7 +56,10 @@ export default function Buildings() {
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Typography variant="h6" style={{ flexGrow: 1 }}>{building.buildingName}</Typography>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexGrow: 1 }}>
+                <AccountCircleIcon style={{ fontSize: '1.5rem', marginRight: '5px' }} /> {/* Profile icon */}
+                <Typography variant="h6" style={{ marginBottom: '0', flexGrow: 1 }}>{building.buildingName}</Typography>
+              </div>
               <div style={{ display: 'flex', gap: '8px' }}>
                 <IconButton aria-label="edit">
                   <EditIcon />
@@ -65,9 +69,15 @@ export default function Buildings() {
                 </IconButton>
               </div>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
-              <LocationOnIcon style={{ fontSize: '2rem', marginRight: '5px' }} />
-              <Typography variant="body2">{building.address}</Typography>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px', marginLeft: '5px' }}>
+              <LocationOnIcon style={{ fontSize: '2rem' }} />
+              <Typography variant="body2" style={{ marginLeft: '5px' }}>{building.address}</Typography>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', marginLeft: '5px' }}>
+              <LocationOnIcon style={{ fontSize: '2rem' }} />
+              <Typography variant="body2" style={{ marginLeft: '5px' }}>
+                {building.latitude} / {building.longitude}
+              </Typography>
             </div>
           </div>
         ))}

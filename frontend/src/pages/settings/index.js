@@ -52,7 +52,7 @@ export default function Settings() {
   const tabs = [
     { label: 'Profile', content: <Profile /> },
     { label: 'Labels', content: <Labels /> },
-    { label: 'buildings', content: <Buildings /> },
+    { label: 'Buildings', content: <Buildings /> },
 
   ];
 
