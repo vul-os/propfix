@@ -7,6 +7,7 @@ import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
 import Profile from './profile';
 import Labels from './labels';
+import Buildings from './building';
 
 function TabPanel(props) {
   const { children, value, index, ...other } = props;
@@ -51,6 +52,8 @@ export default function Settings() {
   const tabs = [
     { label: 'Profile', content: <Profile /> },
     { label: 'Labels', content: <Labels /> },
+    { label: 'buildings', content: <Buildings /> },
+
   ];
 
   return (
