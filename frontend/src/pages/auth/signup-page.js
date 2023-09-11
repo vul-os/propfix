@@ -72,14 +72,13 @@ export default function SignUpPage() {
         }}
       />
 
-      {mdUp && (
-        <StyledSection>
-          <Typography variant="h3" sx={{ px: 5, mt: 10, mb: 5 }}>
-            Join Us Today!
-          </Typography>
-          {/* Include any other visual elements you want */}
-        </StyledSection>
-      )}
+      {/* Remove or comment out the "Join Us Today!" section */}
+      {/* <StyledSection>
+        <Typography variant="h3" sx={{ px: 5, mt: 10, mb: 5 }}>
+          Join Us Today!
+        </Typography>
+        // Include any other visual elements you want
+      </StyledSection> */}
 
       <Container maxWidth="sm">
         <StyledContent>
