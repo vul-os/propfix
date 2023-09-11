@@ -12,6 +12,8 @@ import { useResponsive } from '../../../hooks/use-responsive';
 import Logo from '../../../components/logo';
 import Scrollbar from '../../../components/scrollbar';
 import NavSection from '../../../components/nav-section';
+//
+// ----------------------------------------------------------------------
 
 const NAV_WIDTH = 280;
 
@@ -21,8 +23,9 @@ const StyledAccount = styled('div')(({ theme }) => ({
   padding: theme.spacing(2, 2.5),
   borderRadius: Number(theme.shape.borderRadius) * 1.5,
   backgroundColor: alpha(theme.palette.grey[500], 0.12),
-   marginLeft: '10px',
 }));
+
+// ----------------------------------------------------------------------
 
 export default function Nav({ openNav, onCloseNav, navConfig }) {
   const { pathname } = useLocation();
@@ -34,6 +37,7 @@ export default function Nav({ openNav, onCloseNav, navConfig }) {
     if (openNav) {
       onCloseNav();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
 
   const renderContent = (
@@ -43,11 +47,11 @@ export default function Nav({ openNav, onCloseNav, navConfig }) {
         '& .simplebar-content': { height: 1, display: 'flex', flexDirection: 'column' },
       }}
     >
-      <Box sx={{ px: 2.5, py: 3 }}>
+      <Box sx={{ px: 2.5, py: 3, display: 'inline-flex' }}>
         <Logo />
       </Box>
 
-      <Box sx={{ mb: 5 }}>
+      <Box sx={{ mb: 5, mx: 2.5 }}>
         <Link component={RouterLink} to="/" underline="none">
           <StyledAccount>
             <Avatar src={user.photoURL} alt="photoURL" />
@@ -65,27 +69,18 @@ export default function Nav({ openNav, onCloseNav, navConfig }) {
         </Link>
       </Box>
 
-      <Box sx={{ mx: 2.5 }}>
-        {/* Apply styles to move the ul and its items to the right */}
-        <ul className="MuiList-root css-1lu02n7-MuiList-root" style={{ marginLeft: 'auto', textAlign: 'right' }}>
-          <a tabIndex="0" href="/" aria-current="page" className="MuiButtonBase-root MuiListItemButton-root MuiListItemButton-root css-1qrxdgk-MuiButtonBase-root-MuiListItemButton-root active">
-            <div className="MuiListItemIcon-root css-17vyix-MuiListItemIcon-root">
-              <span className="svg-color MuiBox-root css-6t4as8" />
-            </div>
-            <div className="MuiListItemText-root css-1jku5ol-MuiListItemText-root">Kanban</div>
-            <span className="MuiTouchRipple-root css-8je8zh-MuiTouchRipple-root" />
-          </a>
-          <a tabIndex="0" href="/jobs" className="MuiButtonBase-root MuiListItemButton-root MuiListItemButton-root css-1qrxdgk-MuiButtonBase-root-MuiListItemButton-root">
-            <div className="MuiListItemIcon-root css-17vyix-MuiListItemIcon-root">
-              <span className="svg-color MuiBox-root css-136zs04" />
-            </div>
-            <div className="MuiListItemText-root css-1jku5ol-MuiListItemText-root">Jobs</div>
-            <span className="MuiTouchRipple-root css-8je8zh-MuiTouchRipple-root" />
-          </a>
-        </ul>
-      </Box>
+      <NavSection data={navConfig} />
 
       <Box sx={{ flexGrow: 1 }} />
+
+      <Box sx={{ px: 2.5, pb: 3, mt: 10 }}>
+        <Stack alignItems="center" spacing={3} sx={{ pt: 5, borderRadius: 2, position: 'relative' }}>
+
+          <Button href="https://app.retailradar.co/account/plans" target="_blank" variant="contained">
+            Upgrade to Pro
+          </Button>
+        </Stack>
+      </Box>
     </Scrollbar>
   );
 
