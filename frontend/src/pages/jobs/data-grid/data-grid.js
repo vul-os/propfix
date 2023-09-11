@@ -11,10 +11,12 @@ import Chip from '@mui/material/Chip';
 import Box from '@mui/material/Box';
 
 import EventIcon from '@mui/icons-material/Event';
+import HomeIcon from '@mui/icons-material/Home'; 
 import Iconify from '../../../components/iconify';
 import PopOver from '../pop-over';
 import { useBoardContext } from '../../../contexts/board'; // Import the BoardProvider context
 import CreateJobDialog from '../../job-wizzard/dialog';
+import { exportToCSV, exportToExcel } from './utils';
 
 
 function JobDataGrid() {
@@ -62,6 +64,17 @@ function JobDataGrid() {
       </Stack>
     );
   };
+
+  const renderBuilding = (params) => {
+    const building = params.value && board?.buildings[params.value]?.buildingName
+    return (
+      <Stack direction="row" alignItems="center">
+        <HomeIcon /> {/* Home icon */}
+        <span>{building}</span> {/* Building ID value */}
+
+      </Stack>
+    );
+  };
   
   const renderPriority = (params) => {
     let { value: priority } = params;
@@ -101,7 +114,12 @@ function JobDataGrid() {
   const columns = [
     { field: 'id', headerName: 'ID', width: 150 },
     { field: 'unitIdentifier', headerName: 'Unit Identifier', width: 200 },
-    { field: 'buildingId', headerName: 'Building ID', width: 200 },
+    {
+      field: 'buildingId',
+      headerName: 'Building ID',
+      width: 200,
+      renderCell: renderBuilding, // Use the renderBuildingId function for rendering
+    },
     { field: 'name', headerName: 'Name', width: 250 },
     {
       field: 'labels',
@@ -141,6 +159,8 @@ function JobDataGrid() {
     <Container maxWidth={false} sx={{ height: 1 }}>
       <Typography variant="h4" sx={{ mb: { xs: 3, md: 5 } }}>
         Jobs
+        <button onClick={() => exportToCSV(jobs, 'jobs')}>Export to CSV</button>
+        <button onClick={() => exportToExcel(jobs, 'jobs')}>Export to Excel</button>
       </Typography>
 
       <Box sx={{}}>
