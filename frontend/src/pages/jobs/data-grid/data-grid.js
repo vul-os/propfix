@@ -17,14 +17,11 @@ import { useBoardContext } from '../../../contexts/board'; // Import the BoardPr
 import CreateJobDialog from '../../job-wizzard/dialog';
 import { exportToCSV, exportToExcel } from './utils';
 
-
 function JobDataGrid() {
   const { board, jobs, boardLoading } = useBoardContext(); // Use the BoardProvider context
   const [open, setOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState(null);
   
-
-
   const onClose = () => {
     setOpen(false);
   }
@@ -67,8 +64,6 @@ function JobDataGrid() {
     </Stack>
   );
   
-  
-
   const renderDate = (params) => {
     const formattedDate = formatDate(params.value);
     return (
@@ -173,8 +168,40 @@ function JobDataGrid() {
     <Container maxWidth={false} sx={{ height: 1 }}>
       <Typography variant="h4" sx={{ mb: { xs: 3, md: 5 }, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         Jobs
-        <button onClick={() => exportToCSV(jobs, 'jobs')}>Export to CSV</button>
-        <button onClick={() => exportToExcel(jobs, 'jobs')}>Export to Excel</button>
+        <Stack direction="row" spacing={2}>
+          <Button
+            variant="contained"
+            sx={{ 
+              backgroundColor: '#1976d2;',
+              color: 'white',
+              border: '1px solid black',
+              WebkitBorderRadius: '10px',
+              display: 'flex',
+              alignItems: 'center', // Align items vertically
+            }}
+            size="small"
+            onClick={() => exportToCSV(jobs, 'jobs')}
+          >
+            <Iconify icon="fa-file-csv" width={20} style={{ marginRight: '8px' }} />
+            Export to CSV
+          </Button>
+          <Button
+            variant="contained"
+            sx={{ 
+              backgroundColor: '#2e7d32;',
+              color: 'white',
+              border: '1px solid black',
+              WebkitBorderRadius: '10px',
+              display: 'flex',
+              alignItems: 'center', // Align items vertically
+            }}
+            size="small"
+            onClick={() => exportToExcel(jobs, 'jobs')}
+          >
+            <Iconify icon="fa-file-excel" width={20} style={{ marginRight: '8px' }} />
+            Export to Excel
+          </Button>
+        </Stack>
       </Typography>
 
       {jobs && !boardLoading && (
