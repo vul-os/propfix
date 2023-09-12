@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { useParams } from 'react-router-dom';
 import Paper from '@mui/material/Paper';
@@ -10,13 +10,14 @@ export default function EventsList({ events, members }) {
   const theme = useTheme();
   const isTablet = useMediaQuery(theme.breakpoints.down('sm'));
   const isLaptop = useMediaQuery(theme.breakpoints.up('md'));
-  const isDesktop = useMediaQuery(theme.breakpoints.up('lg'));
-  const isMobile = useMediaQuery('(max-width: 559px)'); // Check for screens with a width less than or equal to 559px
+  const isMobile = useMediaQuery('(max-width: 599px)'); // Check for screens with a width less than or equal to 599px
+  const isSmallMobile = useMediaQuery('(max-width: 375px)'); // Check for screens with a width less than or equal to 375px
+  const isTinyMobile = useMediaQuery('(max-width: 412px)'); // Check for screens with a width less than or equal to 412px
 
   useEffect(() => {
+    // Your useEffect logic here
+  }, [events]);
 
-  }, [events])
-  
   const containerStyle = {
     display: 'flex',
     flexDirection: 'column',
@@ -33,7 +34,15 @@ export default function EventsList({ events, members }) {
   const verticalLineStyle = {
     width: '1px',
     backgroundColor: 'lightgrey',
-    marginRight: '75%',
+    marginRight: isMobile
+      ? '26.2em'
+      : isTablet && !isMobile
+      ? '20px'
+      : isSmallMobile
+      ? '0' // Set the margin to 0 when screen width is <= 375px
+      : isTinyMobile
+      ? '0' // Set the margin to 0 when screen width is <= 412px
+      : '75%',
     border: '1px solid #E5E4E2',
     height: '100%',
     position: 'absolute',
@@ -47,7 +56,7 @@ export default function EventsList({ events, members }) {
     margin: '0 0 0 10px',
     padding: '0',
     [theme.breakpoints.down('sm')]: {
-      marginLeft: '30px', // Move the margin left to 30px on screens less than or equal to 599px
+      marginLeft: '30px', // Move the margin left to 30px on screens <= 599px
     },
     [theme.breakpoints.up('md')]: {
       marginRight: '14em',
@@ -55,7 +64,7 @@ export default function EventsList({ events, members }) {
   };
 
   const avatarLeftStyle = {
-    marginLeft: '30px', // Move the icon avatar 30px to the left
+    marginLeft: isTinyMobile || isSmallMobile ? '0' : '30px', // Move the icon avatar 30px to the left or 0px when screen width is <= 412px or 375px
   };
 
   const RenderEvent = ({ event, index }) => {
@@ -90,4 +99,3 @@ export default function EventsList({ events, members }) {
     </div>
   );
 }
-

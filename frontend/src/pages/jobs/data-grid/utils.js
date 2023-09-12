@@ -1,4 +1,6 @@
-import * as XLSX from 'xlsx-style'; // Import xlsx-style library
+import React, { useState, useEffect } from 'react';
+import { DataGrid } from '@mui/x-data-grid';
+import * as XLSX from 'xlsx'; // Import xlsx library
 
 // Helper function to convert an array to a comma-separated string
 const arrayToString = (arr) => {
@@ -51,8 +53,17 @@ export const exportToExcel = (dataToExport, fileName) => {
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
 
-  // Generate a blob containing the Excel data (using xlsx-style)
-  const blob = XLSX.write(wb, { bookType: 'xlsx', type: 'blob' });
+  // Generate a data URL containing the Excel data (using xlsx)
+  const excelDataUrl = XLSX.write(wb, { bookType: 'xlsx', type: 'base64' });
+
+  // Convert the data URL to a Blob
+  const byteCharacters = atob(excelDataUrl);
+  const byteNumbers = new Array(byteCharacters.length);
+  for (let i = 0; i < byteCharacters.length; i+=1) {
+    byteNumbers[i] = byteCharacters.charCodeAt(i);
+  }
+  const byteArray = new Uint8Array(byteNumbers);
+  const blob = new Blob([byteArray], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
 
   // Create a download link and trigger the download
   const url = URL.createObjectURL(blob);
@@ -61,3 +72,5 @@ export const exportToExcel = (dataToExport, fileName) => {
   link.download = `${fileName}.xlsx`;
   link.click();
 };
+
+
