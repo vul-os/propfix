@@ -26,6 +26,24 @@ func (s *Store) MoveJob(fromColumnID, toColumnID, jobID string, newOrderIndex in
 	dateUpdated := time.Now()
 	linkID := uuid.New().String()
 
+	// If the source and destination columns are the same, it's just a reorder.
+	// In that case, we should just update the order_index and not do an insert followed by delete.
+	if fromColumnID == toColumnID {
+		query := `
+			UPDATE ColumnJobLinks 
+			SET date_updated = $1, order_index = $2
+			WHERE column_id = $3 AND job_id = $4;
+		`
+
+		params := []interface{}{dateUpdated, newOrderIndex, fromColumnID, jobID}
+
+		_, err := s.pool.Exec(ctx, query, params...)
+		if err != nil {
+			return fmt.Errorf("Failed to execute query: %v", err)
+		}
+		return nil
+	}
+
 	query := `
 		WITH moved_row AS (
 			INSERT INTO ColumnJobLinks (id, column_id, job_id, date_updated, order_index)
@@ -121,11 +139,11 @@ func (s *Store) GetAllColumns(organizationID string) ([]ColumnWithJobIds, error)
 	ctx := context.Background()
 
 	query := `
-        SELECT c.id, c.name, c.order_index, j.job_id
-        FROM columns c
-        LEFT JOIN ColumnJobLinks j ON c.id = j.column_id
-        WHERE c.organization_id = $1
-        ORDER BY c.order_index ASC
+		SELECT c.id, c.name, c.order_index, j.job_id
+		FROM columns c
+		LEFT JOIN ColumnJobLinks j ON c.id = j.column_id
+		WHERE c.organization_id = $1
+		ORDER BY c.order_index ASC, j.order_index ASC, j.date_updated DESC
     `
 
 	rows, err := s.pool.Query(ctx, query, organizationID)
@@ -135,6 +153,7 @@ func (s *Store) GetAllColumns(organizationID string) ([]ColumnWithJobIds, error)
 	defer rows.Close()
 
 	columnMap := make(map[string]*ColumnWithJobIds)
+	var columnsInOrder []*ColumnWithJobIds
 
 	for rows.Next() {
 		var columnID, name string
@@ -145,31 +164,33 @@ func (s *Store) GetAllColumns(organizationID string) ([]ColumnWithJobIds, error)
 			return nil, fmt.Errorf("failed to scan row: %w", err)
 		}
 
-		_, exists := columnMap[columnID]
-
-		if !exists {
+		if column, exists := columnMap[columnID]; exists {
+			if jobID.Valid && jobID.String != "" {
+				column.JobIds = append(column.JobIds, jobID.String)
+			}
+		} else {
 			newColumn := &ColumnWithJobIds{
 				ID:         columnID,
 				Name:       name,
 				OrderIndex: orderIndex,
 				JobIds:     []string{},
 			}
+			if jobID.Valid && jobID.String != "" {
+				newColumn.JobIds = append(newColumn.JobIds, jobID.String)
+			}
 			columnMap[columnID] = newColumn
+			columnsInOrder = append(columnsInOrder, newColumn)
 		}
-
-		if jobID.Valid && jobID.String != "" {
-			columnMap[columnID].JobIds = append(columnMap[columnID].JobIds, jobID.String)
-		}
-
-	}
-	var finalColumns []ColumnWithJobIds
-	for _, column := range columnMap {
-		fmt.Println(*column)
-		finalColumns = append(finalColumns, *column)
 	}
 
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("error iterating through rows: %w", err)
+	}
+
+	// Convert slice of pointers to slice of values for the final result
+	var finalColumns []ColumnWithJobIds
+	for _, column := range columnsInOrder {
+		finalColumns = append(finalColumns, *column)
 	}
 
 	return finalColumns, nil
