@@ -46,14 +46,27 @@ export default function Buildings() {
             style={{
               flex: '1 0 calc(33.33% - 20px)', // Three cards per row with 20px gap
               cursor: 'pointer',
-              boxShadow: '0px 0px 5px rgba(0, 0, 0, 0.3)',
+              boxShadow: '0px 2px 6px rgba(0, 0, 0, 0.1)', // Added a subtle shadow
               borderRadius: '8px',
-              padding: '20px',
-              backgroundColor: '#fff',
-              border: '1px solid #ccc',
+              backgroundColor: '#ffffff',
+              border: '1px solid #e0e0e0', // Lighter border color
+              overflow: 'hidden', // Prevent content from overflowing
+              transition: 'box-shadow 0.3s ease-in-out', // Smooth hover effect
               display: 'flex',
               flexDirection: 'column',
+              justifyContent: 'space-between', // Space between title and actions
+              padding: '20px',
+              minHeight: '250px', // Set a minimum height for consistent card size
+              textDecoration: 'none', // Remove underline from links
+              color: '#333', // Text color
+            
+              // Add a hover effect
+              ':hover': {
+                boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.2)', // Slightly raised shadow on hover
+                transform: 'translateY(-4px)', // Lift the card on hover
+              },
             }}
+            
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexGrow: 1 }}>
@@ -88,5 +101,6 @@ export default function Buildings() {
   function handleBuildingClick(building) {
     // Handle building click here, e.g., navigate to a detailed view.
     console.log('Building clicked:', building);
+    
   }
 }

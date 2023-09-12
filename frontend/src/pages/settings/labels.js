@@ -62,10 +62,10 @@ export default function Labels() {
     setColor('#000000'); // Reset label color to default
   };
 
-  const handleSaveChanges = (label) => {
-    // Send a PUT request to update the label on the server
-    // ...
-
+  const handleSaveChanges = (_label) => {
+    console.log('isEditing:', isEditing);
+    console.log('editLabel:', editLabel);
+  
     setIsEditing(false);
     setEditLabel(null);
     setNewLabel('');
@@ -113,7 +113,7 @@ export default function Labels() {
                           />
                         )}
                       />
-                    ) : (
+                    ): (
                       <Chip
                         id={label.id}
                         label={label.name}
