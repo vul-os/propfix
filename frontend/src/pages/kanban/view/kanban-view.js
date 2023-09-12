@@ -107,7 +107,7 @@ export default function KanbanView() {
           mb: { xs: 3, md: 5 },
         }}
       >
-        Kanban
+        Board
       </Typography>
 
       {boardLoading && renderSkeleton}

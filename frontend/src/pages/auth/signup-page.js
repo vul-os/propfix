@@ -2,7 +2,7 @@ import React from 'react';
 import { Helmet } from 'react-helmet-async';
 import { styled } from '@mui/material/styles';
 import { Container, Typography, Divider, Stack, Button, Link } from '@mui/material';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link as RouterLink } from 'react-router-dom';
 import { useResponsive } from '../../hooks/use-responsive';
 import Logo from '../../components/logo';
 import Iconify from '../../components/iconify';
@@ -72,15 +72,6 @@ export default function SignUpPage() {
         }}
       />
 
-      {mdUp && (
-        <StyledSection>
-          <Typography variant="h3" sx={{ px: 5, mt: 10, mb: 5 }}>
-            Join Us Today!
-          </Typography>
-          {/* Include any other visual elements you want */}
-        </StyledSection>
-      )}
-
       <Container maxWidth="sm">
         <StyledContent>
           <Typography variant="h4" gutterBottom>
@@ -89,13 +80,9 @@ export default function SignUpPage() {
 
           <Typography variant="body2" sx={{ mb: 5 }}>
             Already have an account?{' '}
-            <Button
-              component={Link}
-              variant="subtitle2"
-              onClick={handleLoginLinkClick}
-            >
+            <Link component={RouterLink} to="/auth/login" variant="subtitle2">
               Login
-            </Button>
+            </Link>
           </Typography>
 
           <SignUpForm />

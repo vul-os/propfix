@@ -61,6 +61,7 @@ const styles = {
     padding: '12px',
     boxShadow: '0 7px 9px rgba(0, 0, 0, 0.5)',
     position: 'relative',
+    marginLeft: '9px'
   },
   privateMessageBox: {
     backgroundColor: 'white',
@@ -109,15 +110,3 @@ export default function MessageStep({ event, member }) {
     </div>
   );
 }
-
-MessageStep.propTypes = {
-  event: PropTypes.shape({
-    createdAt: PropTypes.string.isRequired,
-    data: PropTypes.shape({
-      username: PropTypes.string.isRequired,
-      message: PropTypes.string.isRequired,
-      visibility: PropTypes.oneOf(['public', 'private']).isRequired,
-    }).isRequired,
-  }).isRequired,
-};
-

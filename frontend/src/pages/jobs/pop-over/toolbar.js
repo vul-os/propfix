@@ -19,28 +19,29 @@ import CustomPopover, { usePopover } from '../../../components/custom-popover';
 export default function Toolbar({
   job,
   onDelete,
-  onClosePopUp,
-  onChangeColumn,
   columns,
-  selectedColumnMap,
-  setColumnByJobId,
-  members,
+  onChangeColumn,
+  selectedColumn,
 }) {
   const smUp = useResponsive('up', 'sm');
   const confirm = useBoolean();
-  const popover = usePopover();
+  const [open, setOpen] = useState(false);
+  const onOpen = useCallback((event) => {
+    setOpen(event.currentTarget);
+  }, []);
 
-  const selectedColumn = job && job.id && selectedColumnMap[job.id]
+  const onClose = useCallback(() => {
+    setOpen(false);
+  }, []);
   
   const handleChangeCol = useCallback(
     (newValue) => {
-      popover.onClose();
+      onClose();
       if (job && job.id) {
         onChangeColumn(job.id, newValue, selectedColumn)
-        setColumnByJobId(job.id, newValue);
       }
     },
-    [popover]
+    [open]
   );
 
   const handleSelectedCheck = (k) => {
@@ -59,7 +60,7 @@ export default function Toolbar({
       >
         {!smUp && (
           <Tooltip title="Back">
-            <IconButton onClick={() => onClosePopUp(job.id, selectedColumn)} sx={{ mr: 1 }}>
+            <IconButton onClick={() => setOpen(null)} sx={{ mr: 1 }}>
               <Iconify icon="eva:arrow-ios-back-fill" />
             </IconButton>
           </Tooltip>
@@ -69,7 +70,7 @@ export default function Toolbar({
           size="small"
           variant="soft"
           endIcon={<Iconify icon="eva:arrow-ios-downward-fill" width={16} sx={{ ml: -0.5 }} />}
-          onClick={popover.onOpen}
+          onClick={onOpen}
         >
           {selectedColumn && selectedColumn.name}
         </Button>
@@ -84,8 +85,8 @@ export default function Toolbar({
       </Stack>
 
       <CustomPopover
-        open={popover.open}
-        onClose={popover.onClose}
+        open={open}
+        onClose={onClose}
         arrow="top-right"
         sx={{ width: 140 }}
       >
@@ -122,9 +123,3 @@ export default function Toolbar({
   );
 }
 
-Toolbar.propTypes = {
-  jobName: PropTypes.string,
-  jobStatus: PropTypes.string,
-  onClosePopUp: PropTypes.func,
-  onDelete: PropTypes.func,
-};

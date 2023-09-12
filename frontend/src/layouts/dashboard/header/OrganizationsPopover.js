@@ -4,6 +4,13 @@ import { Box, MenuItem, Stack, IconButton, Popover, Typography } from '@mui/mate
 import BusinessIcon from '@mui/icons-material/Business'; // Import the Business icon
 import { useAuthContext } from '../../../contexts/auth';
 
+// Function to generate a shorter organization ID representation
+const generateShortId = (id) => {
+  // You can implement your logic here to create a shorter ID
+  // For example, you can take the first few characters
+  return id.substring(0, 5); // This takes the first 5 characters of the ID
+};
+
 export default function OrganizationsPopover() {
   const { organizations, activeOrganization, setActiveOrganization } = useAuthContext();
   const [open, setOpen] = useState(null);
@@ -73,9 +80,14 @@ export default function OrganizationsPopover() {
               <Typography variant="body1" sx={{ marginBottom: 0.5 }}>
                 {option.name}
               </Typography>
-              <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                {option.id}
-              </Typography>
+              <div style={{ width: '100%', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                  {option.id}
+                </Typography>
+                <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                  {generateShortId(option.id)} {/* Display the shorter ID */}
+                </Typography>
+              </div>
             </MenuItem>
           ))}
         </Stack>

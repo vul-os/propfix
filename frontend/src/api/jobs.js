@@ -26,9 +26,9 @@ export async function createJob(job, idToken) {
 }
 
 // Function to update an existing job
-export async function updateJob(jobId, jobData, idToken) {
+export async function updateJob(job, idToken) {
   try {
-    const params = [jobId, jobData, idToken];
+    const params = [{job}];
     return await jsonRpcRequest('Jobs.UpdateJob', params, idToken);
   } catch (error) {
     console.error('Error updating job:', error);

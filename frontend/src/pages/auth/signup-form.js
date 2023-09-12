@@ -67,13 +67,7 @@ export default function SignUpForm() {
           }
           label="Password"
         />
-        <FormHelperText>
-          {error ? (
-            <Typography color="error">{error}</Typography>
-          ) : (
-            'Enter your password'
-          )}
-        </FormHelperText>
+        
       </FormControl>
       <Button
         variant="contained"

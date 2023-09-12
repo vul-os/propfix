@@ -2,9 +2,9 @@ import React from 'react';
 import BuildingCard from './building-card';
 
 function Buildings({ buildings, setSelectedBuilding }) {
-    console.log(buildings)
+  console.log(buildings)
   return (
-    <div style={{ display: 'flex', flexWrap: 'wrap' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
       {buildings && buildings.length > 0 && buildings.map((building) => (
         <BuildingCard
           key={building.id}
