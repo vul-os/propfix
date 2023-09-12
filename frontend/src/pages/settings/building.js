@@ -4,7 +4,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import Typography from '@mui/material/Typography';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
-import AccountCircleIcon from '@mui/icons-material/AccountCircle'; // Import the profile icon
+import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import { useAuthContext } from '../../contexts/auth';
 import { getAllBuildings } from '../../api/buildings';
 
@@ -66,7 +66,6 @@ export default function Buildings() {
                 transform: 'translateY(-4px)', // Lift the card on hover
               },
             }}
-            
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexGrow: 1 }}>
@@ -101,6 +100,5 @@ export default function Buildings() {
   function handleBuildingClick(building) {
     // Handle building click here, e.g., navigate to a detailed view.
     console.log('Building clicked:', building);
-    
   }
 }

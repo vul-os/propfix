@@ -4,6 +4,7 @@ import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import EditIcon from '@mui/icons-material/Edit';
+import AddIcon from '@mui/icons-material/Add';
 import Chip from '@mui/material/Chip';
 import Typography from '@mui/material/Typography';
 import CancelIcon from '@mui/icons-material/Cancel';
@@ -15,19 +16,21 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import TableCell from '@mui/material/TableCell';
 import TableBody from '@mui/material/TableBody';
-import { useTheme } from '@mui/material/styles';
-import { getAllLabels } from '../../api/labels';
+import { useTheme } from '@mui/material/styles'; // Import useTheme hook to access the theme
+import { getAllLabels } from '../../api/labels'; // Import your JSON-RPC function here
 import { useAuthContext } from '../../contexts/auth';
 
 export default function Labels() {
-  const theme = useTheme();
+  const theme = useTheme(); // Access the theme
   const [labels, setLabels] = useState([]);
   const [isEditing, setIsEditing] = useState(false);
   const [editLabel, setEditLabel] = useState(null);
   const [newLabel, setNewLabel] = useState('');
-  const [expandedRow, setExpandedRow] = useState(null);
-  const [name, setName] = useState('');
-  const [color, setColor] = useState('#000000');
+  const [expandedRow, setExpandedRow] = useState(null); // Track expanded row
+  const [name, setName] = useState(''); // Track label name
+  const [color, setColor] = useState('#000000'); // Track label color
+  const [description, setDescription] = useState(''); // Track label description
+
   const { getIdToken, activeOrganization } = useAuthContext();
 
   const fetchLabels = async () => {
@@ -52,6 +55,7 @@ export default function Labels() {
     setNewLabel(label.name);
     setName(label.name); // Set label name
     setColor(label.color); // Set label color
+    setDescription(label.description); // Set label description
   };
 
   const handleCancel = () => {
@@ -60,20 +64,23 @@ export default function Labels() {
     setNewLabel('');
     setName(''); // Clear label name
     setColor('#000000'); // Reset label color to default
+    setDescription(''); // Clear label description
   };
 
-  const handleSaveChanges = (_label) => {
-    console.log('isEditing:', isEditing);
-    console.log('editLabel:', editLabel);
-  
+  const handleSaveChanges = () => {
+    // Send a PUT request to update the label on the server
+    // ...
+
     setIsEditing(false);
     setEditLabel(null);
     setNewLabel('');
     setName(''); // Clear label name
     setColor('#000000'); // Reset label color to default
+    setDescription(''); // Clear label description
   };
 
   const handleExpandRow = (label) => {
+    // Toggle expanded row
     setExpandedRow(expandedRow === label ? null : label);
   };
 
@@ -100,9 +107,9 @@ export default function Labels() {
                       <Autocomplete
                         options={labels}
                         getOptionLabel={(option) => option.name}
-                        value={name}
+                        value={name} // Use name state
                         onChange={(_, newValue) => {
-                          setName(newValue);
+                          setName(newValue); // Update name state
                         }}
                         renderInput={(params) => (
                           <TextField
@@ -113,7 +120,7 @@ export default function Labels() {
                           />
                         )}
                       />
-                    ): (
+                    ) : (
                       <Chip
                         id={label.id}
                         label={label.name}
@@ -127,9 +134,9 @@ export default function Labels() {
                       // Use native color input for label color editing
                       <input
                         type="color"
-                        value={color}
+                        value={color} // Use color state
                         onChange={(e) => {
-                          setColor(e.target.value);
+                          setColor(e.target.value); // Update color state
                         }}
                       />
                     ) : (
@@ -139,25 +146,22 @@ export default function Labels() {
                   <TableCell>
                     {isEditing && editLabel === label ? (
                       <>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: theme.spacing(2) }}>
-                          <Button
-                            variant="contained"
-                            color="primary"
-                            startIcon={<SaveIcon />}
-                            onClick={() => handleSaveChanges(label)}
-
-                          >
-                            Save
-                          </Button>
-                          <Button
-                            variant="outlined"
-                            color="default"
-                            startIcon={<CancelIcon />}
-                            onClick={handleCancel}
-                          >
-                            Cancel
-                          </Button>
-                        </div>
+                        <Button
+                          variant="contained"
+                          color="primary"
+                          startIcon={<SaveIcon />}
+                          onClick={handleSaveChanges}
+                        >
+                          Save Changes
+                        </Button>
+                        <Button
+                          variant="outlined"
+                          color="default"
+                          startIcon={<CancelIcon />}
+                          onClick={handleCancel}
+                        >
+                          Cancel
+                        </Button>
                       </>
                     ) : (
                       <>
@@ -187,19 +191,21 @@ export default function Labels() {
                           label="Name"
                           variant="outlined"
                           fullWidth
-                          value={name}
+                          value={name} // Use name state
                           onChange={(e) => {
-                            setName(e.target.value);
+                            setName(e.target.value); // Update name state
                           }}
                         />
+                
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: theme.spacing(2) }}>
+
                         <input
                           type="color"
                           id="color-picker"
-                          value={color}
+                          value={color} // Use color state
                           onChange={(e) => {
-                            setColor(e.target.value);
+                            setColor(e.target.value); // Update color state
                           }}
                         />
                         <Typography variant="body2" style={{ marginLeft: theme.spacing(1) }}>
