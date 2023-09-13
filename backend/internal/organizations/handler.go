@@ -193,6 +193,54 @@ func (a *adaptor) AcceptMemberInvite(r *http.Request, args *AcceptMemberInviteRe
 	return nil
 }
 
+type RemoveMemberRequest struct {
+	OrganizationId string `json:"organizationId"`
+	UserId         string `json:"userId"`
+}
+
+type RemoveMemberResponse struct {
+	Status string `json:"status"`
+}
+
+func (a *adaptor) RemoveMember(r *http.Request, args *RemoveMemberRequest, result *RemoveMemberResponse) error {
+	ok, err := a.authz.CheckPermission(r, "organizations", "delete_member")
+	if err != nil || !ok {
+		return errors.New("not permitted")
+	}
+
+	err = a.store.RemoveMember(args.OrganizationId, args.UserId)
+	if err != nil {
+		return err
+	}
+
+	result.Status = "Member removed from the organization"
+	return nil
+}
+
+type RemovePendingMemberRequest struct {
+	OrganizationId string `json:"organizationId"`
+	Email          string `json:"email"`
+}
+
+type RemovePendingMemberResponse struct {
+	Status string `json:"status"`
+}
+
+func (a *adaptor) RemovePendingMember(r *http.Request, args *RemovePendingMemberRequest, result *RemovePendingMemberResponse) error {
+	ok, err := a.authz.CheckPermission(r, "organizations", "delete_pending_member")
+	if err != nil || !ok {
+		return errors.New("not permitted")
+	}
+
+	err = a.store.RemovePendingMember(args.OrganizationId, args.Email)
+	if err != nil {
+		return err
+	}
+
+	result.Status = "Pending member removed from the organization"
+	return nil
+}
+
 func (a *adaptor) fetchUserData(userIDs []string) ([]user.User, error) {
 	ctx := context.Background()
 
