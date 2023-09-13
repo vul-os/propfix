@@ -16,9 +16,6 @@ import PopOver from '../pop-over';
 import { useBoardContext } from '../../../contexts/board'; // Import the BoardProvider context
 import CreateJobDialog from '../../job-wizzard/dialog';
 import { exportToCSV, exportToExcel } from './utils';
-import { exportToCSV, exportToExcel } from './utils';
-
-
 
 
 function JobDataGrid() {
