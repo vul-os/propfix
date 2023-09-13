@@ -227,26 +227,29 @@ function JobDataGrid() {
           >
             <Icon
             icon="grommet-icons:document-csv"
-            style={{ fontSize: '20em',}} // Adjust the fontSize here
+            style={{ fontSize:'20px', marginRight: '1.5px',}} // Adjust the fontSize here
   />
           </Button>
           <Button
             variant="contained"
             sx={{ 
-              backgroundColor: 'black',
+              backgroundColor: 'black;',
               color: 'white',
-              border: '1px solid black',
-              WebkitBorderRadius: '10px',
+              borderRadius: '50%', // Use 50% to make it round
+              minWidth: 0, // To prevent automatic width expansion
+              width: '40px', // Set a fixed width (adjust as needed)
+              height: '40px', // Set a fixed height (adjust as needed)
+              WebkitBorderRadius: '30px',
               display: 'flex',
               alignItems: 'center', // Align items vertically
-              padding: '15.8px',
+  
             }}
             size="small"
             onClick={() => exportToExcel(jobs, 'jobs')}
           >
           <Icon
             icon="file-icons:microsoft-excel"
-            style={{ fontSize: '25px' }} // Adjust the fontSize here
+            style={{ fontSize:'20px', marginRight: '1.5px', }} // Adjust the fontSize here
 />
           </Button>
         </Stack>
