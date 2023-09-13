@@ -40,10 +40,10 @@ export default function Labels() {
     }
   };
 
-  const handleLabelUpdate = async () => {
+  const handleLabelUpdate = async (label) => {
     try {
       const token = await getIdToken();
-      const resp = await updateLabel(editLabel, token);
+      await updateLabel(editLabel, token);
       fetchLabels(); // Refresh the labels after updating
     } catch (error) {
       console.error('Error updating label:', error);
@@ -67,7 +67,12 @@ export default function Labels() {
   }, [activeOrganization]);
 
   const handleEditClick = (label) => {
-    setEditLabel({...label});
+    setEditLabel({
+      name: label.name,
+      color: label.color,
+      organizationId: label.organizationId,
+      description: label.description,
+    });
     setExpandedRow(label);
   };
 
@@ -142,14 +147,12 @@ export default function Labels() {
                     {expandedRow === label ? (
                       <div>
                         <IconButton
-                          color="secondary"
                           aria-label="Save"
                           onClick={() => handleSaveChanges(label)}
                         >
                           <SaveIcon /> {/* Save icon */}
                         </IconButton>
                         <IconButton
-                          color="secondary"
                           aria-label="Close"
                           onClick={handleCancel}
                         >
@@ -159,14 +162,12 @@ export default function Labels() {
                     ) : (
                       <div>
                         <IconButton
-                          color="primary"
                           onClick={() => handleEditClick(label)}
                           aria-label="Edit"
                         >
                           <EditIcon />
                         </IconButton>
                         <IconButton
-                          color="secondary"
                           aria-label="Delete"
                           onClick={() => handleDeleteLabel(label.id)}
                         >

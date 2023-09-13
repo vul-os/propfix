@@ -13,14 +13,17 @@ import TableBody from '@mui/material/TableBody';
 import TableContainer from '@mui/material/TableContainer';
 import Paper from '@mui/material/Paper';
 import TextField from '@mui/material/TextField';
+import { useTheme } from '@mui/material/styles'; // Import the theme
 import { useAuthContext } from '../../contexts/auth';
 import { getAllBuildings, deleteBuilding, updateBuilding } from '../../api/buildings';
 
 export default function Buildings() {
+  const theme = useTheme(); // Use the theme
   const [buildings, setBuildings] = useState([]);
   const [editing, setEditing] = useState(null); // ID of building currently being edited
   const [editedBuilding, setEditedBuilding] = useState({}); // Temporary state for the edited building
   const { getIdToken, activeOrganization } = useAuthContext();
+
 
   useEffect(() => {
     if (activeOrganization) {
@@ -73,7 +76,7 @@ export default function Buildings() {
     <div className="buildings-page">
       <Typography variant="h4">Buildings ({buildings.length})</Typography>
       
-      <TableContainer component={Paper}>
+      <TableContainer sx={{ marginTop: theme.spacing(2) }} component={Paper}> 
         <Table aria-label="buildings table">
           <TableHead>
             <TableRow>
