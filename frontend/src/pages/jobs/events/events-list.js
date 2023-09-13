@@ -8,11 +8,8 @@ import CrudStep from './crud-step';
 
 export default function EventsList({ events, members }) {
   const theme = useTheme();
-  const isTablet = useMediaQuery(theme.breakpoints.down('sm'));
-  const isLaptop = useMediaQuery(theme.breakpoints.up('md'));
-  const isMobile = useMediaQuery('(max-width: 599px)'); // Check for screens with a width less than or equal to 599px
-  const isSmallMobile = useMediaQuery('(max-width: 375px)'); // Check for screens with a width less than or equal to 375px
-  const isTinyMobile = useMediaQuery('(max-width: 412px)'); // Check for screens with a width less than or equal to 412px
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
+  const isMediumScreen = useMediaQuery(theme.breakpoints.only('md'));
 
   useEffect(() => {
     // Your useEffect logic here
@@ -34,19 +31,10 @@ export default function EventsList({ events, members }) {
   const verticalLineStyle = {
     width: '1px',
     backgroundColor: 'lightgrey',
-    marginRight: isMobile
-      ? '26.2em'
-      : isTablet && !isMobile
-      ? '20px'
-      : isSmallMobile
-      ? '0' // Set the margin to 0 when screen width is <= 375px
-      : isTinyMobile
-      ? '0' // Set the margin to 0 when screen width is <= 412px
-      : '75%',
     border: '1px solid #E5E4E2',
     height: '100%',
     position: 'absolute',
-    right: '0',
+    marginLeft: isSmallScreen ? '30%' : isMediumScreen ? '35%' : '25%', // Set margin based on screen size
     top: '0',
     zIndex: '-1',
   };
@@ -55,16 +43,7 @@ export default function EventsList({ events, members }) {
     textAlign: 'center',
     margin: '0 0 0 10px',
     padding: '0',
-    [theme.breakpoints.down('sm')]: {
-      marginLeft: '30px', // Move the margin left to 30px on screens <= 599px
-    },
-    [theme.breakpoints.up('md')]: {
-      marginRight: '14em',
-    },
-  };
 
-  const avatarLeftStyle = {
-    marginLeft: isTinyMobile || isSmallMobile ? '0' : '30px', // Move the icon avatar 30px to the left or 0px when screen width is <= 412px or 375px
   };
 
   const RenderEvent = ({ event, index }) => {
@@ -76,7 +55,7 @@ export default function EventsList({ events, members }) {
           <div
             key={event.id}
             elevation={3}
-            style={isMobile ? avatarLeftStyle : {}}
+            style={{width: "100%"}}
           >
             {event.type === 'MESSAGE' ? (
               <MessageStep event={event} member={member} />
