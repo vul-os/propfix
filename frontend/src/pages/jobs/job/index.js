@@ -31,9 +31,9 @@ const StyledLabel = styled('span')(({ theme }) => ({
 export default function JobDetails({ job, setJob, members, labels, files, handleDrop, handleRemoveFile,  }) {
   const contacts = useBoolean();
   const assignees = useMemo(() => job?.assigneeIds?.map((jobId) => members && members[jobId]), [job?.assigneeIds, members]);
-  console.log("files1: ", files)
+
   useEffect(() => {
-  }, [job.id])
+  }, [job?.id, job?.assigneeIds])
 
   const handleUpdateField = useCallback((field) => {
     return (event) => {
@@ -44,6 +44,23 @@ export default function JobDetails({ job, setJob, members, labels, files, handle
       }));
     };
   }, []);
+
+  const handleToggleAssignee = useCallback((member) => {
+    setJob((prevJob) => {
+        const isAssigned = prevJob?.assigneeIds?.some(person => person === member.id);
+        
+        // If the member is already assigned, filter them out, otherwise add them
+        const updatedAssignees = isAssigned 
+            ? prevJob?.assigneeIds?.filter(person => person !== member.id)
+            : [...prevJob.assigneeIds, member.id];
+
+        return {
+            ...prevJob,
+            assigneeIds: updatedAssignees,
+        };
+    });
+  }, []);
+
 
   const renderName = useMemo(() => (
     <InputName
@@ -100,6 +117,7 @@ export default function JobDetails({ job, setJob, members, labels, files, handle
         <MembersDialog
           members={Object.values(members)}
           assignees={assignees}
+          handleAssignToggle={handleToggleAssignee}
           open={contacts.value}
           onClose={contacts.onFalse}
         />

@@ -24,7 +24,7 @@ import SearchNotFound from '../../../components/search-not-found';
 
 const ITEM_HEIGHT = 64;
 
-export default function MembersDialog({ members = [], assignees = [], open, onClose }) {
+export default function MembersDialog({ members = [], assignees = [], handleAssignToggle, open, onClose }) {
   const [searchMember, setSearchMember] = useState('');
 
   const handleSearchMember = useCallback((event) => {
@@ -71,7 +71,7 @@ export default function MembersDialog({ members = [], assignees = [], open, onCl
             }}
           >
             {dataFiltered.map((contact) => {
-              const checked = assignees.map((person) => person.id).includes(contact.id);
+              const checked = assignees.map((person) => person?.id).includes(contact?.id);
 
               return (
                 <ListItem
@@ -80,6 +80,7 @@ export default function MembersDialog({ members = [], assignees = [], open, onCl
                   secondaryAction={
                     <Button
                       size="small"
+                      onClick={() => handleAssignToggle(contact)}
                       color={checked ? 'primary' : 'inherit'}
                       startIcon={
                         <Iconify
@@ -116,12 +117,6 @@ export default function MembersDialog({ members = [], assignees = [], open, onCl
     </Dialog>
   );
 }
-
-MembersDialog.propTypes = {
-  open: PropTypes.bool,
-  onClose: PropTypes.func,
-  assignee: PropTypes.array,
-};
 
 // ----------------------------------------------------------------------
 
