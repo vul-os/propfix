@@ -25,10 +25,7 @@ function JobDataGrid() {
   const [open, setOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState(null);
   
-  
-
-
-  const onClose = () => {
+   const onClose = () => {
     setOpen(false);
   }
 

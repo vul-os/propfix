@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
@@ -31,8 +31,12 @@ const StyledLabel = styled('span')(({ theme }) => ({
 export default function JobDetails({ job, setJob, members, labels }) {
   const contacts = useBoolean();
   const assignees = useMemo(() => job?.assigneeIds?.map((jobId) => members && members[jobId]), [job?.assigneeIds, members]);
+  const [files, setFiles] = useState([]);
 
-  console.log("yooooooooooo", members, labels, job?.labels?.map((id) => labels[id]))
+  useEffect(() => {
+    
+  }, [job.attachments])
+
   const handleUpdateField = useCallback((field) => {
     return (event) => {
       const value = event.target ? event.target.value : event;
@@ -155,9 +159,9 @@ export default function JobDetails({ job, setJob, members, labels }) {
   const renderAttachments = useMemo(() => (
     <Stack direction="row">
       <StyledLabel>Attachments</StyledLabel>
-      <Attachments jobId={job.id} attachments={job.attachmenturls} />
+      <Attachments jobId={job.id} files={files} setFiles={setFiles} />
     </Stack>
-  ), [job.id, job.attachmenturls]);
+  ), [job.id, files]);
 
   return (
     job && members && labels && <Stack

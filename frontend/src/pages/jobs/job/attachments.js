@@ -8,8 +8,7 @@ import { useAuthContext } from '../../../contexts/auth';
 
 import { uploadFile, getFile, deleteFile } from '../../../api/attachments';
 
-export default function Attachments({ jobId, attachments }) {
-  const [files, setFiles] = useState([]);
+export default function Attachments({ jobId, files, setFiles }) {
   const { getIdToken } = useAuthContext(); 
 
   const handleDrop = useCallback(

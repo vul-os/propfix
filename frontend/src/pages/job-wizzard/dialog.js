@@ -8,7 +8,7 @@ import DialogTitle from '@mui/material/DialogTitle';
 import IconButton from '@mui/material/IconButton';
 import CloseIcon from '@mui/icons-material/Close';
 import Typography from '@mui/material/Typography';
-import Stepper from './stepper'
+import ExoStepper from './stepper'
 
 function CreateJobDialog({open, onClose}) {
   return (
@@ -28,7 +28,7 @@ function CreateJobDialog({open, onClose}) {
         </div>
         </DialogTitle>
         <DialogContent>
-          <Stepper />
+          <ExoStepper handleClose={onClose} />
         </DialogContent>
       </Dialog>
     </div>
