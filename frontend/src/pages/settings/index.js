@@ -56,6 +56,8 @@ export default function Settings() {
     { label: 'Organization', content: <Organization /> },
     { label: 'Buildings', content: <Buildings /> },
     { label: 'Labels', content: <Labels /> },
+    // { label: 'buildings', content: <Buildings /> },
+
   ];
 
   return (

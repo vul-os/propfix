@@ -9,6 +9,8 @@ import Chip from '@mui/material/Chip';
 import Typography from '@mui/material/Typography';
 import CancelIcon from '@mui/icons-material/Cancel';
 import SaveIcon from '@mui/icons-material/Save';
+import DeleteIcon from '@mui/icons-material/Delete'; // Import DeleteIcon
+
 import Paper from '@mui/material/Paper';
 import TableContainer from '@mui/material/TableContainer';
 import Table from '@mui/material/Table';
@@ -16,20 +18,15 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import TableCell from '@mui/material/TableCell';
 import TableBody from '@mui/material/TableBody';
-import { useTheme } from '@mui/material/styles'; // Import useTheme hook to access the theme
-import { getAllLabels } from '../../api/labels'; // Import your JSON-RPC function here
-import { useAuthContext } from '../../contexts/auth';
+import { useTheme } from '@mui/material/styles';
+import { getAllLabels, updateLabel, deleteLabel } from '../../api/labels';
+import { useAuthContext,  } from '../../contexts/auth';
 
 export default function Labels() {
-  const theme = useTheme(); // Access the theme
+  const theme = useTheme();
   const [labels, setLabels] = useState([]);
-  const [isEditing, setIsEditing] = useState(false);
   const [editLabel, setEditLabel] = useState(null);
-  const [newLabel, setNewLabel] = useState('');
-  const [expandedRow, setExpandedRow] = useState(null); // Track expanded row
-  const [name, setName] = useState(''); // Track label name
-  const [color, setColor] = useState('#000000'); // Track label color
-  const [description, setDescription] = useState(''); // Track label description
+  const [expandedRow, setExpandedRow] = useState(null);
 
   const { getIdToken, activeOrganization } = useAuthContext();
 
@@ -43,6 +40,26 @@ export default function Labels() {
     }
   };
 
+  const handleLabelUpdate = async () => {
+    try {
+      const token = await getIdToken();
+      const resp = await updateLabel(editLabel, token);
+      fetchLabels(); // Refresh the labels after updating
+    } catch (error) {
+      console.error('Error updating label:', error);
+    }
+  };
+
+  const handleDeleteLabel = async (labelId) => {
+    try {
+      const token = await getIdToken();
+      await deleteLabel(labelId, token);
+      fetchLabels(); // Refresh the labels after deleting
+    } catch (error) {
+      console.error('Error deleting label:', error);
+    }
+  };
+
   useEffect(() => {
     if (activeOrganization) {
       fetchLabels();
@@ -50,38 +67,19 @@ export default function Labels() {
   }, [activeOrganization]);
 
   const handleEditClick = (label) => {
-    setIsEditing(true);
-    setEditLabel(label);
-    setNewLabel(label.name);
-    setName(label.name); // Set label name
-    setColor(label.color); // Set label color
-    setDescription(label.description); // Set label description
+    setEditLabel({...label});
+    setExpandedRow(label);
   };
 
   const handleCancel = () => {
-    setIsEditing(false);
     setEditLabel(null);
-    setNewLabel('');
-    setName(''); // Clear label name
-    setColor('#000000'); // Reset label color to default
-    setDescription(''); // Clear label description
+    setExpandedRow(null);
   };
 
-  const handleSaveChanges = () => {
-    // Send a PUT request to update the label on the server
-    // ...
-
-    setIsEditing(false);
+  const handleSaveChanges = (label) => {
+    handleLabelUpdate(label);
     setEditLabel(null);
-    setNewLabel('');
-    setName(''); // Clear label name
-    setColor('#000000'); // Reset label color to default
-    setDescription(''); // Clear label description
-  };
-
-  const handleExpandRow = (label) => {
-    // Toggle expanded row
-    setExpandedRow(expandedRow === label ? null : label);
+    setExpandedRow(null);
   };
 
   return (
@@ -102,23 +100,18 @@ export default function Labels() {
               <React.Fragment key={label.id}>
                 <TableRow>
                   <TableCell>
-                    {isEditing && editLabel === label ? (
-                      // Use Autocomplete for label name editing
-                      <Autocomplete
-                        options={labels}
-                        getOptionLabel={(option) => option.name}
-                        value={name} // Use name state
-                        onChange={(_, newValue) => {
-                          setName(newValue); // Update name state
+                    {expandedRow === label ? (
+                      <TextField
+                        label="New Name"
+                        variant="outlined"
+                        fullWidth
+                        value={editLabel ? editLabel.name : ''}
+                        onChange={(e) => {
+                          setEditLabel({
+                            ...editLabel,
+                            name: e.target.value,
+                          });
                         }}
-                        renderInput={(params) => (
-                          <TextField
-                            {...params}
-                            label="Label Name"
-                            variant="outlined"
-                            fullWidth
-                          />
-                        )}
                       />
                     ) : (
                       <Chip
@@ -130,13 +123,15 @@ export default function Labels() {
                     )}
                   </TableCell>
                   <TableCell>
-                    {isEditing && editLabel === label ? (
-                      // Use native color input for label color editing
+                    {expandedRow === label ? (
                       <input
                         type="color"
-                        value={color} // Use color state
+                        value={editLabel ? editLabel.color : ''}
                         onChange={(e) => {
-                          setColor(e.target.value); // Update color state
+                          setEditLabel({
+                            ...editLabel,
+                            color: e.target.value,
+                          });
                         }}
                       />
                     ) : (
@@ -144,77 +139,43 @@ export default function Labels() {
                     )}
                   </TableCell>
                   <TableCell>
-                    {isEditing && editLabel === label ? (
-                      <>
-                        <Button
-                          variant="contained"
-                          color="primary"
-                          startIcon={<SaveIcon />}
-                          onClick={handleSaveChanges}
+                    {expandedRow === label ? (
+                      <div>
+                        <IconButton
+                          color="secondary"
+                          aria-label="Save"
+                          onClick={() => handleSaveChanges(label)}
                         >
-                          Save Changes
-                        </Button>
-                        <Button
-                          variant="outlined"
-                          color="default"
-                          startIcon={<CancelIcon />}
+                          <SaveIcon /> {/* Save icon */}
+                        </IconButton>
+                        <IconButton
+                          color="secondary"
+                          aria-label="Close"
                           onClick={handleCancel}
                         >
-                          Cancel
-                        </Button>
-                      </>
+                          <CancelIcon /> {/* Close icon */}
+                        </IconButton>
+                      </div>
                     ) : (
-                      <>
+                      <div>
                         <IconButton
                           color="primary"
-                          onClick={() => handleExpandRow(label)}
+                          onClick={() => handleEditClick(label)}
                           aria-label="Edit"
                         >
                           <EditIcon />
-                          <Typography
-                            variant="body2"
-                            style={{ marginLeft: theme.spacing(1) }}
-                          >
-                            Edit
-                          </Typography>
                         </IconButton>
-                      </>
+                        <IconButton
+                          color="secondary"
+                          aria-label="Delete"
+                          onClick={() => handleDeleteLabel(label.id)}
+                        >
+                          <DeleteIcon /> {/* Delete icon */}
+                        </IconButton>
+                      </div>
                     )}
                   </TableCell>
                 </TableRow>
-                {/* Expandable row with text fields */}
-                {expandedRow === label && (
-                  <TableRow>
-                    <TableCell colSpan={3} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: theme.spacing(2) }}>
-                        <TextField
-                          label="Name"
-                          variant="outlined"
-                          fullWidth
-                          value={name} // Use name state
-                          onChange={(e) => {
-                            setName(e.target.value); // Update name state
-                          }}
-                        />
-                
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: theme.spacing(2) }}>
-
-                        <input
-                          type="color"
-                          id="color-picker"
-                          value={color} // Use color state
-                          onChange={(e) => {
-                            setColor(e.target.value); // Update color state
-                          }}
-                        />
-                        <Typography variant="body2" style={{ marginLeft: theme.spacing(1) }}>
-                          {color}
-                        </Typography>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                )}
               </React.Fragment>
             ))}
           </TableBody>

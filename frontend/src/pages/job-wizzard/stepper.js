@@ -19,7 +19,7 @@ import { uploadFile, deleteFile } from '../../api/attachments';
 
 const steps = ['Building Selection', 'Job Creation', 'Review & Submit'];
 
-export default function HorizontalLinearStepper() {
+export default function ExoStepper({ handleClose }) {
   const [activeStep, setActiveStep] = useState(0);
   const [buildings, setBuildings] = useState({});
   const [selectedBuilding, setSelectedBuilding] = useState([]);
@@ -167,7 +167,10 @@ export default function HorizontalLinearStepper() {
       ...job,
       labels: selectedLabels ? selectedLabels.map((l) => l.id) : [],
       buildingId: selectedBuilding.id,
-      organizationId: selectedBuilding.organizationId
+      attachments,
+      organizationId: selectedBuilding.organizationId,
+      priority: 'low',
+
     }
 
     const createdJob = await createJob(jobData, idToken);
@@ -177,6 +180,7 @@ export default function HorizontalLinearStepper() {
     } else {
       console.error('Job creation failed.');
     }
+    handleClose()
   };
 
   const isStepValid = () => {
