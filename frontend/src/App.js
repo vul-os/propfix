@@ -22,7 +22,6 @@ import ForgotPasswordPage from './pages/auth/forgot-password-page'; // Update th
 // layouts
 import DashboardLayout from './layouts/dashboard';
 import LoginPage from './pages/auth/LoginPage';
-
 import Settings from './pages/settings';
 import { KanbanView } from './pages/kanban/view';
 import JobDataGrid from './pages/jobs/data-grid/data-grid';

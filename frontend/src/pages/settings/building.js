@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import IconButton from '@mui/material/IconButton';
+import IconButton from '@mui/material/Button';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import Typography from '@mui/material/Typography';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import { useAuthContext } from '../../contexts/auth';
-import { getAllBuildings } from '../../api/buildings';
+import { getAllBuildings, deleteBuilding } from '../../api/buildings';
 
 export default function Buildings() {
   const [buildings, setBuildings] = useState([]);
@@ -28,6 +28,32 @@ export default function Buildings() {
     }
   };
 
+  // Function to handle building card click
+  const handleBuildingClick = (building) => {
+    // Handle building click here, e.g., navigate to a detailed view.
+    console.log('Building clicked:', building);
+  };
+
+  // Function to handle editing a building
+  const handleEditBuilding = (building) => {
+    // Handle editing the building, e.g., navigate to an edit page.
+    console.log('Edit building:', building);
+    // You can navigate to the edit page and pass building data as props.
+  };
+
+  // Function to handle deleting a building
+  const handleDeleteBuilding = async (building) => {
+    // Handle deleting the building.
+    try {
+      const token = await getIdToken();
+      await deleteBuilding(building.id, token);
+      // Update the buildings list after successful deletion.
+      fetchBuildings();
+    } catch (error) {
+      console.error('Error deleting building:', error);
+    }
+  };
+
   return (
     <div className="buildings-page">
       <Typography variant="h4">Buildings ({buildings.length})</Typography>
@@ -44,39 +70,47 @@ export default function Buildings() {
               }
             }}
             style={{
-              flex: '1 0 calc(33.33% - 20px)', // Three cards per row with 20px gap
+              flex: '1 0 calc(33.33% - 20px)',
               cursor: 'pointer',
-              boxShadow: '0px 2px 6px rgba(0, 0, 0, 0.1)', // Added a subtle shadow
+              boxShadow: '0px 2px 6px rgba(0, 0, 0, 0.1)',
               borderRadius: '8px',
               backgroundColor: '#ffffff',
-              border: '1px solid #e0e0e0', // Lighter border color
-              overflow: 'hidden', // Prevent content from overflowing
-              transition: 'box-shadow 0.3s ease-in-out', // Smooth hover effect
+              border: '1px solid #e0e0e0',
+              overflow: 'hidden',
+              transition: 'box-shadow 0.3s ease-in-out',
               display: 'flex',
               flexDirection: 'column',
-              justifyContent: 'space-between', // Space between title and actions
+              justifyContent: 'space-between',
               padding: '20px',
-              minHeight: '250px', // Set a minimum height for consistent card size
-              textDecoration: 'none', // Remove underline from links
-              color: '#333', // Text color
-            
-              // Add a hover effect
-              ':hover': {
-                boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.2)', // Slightly raised shadow on hover
-                transform: 'translateY(-4px)', // Lift the card on hover
-              },
+              minHeight: '250px',
+              textDecoration: 'none',
+              color: '#333',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexGrow: 1 }}>
-                <AccountCircleIcon style={{ fontSize: '1.5rem', marginRight: '5px' }} /> {/* Profile icon */}
+                <AccountCircleIcon style={{ fontSize: '1.5rem', marginRight: '5px' }} />
                 <Typography variant="h6" style={{ marginBottom: '0', flexGrow: 1 }}>{building.buildingName}</Typography>
               </div>
               <div style={{ display: 'flex', gap: '8px' }}>
-                <IconButton aria-label="edit">
+                {/* Edit button */}
+                <IconButton
+                  aria-label="edit"
+                  onClick={(e) => {
+                    e.stopPropagation(); // Prevent card click event propagation
+                    handleEditBuilding(building);
+                  }}
+                >
                   <EditIcon />
                 </IconButton>
-                <IconButton aria-label="delete">
+                {/* Delete button */}
+                <IconButton
+                  aria-label="delete"
+                  onClick={(e) => {
+                    e.stopPropagation(); // Prevent card click event propagation
+                    handleDeleteBuilding(building);
+                  }}
+                >
                   <DeleteIcon />
                 </IconButton>
               </div>
@@ -96,9 +130,4 @@ export default function Buildings() {
       </div>
     </div>
   );
-
-  function handleBuildingClick(building) {
-    // Handle building click here, e.g., navigate to a detailed view.
-    console.log('Building clicked:', building);
-  }
 }
