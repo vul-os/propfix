@@ -44,28 +44,46 @@ function JobDataGrid() {
   };
   
   
-  const renderLabel = (params) => (
-    <Stack direction="row">
-      {params && params.value && !!params.value.length && (
-        <Stack direction="row" flexWrap="wrap" alignItems="center" spacing={1}>
-          {params.value.map((labelId) => (
+  const renderLabel = (params) => {
+    if (!(params && params.value && params.value.length)) {
+      return null; // Return null if there are no labels to render
+    }
+  
+    // Calculate the label lengths and create an array of objects
+    const labeledChips = params.value.map((labelId) => ({
+      label: board?.labels[labelId] ? board.labels[labelId].name : "",
+      length: board?.labels[labelId] ? board.labels[labelId].name.length : 0,
+    }));
+  
+    // Sort the labeledChips array based on label length in ascending order
+    labeledChips.sort((a, b) => a.length - b.length);
+  
+    return (
+      <Stack direction="row">
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center' }}>
+          {labeledChips.map((labeledChip, index) => (
             <Chip
-              key={labelId}
+              key={index} // Use index as the key since labels may have the same length
               style={{
-                backgroundColor: board?.labels[labelId]
-                  ? board.labels[labelId].color
+                backgroundColor: board?.labels[params.value[index]]
+                  ? board.labels[params.value[index]].color
                   : "red",
                 color: 'white', // Set text color to white
+                marginRight: '8px', // Add margin between chips
+                marginBottom: index === labeledChips.length - 1 ? '4px' : '2px', // Add margin at the bottom for the last chip in the row
+                marginTop: index === 0 ? '4px' : '0px', // Add margin at the top for the first chip in the row
               }}
-              label={board?.labels[labelId] ? board.labels[labelId].name : ""}
+              label={labeledChip.label}
               size="small"
               variant="outlined"
             />
           ))}
-        </Stack>
-      )}
-    </Stack>
-  );
+        </div>
+      </Stack>
+    );
+  };
+  
+  
   
   const renderDate = (params) => {
     const formattedDate = formatDate(params.value);
@@ -168,7 +186,7 @@ function JobDataGrid() {
       renderCell: avatarRenderer,
     },
     { field: 'cost', headerName: 'Cost', type: 'number', width: 60  },
-    { field: 'createdAt', headerName: 'Created At', width: 90, renderCell: renderDate },
+    { field: 'createdAt', headerName: 'Created At', width: 150, renderCell: renderDate },
   ];
 
   const handleRowClick = (params) => {
@@ -203,13 +221,15 @@ function JobDataGrid() {
 
       {jobs && !boardLoading && (
         <DataGrid
-          rows={jobs}
-          columns={columns}
-          pageSize={10}
-          rowsPerPageOptions={[10]}
-          checkboxSelection
-          onRowClick={handleRowClick}
-        />
+        rows={jobs}
+        columns={columns}
+        pageSize={10}
+        rowsPerPageOptions={[10]}
+        checkboxSelection
+        onRowClick={handleRowClick}
+        getRowHeight={() => 60} // Set the desired row height (in pixels)
+      />
+      
       )}
 
       {selectedRow && (
@@ -222,7 +242,7 @@ function JobDataGrid() {
       <Fab 
         color="primary" 
         aria-label="add" 
-        style={{ position: 'fixed', bottom: '16px', right: '16px' }} 
+        style={{ position: 'fixed', bottom: '75px', right: '16px' }} 
         onClick={() => setOpen(true)}
       >
         <AddIcon />
