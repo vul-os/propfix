@@ -29,9 +29,9 @@ export async function uploadFile(jobId, file, token) {
 }
 
 // Function to get a file
-export async function getFile(jobId, filename, idToken) {
+export async function getFile(jobIdFilename, idToken) {
   try {
-    const response = await axios.get(`${API_BASE_URL}/download/${jobId}/${filename}`, {
+    const response = await axios.get(`${API_BASE_URL}/download/${jobIdFilename}`, {
       headers: {
         Authorization: idToken,
       },

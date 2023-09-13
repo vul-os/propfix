@@ -13,6 +13,8 @@ import { useAuthContext } from '../../../contexts/auth';
 import { useBoardContext } from '../../../contexts/board'; 
 import { getAllEvents, createEvent } from '../../../api/events';
 import { updateJob, deleteJob } from '../../../api/jobs';
+import { moveJob } from '../../../api/columnJobLinks';
+import { uploadFile, getFile, deleteFile } from '../../../api/attachments';
 
 import Scrollbar from '../../../components/scrollbar';
 
@@ -51,9 +53,9 @@ export default function PopOver({
   const { board, setBoard, boardLoading } = useBoardContext(); // Use the BoardProvider context
   const [selectedColumnMap, setSelectedColumnMap] = useState({});
   const [newJob, setNewJob] = useState({...job});
-  console.log("thejob", job, newJob)
 
   const [events, setEvents] = useState([]); // State for the switch
+  const [files, setFiles] = useState([]);
 
   
   useEffect(() => {
@@ -71,12 +73,92 @@ export default function PopOver({
   useEffect(() => {
     if (job.id) {
       setEvents([]);
+      setFiles([])
       setNewJob({...job})
       fetchEvents();
-    }
 
+      // Check if attachments exist on the job
+      if (job.attachments && job.attachments.length > 0) {
+        fetchFiles();
+      }
+    }
   }, [job]);
 
+  async function urlToFile(url, filename, mimeType) {
+    // Fetch the file data as a blob
+    console.log(url)
+    const response = await fetch(url);
+    console.log("resp", response)
+    if (!response.ok) {
+        
+        throw new Error('Network response was not ok');
+    }
+    const blob = await response.blob();
+
+    // Create a file from the blob
+    const file = new File([blob], filename, { type: mimeType || blob.type });
+
+    return file;
+  } 
+
+  const handleDrop = async (acceptedFiles) => {
+    try {
+      const idToken = await getIdToken();
+      const uploadedFile = await uploadFile(
+        job.id,
+        acceptedFiles[0],
+        idToken
+      );
+      const updatedFiles = [...files, ...acceptedFiles];
+      const updatedAttachments = [...newJob.attachments, uploadedFile.objectName]
+      setFiles(updatedFiles);
+      setNewJob(prevJob => ({
+        ...prevJob,
+        attachments: updatedAttachments,
+      }));
+    } catch (error) {
+      console.error('Error adding file:', error);
+    }
+  };
+
+  const handleRemoveFile = useCallback(
+    async (inputFile) => {
+      try {
+        const token = await getIdToken(); 
+
+        await deleteFile(job.id, inputFile.name, token);
+
+        // Filter the files and update the state
+        setFiles((prevFiles) => prevFiles.filter((file) => file !== inputFile));
+      } catch (error) {
+        console.error('Error removing file:', error);
+      }
+    },
+    [job.id]
+  );
+
+  const fetchFiles = async () => {
+    try {
+        const token = await getIdToken(); // Get the token once for all requests
+
+        // Start all the getFile requests concurrently
+        const filePromises = job.attachments.map(attachment => getFile(attachment, token));
+
+        // Wait for all promises to resolve
+        const newFiles = await Promise.all(filePromises);
+        const filteredFiles = newFiles.filter(Boolean);
+
+        // Convert signedUrls to File objects
+        const fileObjPromises = filteredFiles.map(f => urlToFile(f.signedUrl, f.objectName)); // Modify filename accordingly
+        const fileObjects = await Promise.all(fileObjPromises);
+
+        // Update state with File objects
+        setFiles(fileObjects);
+
+    } catch (error) {
+        console.error('Error fetching files:', error);
+    }
+  };
 
   const handleUpdateJob = useCallback(
     async (newJob) => {
@@ -108,15 +190,12 @@ export default function PopOver({
     [getIdToken, enqueueSnackbar]
   );
 
-  const onChangeColumn = (jobId, newSelectedColumn, selectedColumn) => {
-      console.log("dddddd", newSelectedColumn, selectedColumn,)
-  
+  const onChangeColumn = async (jobId, newSelectedColumn, selectedColumn) => {  
       if (newSelectedColumn && newSelectedColumn.jobIds) {
         // Get a copy of job ids from source column
         const newStartJobIds = Array.from(selectedColumn && selectedColumn.jobIds || []).filter(id => id !== jobId);
         // Get a copy of job ids from destination column
         const newEndJobIds = [...Array.from(newSelectedColumn.jobIds || []), jobId];
-        console.log("fdddd", newEndJobIds, newStartJobIds)
         let newBoardState = {
           ...board,
           columns: {
@@ -144,20 +223,19 @@ export default function PopOver({
             },
           };
         }
-        console.log("here212121e: ", newStartJobIds, newEndJobIds)
         setBoard(newBoardState);
         setSelectedColumnMap(prevMap => ({
           ...prevMap,
           [job.id]: newSelectedColumn
         }));
-        // actually do api request
-        // await moveJob(
-        //   sourceColumn.id,
-        //   destinationColumn.id,
-        //   draggableId,
-        //   destination.index,
-        //   token 
-        // );
+        const token = await getIdToken(); // Get the JWT token from the auth context
+        await moveJob(
+          selectedColumn?.id,
+          newSelectedColumn?.id,
+          job.id,
+          0,
+          token 
+        );
       }
 
   }
@@ -250,7 +328,7 @@ export default function PopOver({
             px: 2.5,
           }}
         >
-          <JobDetails job={newJob} setJob={setNewJob} members={board?.members} labels={board?.labels} />
+          <JobDetails job={newJob} setJob={setNewJob} members={board?.members} labels={board?.labels} files={files} handleDrop={handleDrop} handleRemoveFile={handleRemoveFile} />
           <EventsList events={events} members={board?.members}/>
         </Stack>
       </Scrollbar>

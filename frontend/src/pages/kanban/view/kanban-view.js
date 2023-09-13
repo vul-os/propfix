@@ -23,69 +23,70 @@ export default function KanbanView() {
 
   const onDragEnd = useCallback(
     async ({ destination, source, draggableId, type }) => {
-      const token = await getIdToken(); 
-      console.log(destination, source, draggableId)
+      const token = await getIdToken();
+      
       try {
-        if (!destination) {
-          return;
-        }
-
-        if (destination.droppableId === source.droppableId && destination.index === source.index) {
+        // If no destination or no change in position, return.
+        if (!destination || (destination.droppableId === source.droppableId && destination.index === source.index)) {
           return;
         }
 
         const sourceColumn = board?.columns[source.droppableId];
         const destinationColumn = board?.columns[destination.droppableId];
 
-        if (sourceColumn && destinationColumn && sourceColumn.id !== destinationColumn.id) {
-          console.log("heree: ", sourceColumn, destinationColumn)
+        if (sourceColumn && destinationColumn) {
           // Get a copy of job ids from source column
           const newStartJobIds = Array.from(sourceColumn.jobIds || []);
-  
-          // Remove the job id from source column
-          newStartJobIds.splice(source.index, 1);
-  
-          // Get a copy of job ids from destination column
-          const newEndJobIds = Array.from(destinationColumn.jobIds || []);
-  
-          // Add the job id to the destination column
-          newEndJobIds.splice(destination.index, 0, draggableId);
-          console.log("heree: ", newStartJobIds, newEndJobIds)
 
-          // Create new board state
-          const newBoardState = {
-            ...board,
-            columns: {
-              ...board.columns,
-              [source.droppableId]: {
-                ...sourceColumn,
-                jobIds: newStartJobIds,
-              },
-              [destination.droppableId]: {
-                ...destinationColumn,
-                jobIds: newEndJobIds,
-              },
-            },
+          if (destination.droppableId === source.droppableId) {
+            // Moving within the same column
+            newStartJobIds.splice(source.index, 1);
+            newStartJobIds.splice(destination.index, 0, draggableId);
+          } else {
+            // Moving between different columns
+            newStartJobIds.splice(source.index, 1);
+            const newEndJobIds = Array.from(destinationColumn.jobIds || []);
+            newEndJobIds.splice(destination.index, 0, draggableId);
+
+            // Update the destination column
+            board.columns[destination.droppableId] = {
+              ...destinationColumn,
+              jobIds: newEndJobIds,
+            };
+          }
+
+          // Update the source column
+          board.columns[source.droppableId] = {
+            ...sourceColumn,
+            jobIds: newStartJobIds,
           };
-          setBoard(newBoardState);
-          // actually do api request
+
+          // Set the new board state
+          setBoard({
+            ...board,
+            columns: board.columns
+          });
+          console.log(            sourceColumn.id,
+            destinationColumn.id,
+            draggableId,
+            destination.index,
+            )
+          // Execute the API request to move the job
           await moveJob(
             sourceColumn.id,
             destinationColumn.id,
             draggableId,
             destination.index,
-            token 
+            token
           );
         }
-   
-        
-        console.info('Moving to a different list!');
       } catch (error) {
         console.error(error);
       }
     },
     [getIdToken, board] 
   );
+
   const renderSkeleton = (
     <Stack direction="row" alignItems="flex-start" spacing={3}>
       {[...Array(4)].map((_, index) => (
@@ -96,7 +97,6 @@ export default function KanbanView() {
 
   return (
     <Container
-      maxWidth={false}
       sx={{
         height: 1,
       }}

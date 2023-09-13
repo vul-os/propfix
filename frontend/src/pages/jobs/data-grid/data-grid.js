@@ -8,24 +8,22 @@ import Typography from '@mui/material/Typography';
 import Fab from '@mui/material/Fab';
 import AddIcon from '@mui/icons-material/Add';
 import Chip from '@mui/material/Chip';
-import Box from '@mui/material/Box';
-
 import EventIcon from '@mui/icons-material/Event';
 import HomeIcon from '@mui/icons-material/Home'; 
+import Button from '@mui/material/Button'; // Import the Button component from Material-UI
 import Iconify from '../../../components/iconify';
 import PopOver from '../pop-over';
 import { useBoardContext } from '../../../contexts/board'; // Import the BoardProvider context
 import CreateJobDialog from '../../job-wizzard/dialog';
-// import { exportToCSV, exportToExcel } from './utils';
+import { exportToCSV, exportToExcel } from './utils';
 
 
 function JobDataGrid() {
   const { board, jobs, boardLoading } = useBoardContext(); // Use the BoardProvider context
   const [open, setOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState(null);
-
-
-  const onClose = () => {
+  
+   const onClose = () => {
     setOpen(false);
   }
 
@@ -36,42 +34,71 @@ function JobDataGrid() {
       <Stack direction="row" spacing={2} alignItems="center" justifyContent="center">
         {members && assignees.length > 0 && assignees.map((assigneeId) => ( members[assigneeId]?.displayName &&
           <Tooltip key={assigneeId} title={members[assigneeId]?.displayName || ''}>
-            <Avatar src={members[assigneeId]?.photoUrl} alt={members[assigneeId]?.displayName || ''} />
+            <Avatar src={members[assigneeId]?.photoUrl} alt={members[assigneeId]?.displayName || ''} sx={{ margin: 0, padding: 0 }} />
           </Tooltip>
         ))}
       </Stack>
     );
   };
   
-  const renderLabel = (params) => (
-    <Stack direction="row"> 
-      {params && params.value && !!params.value.length && (
-        <Stack direction="row" flexWrap="wrap" alignItems="center" spacing={1}>
-          {params.value.map((labelId) => (
-            <Chip key={labelId} style={{ backgroundColor: board?.labels[labelId] ? board.labels[labelId].color : "red"}} label={board?.labels[labelId] ? board.labels[labelId].name : ""} size="small" variant="outlined" />
+  
+  const renderLabel = (params) => {
+    if (!(params && params.value && params.value.length)) {
+      return null; // Return null if there are no labels to render
+    }
+  
+    // Calculate the label lengths and create an array of objects
+    const labeledChips = params.value.map((labelId) => ({
+      label: board?.labels[labelId] ? board.labels[labelId].name : "",
+      length: board?.labels[labelId] ? board.labels[labelId].name.length : 0,
+    }));
+  
+    // Sort the labeledChips array based on label length in ascending order
+    labeledChips.sort((a, b) => a.length - b.length);
+  
+    return (
+      <Stack direction="row">
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center' }}>
+          {labeledChips.map((labeledChip, index) => (
+            <Chip
+              key={index} // Use index as the key since labels may have the same length
+              style={{
+                backgroundColor: board?.labels[params.value[index]]
+                  ? board.labels[params.value[index]].color
+                  : "red",
+                color: 'white', // Set text color to white
+                marginRight: '8px', // Add margin between chips
+                marginBottom: index === labeledChips.length - 1 ? '4px' : '2px', // Add margin at the bottom for the last chip in the row
+                marginTop: index === 0 ? '4px' : '0px', // Add margin at the top for the first chip in the row
+              }}
+              label={labeledChip.label}
+              size="small"
+              variant="outlined"
+            />
           ))}
-        </Stack>
-      )}
-    </Stack>
-  );
-
+        </div>
+      </Stack>
+    );
+  };
+  
+  
+  
   const renderDate = (params) => {
     const formattedDate = formatDate(params.value);
     return (
-      <Stack direction="row" alignItems="center">
-        <EventIcon sx={{ marginRight: 0.5 }} />
+      <Stack direction="row" alignItems="center" sx={{ padding: '0px', color: 'black' }}>
+        <EventIcon sx={{ marginRight: 2 }} />
         {formattedDate}
       </Stack>
     );
   };
 
   const renderBuilding = (params) => {
-    const building = params.value && board?.buildings[params.value]?.buildingName
+    const building = params.value && board?.buildings[params.value]?.buildingName;
     return (
       <Stack direction="row" alignItems="center">
-        <HomeIcon /> {/* Home icon */}
+        <HomeIcon sx={{ marginRight: 2 }} /> {/* Home icon with 1rem (10px) right margin */}
         <span>{building}</span> {/* Building ID value */}
-
       </Stack>
     );
   };
@@ -120,21 +147,22 @@ function JobDataGrid() {
       width: 200,
       renderCell: renderBuilding, // Use the renderBuildingId function for rendering
     },
-    { field: 'name', headerName: 'Name', width: 250 },
+    { field: 'name', headerName: 'Name', width: 200 },
     {
       field: 'labels',
       headerName: 'Labels',
-      width: 250,
+      width: 200,
       renderCell: renderLabel,
     },
-    { field: 'dueDate', headerName: 'Due Date', width: 200, renderCell: renderDate},
+    { field: 'dueDate', headerName: 'Due Date', width: 200,renderCell: renderDate},
     {
       field: 'priority',
       headerName: 'Priority',
       width: 150,
+
       renderCell: renderPriority,
     },
-    { field: 'description', headerName: 'Description', width: 400 },
+    { field: 'description', headerName: 'Description', width: 200 },
     // {
     //   field: 'reporter',
     //   headerName: 'Reporter',
@@ -144,11 +172,11 @@ function JobDataGrid() {
     {
       field: 'assigneeIds',
       headerName: 'Assignees',
-      width: 250,
+      width: 150,
       renderCell: avatarRenderer,
     },
-    { field: 'cost', headerName: 'Cost', type: 'number', width: 150 },
-    { field: 'createdAt', headerName: 'Created At', width: 200, renderCell: renderDate },
+    { field: 'cost', headerName: 'Cost', type: 'number', width: 60  },
+    { field: 'createdAt', headerName: 'Created At', width: 150, renderCell: renderDate },
   ];
 
   const handleRowClick = (params) => {
@@ -157,25 +185,56 @@ function JobDataGrid() {
 
   return (
     <Container maxWidth={false} sx={{ height: 1 }}>
-      <Typography variant="h4" sx={{ mb: { xs: 3, md: 5 } }}>
+      <Typography variant="h4" sx={{ mb: { xs: 3, md: 5 }, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         Jobs
-        {/* <button onClick={() => exportToCSV(jobs, 'jobs')}>Export to CSV</button>
-        <button onClick={() => exportToExcel(jobs, 'jobs')}>Export to Excel</button> */}
+        <Stack direction="row" spacing={2}>
+          <Button
+            variant="contained"
+            sx={{ 
+              backgroundColor: '#1976d2;',
+              color: 'white',
+              border: '1px solid black',
+              WebkitBorderRadius: '10px',
+              display: 'flex',
+              alignItems: 'center', // Align items vertically
+            }}
+            size="small"
+            onClick={() => exportToCSV(jobs, 'jobs')}
+          >
+            <Iconify icon="fa-file-csv" width={20} style={{ marginRight: '8px' }} />
+            Export to CSV
+          </Button>
+          <Button
+            variant="contained"
+            sx={{ 
+              backgroundColor: '#2e7d32;',
+              color: 'white',
+              border: '1px solid black',
+              WebkitBorderRadius: '10px',
+              display: 'flex',
+              alignItems: 'center', // Align items vertically
+            }}
+            size="small"
+            onClick={() => exportToExcel(jobs, 'jobs')}
+          >
+            <Iconify icon="fa-file-excel" width={20} style={{ marginRight: '8px' }} />
+            Export to Excel
+          </Button>
+        </Stack>
       </Typography>
 
-      <Box sx={{}}>
-        {jobs && !boardLoading && (
-          <DataGrid
-            rows={jobs}
-            columns={columns}
-            pageSize={10}
-            rowsPerPageOptions={[10]}
-            checkboxSelection
-            onRowClick={handleRowClick}
-            style={{ height: '100%' }} // Set height to 100%
-          />
-        )}
-      </Box>
+      {jobs && !boardLoading && (
+        <DataGrid
+        rows={jobs}
+        columns={columns}
+        pageSize={10}
+        rowsPerPageOptions={[10]}
+        checkboxSelection
+        onRowClick={handleRowClick}
+        getRowHeight={() => 60} // Set the desired row height (in pixels)
+      />
+      
+      )}
 
       {selectedRow && (
         <PopOver
@@ -187,8 +246,8 @@ function JobDataGrid() {
       <Fab 
         color="primary" 
         aria-label="add" 
-        style={{ position: 'fixed', top: '120px', right: '16px' }} 
-        onClick={() => setOpen(true)} // Set dialog to open when FAB is clicked
+        style={{ position: 'fixed', bottom: '75px', right: '16px' }} 
+        onClick={() => setOpen(true)}
       >
         <AddIcon />
       </Fab>
@@ -198,4 +257,3 @@ function JobDataGrid() {
 }
 
 export default JobDataGrid;
-

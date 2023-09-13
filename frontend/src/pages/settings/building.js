@@ -1,15 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import IconButton from '@mui/material/Button';
+import IconButton from '@mui/material/IconButton';
 import EditIcon from '@mui/icons-material/Edit';
+import SaveIcon from '@mui/icons-material/Save';
 import DeleteIcon from '@mui/icons-material/Delete';
+import CloseIcon from '@mui/icons-material/Close';
 import Typography from '@mui/material/Typography';
-import LocationOnIcon from '@mui/icons-material/LocationOn';
-import AccountCircleIcon from '@mui/icons-material/AccountCircle';
+import Table from '@mui/material/Table';
+import TableHead from '@mui/material/TableHead';
+import TableRow from '@mui/material/TableRow';
+import TableCell from '@mui/material/TableCell';
+import TableBody from '@mui/material/TableBody';
+import TableContainer from '@mui/material/TableContainer';
+import Paper from '@mui/material/Paper';
+import TextField from '@mui/material/TextField';
 import { useAuthContext } from '../../contexts/auth';
-import { getAllBuildings, deleteBuilding } from '../../api/buildings';
+import { getAllBuildings, deleteBuilding, updateBuilding } from '../../api/buildings';
 
 export default function Buildings() {
   const [buildings, setBuildings] = useState([]);
+  const [editing, setEditing] = useState(null); // ID of building currently being edited
+  const [editedBuilding, setEditedBuilding] = useState({}); // Temporary state for the edited building
   const { getIdToken, activeOrganization } = useAuthContext();
 
   useEffect(() => {
@@ -28,26 +38,31 @@ export default function Buildings() {
     }
   };
 
-  // Function to handle building card click
-  const handleBuildingClick = (building) => {
-    // Handle building click here, e.g., navigate to a detailed view.
-    console.log('Building clicked:', building);
+  const startEditing = (building) => {
+    setEditedBuilding(building);
+    setEditing(building.id);
   };
 
-  // Function to handle editing a building
-  const handleEditBuilding = (building) => {
-    // Handle editing the building, e.g., navigate to an edit page.
-    console.log('Edit building:', building);
-    // You can navigate to the edit page and pass building data as props.
+  const saveEditing = async () => {
+    console.log('Save changes for building:', editedBuilding);
+    try {
+      const token = await getIdToken();
+      const response = await updateBuilding(editedBuilding, token);
+      setEditing(null);
+      fetchBuildings()
+    } catch (error) {
+      console.error('Error fetching buildings:', error);
+    }    
   };
-
-  // Function to handle deleting a building
+  
+  const closeEditing = () => {
+    setEditing(null);
+  };
+  
   const handleDeleteBuilding = async (building) => {
-    // Handle deleting the building.
     try {
       const token = await getIdToken();
       await deleteBuilding(building.id, token);
-      // Update the buildings list after successful deletion.
       fetchBuildings();
     } catch (error) {
       console.error('Error deleting building:', error);
@@ -57,77 +72,80 @@ export default function Buildings() {
   return (
     <div className="buildings-page">
       <Typography variant="h4">Buildings ({buildings.length})</Typography>
-      <div className="building-cards" style={{ display: 'flex', flexWrap: 'wrap', gap: '20px' }}>
-        {buildings.map((building) => (
-          <div
-            key={building.id}
-            role="button"
-            tabIndex={0}
-            onClick={() => handleBuildingClick(building)}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter' || event.key === ' ') {
-                handleBuildingClick(building);
-              }
-            }}
-            style={{
-              flex: '1 0 calc(33.33% - 20px)',
-              cursor: 'pointer',
-              boxShadow: '0px 2px 6px rgba(0, 0, 0, 0.1)',
-              borderRadius: '8px',
-              backgroundColor: '#ffffff',
-              border: '1px solid #e0e0e0',
-              overflow: 'hidden',
-              transition: 'box-shadow 0.3s ease-in-out',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between',
-              padding: '20px',
-              minHeight: '250px',
-              textDecoration: 'none',
-              color: '#333',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexGrow: 1 }}>
-                <AccountCircleIcon style={{ fontSize: '1.5rem', marginRight: '5px' }} />
-                <Typography variant="h6" style={{ marginBottom: '0', flexGrow: 1 }}>{building.buildingName}</Typography>
-              </div>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                {/* Edit button */}
-                <IconButton
-                  aria-label="edit"
-                  onClick={(e) => {
-                    e.stopPropagation(); // Prevent card click event propagation
-                    handleEditBuilding(building);
-                  }}
-                >
-                  <EditIcon />
-                </IconButton>
-                {/* Delete button */}
-                <IconButton
-                  aria-label="delete"
-                  onClick={(e) => {
-                    e.stopPropagation(); // Prevent card click event propagation
-                    handleDeleteBuilding(building);
-                  }}
-                >
-                  <DeleteIcon />
-                </IconButton>
-              </div>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px', marginLeft: '5px' }}>
-              <LocationOnIcon style={{ fontSize: '2rem' }} />
-              <Typography variant="body2" style={{ marginLeft: '5px' }}>{building.address}</Typography>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', marginLeft: '5px' }}>
-              <LocationOnIcon style={{ fontSize: '2rem' }} />
-              <Typography variant="body2" style={{ marginLeft: '5px' }}>
-                {building.latitude} / {building.longitude}
-              </Typography>
-            </div>
-          </div>
-        ))}
-      </div>
+      
+      <TableContainer component={Paper}>
+        <Table aria-label="buildings table">
+          <TableHead>
+            <TableRow>
+              <TableCell>Name</TableCell>
+              <TableCell>Address</TableCell>
+              <TableCell>Latitude</TableCell>
+              <TableCell>Longitude</TableCell>
+              <TableCell>Actions</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {buildings.map((building) => (
+              <TableRow key={building.id}>
+                <TableCell>
+                  {editing === building.id ? (
+                    <TextField 
+                      value={editedBuilding.buildingName} 
+                      onChange={(e) => setEditedBuilding(prev => ({...prev, buildingName: e.target.value}))}
+                    />
+                  ) : building.buildingName}
+                </TableCell>
+                <TableCell>
+                  {editing === building.id ? (
+                    <TextField 
+                      value={editedBuilding.address} 
+                      onChange={(e) => setEditedBuilding(prev => ({...prev, address: e.target.value}))}
+                    />
+                  ) : building.address}
+                </TableCell>
+                <TableCell>
+                  {editing === building.id ? (
+                    <TextField 
+                      value={editedBuilding.latitude} 
+                      onChange={(e) => setEditedBuilding(prev => ({...prev, latitude: e.target.value}))}
+                    />
+                  ) : building.latitude}
+                </TableCell>
+                <TableCell>
+                  {editing === building.id ? (
+                    <TextField 
+                      value={editedBuilding.longitude} 
+                      onChange={(e) => setEditedBuilding(prev => ({...prev, longitude: e.target.value}))}
+                    />
+                  ) : building.longitude}
+                </TableCell>
+                <TableCell>
+                  {editing === building.id ? (
+                    <>
+                      <IconButton onClick={saveEditing} aria-label="Save">
+                        <SaveIcon />
+                      </IconButton>
+                      <IconButton onClick={closeEditing} aria-label="Close">
+                        <CloseIcon />
+                      </IconButton>
+                    </>
+                  ) : (
+                    <>
+                      <IconButton onClick={() => startEditing(building)} aria-label="Edit">
+                        <EditIcon />
+                      </IconButton>
+                      <IconButton onClick={() => handleDeleteBuilding(building)} aria-label="Delete">
+                        <DeleteIcon />
+                      </IconButton>
+                    </>
+                  )}
+                </TableCell>
+
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
     </div>
   );
 }
