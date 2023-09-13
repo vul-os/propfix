@@ -23,9 +23,9 @@ export async function updateLabel(label, idToken) {
   }
 }
 
-export async function deleteLabel(labelId, idToken) {
+export async function deleteLabel(id, idToken) {
   try {
-    const params = [labelId, idToken];
+    const params = [{id}];
     await jsonRpcRequest('Labels.DeleteLabel', params, idToken);
   } catch (error) {
     console.error('Error deleting label:', error);
