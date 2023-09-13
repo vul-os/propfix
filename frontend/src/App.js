@@ -22,7 +22,6 @@ import ForgotPasswordPage from './pages/auth/forgot-password-page'; // Update th
 // layouts
 import DashboardLayout from './layouts/dashboard';
 import LoginPage from './pages/auth/LoginPage';
-
 import Settings from './pages/settings';
 import { KanbanView } from './pages/kanban/view';
 import JobDataGrid from './pages/jobs/data-grid/data-grid';
@@ -30,6 +29,7 @@ import EventsList from './pages/jobs/events/events-list';
 
 // Import the Stepper component
 import Stepper from './pages/job-wizzard/stepper'; // Make sure this path is correct
+import AcceptInvite from './pages/auth/accept-invite';
 
 function App() {
   return (
@@ -53,6 +53,7 @@ function App() {
                   <Route path="/auth/login" element={<LoginPage />} />
                   <Route path="/auth/signup" element={<SignUpPage />} />
                   <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
+                  <Route path="/accept-invite/:organizationId" element={<AcceptInvite />} />
                   <Route
                     path="/"
                     element={

@@ -69,7 +69,7 @@ const Profile = () => {
         <Button variant="outlined" color="primary" sx={{ marginTop: theme.spacing(2) }}>
           Reset Password
         </Button>
-        <Button variant="outlined" color="secondary" sx={{ marginTop: theme.spacing(2), marginLeft: theme.spacing(2) }}>
+        <Button variant="outlined" sx={{ marginTop: theme.spacing(2), marginLeft: theme.spacing(2) }}>
           Log Out
         </Button>
       </Grid>
