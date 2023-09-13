@@ -47,12 +47,15 @@ export default function JobDetails({ job, setJob, members, labels, files, handle
 
   const handleToggleAssignee = useCallback((member) => {
     setJob((prevJob) => {
-        const isAssigned = prevJob?.assigneeIds?.some(person => person === member.id);
+        // Using a fallback for null/undefined assigneeIds
+        const currentAssignees = prevJob.assigneeIds || [];
+
+        const isAssigned = currentAssignees.some(personId => personId === member.id);
         
         // If the member is already assigned, filter them out, otherwise add them
         const updatedAssignees = isAssigned 
-            ? prevJob?.assigneeIds?.filter(person => person !== member.id)
-            : [...prevJob.assigneeIds, member.id];
+            ? currentAssignees.filter(personId => personId !== member.id)
+            : [...currentAssignees, member.id];
 
         return {
             ...prevJob,
@@ -60,7 +63,6 @@ export default function JobDetails({ job, setJob, members, labels, files, handle
         };
     });
   }, []);
-
 
   const renderName = useMemo(() => (
     <InputName
