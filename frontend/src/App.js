@@ -30,6 +30,7 @@ import EventsList from './pages/jobs/events/events-list';
 
 // Import the Stepper component
 import Stepper from './pages/job-wizzard/stepper'; // Make sure this path is correct
+import AcceptInvite from './pages/auth/accept-invite';
 
 function App() {
   return (
@@ -53,6 +54,7 @@ function App() {
                   <Route path="/auth/login" element={<LoginPage />} />
                   <Route path="/auth/signup" element={<SignUpPage />} />
                   <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
+                  <Route path="/accept-invite/:organizationId" element={<AcceptInvite />} />
                   <Route
                     path="/"
                     element={

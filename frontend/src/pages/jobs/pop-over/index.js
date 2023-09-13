@@ -13,6 +13,7 @@ import { useAuthContext } from '../../../contexts/auth';
 import { useBoardContext } from '../../../contexts/board'; 
 import { getAllEvents, createEvent } from '../../../api/events';
 import { updateJob, deleteJob } from '../../../api/jobs';
+import { moveJob } from '../../../api/columnJobLinks';
 
 import Scrollbar from '../../../components/scrollbar';
 
@@ -108,15 +109,12 @@ export default function PopOver({
     [getIdToken, enqueueSnackbar]
   );
 
-  const onChangeColumn = (jobId, newSelectedColumn, selectedColumn) => {
-      console.log("dddddd", newSelectedColumn, selectedColumn,)
-  
+  const onChangeColumn = async (jobId, newSelectedColumn, selectedColumn) => {  
       if (newSelectedColumn && newSelectedColumn.jobIds) {
         // Get a copy of job ids from source column
         const newStartJobIds = Array.from(selectedColumn && selectedColumn.jobIds || []).filter(id => id !== jobId);
         // Get a copy of job ids from destination column
         const newEndJobIds = [...Array.from(newSelectedColumn.jobIds || []), jobId];
-        console.log("fdddd", newEndJobIds, newStartJobIds)
         let newBoardState = {
           ...board,
           columns: {
@@ -144,20 +142,19 @@ export default function PopOver({
             },
           };
         }
-        console.log("here212121e: ", newStartJobIds, newEndJobIds)
         setBoard(newBoardState);
         setSelectedColumnMap(prevMap => ({
           ...prevMap,
           [job.id]: newSelectedColumn
         }));
-        // actually do api request
-        // await moveJob(
-        //   sourceColumn.id,
-        //   destinationColumn.id,
-        //   draggableId,
-        //   destination.index,
-        //   token 
-        // );
+        const token = await getIdToken(); // Get the JWT token from the auth context
+        await moveJob(
+          selectedColumn?.id,
+          newSelectedColumn?.id,
+          job.id,
+          0,
+          token 
+        );
       }
 
   }
