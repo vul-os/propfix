@@ -97,7 +97,6 @@ export default function KanbanView() {
 
   return (
     <Container
-      maxWidth={false}
       sx={{
         height: 1,
       }}

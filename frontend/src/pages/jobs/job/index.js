@@ -28,14 +28,12 @@ const StyledLabel = styled('span')(({ theme }) => ({
   fontWeight: theme.typography.fontWeightSemiBold,
 }));
 
-export default function JobDetails({ job, setJob, members, labels }) {
+export default function JobDetails({ job, setJob, members, labels, files, handleDrop, handleRemoveFile,  }) {
   const contacts = useBoolean();
   const assignees = useMemo(() => job?.assigneeIds?.map((jobId) => members && members[jobId]), [job?.assigneeIds, members]);
-  const [files, setFiles] = useState([]);
-
+  console.log("files1: ", files)
   useEffect(() => {
-    
-  }, [job.attachments])
+  }, [job.id])
 
   const handleUpdateField = useCallback((field) => {
     return (event) => {
@@ -159,7 +157,7 @@ export default function JobDetails({ job, setJob, members, labels }) {
   const renderAttachments = useMemo(() => (
     <Stack direction="row">
       <StyledLabel>Attachments</StyledLabel>
-      <Attachments jobId={job.id} files={files} setFiles={setFiles} />
+      <Attachments files={files} handleDrop={handleDrop} handleRemoveFile={handleRemoveFile} />
     </Stack>
   ), [job.id, files]);
 
