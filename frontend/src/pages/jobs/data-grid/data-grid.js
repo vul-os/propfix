@@ -197,7 +197,7 @@ function JobDataGrid() {
             onClick={() => exportToCSV(jobs, 'jobs')}
           >
             {/* Replace the text and Iconify component with the CSV logo */}
-            <Iconify icon={fileCsv} width={20} style={{ marginRight: '8px' }} />
+            {/* <Iconify icon={fileCsv} width={20} style={{ marginRight: '8px' }} /> */}
             Export to CSV
           </Button>
           {/* ... */}
