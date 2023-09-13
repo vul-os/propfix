@@ -11,11 +11,13 @@ import Chip from '@mui/material/Chip';
 import EventIcon from '@mui/icons-material/Event';
 import HomeIcon from '@mui/icons-material/Home'; 
 import Button from '@mui/material/Button'; // Import the Button component from Material-UI
+import { Icon } from '@iconify/react';
 import Iconify from '../../../components/iconify';
 import PopOver from '../pop-over';
 import { useBoardContext } from '../../../contexts/board'; // Import the BoardProvider context
 import CreateJobDialog from '../../job-wizzard/dialog';
 import { exportToCSV, exportToExcel } from './utils';
+
 
 
 function JobDataGrid() {
@@ -128,7 +130,7 @@ function JobDataGrid() {
             color: getIconColor(),
           }}
         />
-        {priority}
+        <strong>{priority.toUpperCase()}</strong>
       </Stack>
     );
   };
@@ -140,12 +142,20 @@ function JobDataGrid() {
 
   const columns = [
     { field: 'id', headerName: 'ID', width: 150 },
-    { field: 'unitIdentifier', headerName: 'Unit Identifier', width: 200 },
+    {
+      field: 'unitIdentifier',
+      headerName: 'Unit Number',
+      width: 200,
+      valueGetter: (params) => params.row.unitIdentifier.toUpperCase(), // Convert cell content to uppercase
+      renderCell: (params) => (
+        <strong>{params.value}</strong> // Wrap cell content in a <strong> element for bold text
+      ),
+    },
     {
       field: 'buildingId',
-      headerName: 'Building ID',
+      headerName: 'Building',
       width: 200,
-      renderCell: renderBuilding, // Use the renderBuildingId function for rendering
+      renderCell: renderBuilding,
     },
     { field: 'name', headerName: 'Name', width: 200 },
     {
@@ -175,8 +185,18 @@ function JobDataGrid() {
       width: 150,
       renderCell: avatarRenderer,
     },
-    { field: 'cost', headerName: 'Cost', type: 'number', width: 60  },
-    { field: 'createdAt', headerName: 'Created At', width: 150, renderCell: renderDate },
+
+     // Add the Hour column after the Assignees column
+     {
+      field: 'hours',
+      headerName: 'Hours',
+      width: 100,
+      align: '-4px',
+      headerAlign: '-5px',
+    },
+
+    { field: 'cost', headerName: 'Cost', type: 'number', width: 60 , headerAlign: '-5px', },
+    { field: 'createdAt', headerName: 'Created At', width: 160, renderCell: renderDate },
   ];
 
   const handleRowClick = (params) => {
@@ -191,34 +211,43 @@ function JobDataGrid() {
           <Button
             variant="contained"
             sx={{ 
-              backgroundColor: '#1976d2;',
+              backgroundColor: 'black;',
               color: 'white',
-              border: '1px solid black',
-              WebkitBorderRadius: '10px',
+              borderRadius: '50%', // Use 50% to make it round
+              minWidth: 0, // To prevent automatic width expansion
+              width: '40px', // Set a fixed width (adjust as needed)
+              height: '40px', // Set a fixed height (adjust as needed)
+              WebkitBorderRadius: '30px',
               display: 'flex',
               alignItems: 'center', // Align items vertically
+  
             }}
             size="small"
             onClick={() => exportToCSV(jobs, 'jobs')}
           >
-            <Iconify icon="fa-file-csv" width={20} style={{ marginRight: '8px' }} />
-            Export to CSV
+            <Icon
+            icon="grommet-icons:document-csv"
+            style={{ fontSize: '20em',}} // Adjust the fontSize here
+  />
           </Button>
           <Button
             variant="contained"
             sx={{ 
-              backgroundColor: '#2e7d32;',
+              backgroundColor: 'black',
               color: 'white',
               border: '1px solid black',
               WebkitBorderRadius: '10px',
               display: 'flex',
               alignItems: 'center', // Align items vertically
+              padding: '15.8px',
             }}
             size="small"
             onClick={() => exportToExcel(jobs, 'jobs')}
           >
-            <Iconify icon="fa-file-excel" width={20} style={{ marginRight: '8px' }} />
-            Export to Excel
+          <Icon
+            icon="file-icons:microsoft-excel"
+            style={{ fontSize: '25px' }} // Adjust the fontSize here
+/>
           </Button>
         </Stack>
       </Typography>
