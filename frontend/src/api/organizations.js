@@ -25,33 +25,56 @@ export async function getAllOrganizations(idToken) {
   }
 }
 
-// Function to fetch all organizations
+// Function to accept a member invite
 export async function acceptMemberInvite(organizationId, idToken) {
   try {
-    const params = {organizationId};
+    const params = { organizationId };
     return await jsonRpcRequest('Organizations.AcceptMemberInvite', params, idToken);
   } catch (error) {
-    console.error('Error fetching all organizations:', error);
-    return [];
+    console.error('Error accepting member invite:', error);
+    return null;
   }
 }
 
+// Function to fetch all members and pending members for an organization
 export async function getAllMembers(organizationId, idToken) {
   try {
-    const params = {organizationId};
+    const params = { organizationId };
     return await jsonRpcRequest('Organizations.GetAllMembers', params, idToken);
   } catch (error) {
-    console.error('Error fetching all organizations:', error);
+    console.error('Error fetching all members:', error);
     return [];
   }
 }
 
+// Function to invite a member to an organization
 export async function inviteMember(email, organizationId, idToken) {
   try {
-    const params = {email, organizationId};
+    const params = { email, organizationId };
     return await jsonRpcRequest('Organizations.InviteMember', params, idToken);
   } catch (error) {
-    console.error('Error fetching all organizations:', error);
-    return [];
+    console.error('Error inviting a member:', error);
+    return null;
+  }
+}
+
+// Function to remove a member from an organization
+export async function removeMember(organizationId, userId, idToken) {
+  try {
+    const params = [{ organizationId, userId }];
+    return await jsonRpcRequest('Organizations.RemoveMember', params, idToken);
+  } catch (error) {
+    console.error('Error removing a member:', error);
+    return null;
+  }
+}
+
+export async function removePendingMember(organizationId, userId, idToken) {
+  try {
+    const params = [{ organizationId, userId }];
+    return await jsonRpcRequest('Organizations.RemovePendingMember', params, idToken);
+  } catch (error) {
+    console.error('Error removing a pending member:', error);
+    return null;
   }
 }

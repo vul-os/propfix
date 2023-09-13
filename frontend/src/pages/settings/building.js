@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import IconButton from '@mui/material/IconButton';
+import AddIcon from '@mui/icons-material/Add'; // Updated the FAB icon
 import EditIcon from '@mui/icons-material/Edit';
 import SaveIcon from '@mui/icons-material/Save';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -12,14 +13,20 @@ import TableCell from '@mui/material/TableCell';
 import TableBody from '@mui/material/TableBody';
 import TableContainer from '@mui/material/TableContainer';
 import Paper from '@mui/material/Paper';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
 import { useAuthContext } from '../../contexts/auth';
-import { getAllBuildings, deleteBuilding, updateBuilding } from '../../api/buildings';
+import { getAllBuildings, deleteBuilding, updateBuilding, createBuilding } from '../../api/buildings';
 
 export default function Buildings() {
   const [buildings, setBuildings] = useState([]);
-  const [editing, setEditing] = useState(null); // ID of building currently being edited
-  const [editedBuilding, setEditedBuilding] = useState({}); // Temporary state for the edited building
+  const [editing, setEditing] = useState(null);
+  const [editedBuilding, setEditedBuilding] = useState({});
+  const [openDialog, setOpenDialog] = useState(false); // State for the dialog
   const { getIdToken, activeOrganization } = useAuthContext();
 
   useEffect(() => {
@@ -47,23 +54,33 @@ export default function Buildings() {
     console.log('Save changes for building:', editedBuilding);
     try {
       const token = await getIdToken();
-      const response = await updateBuilding(editedBuilding, token);
+      if (editing) {
+        await updateBuilding(editedBuilding, token);
+      } else {
+        const createdBuilding = await createBuilding(editedBuilding, token); // Create a new building
+        if (createdBuilding) {
+          // Add the newly created building to the list
+          setBuildings((prevBuildings) => [...prevBuildings, createdBuilding]);
+        }
+      }
       setEditing(null);
-      fetchBuildings()
+      setOpenDialog(false); // Close the dialog
     } catch (error) {
-      console.error('Error fetching buildings:', error);
-    }    
+      console.error('Error saving building:', error);
+    }
   };
   
   const closeEditing = () => {
     setEditing(null);
+    setOpenDialog(false); // Close the dialog
   };
   
   const handleDeleteBuilding = async (building) => {
     try {
       const token = await getIdToken();
       await deleteBuilding(building.id, token);
-      fetchBuildings();
+      // Remove the deleted building from the list
+      setBuildings((prevBuildings) => prevBuildings.filter((b) => b.id !== building.id));
     } catch (error) {
       console.error('Error deleting building:', error);
     }
@@ -72,7 +89,7 @@ export default function Buildings() {
   return (
     <div className="buildings-page">
       <Typography variant="h4">Buildings ({buildings.length})</Typography>
-      
+
       <TableContainer component={Paper}>
         <Table aria-label="buildings table">
           <TableHead>
@@ -89,33 +106,45 @@ export default function Buildings() {
               <TableRow key={building.id}>
                 <TableCell>
                   {editing === building.id ? (
-                    <TextField 
-                      value={editedBuilding.buildingName} 
-                      onChange={(e) => setEditedBuilding(prev => ({...prev, buildingName: e.target.value}))}
+                    <TextField
+                      label="Name"
+                      value={editedBuilding.buildingName}
+                      onChange={(e) => setEditedBuilding({ ...editedBuilding, buildingName: e.target.value })}
+                      fullWidth
+                      margin="dense"
                     />
                   ) : building.buildingName}
                 </TableCell>
                 <TableCell>
                   {editing === building.id ? (
-                    <TextField 
-                      value={editedBuilding.address} 
-                      onChange={(e) => setEditedBuilding(prev => ({...prev, address: e.target.value}))}
+                    <TextField
+                      label="Address"
+                      value={editedBuilding.address}
+                      onChange={(e) => setEditedBuilding({ ...editedBuilding, address: e.target.value })}
+                      fullWidth
+                      margin="dense"
                     />
                   ) : building.address}
                 </TableCell>
                 <TableCell>
                   {editing === building.id ? (
-                    <TextField 
-                      value={editedBuilding.latitude} 
-                      onChange={(e) => setEditedBuilding(prev => ({...prev, latitude: e.target.value}))}
+                    <TextField
+                      label="Latitude"
+                      value={editedBuilding.latitude}
+                      onChange={(e) => setEditedBuilding({ ...editedBuilding, latitude: e.target.value })}
+                      fullWidth
+                      margin="dense"
                     />
                   ) : building.latitude}
                 </TableCell>
                 <TableCell>
                   {editing === building.id ? (
-                    <TextField 
-                      value={editedBuilding.longitude} 
-                      onChange={(e) => setEditedBuilding(prev => ({...prev, longitude: e.target.value}))}
+                    <TextField
+                      label="Longitude"
+                      value={editedBuilding.longitude}
+                      onChange={(e) => setEditedBuilding({ ...editedBuilding, longitude: e.target.value })}
+                      fullWidth
+                      margin="dense"
                     />
                   ) : building.longitude}
                 </TableCell>
@@ -140,12 +169,68 @@ export default function Buildings() {
                     </>
                   )}
                 </TableCell>
-
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </TableContainer>
+
+      {/* Add the FAB here */}
+      <IconButton
+        color="primary"
+        aria-label="Add Building"
+        onClick={() => setOpenDialog(true)} // Open the dialog on click
+        style={{
+          position: 'fixed',
+          bottom: '75px', // Adjusted position
+          right: '16px', // Adjusted position
+          backgroundColor: '#fff', // Added background color
+          boxShadow: '0px 4px 16px rgba(0, 0, 0, 0.1)', // Added box shadow
+        }}
+      >
+        <AddIcon />
+      </IconButton>
+
+      {/* Add the dialog component here */}
+      <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
+        <DialogTitle>{editing ? 'Edit Building' : 'Add Building'}</DialogTitle>
+        <DialogContent>
+          {/* Use the existing table cells as text fields for entering building details */}
+          <TextField
+            label="Name"
+            value={editedBuilding.buildingName}
+            onChange={(e) => setEditedBuilding({ ...editedBuilding, buildingName: e.target.value })}
+            fullWidth
+            margin="dense"
+          />
+          <TextField
+            label="Address"
+            value={editedBuilding.address}
+            onChange={(e) => setEditedBuilding({ ...editedBuilding, address: e.target.value })}
+            fullWidth
+            margin="dense"
+          />
+          <TextField
+            label="Latitude"
+            value={editedBuilding.latitude}
+            onChange={(e) => setEditedBuilding({ ...editedBuilding, latitude: e.target.value })}
+            fullWidth
+            margin="dense"
+          />
+          <TextField
+            label="Longitude"
+            value={editedBuilding.longitude}
+            onChange={(e) => setEditedBuilding({ ...editedBuilding, longitude: e.target.value })}
+            fullWidth
+            margin="dense"
+          />
+          {/* Add more fields as needed */}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={closeEditing}>Cancel</Button>
+          <Button onClick={saveEditing}>Save</Button>
+        </DialogActions>
+      </Dialog>
     </div>
   );
 }
