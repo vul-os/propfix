@@ -16,6 +16,7 @@ import PopOver from '../pop-over';
 import { useBoardContext } from '../../../contexts/board'; // Import the BoardProvider context
 import CreateJobDialog from '../../job-wizzard/dialog';
 import { exportToCSV, exportToExcel } from './utils';
+import { exportToCSV, exportToExcel } from './utils';
 
 
 
@@ -99,18 +100,11 @@ function JobDataGrid() {
     const building = params.value && board?.buildings[params.value]?.buildingName;
     return (
       <Stack direction="row" alignItems="center">
-        <HomeIcon
-          sx={{
-            marginRight: 2,
-          }}
-        />
+        <HomeIcon sx={{ marginRight: 2 }} /> {/* Home icon with 1rem (10px) right margin */}
         <span>{building}</span> {/* Building ID value */}
       </Stack>
     );
   };
-  
-  
-  
   
   const renderPriority = (params) => {
     let { value: priority } = params;
@@ -127,7 +121,6 @@ function JobDataGrid() {
       if (priority === 'medium') return 'warning.main';
       return 'error.main';
     };
-    
   
     return (
       <Stack direction="row" alignItems="center">
@@ -201,7 +194,7 @@ function JobDataGrid() {
           <Button
             variant="contained"
             sx={{ 
-              backgroundColor: '#000814;',
+              backgroundColor: '#1976d2;',
               color: 'white',
               border: '1px solid black',
               WebkitBorderRadius: '10px',
@@ -211,11 +204,25 @@ function JobDataGrid() {
             size="small"
             onClick={() => exportToCSV(jobs, 'jobs')}
           >
-            {/* Replace the text and Iconify component with the CSV logo */}
-            {/* <Iconify icon={fileCsv} width={20} style={{ marginRight: '8px' }} /> */}
+            <Iconify icon="fa-file-csv" width={20} style={{ marginRight: '8px' }} />
             Export to CSV
           </Button>
-          {/* ... */}
+          <Button
+            variant="contained"
+            sx={{ 
+              backgroundColor: '#2e7d32;',
+              color: 'white',
+              border: '1px solid black',
+              WebkitBorderRadius: '10px',
+              display: 'flex',
+              alignItems: 'center', // Align items vertically
+            }}
+            size="small"
+            onClick={() => exportToExcel(jobs, 'jobs')}
+          >
+            <Iconify icon="fa-file-excel" width={20} style={{ marginRight: '8px' }} />
+            Export to Excel
+          </Button>
         </Stack>
       </Typography>
 
