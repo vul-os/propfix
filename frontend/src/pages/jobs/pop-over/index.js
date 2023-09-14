@@ -49,7 +49,7 @@ export default function PopOver({
   openPopOver,
   onClosePopOver,
 }) {
-  const { getIdToken, user } = useAuthContext(); 
+  const { getIdToken, user, activeOrganization } = useAuthContext(); 
   const { board, setBoard, boardLoading } = useBoardContext(); // Use the BoardProvider context
   const [selectedColumnMap, setSelectedColumnMap] = useState({});
   const [newJob, setNewJob] = useState({...job});
@@ -332,7 +332,7 @@ export default function PopOver({
           <EventsList events={events} members={board?.members}/>
         </Stack>
       </Scrollbar>
-      <MessageInput user={user} createMessage={createMessage} />
+      <MessageInput user={user} createMessage={createMessage} activeOrganization={activeOrganization} />
 
     </Drawer>
   );

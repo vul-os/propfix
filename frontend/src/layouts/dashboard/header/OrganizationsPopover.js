@@ -66,7 +66,7 @@ export default function OrganizationsPopover() {
         }}
       >
         <Stack spacing={0.75}>
-          {organizations && organizations.map((option) => (
+          {organizations.map((option) => (
             <MenuItem
               key={option.id}
               selected={option.id === activeOrganization}
