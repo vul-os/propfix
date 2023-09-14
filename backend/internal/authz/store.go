@@ -6,28 +6,27 @@ import (
 	"net/http"
 	"time"
 
-	"cloud.google.com/go/bigquery"
 	"github.com/exolutionza/propfix-backend-go/internal/user"
 	"github.com/exolutionza/propfix-backend-go/internal/utils"
-	"google.golang.org/api/iterator"
+	"github.com/jackc/pgx/v4/pgxpool"
 )
 
 type Role struct {
-	ID          string    `json:"id" bigquery:"id"`
-	Name        string    `json:"name" bigquery:"name"`
-	Description string    `json:"description" bigquery:"description"`
-	UserIDs     []string  `json:"userIds" bigquery:"user_ids"`
-	CreatedAt   time.Time `json:"createdAt" bigquery:"created_at"`
+	ID          string    `json:"id"`
+	Name        string    `json:"name"`
+	Description string    `json:"description"`
+	UserIDs     []string  `json:"userIds"`
+	CreatedAt   time.Time `json:"createdAt"`
 	// Add more fields as needed
 }
 
 type Authz struct {
-	Client *bigquery.Client
+	dbpool *pgxpool.Pool
 }
 
-func NewAuthz(client *bigquery.Client) *Authz {
+func NewAuthz(dbpool *pgxpool.Pool) *Authz {
 	return &Authz{
-		Client: client,
+		dbpool: dbpool,
 	}
 }
 
@@ -35,41 +34,18 @@ func (s *Authz) CheckRolePermission(roleID, resource, permission string) (bool, 
 	ctx := context.Background()
 
 	sqlQuery := fmt.Sprintf(`
-        SELECT %s 
-        FROM permissions 
-        WHERE identifier = @roleID AND resource = @resource
-        LIMIT 1
-    `, permission)
+		SELECT %s 
+		FROM permissions 
+		WHERE identifier = $1 AND resource = $2
+		LIMIT 1
+	`, permission)
 
-	query := s.Client.Query(sqlQuery)
-	query.Parameters = []bigquery.QueryParameter{
-		{
-			Name:  "roleID",
-			Value: roleID,
-		},
-		{
-			Name:  "resource",
-			Value: resource,
-		},
-	}
+	row := s.dbpool.QueryRow(ctx, sqlQuery, roleID, resource)
 
 	var hasPermission bool
-	it, err := query.Read(ctx)
+	err := row.Scan(&hasPermission)
 	if err != nil {
 		return false, err
-	}
-
-	for {
-		var result struct {
-			Permission bool `bigquery:"exists"`
-		}
-		err := it.Next(&result)
-		if err == iterator.Done {
-			break
-		} else if err != nil {
-			return false, err
-		}
-		hasPermission = result.Permission
 	}
 
 	return hasPermission, nil
@@ -79,31 +55,22 @@ func (s *Authz) GetRoleIDsForUser(userID string) ([]string, error) {
 	ctx := context.Background()
 
 	sqlQuery := `
-        SELECT id
-        FROM main.Roles
-        WHERE @userID IN UNNEST(user_ids)
-    `
+		SELECT id
+		FROM roles
+		WHERE $1 = ANY(user_ids)
+	`
 
-	query := s.Client.Query(sqlQuery)
-	query.Parameters = []bigquery.QueryParameter{
-		{
-			Name:  "userID",
-			Value: userID,
-		},
-	}
-
-	it, err := query.Read(ctx)
+	rows, err := s.dbpool.Query(ctx, sqlQuery, userID)
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	var roleIDs []string
-	var roleID string
-	for {
-		err := it.Next(&roleID)
-		if err == iterator.Done {
-			break
-		} else if err != nil {
+	for rows.Next() {
+		var roleID string
+		err := rows.Scan(&roleID)
+		if err != nil {
 			return nil, err
 		}
 		roleIDs = append(roleIDs, roleID)
@@ -119,54 +86,75 @@ func (s *Authz) CheckJobPermission(r *http.Request, jobId, resource, permission 
 		return "", nil
 	}
 
-	sqlQuery := `
-        SELECT EXISTS (
-            SELECT 1
-            FROM jobs
-            WHERE (tenant_identifier = @userID AND id = @jobID)
-                OR (id = @jobID AND organization_id IN UNNEST(@organizationIds))
-            LIMIT 1
-        )
-    `
-
-	query := s.Client.Query(sqlQuery)
-	query.Parameters = []bigquery.QueryParameter{
-		{
-			Name:  "userID",
-			Value: user.ID,
-		},
-		{
-			Name:  "jobID",
-			Value: jobId,
-		},
-		{
-			Name:  "organizationIds",
-			Value: user.OrganizationIds,
-		},
+	// Check Permissions
+	ok, err := s.CheckPermission(r, resource, permission)
+	if ok {
+		return "private", nil
 	}
 
-	var hasPermission bool
-	it, err := query.Read(ctx)
+	// Check job relation for public access to public events
+	sqlJobQuery := `
+		SELECT EXISTS (
+			SELECT 1
+			FROM jobs
+			WHERE tenant_identifier = $1 AND id = $2
+			LIMIT 1
+		)
+	`
+
+	var hasJobRelation bool
+	err = s.dbpool.QueryRow(ctx, sqlJobQuery, user.ID, jobId).Scan(&hasJobRelation)
+	if err != nil || !hasJobRelation {
+		fmt.Println(err)
+		return "", err
+	}
+	return "public", nil
+}
+
+func (s *Authz) CheckJobPermissionAndOrg(r *http.Request, jobId, orgId, resource, permission string) (string, error) {
+	ctx := context.Background()
+	user, ok := r.Context().Value("user").(user.User)
+	if !ok {
+		return "", nil
+	}
+
+	// Check Permissions
+	hasPermission, err := s.CheckPermission(r, resource, permission)
 	if err != nil {
+		return "", err
+	}
+	if !hasPermission {
+		return "", nil
+	}
+
+	// Check job relation for public access to public events
+	sqlJobQuery := `
+		SELECT EXISTS (
+			SELECT 1
+			FROM jobs
+			WHERE tenant_identifier = $1 AND id = $2
+			LIMIT 1
+		)
+	`
+
+	var hasJobRelation bool
+	err = s.dbpool.QueryRow(ctx, sqlJobQuery, user.ID, jobId).Scan(&hasJobRelation)
+	if err != nil || !hasJobRelation {
 		fmt.Println(err)
 		return "", err
 	}
 
-	for {
-		var result struct {
-			Permission bool `bigquery:"exists"`
-		}
-		err := it.Next(&result)
-		if err == iterator.Done {
-			break
-		} else if err != nil {
-			return "", err
-		}
-		hasPermission = result.Permission
+	// Check organization permission
+	if user.OrganizationIds == nil {
+		return "", nil
 	}
 
-	if hasPermission {
-		return "private", nil
+	if orgId == "" {
+		return "", nil
+	}
+
+	if !utils.ContainsString(user.OrganizationIds, orgId) {
+		return "", nil
 	}
 
 	return "public", nil
@@ -187,61 +175,20 @@ func (s *Authz) CheckPermission(r *http.Request, resource string, permission str
 	}
 
 	sqlQuery := `
-    SELECT EXISTS (
-        SELECT 1
-        FROM permissions 
-        WHERE (identifier = @userID OR identifier IN UNNEST(@roleIDs)) 
-              AND resource = @resource 
-              AND (permission = @permission OR permission = 'all')
-        LIMIT 1
-    )
-    `
-
-	query := s.Client.Query(sqlQuery)
-	query.Parameters = []bigquery.QueryParameter{
-		{
-			Name:  "userID",
-			Value: user.ID,
-		},
-		{
-			Name:  "roleIDs",
-			Value: roleIDs,
-		},
-		{
-			Name:  "resource",
-			Value: resource,
-		},
-		{
-			Name:  "permission",
-			Value: permission,
-		},
-	}
-
+	SELECT EXISTS (
+		SELECT 1
+		FROM permissions 
+		WHERE (identifier = $1 OR identifier = ANY($2)) AND resource = $3 AND (permission = $4 OR permission = 'all')
+		LIMIT 1
+	)
+	`
 	var hasPermission bool
-	it, err := query.Read(ctx)
+	err = s.dbpool.QueryRow(ctx, sqlQuery, user.ID, roleIDs, resource, permission).Scan(&hasPermission)
 	if err != nil {
-		fmt.Println("here", err)
+		fmt.Println(err)
 		return false, err
 	}
-
-	for {
-		var result interface{}
-		fmt.Println("here2", &result)
-
-		err := it.Next(&result)
-		if err == iterator.Done {
-			fmt.Println("here2", result)
-
-			break
-		} else if err != nil {
-			fmt.Println("here2", result)
-
-			fmt.Println("here2", err)
-			return false, err
-		}
-		// hasPermission = result.Permission
-	}
-
+	fmt.Println(hasPermission)
 	return hasPermission, nil
 }
 
