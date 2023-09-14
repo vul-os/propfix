@@ -45,7 +45,6 @@ func Server() {
 	frontendUrl := "propfix.co"
 
 	connStr := "user=exolutiontech password=***REMOVED-DB-PASSWORD*** dbname=neondb host=ep-autumn-math-44120355.us-east-2.aws.neon.tech sslmode=verify-full"
-
 	dbpool, err := pgxpool.Connect(context.Background(), connStr)
 	if err != nil {
 		fmt.Println("Failed to connect to PostgreSQL:", err)
