@@ -42,9 +42,9 @@ type CreateEventResponse struct {
 
 func (a *adaptor) CreateEvent(r *http.Request, args *CreateEventRequest, result *CreateEventResponse) error {
 	accessType, err := a.authz.CheckJobPermission(r, args.Event.JobID, "events", "create")
-	if err != nil || accessType == "" {
-		return errors.New("not permitted")
-	}
+	// if err != nil || accessType == "" {
+	// 	return errors.New("not permitted")
+	// }
 
 	if args.Event.Visibility == "public" && accessType == "private" {
 		accessType = "public"
