@@ -19,10 +19,9 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
-import ColorPicker from '@mui/material/ColorPicker'; // Import ColorPicker
 import { useTheme } from '@mui/material/styles';
 import { useAuthContext } from '../../contexts/auth';
-import { getAllLabels, deleteLabel, updateLabel, createLabel } from '../../api/labels'; // Updated API imports
+import { getAllLabels, deleteLabel, updateLabel, createLabel } from '../../api/labels';
 
 export default function Labels() {
   const theme = useTheme();
@@ -49,7 +48,7 @@ export default function Labels() {
   };
 
   const startEditing = (label) => {
-    setEditedLabel(label);
+    setEditedLabel({organizationId: activeOrganization, ...label});
     setEditing(label.id);
   };
 
@@ -120,12 +119,10 @@ export default function Labels() {
                 </TableCell>
                 <TableCell>
                   {editing === label.id ? (
-                    <ColorPicker
-                      label="Label Color"
+                    <input
+                      type="color"
                       value={editedLabel.color}
-                      onChange={(color) => setEditedLabel({ ...editedLabel, color: color.hex })}
-                      fullWidth
-                      margin="dense"
+                      onChange={(e) => setEditedLabel({ ...editedLabel, color: e.target.value })}
                     />
                   ) : (
                     <div
@@ -135,7 +132,7 @@ export default function Labels() {
                         height: '24px',
                         borderRadius: '50%',
                       }}
-                    ></div>
+                  />
                   )}
                 </TableCell>
                 <TableCell>
@@ -192,12 +189,10 @@ export default function Labels() {
             fullWidth
             margin="dense"
           />
-          <ColorPicker
-            label="Label Color"
+          <input
+            type="color"
             value={editedLabel.color}
-            onChange={(color) => setEditedLabel({ ...editedLabel, color: color.hex })}
-            fullWidth
-            margin="dense"
+            onChange={(e) => setEditedLabel({ ...editedLabel, color: e.target.value })}
           />
           {/* Add more fields as needed */}
         </DialogContent>

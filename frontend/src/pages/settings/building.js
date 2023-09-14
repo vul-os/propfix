@@ -92,13 +92,8 @@ export default function Buildings() {
   return (
     <div className="buildings-page">
       <Typography variant="h4">Buildings ({buildings.length})</Typography>
-<<<<<<< HEAD
       
       <TableContainer sx={{ marginTop: theme.spacing(2) }} component={Paper}> 
-=======
-
-      <TableContainer component={Paper}>
->>>>>>> afa9cdcdee909430515da384a8330841051003e9
         <Table aria-label="buildings table">
           <TableHead>
             <TableRow>
