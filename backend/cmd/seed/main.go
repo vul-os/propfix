@@ -183,16 +183,10 @@ func createLabelsTable(dbpool *pgxpool.Pool) error {
 }
 
 func main() {
-	pgHost := "postgresql-142500-0.cloudclusters.net"
-	pgPort := "10082"
-	pgDatabase := "propfix"
-	pgUser := "propfixadmin"
-	pgPassword := "happy123"
 
-	pgConnString := fmt.Sprintf("user=%s password=%s host=%s port=%s dbname=%s sslmode=disable",
-		pgUser, pgPassword, pgHost, pgPort, pgDatabase)
+	connStr := "user=exolutiontech password=***REMOVED-DB-PASSWORD*** dbname=neondb host=ep-autumn-math-44120355.us-east-2.aws.neon.tech sslmode=verify-full"
 
-	dbpool, err := pgxpool.Connect(context.Background(), pgConnString)
+	dbpool, err := pgxpool.Connect(context.Background(), connStr)
 	if err != nil {
 		log.Fatal("Error connecting to the database: ", err)
 	}
