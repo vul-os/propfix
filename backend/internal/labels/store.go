@@ -15,6 +15,8 @@ type Label struct {
 	Color          string `json:"color"`
 }
 
+// updates
+
 type Store struct {
 	pool *pgxpool.Pool
 }
