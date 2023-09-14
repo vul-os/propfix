@@ -86,26 +86,75 @@ func (s *Authz) CheckJobPermission(r *http.Request, jobId, resource, permission 
 		return "", nil
 	}
 
-	// Check Permissions and job relation for public access to public events
-	sqlQuery := `
+	// Check Permissions
+	ok, err := s.CheckPermission(r, resource, permission)
+	if ok {
+		return "private", nil
+	}
+
+	// Check job relation for public access to public events
+	sqlJobQuery := `
 		SELECT EXISTS (
 			SELECT 1
 			FROM jobs
-			WHERE (tenant_identifier = $1 AND id = $2)
-				OR (id = $2 AND organization_id = ANY($3))
+			WHERE tenant_identifier = $1 AND id = $2
 			LIMIT 1
 		)
 	`
 
-	var hasPermission bool
-	err := s.dbpool.QueryRow(ctx, sqlQuery, user.ID, jobId, user.OrganizationIds).Scan(&hasPermission)
+	var hasJobRelation bool
+	err = s.dbpool.QueryRow(ctx, sqlJobQuery, user.ID, jobId).Scan(&hasJobRelation)
+	if err != nil || !hasJobRelation {
+		fmt.Println(err)
+		return "", err
+	}
+	return "public", nil
+}
+
+func (s *Authz) CheckJobPermissionAndOrg(r *http.Request, jobId, orgId, resource, permission string) (string, error) {
+	ctx := context.Background()
+	user, ok := r.Context().Value("user").(user.User)
+	if !ok {
+		return "", nil
+	}
+
+	// Check Permissions
+	hasPermission, err := s.CheckPermission(r, resource, permission)
 	if err != nil {
+		return "", err
+	}
+	if !hasPermission {
+		return "", nil
+	}
+
+	// Check job relation for public access to public events
+	sqlJobQuery := `
+		SELECT EXISTS (
+			SELECT 1
+			FROM jobs
+			WHERE tenant_identifier = $1 AND id = $2
+			LIMIT 1
+		)
+	`
+
+	var hasJobRelation bool
+	err = s.dbpool.QueryRow(ctx, sqlJobQuery, user.ID, jobId).Scan(&hasJobRelation)
+	if err != nil || !hasJobRelation {
 		fmt.Println(err)
 		return "", err
 	}
 
-	if hasPermission {
-		return "private", nil
+	// Check organization permission
+	if user.OrganizationIds == nil {
+		return "", nil
+	}
+
+	if orgId == "" {
+		return "", nil
+	}
+
+	if !utils.ContainsString(user.OrganizationIds, orgId) {
+		return "", nil
 	}
 
 	return "public", nil
@@ -133,14 +182,12 @@ func (s *Authz) CheckPermission(r *http.Request, resource string, permission str
 		LIMIT 1
 	)
 	`
-
 	var hasPermission bool
 	err = s.dbpool.QueryRow(ctx, sqlQuery, user.ID, roleIDs, resource, permission).Scan(&hasPermission)
 	if err != nil {
 		fmt.Println(err)
 		return false, err
 	}
-
 	return hasPermission, nil
 }
 
