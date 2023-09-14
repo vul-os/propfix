@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Table, TableBody, TableCell, TableHead, TableRow, Avatar, Button, Typography, Box, Dialog, DialogTitle, DialogContent, DialogActions, TextField } from '@mui/material';
+import { Table, TableBody, TableCell, TableHead, TableRow, Avatar, Button, Typography, Box, Dialog, DialogTitle, DialogContent, DialogActions, TextField, IconButton } from '@mui/material';
+import DeleteIcon from '@mui/icons-material/Delete';
 import { useTheme } from '@mui/material/styles';
 import { useAuthContext } from '../../contexts/auth';
-import { getAllMembers, inviteMember } from '../../api/organizations';
+import { getAllMembers, inviteMember, removePendingMember, removeMember } from '../../api/organizations';
 
 export default function Organization() {
   const theme = useTheme();
@@ -10,6 +11,8 @@ export default function Organization() {
   const [pendingMembers, setPendingMembers] = useState([]);
   const [openInviteDialog, setOpenInviteDialog] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
+  const [pendingMemberToDelete, setPendingMemberToDelete] = useState(null);
+  const [memberToDelete, setMemberToDelete] = useState(null);
 
   const { getIdToken, activeOrganization, organizations } = useAuthContext();
   const currentOrg = organizations.find(org => org.id === activeOrganization);
@@ -51,6 +54,36 @@ export default function Organization() {
     handleCloseDialog();
   };
 
+  const iconButtonStyle = { color: '#637381' };
+
+  // Function to handle removing a pending member
+  const handleRemovePendingMember = async () => {
+    try {
+      if (pendingMemberToDelete) {
+        const token = await getIdToken();
+        await removePendingMember(activeOrganization, pendingMemberToDelete, token);
+        setPendingMembers((prevPendingMembers) => prevPendingMembers.filter((email) => email !== pendingMemberToDelete));
+        setPendingMemberToDelete(null);
+      }
+    } catch (error) {
+      console.error(`Error removing pending member: ${error}`);
+    }
+  };
+
+  // Function to handle removing a member
+  const handleRemoveMember = async () => {
+    try {
+      if (memberToDelete) {
+        const token = await getIdToken();
+        await removeMember(activeOrganization, memberToDelete, token);
+        setMembers((prevMembers) => prevMembers.filter((member) => member.id !== memberToDelete));
+        setMemberToDelete(null);
+      }
+    } catch (error) {
+      console.error(`Error removing member: ${error}`);
+    }
+  };
+
   return (
     <>
       <Box mb={3}>
@@ -62,7 +95,6 @@ export default function Organization() {
         Invite Member
       </Button>
 
-      {/* Invite Member Dialog */}
       <Dialog open={openInviteDialog} onClose={handleCloseDialog}>
         <DialogTitle>Invite Member</DialogTitle>
         <DialogContent>
@@ -92,6 +124,7 @@ export default function Organization() {
             <TableCell>Avatar</TableCell>
             <TableCell>Name</TableCell>
             <TableCell>Email</TableCell>
+            <TableCell>Actions</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
@@ -102,13 +135,21 @@ export default function Organization() {
               </TableCell>
               <TableCell>{member.displayName || 'N/A'}</TableCell>
               <TableCell>{member.email}</TableCell>
+              <TableCell>
+                <IconButton
+                  color="secondary"
+                  onClick={() => setMemberToDelete(member.id)}
+                  style={iconButtonStyle}
+                >
+                  <DeleteIcon />
+                </IconButton>
+              </TableCell>
             </TableRow>
           ))}
         </TableBody>
       </Table>
 
-     {/* Section for Pending Members */}
-     <Box mt={5}>
+      <Box mt={5}>
         <Typography variant="h6">Pending Members</Typography>
 
         {pendingMembers.length ? (
@@ -116,12 +157,22 @@ export default function Organization() {
             <TableHead>
               <TableRow>
                 <TableCell>Email</TableCell>
+                <TableCell>Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {pendingMembers.map((email, index) => (
                 <TableRow key={index}>
                   <TableCell>{email}</TableCell>
+                  <TableCell>
+                    <IconButton
+                      color="secondary"
+                      onClick={() => setPendingMemberToDelete(email)}
+                      style={iconButtonStyle}
+                    >
+                      <DeleteIcon />
+                    </IconButton>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -130,6 +181,42 @@ export default function Organization() {
           <Typography variant="body1" color="textSecondary">No pending members.</Typography>
         )}
       </Box>
+
+      <Dialog
+        open={!!memberToDelete}
+        onClose={() => setMemberToDelete(null)}
+      >
+        <DialogTitle>Confirm Deletion</DialogTitle>
+        <DialogContent>
+          <Typography variant="body1">Are you sure you want to delete the selected member?</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setMemberToDelete(null)} color="primary">
+            Cancel
+          </Button>
+          <Button onClick={handleRemoveMember} color="secondary">
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={!!pendingMemberToDelete}
+        onClose={() => setPendingMemberToDelete(null)}
+      >
+        <DialogTitle>Confirm Deletion</DialogTitle>
+        <DialogContent>
+          <Typography variant="body1">Are you sure you want to delete the selected pending member?</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setPendingMemberToDelete(null)} color="primary">
+            Cancel
+          </Button>
+          <Button onClick={handleRemovePendingMember} color="secondary">
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 }
