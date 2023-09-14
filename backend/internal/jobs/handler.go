@@ -424,7 +424,7 @@ func (s *adaptor) GetAllMemberIDs(organizationID string, authClient *auth.Client
 	`
 	rows, err := s.dbpool.Query(ctx, query, organizationID)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to execute query: %v", err)
+		return nil, fmt.Errorf("failed to execute query: %v", err)
 	}
 	defer rows.Close()
 
@@ -432,7 +432,7 @@ func (s *adaptor) GetAllMemberIDs(organizationID string, authClient *auth.Client
 	for rows.Next() {
 		var memberID string
 		if err := rows.Scan(&memberID); err != nil {
-			return nil, fmt.Errorf("Failed to scan row: %v", err)
+			return nil, fmt.Errorf("failed to scan row: %v", err)
 		}
 		memberIDs = append(memberIDs, memberID)
 	}
