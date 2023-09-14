@@ -35,12 +35,6 @@ import (
 )
 
 func Server() {
-	pgHost := "postgresql-142500-0.cloudclusters.net"
-	pgPort := "10082"
-	pgDatabase := "propfix"
-	pgUser := "propfixadmin"
-	pgPassword := "happy123"
-
 	bucketName := "propfix-attachments"
 	serverAddress := "0.0.0.0"
 	serverPort := "8080"
@@ -50,10 +44,8 @@ func Server() {
 	mailgunDomain := "mail.propfix.co"
 	frontendUrl := "propfix.co"
 
-	pgConnString := fmt.Sprintf("user=%s password=%s host=%s port=%s dbname=%s sslmode=disable",
-		pgUser, pgPassword, pgHost, pgPort, pgDatabase)
-
-	dbpool, err := pgxpool.Connect(context.Background(), pgConnString)
+	connStr := "user=exolutiontech password=***REMOVED-DB-PASSWORD*** dbname=neondb host=ep-autumn-math-44120355.us-east-2.aws.neon.tech sslmode=verify-full"
+	dbpool, err := pgxpool.Connect(context.Background(), connStr)
 	if err != nil {
 		fmt.Println("Failed to connect to PostgreSQL:", err)
 		return
