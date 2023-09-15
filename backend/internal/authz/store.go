@@ -188,7 +188,6 @@ func (s *Authz) CheckPermission(r *http.Request, resource string, permission str
 		fmt.Println(err)
 		return false, err
 	}
-	fmt.Println(hasPermission)
 	return hasPermission, nil
 }
 
