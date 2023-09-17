@@ -48,7 +48,7 @@ export default function Labels() {
   };
 
   const startEditing = (label) => {
-    setEditedLabel({organizationId: activeOrganization, ...label});
+    setEditedLabel({ organizationId: activeOrganization, ...label });
     setEditing(label.id);
   };
 
@@ -58,15 +58,20 @@ export default function Labels() {
       const token = await getIdToken();
       if (editing) {
         await updateLabel(editedLabel, token);
+        // Update the label in the labels state
+        setLabels((prevLabels) =>
+          prevLabels.map((label) =>
+            label.id === editedLabel.id ? { ...label, ...editedLabel } : label
+          )
+        );
       } else {
-        const createdLabel = await createLabel(editedLabel, token); // Create a new label
+        const createdLabel = await createLabel(editedLabel, token);
         if (createdLabel) {
-          // Add the newly created label to the list
           setLabels((prevLabels) => [...prevLabels, createdLabel]);
         }
       }
       setEditing(null);
-      setOpenDialog(false); // Close the dialog
+      setOpenDialog(false);
     } catch (error) {
       console.error('Error saving label:', error);
     }
@@ -74,15 +79,15 @@ export default function Labels() {
 
   const closeEditing = () => {
     setEditing(null);
-    setOpenDialog(false); // Close the dialog
+    setOpenDialog(false);
   };
 
   const handleDeleteLabel = async (label) => {
     try {
       const token = await getIdToken();
       await deleteLabel(label.id, token);
-      // Remove the deleted label from the list
       setLabels((prevLabels) => prevLabels.filter((l) => l.id !== label.id));
+      fetchLabels();
     } catch (error) {
       console.error('Error deleting label:', error);
     }
@@ -132,13 +137,13 @@ export default function Labels() {
                         height: '24px',
                         borderRadius: '50%',
                       }}
-                  />
+                    />
                   )}
                 </TableCell>
                 <TableCell>
                   {editing === label.id ? (
                     <>
-                      <IconButton onClick={saveEditing} aria-label="Save">
+                      <IconButton onClick={() => saveEditing(label)} aria-label="Save">
                         <SaveIcon />
                       </IconButton>
                       <IconButton onClick={closeEditing} aria-label="Close">
@@ -162,25 +167,23 @@ export default function Labels() {
         </Table>
       </TableContainer>
 
-      {/* Add the FAB here */}
       <IconButton
         color="primary"
         aria-label="Add Label"
-        onClick={() => setOpenDialog(true)} // Open the dialog on click
+        onClick={() => setOpenDialog(true)}
         style={{
           position: 'fixed',
-          bottom: '16px', // Adjusted position
-          right: '16px', // Adjusted position
-          backgroundColor: '#fff', // Added background color
-          boxShadow: '0px 4px 16px rgba(0, 0, 0, 0.1)', // Added box shadow
+          bottom: '16px',
+          right: '16px',
+          backgroundColor: '#fff',
+          boxShadow: '0px 4px 16px rgba(0, 0, 0, 0.1)',
         }}
       >
         <AddIcon />
       </IconButton>
 
-      {/* Add the dialog component here */}
       <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
-        <DialogTitle>{editing ? 'Edit Label' : 'Add Label'}</DialogTitle>
+        <DialogTitle>{editing ? 'Edit Label' : 'Add NewLabel'}</DialogTitle>
         <DialogContent>
           <TextField
             label="Label Name"
@@ -194,7 +197,6 @@ export default function Labels() {
             value={editedLabel.color}
             onChange={(e) => setEditedLabel({ ...editedLabel, color: e.target.value })}
           />
-          {/* Add more fields as needed */}
         </DialogContent>
         <DialogActions>
           <Button onClick={closeEditing}>Cancel</Button>
