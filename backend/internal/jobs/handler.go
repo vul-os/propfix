@@ -190,7 +190,7 @@ type UpdateJobResponse struct {
 func (a *adaptor) UpdateJob(r *http.Request, args *UpdateJobRequest, result *UpdateJobResponse) error {
 	ctx := context.Background()
 
-	ok, err := a.authz.CheckPermissionAndOrgs(r, args.Job.ID, "jobs", "update")
+	ok, err := a.authz.CheckPermissionAndOrgs(r, "jobs", "update", args.Job.OrganizationID)
 	if err != nil || !ok {
 		return errors.New("not permitted")
 	}
@@ -232,8 +232,8 @@ type DeleteJobResponse struct {
 func (a *adaptor) DeleteJob(r *http.Request, args *DeleteJobRequest, result *DeleteJobResponse) error {
 	ctx := context.Background()
 
-	ok, err := a.authz.CheckPermissionAndOrgs(r, args.ID, "jobs", "delete")
-	if err != nil || !ok {
+	ok, err := a.authz.CheckJobPermission(r, args.ID, "jobs", "delete")
+	if err != nil || ok != "private" {
 		return errors.New("not permitted")
 	}
 

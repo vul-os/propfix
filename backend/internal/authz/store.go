@@ -182,6 +182,7 @@ func (s *Authz) CheckPermission(r *http.Request, resource string, permission str
 		LIMIT 1
 	)
 	`
+	fmt.Println(sqlQuery, user.ID, roleIDs, resource, permission)
 	var hasPermission bool
 	err = s.dbpool.QueryRow(ctx, sqlQuery, user.ID, roleIDs, resource, permission).Scan(&hasPermission)
 	if err != nil {
