@@ -116,9 +116,7 @@ func (bs *Store) GetAll(search string, lat float64, long float64, organizationID
 		whereClauses = append(whereClauses, fmt.Sprintf("(building_name ILIKE $%d OR address ILIKE $%d)", i, i))
 		queryArgs = append(queryArgs, "%"+search+"%")
 		i++
-	}
-
-	if lat != 0.0 && long != 0.0 {
+	} else if lat != 0.0 && long != 0.0 {
 		whereClauses = append(whereClauses, fmt.Sprintf("earth_box(ll_to_earth($%d, $%d), 5000) @> ll_to_earth(latitude, longitude)", i, i+1))
 		queryArgs = append(queryArgs, lat, long)
 		i += 2
