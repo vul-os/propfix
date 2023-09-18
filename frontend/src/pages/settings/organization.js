@@ -32,6 +32,7 @@ export default function Organization() {
   const [pendingMembers, setPendingMembers] = useState([]);
   const [openInviteDialog, setOpenInviteDialog] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteEmailError, setInviteEmailError] = useState(null); // State for invite email error
   const [pendingMemberToDelete, setPendingMemberToDelete] = useState(null);
   const [memberToDelete, setMemberToDelete] = useState(null);
 
@@ -62,10 +63,19 @@ export default function Organization() {
   const handleCloseDialog = () => {
     setOpenInviteDialog(false);
     setInviteEmail('');
+    setInviteEmailError(null); // Reset invite email error
   };
 
   const handleInvite = async () => {
     try {
+      setInviteEmailError(null); // Reset invite email error
+
+      // Validate email format for invite
+      if (!isValidEmail(inviteEmail)) {
+        setInviteEmailError('Invalid email address');
+        return;
+      }
+
       const token = await getIdToken();
       await inviteMember(inviteEmail, activeOrganization, token);
       console.log(`Successfully invited member with email: ${inviteEmail}`);
@@ -82,10 +92,10 @@ export default function Organization() {
       if (pendingMemberToDelete) {
         const token = await getIdToken();
         await removePendingMember(pendingMemberToDelete, activeOrganization, token);
-  
+
         // Log the removed pending member
         console.log(`Removed pending member: ${pendingMemberToDelete}`);
-  
+
         setPendingMembers((prevPendingMembers) =>
           prevPendingMembers.filter((email) => email !== pendingMemberToDelete)
         );
@@ -95,7 +105,6 @@ export default function Organization() {
       console.error(`Error removing pending member: ${error}`);
     }
   };
-  
 
   const handleRemoveMember = async () => {
     try {
@@ -112,7 +121,12 @@ export default function Organization() {
       console.error(`Error removing member: ${error}`);
     }
   };
-  
+
+  // Function to check if the email is valid
+  const isValidEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
 
   return (
     <>
@@ -141,6 +155,8 @@ export default function Organization() {
             fullWidth
             value={inviteEmail}
             onChange={(e) => setInviteEmail(e.target.value)}
+            error={!!inviteEmailError} // Highlight invite email field red if there's an error
+            helperText={inviteEmailError} // Display invite email error message
           />
         </DialogContent>
         <DialogActions>
