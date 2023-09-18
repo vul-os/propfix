@@ -4,6 +4,7 @@ import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import { styled, alpha } from '@mui/material/styles';
 import Chip from '@mui/material/Chip';
+import Switch from '@mui/material/Switch';
 import Stack from '@mui/material/Stack';
 import Avatar from '@mui/material/Avatar';
 import TextField from '@mui/material/TextField';
@@ -31,6 +32,7 @@ const StyledLabel = styled('span')(({ theme }) => ({
 export default function JobDetails({ job, setJob, members, labels, files, handleDrop, handleRemoveFile,  }) {
   const contacts = useBoolean();
   const assignees = useMemo(() => job?.assigneeIds?.map((jobId) => members && members[jobId]), [job?.assigneeIds, members]);
+  const reporter = useMemo(() => members && job?.reporterId  &&  members[job?.reporterId], [job?.reporterId, members])
 
   useEffect(() => {
   }, [job?.id, job?.assigneeIds])
@@ -97,7 +99,17 @@ export default function JobDetails({ job, setJob, members, labels, files, handle
     </Stack>
   ), [job.labelIds, setJob, labels]);
   
-  
+  const renderReporter = useMemo(() => (
+    <Stack direction="row">
+      <StyledLabel sx={{ height: 40, lineHeight: '40px' }}>Reporter</StyledLabel>
+      <Stack direction="row" flexWrap="wrap" alignItems="center" spacing={1}>
+        {reporter && 
+          <Avatar key={reporter?.id} alt={reporter?.displayName} src={reporter?.photoUrl} />
+        }
+      </Stack>
+    </Stack>
+  ), [assignees]);
+
   const renderAssignee = useMemo(() => (
     <Stack direction="row">
       <StyledLabel sx={{ height: 40, lineHeight: '40px' }}>Assignee</StyledLabel>
@@ -181,6 +193,13 @@ export default function JobDetails({ job, setJob, members, labels, files, handle
     </Stack>
   ), [job.id, files]);
 
+  const renderRentPaid = useMemo(() => (
+    <Stack direction="row" alignItems="center">
+      <StyledLabel>Rent Paid</StyledLabel>
+      <Switch />
+    </Stack>
+  ), [job.id, files]);
+
   return (
     job && members && labels && <Stack
       spacing={3}
@@ -191,7 +210,9 @@ export default function JobDetails({ job, setJob, members, labels, files, handle
       }}
     >
       {renderName}
+      {renderReporter}
       {renderUnitIdentifier}
+      {renderRentPaid}
       {renderPriority}
       {renderLabel}
       {renderDueDate}
