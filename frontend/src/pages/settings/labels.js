@@ -1,34 +1,43 @@
 import React, { useState, useEffect } from 'react';
-import Autocomplete from '@mui/material/Autocomplete';
-import TextField from '@mui/material/TextField';
-import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
-import EditIcon from '@mui/icons-material/Edit';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import AddIcon from '@mui/icons-material/Add';
-import Chip from '@mui/material/Chip';
-import Typography from '@mui/material/Typography';
-import CancelIcon from '@mui/icons-material/Cancel';
+import EditIcon from '@mui/icons-material/Edit';
 import SaveIcon from '@mui/icons-material/Save';
-import DeleteIcon from '@mui/icons-material/Delete'; // Import DeleteIcon
-
-import Paper from '@mui/material/Paper';
-import TableContainer from '@mui/material/TableContainer';
+import DeleteIcon from '@mui/icons-material/Delete';
+import CloseIcon from '@mui/icons-material/Close';
+import Typography from '@mui/material/Typography';
 import Table from '@mui/material/Table';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import TableCell from '@mui/material/TableCell';
 import TableBody from '@mui/material/TableBody';
+import TableContainer from '@mui/material/TableContainer';
+import Paper from '@mui/material/Paper';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import Button from '@mui/material/Button';
+import TextField from '@mui/material/TextField';
 import { useTheme } from '@mui/material/styles';
-import { getAllLabels, updateLabel, deleteLabel } from '../../api/labels';
-import { useAuthContext,  } from '../../contexts/auth';
+import { useAuthContext } from '../../contexts/auth';
+import { getAllLabels, deleteLabel, updateLabel, createLabel } from '../../api/labels';
 
 export default function Labels() {
   const theme = useTheme();
   const [labels, setLabels] = useState([]);
-  const [editLabel, setEditLabel] = useState(null);
-  const [expandedRow, setExpandedRow] = useState(null);
-
+  const [editing, setEditing] = useState(null);
+  const [editedLabel, setEditedLabel] = useState({});
+  const [openDialog, setOpenDialog] = useState(false); // State for the dialog
+  const [isEditing, setIsEditing] = useState(false); // Separate state for editing
   const { getIdToken, activeOrganization } = useAuthContext();
+
+  useEffect(() => {
+    if (activeOrganization) {
+      fetchLabels();
+    }
+  }, [activeOrganization]);
 
   const fetchLabels = async () => {
     try {
@@ -40,147 +49,187 @@ export default function Labels() {
     }
   };
 
-  const handleLabelUpdate = async () => {
+  const startEditing = (label) => {
+    setEditedLabel({ organizationId: activeOrganization, ...label });
+    setIsEditing(true); // Set the editing state
+    setEditing(label.id);
+  };
+
+  const updateLabelInState = (updatedLabel) => {
+    setLabels((prevLabels) =>
+      prevLabels.map((label) =>
+        label.id === updatedLabel.id ? { ...label, ...updatedLabel } : label
+      )
+    );
+  };
+
+  const saveEditing = async () => {
+    console.log('Save changes for label:', editedLabel);
     try {
       const token = await getIdToken();
-      const resp = await updateLabel(editLabel, token);
-      fetchLabels(); // Refresh the labels after updating
+      if (isEditing) {
+        await updateLabel(editedLabel, token);
+        updateLabelInState(editedLabel);
+      } else {
+        await createNewLabel(editedLabel, token);
+      }
+      setIsEditing(false); // Reset the editing state
+      setEditing(null);
+      setOpenDialog(false);
     } catch (error) {
-      console.error('Error updating label:', error);
+      console.error('Error saving label:', error);
     }
   };
 
-  const handleDeleteLabel = async (labelId) => {
+  const closeEditing = () => {
+    setIsEditing(false); // Reset the editing state
+    setEditing(null);
+    setOpenDialog(false);
+  };
+
+  const handleDeleteLabel = async (label) => {
     try {
       const token = await getIdToken();
-      await deleteLabel(labelId, token);
-      fetchLabels(); // Refresh the labels after deleting
+      await deleteLabel(label.id, token);
+      setLabels((prevLabels) => prevLabels.filter((l) => l.id !== label.id));
     } catch (error) {
       console.error('Error deleting label:', error);
     }
   };
+  
 
-  useEffect(() => {
-    if (activeOrganization) {
-      fetchLabels();
+  const createNewLabel = async (newLabel, token) => {
+    try {
+      const createdLabel = await createLabel(newLabel, token);
+      if (createdLabel.id) {
+        setLabels((prevLabels) => [...prevLabels, createdLabel]);
+      }
+    } catch (error) {
+      console.error('Error creating label:', error);
     }
-  }, [activeOrganization]);
-
-  const handleEditClick = (label) => {
-    setEditLabel({...label});
-    setExpandedRow(label);
-  };
-
-  const handleCancel = () => {
-    setEditLabel(null);
-    setExpandedRow(null);
-  };
-
-  const handleSaveChanges = (label) => {
-    handleLabelUpdate(label);
-    setEditLabel(null);
-    setExpandedRow(null);
   };
 
   return (
     <div className="labels-page">
-      <Typography variant="h4">Labels ({labels.length})</Typography>
+      <Typography variant="h4">
+        Labels ({labels.length})
+        <IconButton onClick={fetchLabels} aria-label="Refresh">
+          <RefreshIcon />
+        </IconButton>
+      </Typography>
 
       <TableContainer sx={{ marginTop: theme.spacing(2) }} component={Paper}>
         <Table aria-label="labels table">
           <TableHead>
             <TableRow>
-              <TableCell>Label Name</TableCell>
+              <TableCell>
+                Label Name
+              </TableCell>
               <TableCell>Color</TableCell>
               <TableCell>Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {labels.map((label) => (
-              <React.Fragment key={label.id}>
-                <TableRow>
-                  <TableCell>
-                    {expandedRow === label ? (
-                      <TextField
-                        label="New Name"
-                        variant="outlined"
-                        fullWidth
-                        value={editLabel ? editLabel.name : ''}
-                        onChange={(e) => {
-                          setEditLabel({
-                            ...editLabel,
-                            name: e.target.value,
-                          });
-                        }}
-                      />
-                    ) : (
-                      <Chip
-                        id={label.id}
-                        label={label.name}
-                        className="github-chip"
-                        style={{ backgroundColor: label.color }}
-                      />
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {expandedRow === label ? (
-                      <input
-                        type="color"
-                        value={editLabel ? editLabel.color : ''}
-                        onChange={(e) => {
-                          setEditLabel({
-                            ...editLabel,
-                            color: e.target.value,
-                          });
-                        }}
-                      />
-                    ) : (
-                      label.color
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {expandedRow === label ? (
-                      <div>
-                        <IconButton
-                          color="secondary"
-                          aria-label="Save"
-                          onClick={() => handleSaveChanges(label)}
-                        >
-                          <SaveIcon /> {/* Save icon */}
-                        </IconButton>
-                        <IconButton
-                          color="secondary"
-                          aria-label="Close"
-                          onClick={handleCancel}
-                        >
-                          <CancelIcon /> {/* Close icon */}
-                        </IconButton>
-                      </div>
-                    ) : (
-                      <div>
-                        <IconButton
-                          color="primary"
-                          onClick={() => handleEditClick(label)}
-                          aria-label="Edit"
-                        >
-                          <EditIcon />
-                        </IconButton>
-                        <IconButton
-                          color="secondary"
-                          aria-label="Delete"
-                          onClick={() => handleDeleteLabel(label.id)}
-                        >
-                          <DeleteIcon /> {/* Delete icon */}
-                        </IconButton>
-                      </div>
-                    )}
-                  </TableCell>
-                </TableRow>
-              </React.Fragment>
+              <TableRow key={label.id}>
+                <TableCell>
+                  {editing === label.id ? (
+                    <TextField
+                      label="Label Name"
+                      value={editedLabel.name}
+                      onChange={(e) => setEditedLabel({ ...editedLabel, name: e.target.value })}
+                      fullWidth
+                      margin="dense"
+                    />
+                  ) : (
+                    label.name
+                  )}
+                </TableCell>
+                <TableCell>
+                  {editing === label.id ? (
+                    <input
+                      type="color"
+                      value={editedLabel.color}
+                      onChange={(e) => setEditedLabel({ ...editedLabel, color: e.target.value })}
+                    />
+                  ) : (
+                    <div
+                      style={{
+                        backgroundColor: label.color,
+                        width: '24px',
+                        height: '24px',
+                        borderRadius: '50%',
+                      }}
+                    />
+                  )}
+                </TableCell>
+                <TableCell>
+                  {editing === label.id ? (
+                    <>
+                      <IconButton onClick={saveEditing} aria-label="Save">
+                        <SaveIcon />
+                      </IconButton>
+                      <IconButton onClick={closeEditing} aria-label="Close">
+                        <CloseIcon />
+                      </IconButton>
+                    </>
+                  ) : (
+                    <>
+                      <IconButton onClick={() => startEditing(label)} aria-label="Edit">
+                        <EditIcon />
+                      </IconButton>
+                      <IconButton onClick={() => handleDeleteLabel(label)} aria-label="Delete">
+                        <DeleteIcon />
+                      </IconButton>
+                    </>
+                  )}
+                </TableCell>
+              </TableRow>
             ))}
           </TableBody>
         </Table>
       </TableContainer>
+
+      <IconButton
+        color="primary"
+        aria-label="Add Label"
+        onClick={() => {
+          setEditedLabel({ organizationId: activeOrganization, name: '', color: '#000000' });
+          setIsEditing(false); // Reset the editing state
+          setOpenDialog(true);
+        }}
+        style={{
+          position: 'fixed',
+          bottom: '16px',
+          right: '16px',
+          backgroundColor: '#fff',
+          boxShadow: '0px 4px 16px rgba(0, 0, 0, 0.1)',
+        }}
+      >
+        <AddIcon />
+      </IconButton>
+
+      <Dialog open={openDialog} onClose={closeEditing}>
+        <DialogTitle>{isEditing ? 'Edit Label' : 'Add New Label'}</DialogTitle>
+        <DialogContent>
+          <TextField
+            label="Label Name"
+            value={editedLabel.name}
+            onChange={(e) => setEditedLabel({ ...editedLabel, name: e.target.value })}
+            fullWidth
+            margin="dense"
+          />
+          <input
+            type="color"
+            value={editedLabel.color}
+            onChange={(e) => setEditedLabel({ ...editedLabel, color: e.target.value })}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={closeEditing}>Cancel</Button>
+          <Button onClick={saveEditing}>Save</Button>
+        </DialogActions>
+      </Dialog>
     </div>
   );
 }

@@ -19,15 +19,18 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
+import { useTheme } from '@mui/material/styles'; // Import the theme
 import { useAuthContext } from '../../contexts/auth';
 import { getAllBuildings, deleteBuilding, updateBuilding, createBuilding } from '../../api/buildings';
 
 export default function Buildings() {
+  const theme = useTheme(); // Use the theme
   const [buildings, setBuildings] = useState([]);
   const [editing, setEditing] = useState(null);
   const [editedBuilding, setEditedBuilding] = useState({});
   const [openDialog, setOpenDialog] = useState(false); // State for the dialog
   const { getIdToken, activeOrganization } = useAuthContext();
+
 
   useEffect(() => {
     if (activeOrganization) {
@@ -89,8 +92,8 @@ export default function Buildings() {
   return (
     <div className="buildings-page">
       <Typography variant="h4">Buildings ({buildings.length})</Typography>
-
-      <TableContainer component={Paper}>
+      
+      <TableContainer sx={{ marginTop: theme.spacing(2) }} component={Paper}> 
         <Table aria-label="buildings table">
           <TableHead>
             <TableRow>
