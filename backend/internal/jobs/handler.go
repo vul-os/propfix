@@ -23,21 +23,21 @@ import (
 )
 
 type Job struct {
-	ID               string    `json:"id"`
-	Name             string    `json:"name"`
-	OrganizationID   string    `json:"organizationId"`
-	Priority         string    `json:"priority"`
-	Description      string    `json:"description"`
-	TenantIdentifier string    `json:"tenantIdentifier"`
-	AssigneeIDs      []string  `json:"assigneeIds"`
-	UnitIdentifier   string    `json:"unitIdentifier"`
-	BuildingID       string    `json:"buildingId"`
-	Labels           []string  `json:"labels"`
-	Attachments      []string  `json:"attachments"`
-	Cost             float64   `json:"cost"`
-	Hours            int       `json:"hours"`
-	DueDate          time.Time `json:"dueDate"`
-	CreatedAt        time.Time `json:"createdAt"`
+	ID             string    `json:"id"`
+	Name           string    `json:"name"`
+	OrganizationID string    `json:"organizationId"`
+	Priority       string    `json:"priority"`
+	Description    string    `json:"description"`
+	ReporterID     string    `json:"reporterId"`
+	AssigneeIDs    []string  `json:"assigneeIds"`
+	UnitIdentifier string    `json:"unitIdentifier"`
+	BuildingID     string    `json:"buildingId"`
+	LabelIDs       []string  `json:"labelIds"`
+	Attachments    []string  `json:"attachments"`
+	Cost           float64   `json:"cost"`
+	Hours          int       `json:"hours"`
+	DueDate        time.Time `json:"dueDate"`
+	CreatedAt      time.Time `json:"createdAt"`
 }
 
 type adaptor struct {
@@ -92,8 +92,8 @@ func (a *adaptor) GetJob(r *http.Request, args *GetJobRequest, result *GetJobRes
 	}
 
 	sqlQuery := `
-		SELECT id, name, organization_id, priority, description, tenant_identifier,
-		assignee_ids, unit_identifier, building_id, labels, attachments,
+		SELECT id, name, organization_id, priority, description, reporter_id,
+		assignee_ids, unit_identifier, building_id, label_ids, attachments,
 		cost, hours, due_date, created_at
 		FROM jobs
 		WHERE id = $1
@@ -104,8 +104,8 @@ func (a *adaptor) GetJob(r *http.Request, args *GetJobRequest, result *GetJobRes
 	var job Job
 	err = row.Scan(
 		&job.ID, &job.Name, &job.OrganizationID, &job.Priority, &job.Description,
-		&job.TenantIdentifier, &job.AssigneeIDs, &job.UnitIdentifier,
-		&job.BuildingID, &job.Labels, &job.Attachments, &job.Cost, &job.Hours,
+		&job.ReporterID, &job.AssigneeIDs, &job.UnitIdentifier,
+		&job.BuildingID, &job.LabelIDs, &job.Attachments, &job.Cost, &job.Hours,
 		&job.DueDate, &job.CreatedAt,
 	)
 
@@ -149,19 +149,19 @@ func (a *adaptor) CreateJob(r *http.Request, args *CreateJobRequest, result *Cre
 
 	args.Job.ID = id
 	args.Job.CreatedAt = time.Now()
-	args.Job.TenantIdentifier = user.ID
+	args.Job.ReporterID = user.ID
 
 	sqlQuery := `
-		INSERT INTO jobs (id, name, organization_id, priority, description, tenant_identifier,
-		assignee_ids, unit_identifier, building_id, labels, attachments, cost, hours,
+		INSERT INTO jobs (id, name, organization_id, priority, description, reporter_id,
+		assignee_ids, unit_identifier, building_id, label_ids, attachments, cost, hours,
 		due_date, created_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
 	`
 
 	_, err = a.dbpool.Exec(ctx, sqlQuery,
 		args.Job.ID, args.Job.Name, args.Job.OrganizationID, args.Job.Priority,
-		args.Job.Description, args.Job.TenantIdentifier, args.Job.AssigneeIDs,
-		args.Job.UnitIdentifier, args.Job.BuildingID, args.Job.Labels,
+		args.Job.Description, args.Job.ReporterID, args.Job.AssigneeIDs,
+		args.Job.UnitIdentifier, args.Job.BuildingID, args.Job.LabelIDs,
 		args.Job.Attachments, args.Job.Cost, args.Job.Hours, args.Job.DueDate,
 		args.Job.CreatedAt)
 
@@ -198,16 +198,16 @@ func (a *adaptor) UpdateJob(r *http.Request, args *UpdateJobRequest, result *Upd
 	sqlQuery := `
 		UPDATE jobs
 		SET name = $1, organization_id = $2, priority = $3, description = $4,
-		tenant_identifier = $5, assignee_ids = $6, unit_identifier = $7,
-		building_id = $8, labels = $9, attachments = $10, cost = $11, hours = $12,
+		report_id = $5, assignee_ids = $6, unit_identifier = $7,
+		building_id = $8, label_ids = $9, attachments = $10, cost = $11, hours = $12,
 		due_date = $13
 		WHERE id = $14
 	`
 
 	_, err = a.dbpool.Exec(ctx, sqlQuery,
 		args.Job.Name, args.Job.OrganizationID, args.Job.Priority,
-		args.Job.Description, args.Job.TenantIdentifier, args.Job.AssigneeIDs,
-		args.Job.UnitIdentifier, args.Job.BuildingID, args.Job.Labels,
+		args.Job.Description, args.Job.ReporterID, args.Job.AssigneeIDs,
+		args.Job.UnitIdentifier, args.Job.BuildingID, args.Job.LabelIDs,
 		args.Job.Attachments, args.Job.Cost, args.Job.Hours, args.Job.DueDate,
 		args.Job.ID)
 
@@ -380,9 +380,9 @@ func (a *adaptor) GetJobsByOrganization(identifier string, permitted bool) ([]Jo
 	// Initialize query based on permissions
 	query := ""
 	if permitted {
-		query = fmt.Sprintf(`SELECT id, name, organization_id, priority, description, tenant_identifier, assignee_ids, unit_identifier, building_id, labels, attachments, cost, hours, due_date, created_at FROM jobs WHERE organization_id = '%s'`, identifier)
+		query = fmt.Sprintf(`SELECT id, name, organization_id, priority, description, reporter_id, assignee_ids, unit_identifier, building_id, label_ids, attachments, cost, hours, due_date, created_at FROM jobs WHERE organization_id = '%s'`, identifier)
 	} else {
-		query = fmt.Sprintf(`SELECT id, name, organization_id, priority, description, tenant_identifier, assignee_ids, unit_identifier, building_id, labels, attachments, cost, hours, due_date, created_at FROM jobs WHERE tenant_identifier = '%s'`, identifier)
+		query = fmt.Sprintf(`SELECT id, name, organization_id, priority, description, reporter_id, assignee_ids, unit_identifier, building_id, label_ids, attachments, cost, hours, due_date, created_at FROM jobs WHERE tenant_identifier = '%s'`, identifier)
 	}
 	rows, err := a.dbpool.Query(ctx, query)
 	if err != nil {
@@ -396,8 +396,8 @@ func (a *adaptor) GetJobsByOrganization(identifier string, permitted bool) ([]Jo
 		var job Job
 		err := rows.Scan(
 			&job.ID, &job.Name, &job.OrganizationID, &job.Priority, &job.Description,
-			&job.TenantIdentifier, &job.AssigneeIDs, &job.UnitIdentifier,
-			&job.BuildingID, &job.Labels, &job.Attachments, &job.Cost, &job.Hours,
+			&job.ReporterID, &job.AssigneeIDs, &job.UnitIdentifier,
+			&job.BuildingID, &job.LabelIDs, &job.Attachments, &job.Cost, &job.Hours,
 			&job.DueDate, &job.CreatedAt,
 		)
 		if err != nil {

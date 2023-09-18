@@ -44,6 +44,7 @@ func Server() {
 	mailgunDomain := "mail.propfix.co"
 	frontendUrl := "propfix.co"
 
+	// neon.tech
 	connStr := "user=exolutiontech password=***REMOVED-DB-PASSWORD*** dbname=neondb host=ep-autumn-math-44120355.us-east-2.aws.neon.tech sslmode=verify-full"
 	dbpool, err := pgxpool.Connect(context.Background(), connStr)
 	if err != nil {

@@ -147,17 +147,19 @@ func createJobsTable(dbpool *pgxpool.Pool) error {
 			name TEXT NOT NULL,
 			priority TEXT,
 			description TEXT,
-			tenant_identifier TEXT,
+			reporter_id TEXT,
 			organization_id TEXT,
 			assignee_ids TEXT[],
 			unit_identifier TEXT,
 			building_id TEXT,
-			labels TEXT[],
+			label_ids TEXT[],
 			attachments TEXT[],
 			cost FLOAT8,
 			hours INT,
+			rent_paid BOOLEAN,
 			due_date TIMESTAMP,
-			created_at TIMESTAMP
+			created_at TIMESTAMP,
+			closed_at TIMESTAMP
 		)
 	`)
 	if err != nil {
