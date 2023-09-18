@@ -24,6 +24,19 @@ function JobDataGrid() {
   const { board, jobs, boardLoading } = useBoardContext(); // Use the BoardProvider context
   const [open, setOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState(null);
+  const [selectedRows, setSelectedRows] = useState([]); // Store selected rows
+
+  const handleRowSelectionChange = (selection) => {
+    setSelectedRows(selection.rows);
+  };
+
+  const handleExportToCSV = () => {
+    exportToCSV(selectedRows, 'jobs'); // Export selected rows to CSV
+  };
+
+  const handleExportToExcel = () => {
+    exportToExcel(selectedRows, 'jobs'); // Export selected rows to Excel
+  };
   
    const onClose = () => {
     setOpen(false);
@@ -223,12 +236,12 @@ function JobDataGrid() {
   
             }}
             size="small"
-            onClick={() => exportToCSV(jobs, 'jobs')}
+            onClick={() => handleExportToCSV}
           >
             <Icon
             icon="grommet-icons:document-csv"
             style={{ fontSize:'20px', marginRight: '1.5px',}} // Adjust the fontSize here
-  />
+            />
           </Button>
           <Button
             variant="contained"
@@ -245,7 +258,7 @@ function JobDataGrid() {
   
             }}
             size="small"
-            onClick={() => exportToExcel(jobs, 'jobs')}
+            onClick={() => handleExportToExcel}
           >
           <Icon
             icon="file-icons:microsoft-excel"
@@ -264,6 +277,7 @@ function JobDataGrid() {
         checkboxSelection
         onRowClick={handleRowClick}
         getRowHeight={() => 60} // Set the desired row height (in pixels)
+        onSelectionChange={handleRowSelectionChange} // Handle row selection change
       />
       
       )}
