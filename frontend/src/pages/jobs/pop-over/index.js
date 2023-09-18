@@ -303,11 +303,12 @@ export default function PopOver({
       }}
     >
       <Toolbar
-        job={job}
-        onDelete={handleDeleteJob}
-        columns={board && board.columns}
-        onChangeColumn={onChangeColumn}
-        selectedColumn={job && selectedColumnMap[job.id]}
+      job={job}
+      onDelete={handleDeleteJob}
+      columns={board && board.columns}
+       onChangeColumn={onChangeColumn}
+         selectedColumn={job && selectedColumnMap[job.id]}
+       onClose={onClose} 
       />
       <Divider />
       <Scrollbar
