@@ -31,7 +31,7 @@ type Event struct {
 
 func (s *EventsStore) CreateEvent(event Event, accessType string, userId string) (string, time.Time, error) {
 	// Perform basic validation on the event data before insertion
-	if event.Type == "" || event.JobID == "" || userId == "" {
+	if event.Type == "" || event.JobID == "" {
 		return "", time.Time{}, fmt.Errorf("Type, Data, JobID, and MemberID are required fields")
 	}
 
@@ -130,9 +130,9 @@ func (s *EventsStore) GetAllEvents(jobID string, visibility string) ([]Event, er
 		FROM events
 		WHERE job_id = $1
 	`
-	// if visibility == "public" {
-	// 	query += " AND visibility = 'public'"
-	// }
+	if visibility == "public" {
+		query += " AND visibility = 'public'"
+	}
 
 	rows, err := s.pool.Query(ctx, query, jobID)
 	if err != nil {

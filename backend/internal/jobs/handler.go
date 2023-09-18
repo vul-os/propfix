@@ -190,8 +190,8 @@ type UpdateJobResponse struct {
 func (a *adaptor) UpdateJob(r *http.Request, args *UpdateJobRequest, result *UpdateJobResponse) error {
 	ctx := context.Background()
 
-	accessType, err := a.authz.CheckJobPermission(r, args.Job.ID, "jobs", "update")
-	if err != nil || accessType == "" {
+	ok, err := a.authz.CheckPermissionAndOrgs(r, "jobs", "update", args.Job.OrganizationID)
+	if err != nil || !ok {
 		return errors.New("not permitted")
 	}
 
@@ -232,8 +232,8 @@ type DeleteJobResponse struct {
 func (a *adaptor) DeleteJob(r *http.Request, args *DeleteJobRequest, result *DeleteJobResponse) error {
 	ctx := context.Background()
 
-	accessType, err := a.authz.CheckJobPermission(r, args.ID, "jobs", "delete")
-	if err != nil || accessType == "" {
+	ok, err := a.authz.CheckJobPermission(r, args.ID, "jobs", "delete")
+	if err != nil || ok != "private" {
 		return errors.New("not permitted")
 	}
 
@@ -269,41 +269,47 @@ type GetKanbanBoardResponse struct {
 }
 
 func (a *adaptor) GetKanbanBoard(r *http.Request, args *GetKanbanBoardRequest, result *GetKanbanBoardResponse) error {
-	ok := false
 	user, ok := r.Context().Value("user").(user.User)
 	if !ok {
 		return errors.New("not permitted")
 	}
 	identifier := user.ID
+	hasPermissions := false
 	if args.OrganizationID != "" {
 		ok, err := a.authz.CheckPermission(r, "jobs", "getall")
 		if err != nil || !ok {
 			return errors.New("not permitted")
 		}
 		identifier = args.OrganizationID
-	}
-
-	// Fetch columns using the ColumnsStore
-	cols, err := a.columnJobLinksStore.GetAllColumns(args.OrganizationID)
-	if err != nil {
-		fmt.Println(err)
-		return err
+		hasPermissions = true
 	}
 
 	// Fetch jobs using the organization ID (simplified example)
-	jobs, err := a.GetJobsByOrganization(identifier, ok)
+	jobs, err := a.GetJobsByOrganization(identifier, hasPermissions)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	orgId := args.OrganizationID
+	if len(orgId) == 0 && len(jobs) > 0 {
+		orgId = jobs[0].OrganizationID
+	} else if len(orgId) == 0 && len(jobs) == 0 {
+		return nil
+	}
+	// Fetch columns using the ColumnsStore
+	cols, err := a.columnJobLinksStore.GetAllColumns(orgId)
 	if err != nil {
 		fmt.Println(err)
 		return err
 	}
 
-	members, err := a.GetAllMemberIDs(args.OrganizationID, a.authClient)
+	members, err := a.GetAllMemberIDs(orgId, a.authClient)
 	if err != nil {
 		fmt.Println(err)
 		return err
 	}
 
-	allBuildings, err := a.buildingsStore.GetAll("", 0, 0, args.OrganizationID)
+	allBuildings, err := a.buildingsStore.GetAll("", 0, 0, orgId)
 	if err != nil {
 		fmt.Println(err)
 		return err
@@ -313,7 +319,7 @@ func (a *adaptor) GetKanbanBoard(r *http.Request, args *GetKanbanBoardRequest, r
 		retBuildings[b.ID] = b
 	}
 
-	allLabels, err := a.labelsStore.GetAllLabels(args.OrganizationID)
+	allLabels, err := a.labelsStore.GetAllLabels(orgId)
 	if err != nil {
 		fmt.Println(err)
 		return err
@@ -350,7 +356,7 @@ func (a *adaptor) GetKanbanBoard(r *http.Request, args *GetKanbanBoardRequest, r
 	for _, col := range cols {
 		orderedColumns = append(orderedColumns, col.ID)
 	}
-
+	fmt.Println()
 	// Build the response structure
 	response := GetKanbanBoardResponse{
 		Board: KanbanBoard{
@@ -370,6 +376,7 @@ func (a *adaptor) GetKanbanBoard(r *http.Request, args *GetKanbanBoardRequest, r
 
 func (a *adaptor) GetJobsByOrganization(identifier string, permitted bool) ([]Job, error) {
 	ctx := context.Background()
+	fmt.Println(identifier, permitted)
 	// Initialize query based on permissions
 	query := ""
 	if permitted {
