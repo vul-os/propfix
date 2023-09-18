@@ -266,7 +266,7 @@ function JobDataGrid() {
           <Icon
             icon="file-icons:microsoft-excel"
             style={{ fontSize:'20px', marginRight: '1.5px', }} // Adjust the fontSize here
-/>
+          />
           </Button>
         </Stack>
       </Typography>
