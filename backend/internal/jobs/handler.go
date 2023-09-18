@@ -1,51 +1,19 @@
 package jobs
 
 import (
-	"context"
 	"errors"
-	"fmt"
 	"net/http"
-	"sort"
-	"time"
 
-	"firebase.google.com/go/v4/auth"
 	jsonRpcProvider "github.com/exolutionza/propfix-backend-go/internal/api/jsonRpc/service/provider"
 	"github.com/exolutionza/propfix-backend-go/internal/authz"
-	"github.com/exolutionza/propfix-backend-go/internal/buildings"
 	"github.com/exolutionza/propfix-backend-go/internal/columns/columnJobLinks"
-	"github.com/exolutionza/propfix-backend-go/internal/labels"
 	"github.com/exolutionza/propfix-backend-go/internal/user"
-
-	"github.com/jackc/pgx/v4"
-	"github.com/jackc/pgx/v4/pgxpool"
-	"github.com/teris-io/shortid"
 )
 
-type Job struct {
-	ID             string    `json:"id"`
-	Name           string    `json:"name"`
-	OrganizationID string    `json:"organizationId"`
-	Priority       string    `json:"priority"`
-	Description    string    `json:"description"`
-	ReporterID     string    `json:"reporterId"`
-	AssigneeIDs    []string  `json:"assigneeIds"`
-	UnitIdentifier string    `json:"unitIdentifier"`
-	BuildingID     string    `json:"buildingId"`
-	LabelIDs       []string  `json:"labelIds"`
-	Attachments    []string  `json:"attachments"`
-	Cost           float64   `json:"cost"`
-	Hours          int       `json:"hours"`
-	DueDate        time.Time `json:"dueDate"`
-	CreatedAt      time.Time `json:"createdAt"`
-}
-
 type adaptor struct {
-	dbpool              *pgxpool.Pool
+	store               *Store
 	authz               *authz.Authz
-	authClient          *auth.Client
 	columnJobLinksStore *columnJobLinks.Store
-	labelsStore         *labels.Store
-	buildingsStore      *buildings.Store
 }
 
 const Name = "Jobs"
@@ -55,20 +23,14 @@ func (a *adaptor) Name() jsonRpcProvider.Name {
 }
 
 func New(
-	dbpool *pgxpool.Pool,
+	store *Store,
 	authz *authz.Authz,
-	authClient *auth.Client,
 	cjls *columnJobLinks.Store,
-	ls *labels.Store,
-	bs *buildings.Store,
 ) *adaptor {
 	return &adaptor{
-		dbpool:              dbpool,
-		authClient:          authClient,
+		store:               store,
 		authz:               authz,
 		columnJobLinksStore: cjls,
-		labelsStore:         ls,
-		buildingsStore:      bs,
 	}
 }
 
@@ -83,38 +45,17 @@ type GetJobResponse struct {
 }
 
 func (a *adaptor) GetJob(r *http.Request, args *GetJobRequest, result *GetJobResponse) error {
-	ctx := context.Background()
-
-	accessType, err := a.authz.CheckJobPermission(r, args.ID, "jobs", "get")
-	if err != nil || accessType == "" {
+	ok, err := a.authz.CheckJobPermission(r, args.ID, "jobs", "get")
+	if err != nil || ok != "private" {
 		return errors.New("not permitted")
 	}
 
-	sqlQuery := `
-		SELECT id, name, organization_id, priority, description, reporter_id,
-		assignee_ids, unit_identifier, building_id, label_ids, attachments,
-		cost, hours, due_date, created_at
-		FROM jobs
-		WHERE id = $1
-	`
-
-	row := a.dbpool.QueryRow(ctx, sqlQuery, args.ID)
-
-	var job Job
-	err = row.Scan(
-		&job.ID, &job.Name, &job.OrganizationID, &job.Priority, &job.Description,
-		&job.ReporterID, &job.AssigneeIDs, &job.UnitIdentifier,
-		&job.BuildingID, &job.LabelIDs, &job.Attachments, &job.Cost, &job.Hours,
-		&job.DueDate, &job.CreatedAt,
-	)
-
-	if err == pgx.ErrNoRows {
-		return errors.New("Job not found")
-	} else if err != nil {
+	// Use the jobs package to get job details
+	job, err := a.store.GetJobByID(args.ID)
+	if err != nil {
 		return err
 	}
-
-	result.Job = job
+	result.Job = *job
 	return nil
 }
 
@@ -129,50 +70,41 @@ type CreateJobResponse struct {
 }
 
 func (a *adaptor) CreateJob(r *http.Request, args *CreateJobRequest, result *CreateJobResponse) error {
-	ctx := r.Context()
-
-	// accessType, err := a.authz.CheckJobPermission(r, args.Job.ID, "jobs", "create")
-	// if err != nil || accessType == "" {
-	// 	return errors.New("not permitted")
-	// }
 
 	user, ok := r.Context().Value("user").(user.User)
 	if !ok {
 		return errors.New("not permitted")
 	}
 
-	id, err := shortid.Generate()
+	job := &Job{
+		Name:           args.Job.Name,
+		OrganizationID: args.Job.OrganizationID,
+		Priority:       args.Job.Priority,
+		Description:    args.Job.Description,
+		ReporterID:     user.ID,
+		AssigneeIDs:    args.Job.AssigneeIDs,
+		UnitIdentifier: args.Job.UnitIdentifier,
+		BuildingID:     args.Job.BuildingID,
+		LabelIDs:       args.Job.LabelIDs,
+		Attachments:    args.Job.Attachments,
+		Cost:           args.Job.Cost,
+		Hours:          args.Job.Hours,
+		DueDate:        args.Job.DueDate,
+	}
+
+	// Use the jobs package to create a job
+	err := a.store.CreateJob(job)
 	if err != nil {
 		return err
 	}
 
-	args.Job.ID = id
-	args.Job.CreatedAt = time.Now()
-	args.Job.ReporterID = user.ID
-
-	sqlQuery := `
-		INSERT INTO jobs (id, name, organization_id, priority, description, reporter_id,
-		assignee_ids, unit_identifier, building_id, label_ids, attachments, cost, hours,
-		due_date, created_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
-	`
-
-	_, err = a.dbpool.Exec(ctx, sqlQuery,
-		args.Job.ID, args.Job.Name, args.Job.OrganizationID, args.Job.Priority,
-		args.Job.Description, args.Job.ReporterID, args.Job.AssigneeIDs,
-		args.Job.UnitIdentifier, args.Job.BuildingID, args.Job.LabelIDs,
-		args.Job.Attachments, args.Job.Cost, args.Job.Hours, args.Job.DueDate,
-		args.Job.CreatedAt)
-
-	if err != nil {
-		return err
-	}
 	// Get the ID of the first column and add the job to it
-	err = a.columnJobLinksStore.AddJobToFirstColumn(args.Job.OrganizationID, args.Job.ID)
+	err = a.columnJobLinksStore.AddJobToFirstColumn(job.OrganizationID, job.ID)
 	if err != nil {
 		return err
 	}
-	result.ID = args.Job.ID
+
+	result.ID = job.ID
 	return nil
 }
 
@@ -187,29 +119,12 @@ type UpdateJobResponse struct {
 }
 
 func (a *adaptor) UpdateJob(r *http.Request, args *UpdateJobRequest, result *UpdateJobResponse) error {
-	ctx := context.Background()
-
 	ok, err := a.authz.CheckPermissionAndOrgs(r, "jobs", "update", args.Job.OrganizationID)
 	if err != nil || !ok {
 		return errors.New("not permitted")
 	}
-
-	sqlQuery := `
-		UPDATE jobs
-		SET name = $1, organization_id = $2, priority = $3, description = $4,
-		report_id = $5, assignee_ids = $6, unit_identifier = $7,
-		building_id = $8, label_ids = $9, attachments = $10, cost = $11, hours = $12,
-		due_date = $13
-		WHERE id = $14
-	`
-
-	_, err = a.dbpool.Exec(ctx, sqlQuery,
-		args.Job.Name, args.Job.OrganizationID, args.Job.Priority,
-		args.Job.Description, args.Job.ReporterID, args.Job.AssigneeIDs,
-		args.Job.UnitIdentifier, args.Job.BuildingID, args.Job.LabelIDs,
-		args.Job.Attachments, args.Job.Cost, args.Job.Hours, args.Job.DueDate,
-		args.Job.ID)
-
+	// Use the jobs package to update a job
+	err = a.store.UpdateJob(&args.Job)
 	if err != nil {
 		return err
 	}
@@ -229,146 +144,17 @@ type DeleteJobResponse struct {
 }
 
 func (a *adaptor) DeleteJob(r *http.Request, args *DeleteJobRequest, result *DeleteJobResponse) error {
-	ctx := context.Background()
-
 	ok, err := a.authz.CheckJobPermission(r, args.ID, "jobs", "delete")
 	if err != nil || ok != "private" {
 		return errors.New("not permitted")
 	}
 
-	sqlQuery := `DELETE FROM jobs WHERE id = $1`
-
-	_, err = a.dbpool.Exec(ctx, sqlQuery, args.ID)
+	// Use the jobs package to delete a job
+	err = a.store.DeleteJob(args.ID)
 	if err != nil {
 		return err
 	}
 
 	result.Success = true
-	return nil
-}
-
-// Define the KanbanBoard struct for the response
-type KanbanBoard struct {
-	Columns   map[string]columnJobLinks.ColumnWithJobIds `json:"columns"`
-	Jobs      map[string]Job                             `json:"jobs"`
-	Members   map[string]user.User                       `json:"members"`
-	Labels    map[string]labels.Label                    `json:"labels"`
-	Buildings map[string]buildings.Building              `json:"buildings"`
-	Ordered   []string                                   `json:"ordered"`
-}
-
-// Define the GetKanbanBoardRequest struct
-type GetKanbanBoardRequest struct {
-	OrganizationID string `json:"organizationId"`
-}
-
-// Define the GetKanbanBoardResponse struct
-type GetKanbanBoardResponse struct {
-	Board KanbanBoard `json:"board"`
-}
-
-func (a *adaptor) GetKanbanBoard(r *http.Request, args *GetKanbanBoardRequest, result *GetKanbanBoardResponse) error {
-	user, ok := r.Context().Value("user").(user.User)
-	if !ok {
-		return errors.New("not permitted")
-	}
-	identifier := user.ID
-	hasPermissions := false
-	if args.OrganizationID != "" {
-		ok, err := a.authz.CheckPermission(r, "jobs", "getall")
-		if err != nil || !ok {
-			return errors.New("not permitted")
-		}
-		identifier = args.OrganizationID
-		hasPermissions = true
-	}
-
-	// Fetch jobs using the organization ID (simplified example)
-	jobs, err := a.GetJobsByOrganization(identifier, hasPermissions)
-	if err != nil {
-		fmt.Println(err)
-		return err
-	}
-	orgId := args.OrganizationID
-	if len(orgId) == 0 && len(jobs) > 0 {
-		orgId = jobs[0].OrganizationID
-	} else if len(orgId) == 0 && len(jobs) == 0 {
-		return nil
-	}
-	// Fetch columns using the ColumnsStore
-	cols, err := a.columnJobLinksStore.GetAllColumns(orgId)
-	if err != nil {
-		fmt.Println(err)
-		return err
-	}
-
-	members, err := a.GetAllMemberIDs(orgId, a.authClient)
-	if err != nil {
-		fmt.Println(err)
-		return err
-	}
-
-	allBuildings, err := a.buildingsStore.GetAll("", 0, 0, orgId)
-	if err != nil {
-		fmt.Println(err)
-		return err
-	}
-	retBuildings := make(map[string]buildings.Building)
-	for _, b := range allBuildings {
-		retBuildings[b.ID] = b
-	}
-
-	allLabels, err := a.labelsStore.GetAllLabels(orgId)
-	if err != nil {
-		fmt.Println(err)
-		return err
-	}
-	retLabels := make(map[string]labels.Label)
-	for _, l := range allLabels {
-		retLabels[l.ID] = l
-	}
-
-	// Create a map to store jobs by their IDs
-	jobsMap := make(map[string]Job)
-	for _, job := range jobs {
-		jobsMap[job.ID] = job
-	}
-
-	// Create a map to store columns by their IDs
-	columnsMap := make(map[string]columnJobLinks.ColumnWithJobIds)
-	for _, col := range cols {
-		columnsMap[col.ID] = columnJobLinks.ColumnWithJobIds{
-			ID:         col.ID,
-			Name:       col.Name,
-			JobIds:     col.JobIds,
-			OrderIndex: col.OrderIndex,
-		}
-	}
-
-	// Sort columns by OrderIndex
-	sort.Slice(cols, func(i, j int) bool {
-		return cols[i].OrderIndex < cols[j].OrderIndex
-	})
-
-	// Create an ordered list of column IDs
-	var orderedColumns []string
-	for _, col := range cols {
-		orderedColumns = append(orderedColumns, col.ID)
-	}
-	fmt.Println()
-	// Build the response structure
-	response := GetKanbanBoardResponse{
-		Board: KanbanBoard{
-			Columns:   columnsMap,
-			Jobs:      jobsMap,
-			Ordered:   orderedColumns,
-			Members:   members,
-			Labels:    retLabels,
-			Buildings: retBuildings,
-		},
-	}
-
-	// Set the response
-	*result = response
 	return nil
 }

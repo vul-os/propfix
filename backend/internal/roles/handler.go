@@ -1,81 +1,124 @@
 package roles
 
 import (
-	"encoding/json"
+	"errors"
+	"fmt"
 	"net/http"
 
+	jsonRpcProvider "github.com/exolutionza/propfix-backend-go/internal/api/jsonRpc/service/provider"
 	"github.com/exolutionza/propfix-backend-go/internal/authz"
-	"github.com/gorilla/mux"
 )
 
-type RoleHandler struct {
+const Name = "Roles"
+
+type adaptor struct {
 	store *Store
+	authz *authz.Authz
 }
 
-func NewRoleHandler(store *Store) *RoleHandler {
-	return &RoleHandler{
+func (a *adaptor) Name() jsonRpcProvider.Name {
+	return Name
+}
+
+func New(store *Store, authz *authz.Authz) *adaptor {
+	return &adaptor{
 		store: store,
+		authz: authz,
 	}
 }
 
-func (h *RoleHandler) CreateRoleHandler(w http.ResponseWriter, r *http.Request) {
-	var role authz.Role
-	decoder := json.NewDecoder(r.Body)
-	if err := decoder.Decode(&role); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	roleID, err := h.store.CreateRole(role)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{"roleID": roleID})
+type CreateRoleRequest struct {
+	Role authz.Role `json:"role"`
 }
 
-func (h *RoleHandler) DeleteRoleHandler(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	roleID := vars["roleID"]
-
-	err := h.store.DeleteRole(roleID)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
+type CreateRoleResponse struct {
+	ID string `json:"id"`
 }
 
-func (h *RoleHandler) GetRoleByIDHandler(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	roleID := vars["roleID"]
-
-	role, err := h.store.GetRoleByID(roleID)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+func (a *adaptor) CreateRole(r *http.Request, request *CreateRoleRequest, response *CreateRoleResponse) error {
+	ok, err := a.authz.CheckPermission(r, "roles", "create")
+	if err != nil || !ok {
+		return errors.New("not permitted")
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(role)
+	id, err := a.store.CreateRole(request.Role)
+	if err != nil {
+		return err
+	}
+
+	*response = CreateRoleResponse{
+		ID: id,
+	}
+	return nil
 }
 
-func (h *RoleHandler) UpdateRoleHandler(w http.ResponseWriter, r *http.Request) {
-	var role authz.Role
-	decoder := json.NewDecoder(r.Body)
-	if err := decoder.Decode(&role); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+type DeleteRoleRequest struct {
+	ID string `json:"id"`
+}
+
+type DeleteRoleResponse struct {
+	Message string `json:"message"`
+}
+
+func (a *adaptor) DeleteRole(r *http.Request, args *DeleteRoleRequest, result *DeleteRoleResponse) error {
+	ok, err := a.authz.CheckPermission(r, "roles", "delete")
+	if err != nil || !ok {
+		return errors.New("not permitted")
 	}
 
-	err := h.store.UpdateRole(role)
+	err = a.store.DeleteRole(args.ID)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		result.Message = "Failed to delete role"
+		return err
 	}
 
-	w.WriteHeader(http.StatusOK)
+	result.Message = fmt.Sprintf("Role with ID %s deleted successfully", args.ID)
+	return nil
+}
+
+type GetRoleRequest struct {
+	ID string `json:"id"`
+}
+
+type GetRoleResponse struct {
+	Role authz.Role `json:"role"`
+}
+
+func (a *adaptor) GetRole(r *http.Request, args *GetRoleRequest, result *GetRoleResponse) error {
+	ok, err := a.authz.CheckPermission(r, "roles", "read")
+	if err != nil || !ok {
+		return errors.New("not permitted")
+	}
+
+	role, err := a.store.GetRoleByID(args.ID)
+	if err != nil {
+		return err
+	}
+
+	result.Role = role
+	return nil
+}
+
+type UpdateRoleRequest struct {
+	Role authz.Role `json:"role"`
+}
+
+type UpdateRoleResponse struct {
+	Message string `json:"message"`
+}
+
+func (a *adaptor) UpdateRole(r *http.Request, args *UpdateRoleRequest, result *UpdateRoleResponse) error {
+	ok, err := a.authz.CheckPermission(r, "roles", "update")
+	if err != nil || !ok {
+		return errors.New("not permitted")
+	}
+
+	err = a.store.UpdateRole(args.Role)
+	if err != nil {
+		result.Message = "Failed to update role"
+		return err
+	}
+
+	result.Message = "Role updated successfully"
+	return nil
 }

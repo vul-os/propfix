@@ -187,8 +187,8 @@ func createLabelsTable(dbpool *pgxpool.Pool) error {
 
 func main() {
 
+	// neon.tech
 	connStr := "user=exolutiontech password=***REMOVED-DB-PASSWORD*** dbname=neondb host=ep-autumn-math-44120355.us-east-2.aws.neon.tech sslmode=verify-full"
-
 	dbpool, err := pgxpool.Connect(context.Background(), connStr)
 	if err != nil {
 		log.Fatal("Error connecting to the database: ", err)

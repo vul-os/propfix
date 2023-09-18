@@ -8,9 +8,28 @@ import (
 
 	"firebase.google.com/go/v4/auth"
 	"github.com/exolutionza/propfix-backend-go/internal/user"
+	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/teris-io/shortid"
 )
+
+type Job struct {
+	ID             string    `json:"id"`
+	Name           string    `json:"name"`
+	OrganizationID string    `json:"organizationId"`
+	Priority       string    `json:"priority"`
+	Description    string    `json:"description"`
+	ReporterID     string    `json:"reporterId"`
+	AssigneeIDs    []string  `json:"assigneeIds"`
+	UnitIdentifier string    `json:"unitIdentifier"`
+	BuildingID     string    `json:"buildingId"`
+	LabelIDs       []string  `json:"labelIds"`
+	Attachments    []string  `json:"attachments"`
+	Cost           float64   `json:"cost"`
+	Hours          int       `json:"hours"`
+	DueDate        time.Time `json:"dueDate"`
+	CreatedAt      time.Time `json:"createdAt"`
+}
 
 type Store struct {
 	dbpool *pgxpool.Pool
@@ -93,7 +112,41 @@ func (s *Store) DeleteJob(jobID string) error {
 	return nil
 }
 
-func (a *adaptor) GetJobsByOrganization(identifier string, permitted bool) ([]Job, error) {
+func (s *Store) GetJobByID(jobID string) (*Job, error) {
+	ctx := context.Background()
+
+	// Define the SQL query to retrieve a job by its ID
+	sqlQuery := `
+        SELECT id, name, organization_id, priority, description, reporter_id,
+        assignee_ids, unit_identifier, building_id, label_ids, attachments, cost, hours,
+        due_date, created_at
+        FROM jobs
+        WHERE id = $1
+    `
+
+	// Query the database to fetch the job by ID
+	row := s.dbpool.QueryRow(ctx, sqlQuery, jobID)
+
+	// Create a Job struct to store the result
+	var job Job
+	err := row.Scan(
+		&job.ID, &job.Name, &job.OrganizationID, &job.Priority, &job.Description,
+		&job.ReporterID, &job.AssigneeIDs, &job.UnitIdentifier,
+		&job.BuildingID, &job.LabelIDs, &job.Attachments, &job.Cost, &job.Hours,
+		&job.DueDate, &job.CreatedAt,
+	)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			// Handle the case where no job with the given ID was found
+			return nil, fmt.Errorf("job not found")
+		}
+		return nil, err
+	}
+
+	return &job, nil
+}
+
+func (a *Store) GetJobsByOrganization(identifier string, permitted bool) ([]Job, error) {
 	ctx := context.Background()
 	fmt.Println(identifier, permitted)
 	// Initialize query based on permissions
@@ -141,7 +194,7 @@ func (a *adaptor) GetJobsByOrganization(identifier string, permitted bool) ([]Jo
 }
 
 // TODO: Move somewhere else
-func (s *adaptor) GetAllMemberIDs(organizationID string, authClient *auth.Client) (map[string]user.User, error) {
+func (s *Store) GetAllMemberIDs(organizationID string, authClient *auth.Client) (map[string]user.User, error) {
 	ctx := context.Background()
 	query := `
 		SELECT DISTINCT unnest(members) AS unique_member_id
