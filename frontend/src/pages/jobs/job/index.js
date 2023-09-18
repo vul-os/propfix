@@ -28,14 +28,12 @@ const StyledLabel = styled('span')(({ theme }) => ({
   fontWeight: theme.typography.fontWeightSemiBold,
 }));
 
-export default function JobDetails({ job, setJob, members, labels }) {
+export default function JobDetails({ job, setJob, members, labels, files, handleDrop, handleRemoveFile,  }) {
   const contacts = useBoolean();
   const assignees = useMemo(() => job?.assigneeIds?.map((jobId) => members && members[jobId]), [job?.assigneeIds, members]);
-  const [files, setFiles] = useState([]);
 
   useEffect(() => {
-    
-  }, [job.attachments])
+  }, [job?.id, job?.assigneeIds])
 
   const handleUpdateField = useCallback((field) => {
     return (event) => {
@@ -45,6 +43,25 @@ export default function JobDetails({ job, setJob, members, labels }) {
         [field]: value,
       }));
     };
+  }, []);
+
+  const handleToggleAssignee = useCallback((member) => {
+    setJob((prevJob) => {
+        // Using a fallback for null/undefined assigneeIds
+        const currentAssignees = prevJob.assigneeIds || [];
+
+        const isAssigned = currentAssignees.some(personId => personId === member.id);
+        
+        // If the member is already assigned, filter them out, otherwise add them
+        const updatedAssignees = isAssigned 
+            ? currentAssignees.filter(personId => personId !== member.id)
+            : [...currentAssignees, member.id];
+
+        return {
+            ...prevJob,
+            assigneeIds: updatedAssignees,
+        };
+    });
   }, []);
 
   const renderName = useMemo(() => (
@@ -67,18 +84,18 @@ export default function JobDetails({ job, setJob, members, labels }) {
       <StyledLabel sx={{ height: 24, lineHeight: '24px' }}>Labels</StyledLabel>
       <LabelAutocomplete 
         labels={labels ? Object.values(labels) : []}
-        selectedLabels={job?.labels ? job.labels.map(id => labels[id]) : []}
+        selectedLabels={job?.labelIds ? job.labelIds.map(id => labels[id]) : []}
         setSelectedLabels={(newSelectedLabels) => {
           const newSelectedLabelIds = newSelectedLabels.map(label => label.id); // Assuming the label object has an 'id' field
           setJob(prevJob => ({
             ...prevJob,
-            labels: newSelectedLabelIds,
+            labelIds: newSelectedLabelIds,
           }));
         }}
         textFieldProps={{size: "small"}}
       />
     </Stack>
-  ), [job.labels, setJob, labels]);
+  ), [job.labelIds, setJob, labels]);
   
   
   const renderAssignee = useMemo(() => (
@@ -102,6 +119,7 @@ export default function JobDetails({ job, setJob, members, labels }) {
         <MembersDialog
           members={Object.values(members)}
           assignees={assignees}
+          handleAssignToggle={handleToggleAssignee}
           open={contacts.value}
           onClose={contacts.onFalse}
         />
@@ -159,7 +177,7 @@ export default function JobDetails({ job, setJob, members, labels }) {
   const renderAttachments = useMemo(() => (
     <Stack direction="row">
       <StyledLabel>Attachments</StyledLabel>
-      <Attachments jobId={job.id} files={files} setFiles={setFiles} />
+      <Attachments files={files} handleDrop={handleDrop} handleRemoveFile={handleRemoveFile} />
     </Stack>
   ), [job.id, files]);
 

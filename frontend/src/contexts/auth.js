@@ -117,8 +117,9 @@ export const AuthProvider = (props) => {
   const [state, dispatch] = useReducer(reducer, initialState);
   const initialized = useRef(false);
 
-  const [activeOrganization, setActiveOrganization] = useState(null);
+  const [activeOrganization, setActiveOrganization] = useState("");
   const [organizations, setOrganizations] = useState([]);
+  const [haveFetchedOrganizations, setHaveFetchedOrganizations] = useState(false);
 
   const initialize = async () => {
     if (initialized.current) {
@@ -134,18 +135,19 @@ export const AuthProvider = (props) => {
         });
 
         const idToken = await user.getIdToken();
-
+        setHaveFetchedOrganizations(false)
         // Fetch organizations using JSON-RPC
         try {
           const fetchedOrganizations = await jsonRpcRequest('Organizations.GetAllOrganizations', [{}], idToken);
-          setOrganizations(fetchedOrganizations.organizations); // Set the organizations
+          setOrganizations(fetchedOrganizations?.organizations); // Set the organizations
           if (fetchedOrganizations && fetchedOrganizations.organizations) {
             setActiveOrganization(fetchedOrganizations.organizations[0].id)
           }
           // ... (rest of the logic remains the same)
         } catch (error) {
-          console.error('Error fetching organizations:', error);
+          console.log('Error fetching organizations:', error);
         }
+        setHaveFetchedOrganizations(true)
       } else {
         dispatch({
           type: HANDLERS.INITIALIZE
@@ -269,6 +271,7 @@ export const AuthProvider = (props) => {
         getIdToken,
         activeOrganization,
         setActiveOrganization,
+        haveFetchedOrganizations,
         organizations,
       }}
     >

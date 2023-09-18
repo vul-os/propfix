@@ -11,12 +11,12 @@ import Chip from '@mui/material/Chip';
 import EventIcon from '@mui/icons-material/Event';
 import HomeIcon from '@mui/icons-material/Home'; 
 import Button from '@mui/material/Button'; // Import the Button component from Material-UI
+import { Icon } from '@iconify/react';
 import Iconify from '../../../components/iconify';
 import PopOver from '../pop-over';
 import { useBoardContext } from '../../../contexts/board'; // Import the BoardProvider context
 import CreateJobDialog from '../../job-wizzard/dialog';
 import { exportToCSV, exportToExcel } from './utils';
-
 
 
 
@@ -99,18 +99,11 @@ function JobDataGrid() {
     const building = params.value && board?.buildings[params.value]?.buildingName;
     return (
       <Stack direction="row" alignItems="center">
-        <HomeIcon
-          sx={{
-            marginRight: 2,
-          }}
-        />
+        <HomeIcon sx={{ marginRight: 2 }} /> {/* Home icon with 1rem (10px) right margin */}
         <span>{building}</span> {/* Building ID value */}
       </Stack>
     );
   };
-  
-  
-  
   
   const renderPriority = (params) => {
     let { value: priority } = params;
@@ -127,7 +120,6 @@ function JobDataGrid() {
       if (priority === 'medium') return 'warning.main';
       return 'error.main';
     };
-    
   
     return (
       <Stack direction="row" alignItems="center">
@@ -138,7 +130,7 @@ function JobDataGrid() {
             color: getIconColor(),
           }}
         />
-        {priority}
+        <strong>{priority.toUpperCase()}</strong>
       </Stack>
     );
   };
@@ -150,12 +142,20 @@ function JobDataGrid() {
 
   const columns = [
     { field: 'id', headerName: 'ID', width: 150 },
-    { field: 'unitIdentifier', headerName: 'Unit Identifier', width: 200 },
+    {
+      field: 'unitIdentifier',
+      headerName: 'Unit Number',
+      width: 200,
+      valueGetter: (params) => params.row.unitIdentifier.toUpperCase(), // Convert cell content to uppercase
+      renderCell: (params) => (
+        <strong>{params.value}</strong> // Wrap cell content in a <strong> element for bold text
+      ),
+    },
     {
       field: 'buildingId',
-      headerName: 'Building ID',
+      headerName: 'Building',
       width: 200,
-      renderCell: renderBuilding, // Use the renderBuildingId function for rendering
+      renderCell: renderBuilding,
     },
     { field: 'name', headerName: 'Name', width: 200 },
     {
@@ -185,8 +185,18 @@ function JobDataGrid() {
       width: 150,
       renderCell: avatarRenderer,
     },
-    { field: 'cost', headerName: 'Cost', type: 'number', width: 60  },
-    { field: 'createdAt', headerName: 'Created At', width: 150, renderCell: renderDate },
+
+     // Add the Hour column after the Assignees column
+     {
+      field: 'hours',
+      headerName: 'Hours',
+      width: 100,
+      align: '-4px',
+      headerAlign: '-5px',
+    },
+
+    { field: 'cost', headerName: 'Cost', type: 'number', width: 60 , headerAlign: '-5px', },
+    { field: 'createdAt', headerName: 'Created At', width: 160, renderCell: renderDate },
   ];
 
   const handleRowClick = (params) => {
@@ -201,21 +211,47 @@ function JobDataGrid() {
           <Button
             variant="contained"
             sx={{ 
-              backgroundColor: '#000814;',
+              backgroundColor: 'black;',
               color: 'white',
-              border: '1px solid black',
-              WebkitBorderRadius: '10px',
+              borderRadius: '50%', // Use 50% to make it round
+              minWidth: 0, // To prevent automatic width expansion
+              width: '40px', // Set a fixed width (adjust as needed)
+              height: '40px', // Set a fixed height (adjust as needed)
+              WebkitBorderRadius: '30px',
               display: 'flex',
               alignItems: 'center', // Align items vertically
+  
             }}
             size="small"
             onClick={() => exportToCSV(jobs, 'jobs')}
           >
-            {/* Replace the text and Iconify component with the CSV logo */}
-            {/* <Iconify icon={fileCsv} width={20} style={{ marginRight: '8px' }} /> */}
-            Export to CSV
+            <Icon
+            icon="grommet-icons:document-csv"
+            style={{ fontSize:'20px', marginRight: '1.5px',}} // Adjust the fontSize here
+  />
           </Button>
-          {/* ... */}
+          <Button
+            variant="contained"
+            sx={{ 
+              backgroundColor: 'black;',
+              color: 'white',
+              borderRadius: '50%', // Use 50% to make it round
+              minWidth: 0, // To prevent automatic width expansion
+              width: '40px', // Set a fixed width (adjust as needed)
+              height: '40px', // Set a fixed height (adjust as needed)
+              WebkitBorderRadius: '30px',
+              display: 'flex',
+              alignItems: 'center', // Align items vertically
+  
+            }}
+            size="small"
+            onClick={() => exportToExcel(jobs, 'jobs')}
+          >
+          <Icon
+            icon="file-icons:microsoft-excel"
+            style={{ fontSize:'20px', marginRight: '1.5px', }} // Adjust the fontSize here
+/>
+          </Button>
         </Stack>
       </Typography>
 

@@ -9,45 +9,29 @@ import InputBase, { inputBaseClasses } from '@mui/material/InputBase';
 
 // ----------------------------------------------------------------------
 
-export default function KanbanJobAdd({ onAddJob, onCloseAddJob }) {
+export default function KanbanJobAdd({ columnId, onAddJob, openAddJob }) {
   const [name, setName] = useState('');
-
-  const defaultJob = useMemo(
-    () => ({
-      name,
-      "priority": "High",
-      "description": "",
-      "tenantIdentifier": "",
-      "assigneeIds": [],
-      "unitIdentifier": "",
-      "buildingId": "",
-      "labels": [],
-      "attachments": [],
-      "cost": 0,
-      "hours": 0,
-      "dueDate": ""
-    }),
-    [name]
-  );
 
   const handleKeyUpAddJob = useCallback(
     (event) => {
       if (event.key === 'Enter') {
         if (name) {
-          onAddJob(defaultJob);
+          openAddJob.onFalse()
+          onAddJob(name, columnId);
         }
       }
     },
-    [defaultJob, name, onAddJob]
+    [columnId, name, onAddJob, openAddJob]
   );
 
   const handleClickAddJob = useCallback(() => {
     if (name) {
-      onAddJob(defaultJob);
+      openAddJob.onFalse()
+      onAddJob(name, columnId);
     } else {
-      onCloseAddJob();
+      openAddJob.onFalse()
     }
-  }, [defaultJob, name, onAddJob, onCloseAddJob]);
+  }, [columnId, name, onAddJob, openAddJob]);
 
   const handleChangeName = useCallback((event) => {
     setName(event.target.value);

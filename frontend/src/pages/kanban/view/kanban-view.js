@@ -6,7 +6,7 @@ import Typography from '@mui/material/Typography';
 
 import EmptyContent from '../../../components/empty-content';
 import { moveJob } from '../../../api/columnJobLinks';
-import { getBoard } from '../../../api/jobs';
+import { getBoard, createJob } from '../../../api/jobs';
 import { hideScroll } from '../../../theme/css';
 
 import KanbanColumn from '../kanban-column';
@@ -17,9 +17,50 @@ import PopOver from '../../jobs/pop-over';
 
 export default function KanbanView() {
   const { board, setBoard, boardLoading } = useBoardContext(); // Use the BoardProvider context
-  const { getIdToken } = useAuthContext(); 
+  const { getIdToken, activeOrganization } = useAuthContext(); 
   const [openPopUp, setOpenPopUp] = useState(false);
   const [job, setJob] = useState({});
+
+  const onJobAdd = useCallback(
+    async (name, columnId) => {
+      try {
+        const idToken = await getIdToken();
+        const jobData = {
+          name,
+          labels: [],
+          buildingId: "",
+          attachments: [],
+          organizationId: activeOrganization,
+          priority: 'low',
+        }
+        const destinationColumn = board?.columns[columnId];
+        
+        const createdJob = await createJob(jobData, idToken);
+        const jobId = createdJob.id
+        
+        if (jobId) {
+          const newEndJobIds = [...Array.from(destinationColumn.jobIds || []), jobId];
+          const newJob = jobData
+          newJob.id = jobId
+          const newBoardState = {
+            ...board,
+            columns: {
+              ...board.columns,
+              [columnId]: {
+                ...destinationColumn,
+                jobIds: newEndJobIds,
+              },
+            },
+            jobs: {[jobId]: newJob, ...board.jobs}
+          };
+          setBoard(newBoardState)
+        }
+      } catch (error) {
+        console.error('Error removing file:', error);
+      }
+    },
+    [board, getIdToken]
+  );
 
   const onDragEnd = useCallback(
     async ({ destination, source, draggableId, type }) => {
@@ -97,7 +138,6 @@ export default function KanbanView() {
 
   return (
     <Container
-      maxWidth={false}
       sx={{
         height: 1,
       }}
@@ -157,6 +197,7 @@ export default function KanbanView() {
                       jobs={columnJobs}
                       setJob={setJob}
                       members={board?.members ? board.members : {}}
+                      onJobAdd={onJobAdd}
                     />
                   );
                 })
