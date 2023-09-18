@@ -8,6 +8,11 @@ import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
 import InputBase from '@mui/material/InputBase';
 import { styled } from '@mui/material/styles';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogContentText from '@mui/material/DialogContentText';
+import DialogTitle from '@mui/material/DialogTitle';
 import { createJob } from '../../api/jobs';
 import { useAuthContext } from '../../contexts/auth';
 import BuildingSelectorStep from './building-selector-step';
@@ -30,6 +35,8 @@ export default function ExoStepper({ handleClose }) {
   const [selectedLabels, setSelectedLabels] = useState([]);
   const [attachments, setAttachments] = useState([]);
   const [files, setFiles] = useState([]);
+  const [openDialog, setOpenDialog] = useState(false);
+  const [dueDate, setDueDate] = useState(null);
 
   const { getIdToken } = useAuthContext();
   const navigate = useNavigate();
@@ -45,6 +52,13 @@ export default function ExoStepper({ handleClose }) {
   useEffect(() => {
     fetchLabels();
   }, [selectedBuilding]);
+
+  useEffect(() => {
+    // Calculate due date two weeks from today
+    const twoWeeksFromNow = new Date();
+    twoWeeksFromNow.setDate(twoWeeksFromNow.getDate() + 14);
+    setDueDate(twoWeeksFromNow);
+  }, []);
 
   const fetchBuildings = async () => {
     try {
@@ -176,11 +190,11 @@ export default function ExoStepper({ handleClose }) {
     const createdJob = await createJob(jobData, idToken);
 
     if (createdJob) {
-      console.log('Job created successfully:', createdJob);
+      // Open the due date dialog
+      setOpenDialog(true);
     } else {
       console.error('Job creation failed.');
     }
-    handleClose()
   };
 
   const isStepValid = () => {
@@ -249,7 +263,7 @@ export default function ExoStepper({ handleClose }) {
           </Box>
         </div>
       ) : (
-        <div style={{ padding: '16px' }}> {/* Add padding to create space */}
+        <div style={{ padding: '16px' }}>
           {getStepContent(activeStep)}
           <Box sx={{ display: 'flex', flexDirection: 'row', pt: 2 }}>
             <Button
@@ -271,6 +285,29 @@ export default function ExoStepper({ handleClose }) {
           </Box>
         </div>
       )}
+      {/* Due Date Dialog */}
+      <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
+  <DialogTitle>Due Date</DialogTitle>
+  <DialogContent>
+    <DialogContentText>
+      Due date: Two weeks from now ({dueDate?.toLocaleDateString()})
+    </DialogContentText>
+  </DialogContent>
+  <DialogActions>
+    <Button
+      onClick={() => {
+        // Reset the stepper and close the dialog
+        setActiveStep(0);
+        setOpenDialog(false);
+        // Optionally, you can also reset other state variables here
+      }}
+      color="primary"
+    >
+      OK
+    </Button>
+  </DialogActions>
+</Dialog>
+
     </Box>
   );
 }
