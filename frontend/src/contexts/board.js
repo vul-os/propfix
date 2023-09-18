@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useAuthContext } from './auth'; // Make sure to update this path
-import { getBoard } from '../api/jobs'; // Make sure to update this path
+import { getBoard } from '../api/board'; // Make sure to update this path
 
 export const BoardContext = createContext(undefined);
 

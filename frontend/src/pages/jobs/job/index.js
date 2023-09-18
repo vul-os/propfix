@@ -84,18 +84,18 @@ export default function JobDetails({ job, setJob, members, labels, files, handle
       <StyledLabel sx={{ height: 24, lineHeight: '24px' }}>Labels</StyledLabel>
       <LabelAutocomplete 
         labels={labels ? Object.values(labels) : []}
-        selectedLabels={job?.labels ? job.labels.map(id => labels[id]) : []}
+        selectedLabels={job?.labelIds ? job.labelIds.map(id => labels[id]) : []}
         setSelectedLabels={(newSelectedLabels) => {
           const newSelectedLabelIds = newSelectedLabels.map(label => label.id); // Assuming the label object has an 'id' field
           setJob(prevJob => ({
             ...prevJob,
-            labels: newSelectedLabelIds,
+            labelIds: newSelectedLabelIds,
           }));
         }}
         textFieldProps={{size: "small"}}
       />
     </Stack>
-  ), [job.labels, setJob, labels]);
+  ), [job.labelIds, setJob, labels]);
   
   
   const renderAssignee = useMemo(() => (
