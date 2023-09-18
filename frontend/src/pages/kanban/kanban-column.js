@@ -13,7 +13,7 @@ import KanbanJobItem from './kanban-job-item';
 import { useAuthContext } from '../../contexts/auth';
 import KanbanJobAdd from './kanban-job-add';
 
-export default function KanbanColumn({ column, jobs, setJob, members, openPopUp, setOpenPopUp, index }) {
+export default function KanbanColumn({ column, jobs, setJob, onJobAdd, members, openPopUp, setOpenPopUp, index }) {
   const openAddJob = useBoolean();
 
   const renderAddJob = (
@@ -25,9 +25,10 @@ export default function KanbanColumn({ column, jobs, setJob, members, openPopUp,
     >
       {openAddJob.value && (
         <KanbanJobAdd
+          columnId={column?.id}
           status={column.name}
-          onAddTask={() => null}
-          onCloseAddTask={openAddJob.onFalse}
+          onAddJob={onJobAdd}
+          openAddJob={openAddJob}
         />
       )}
 
