@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import TextField from '@mui/material/TextField';
 import CloseIcon from '@mui/icons-material/Close';
 import Stack from '@mui/material/Stack';
@@ -18,6 +18,7 @@ export default function JobCreateStep({
 }) {
   const [popupImage, setPopupImage] = useState(null);
   const [popupIndex, setPopupIndex] = useState(null);
+  const [showGuide, setShowGuide] = useState(true); // State to show/hide the guide
 
   // Function to open the image in a popup
   const openImagePopup = (image, index) => {
@@ -31,11 +32,23 @@ export default function JobCreateStep({
     setPopupIndex(null);
   };
 
+  // Function to hide the guide when attachments are interacted with
+  const hideGuide = () => {
+    setShowGuide(false);
+  };
+
+  useEffect(() => {
+    // Hide the guide once a file is uploaded
+    if (files.length > 0) {
+      setShowGuide(false);
+    }
+  }, [files]);
+
   return (
     <div>
       <TextField
-        label="Unit Identifier"
-        placeholder="Enter the unit identifier, e.g., 'E601'"
+        label="Unit Name"
+        placeholder="Enter the unit name, e.g., 'E601'"
         value={job.unitIdentifier}
         onChange={(e) => setJob({ ...job, unitIdentifier: e.target.value })}
         fullWidth
@@ -63,20 +76,22 @@ export default function JobCreateStep({
             style={{
               position: 'relative',
               marginRight: '10px',
+              display: 'flex',
+              flexDirection: 'column', // Align the image and close icon vertically
+              alignItems: 'center', // Horizontally center the image and close icon
             }}
           >
             <div
               style={{
                 position: 'relative',
                 paddingTop: '10px',
-                display: 'flex', // Display the image and icon side by side
-                alignItems: 'center', // Vertically center the image and icon
                 cursor: 'pointer',
               }}
-              onClick={() => openImagePopup(URL.createObjectURL(file), index)}
+              onClick={() => { openImagePopup(URL.createObjectURL(file), index); hideGuide(); }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
                   openImagePopup(URL.createObjectURL(file), index);
+                  hideGuide();
                 }
               }}
               role="button"
@@ -98,11 +113,10 @@ export default function JobCreateStep({
               <div
                 className="close-icon-background"
                 style={{
-                  marginLeft: '8px',
-                  marginTop:'2px',
+                  marginTop : '10px',
+                  marginLeft :'3px',
                   position: 'absolute',
-                  top: '22%',
-                  transform: 'translateY(-50%)',
+                  top: '0px', // Adjust the top position for alignment
                   right: '0px',
                   width: '16px',
                   height: '16px',
@@ -116,7 +130,11 @@ export default function JobCreateStep({
               >
                 <CloseIcon
                   className="close-icon"
-                  onClick={() => handleDelete(file)}
+                  onClick={(e) => {
+                    e.stopPropagation(); // Prevent image click event propagation
+                    handleDelete(file);
+                    hideGuide();
+                  }}
                   style={{
                     cursor: 'pointer',
                     color: 'white',
@@ -129,14 +147,15 @@ export default function JobCreateStep({
           </div>
         ))}
 
-        <div style={{ marginBottom: '10px' }}>
-          <div
-            style={{
-              paddingTop: '10px',
-            }}
-          >
-            <UploadBox onDrop={handleDrop} files={files} setFiles={setFiles} />
-          </div>
+        <div style={{ marginBottom: '10px', display: 'flex', alignItems: 'flex-start', marginTop: '4px' }}>
+          <UploadBox onDrop={handleDrop} files={files} setFiles={setFiles} />
+          {showGuide && files.length === 0 && ( // Conditionally render the guide on the right when no files are uploaded
+            <div style={{ marginLeft: '10px' }}>
+              <p style={{ color: 'rgba(0, 0, 0, 0.54)', fontSize: '0.875rem' }}>
+                Click here to upload attachments/images
+              </p>
+            </div>
+          )}
         </div>
       </Stack>
 

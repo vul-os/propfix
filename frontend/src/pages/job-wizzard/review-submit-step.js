@@ -47,12 +47,26 @@ function JobAttachments({ attachments }) {
   return (
     <div>
       <StyledLabel>Attachments</StyledLabel>
-      {/* Render attachments here */}
+      <div style={{ display: 'flex' }}>
+        {attachments.map((file, index) => (
+          <div key={index} style={{ marginRight: '10px' }}>
+            <img
+              src={URL.createObjectURL(file)}
+              alt={`Uploaded File ${index}`}
+              style={{
+                width: 64,
+                height: 64,
+              }}
+            />
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
 
-export default function ReviewSubmitStep({ building, job }) {
+
+export default function ReviewSubmitStep({ building, job, files }) {
   return (
     <Stack spacing={2}>
       {building ? (
@@ -79,7 +93,7 @@ export default function ReviewSubmitStep({ building, job }) {
         }}
       >
         <JobIssue issue={job.name} />
-        <JobAttachments attachments={job.attachmenturls || []} />
+        <JobAttachments attachments={files || []} />
       </div>
     </Stack>
   );

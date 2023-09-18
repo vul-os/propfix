@@ -8,11 +8,6 @@ import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
 import InputBase from '@mui/material/InputBase';
 import { styled } from '@mui/material/styles';
-import Dialog from '@mui/material/Dialog';
-import DialogActions from '@mui/material/DialogActions';
-import DialogContent from '@mui/material/DialogContent';
-import DialogContentText from '@mui/material/DialogContentText';
-import DialogTitle from '@mui/material/DialogTitle';
 import { createJob } from '../../api/jobs';
 import { useAuthContext } from '../../contexts/auth';
 import BuildingSelectorStep from './building-selector-step';
@@ -35,11 +30,9 @@ export default function ExoStepper({ handleClose }) {
   const [selectedLabels, setSelectedLabels] = useState([]);
   const [attachments, setAttachments] = useState([]);
   const [files, setFiles] = useState([]);
-  const [openDialog, setOpenDialog] = useState(false);
-  const [dueDate, setDueDate] = useState(null);
 
   const { getIdToken } = useAuthContext();
-  const navigate = useNavigate();
+  const navigate = useNavigate(); // Import useNavigate hook
 
   useEffect(() => {
     getUserLocation();
@@ -52,13 +45,6 @@ export default function ExoStepper({ handleClose }) {
   useEffect(() => {
     fetchLabels();
   }, [selectedBuilding]);
-
-  useEffect(() => {
-    // Calculate due date two weeks from today
-    const twoWeeksFromNow = new Date();
-    twoWeeksFromNow.setDate(twoWeeksFromNow.getDate() + 14);
-    setDueDate(twoWeeksFromNow);
-  }, []);
 
   const fetchBuildings = async () => {
     try {
@@ -177,6 +163,11 @@ export default function ExoStepper({ handleClose }) {
 
   const handleFinish = async () => {
     const idToken = await getIdToken();
+
+    // Calculate due date two weeks from now
+    const twoWeeksFromNow = new Date();
+    twoWeeksFromNow.setDate(twoWeeksFromNow.getDate() + 14);
+
     const jobData = {
       ...job,
       labels: selectedLabels ? selectedLabels.map((l) => l.id) : [],
@@ -184,14 +175,15 @@ export default function ExoStepper({ handleClose }) {
       attachments,
       organizationId: selectedBuilding.organizationId,
       priority: 'low',
-
-    }
+      dueDate: twoWeeksFromNow.toISOString(), // Convert to ISO string format
+    };
 
     const createdJob = await createJob(jobData, idToken);
 
     if (createdJob) {
-      // Open the due date dialog
-      setOpenDialog(true);
+      console.log('Job created successfully:', createdJob);
+      handleClose();
+      navigate('/jobs'); // Redirect to the jobs page
     } else {
       console.error('Job creation failed.');
     }
@@ -237,7 +229,7 @@ export default function ExoStepper({ handleClose }) {
           />
         );
       case 2:
-        return <ReviewSubmitStep building={selectedBuilding} job={job} />;
+        return <ReviewSubmitStep building={selectedBuilding} job={job} files={files} />;
       default:
         return 'Unknown step';
     }
@@ -285,29 +277,6 @@ export default function ExoStepper({ handleClose }) {
           </Box>
         </div>
       )}
-      {/* Due Date Dialog */}
-      <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
-  <DialogTitle>Due Date</DialogTitle>
-  <DialogContent>
-    <DialogContentText>
-      Due date: Two weeks from now ({dueDate?.toLocaleDateString()})
-    </DialogContentText>
-  </DialogContent>
-  <DialogActions>
-    <Button
-      onClick={() => {
-        // Reset the stepper and close the dialog
-        setActiveStep(0);
-        setOpenDialog(false);
-        // Optionally, you can also reset other state variables here
-      }}
-      color="primary"
-    >
-      OK
-    </Button>
-  </DialogActions>
-</Dialog>
-
     </Box>
   );
 }
