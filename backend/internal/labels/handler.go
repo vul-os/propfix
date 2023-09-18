@@ -96,7 +96,7 @@ func (h *adaptor) GetLabel(r *http.Request, args *GetLabelRequest, reply *GetLab
 }
 
 type DeleteLabelRequest struct {
-	LabelID string `json:"labelId"`
+	ID string `json:"id"`
 }
 
 type DeleteLabelResponse struct {
@@ -109,7 +109,7 @@ func (h *adaptor) DeleteLabel(r *http.Request, args *DeleteLabelRequest, reply *
 		return errors.New("not permitted")
 	}
 
-	err = h.store.DeleteLabel(args.LabelID)
+	err = h.store.DeleteLabel(args.ID)
 	if err != nil {
 		return err
 	}
