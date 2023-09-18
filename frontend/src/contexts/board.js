@@ -1,11 +1,11 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useAuthContext } from './auth'; // Make sure to update this path
-import { getBoard } from '../api/jobs'; // Make sure to update this path
+import { getBoard } from '../api/board'; // Make sure to update this path
 
 export const BoardContext = createContext(undefined);
 
 export const BoardProvider = ({ children }) => {
-    const { getIdToken, activeOrganization } = useAuthContext();
+    const { getIdToken, activeOrganization, haveFetchedOrganizations } = useAuthContext();
     const [board, setBoard] = useState(null);
     const [boardLoading, setBoardLoading] = useState(true);
     const [jobs, setJobs] = useState([]);
@@ -13,7 +13,8 @@ export const BoardProvider = ({ children }) => {
     useEffect(() => {
       async function fetchData() {
         try {
-          if (activeOrganization) {
+          console.log("heree", haveFetchedOrganizations)
+          if (haveFetchedOrganizations) {
             const token = await getIdToken();
             const boardData = await getBoard(token, activeOrganization);
             setBoard(boardData.board);
@@ -29,7 +30,7 @@ export const BoardProvider = ({ children }) => {
         }
       }
       fetchData();
-    }, [getIdToken, activeOrganization]); // Add reloadBoard to the dependency list
+    }, [getIdToken, haveFetchedOrganizations]); // Add reloadBoard to the dependency list
   
     useEffect(() => {
         if (board && board.jobs) {

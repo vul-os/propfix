@@ -170,7 +170,6 @@ export default function ExoStepper({ handleClose }) {
       attachments,
       organizationId: selectedBuilding.organizationId,
       priority: 'low',
-
     }
 
     const createdJob = await createJob(jobData, idToken);
