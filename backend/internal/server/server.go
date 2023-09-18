@@ -12,6 +12,7 @@ import (
 	internalCors "github.com/exolutionza/propfix-backend-go/internal/api/cors"
 	jsonRpcServer "github.com/exolutionza/propfix-backend-go/internal/api/jsonRpc/server"
 	jsonRpcProvider "github.com/exolutionza/propfix-backend-go/internal/api/jsonRpc/service/provider"
+	"github.com/exolutionza/propfix-backend-go/internal/board"
 	"github.com/exolutionza/propfix-backend-go/internal/columns/columnJobLinks"
 
 	"github.com/exolutionza/propfix-backend-go/internal/attachments"
@@ -44,6 +45,7 @@ func Server() {
 	mailgunDomain := "mail.propfix.co"
 	frontendUrl := "propfix.co"
 
+	// neon.tech
 	connStr := "user=exolutiontech password=***REMOVED-DB-PASSWORD*** dbname=neondb host=ep-autumn-math-44120355.us-east-2.aws.neon.tech sslmode=verify-full"
 	dbpool, err := pgxpool.Connect(context.Background(), connStr)
 	if err != nil {
@@ -84,6 +86,8 @@ func Server() {
 	eventStore := events.NewEventsStore(dbpool)
 	labelStore := labels.NewLabelStore(dbpool)
 	buildingsStore := buildings.NewBuildingsStore(dbpool)
+	jobsStore := jobs.NewJobStore(dbpool)
+	roleStore := roles.NewRoleStore(dbpool)
 
 	rpcServerConfigs := []jsonRpcServer.RPCServerConfig{
 		{
@@ -99,15 +103,16 @@ func Server() {
 				auth.IsAuthenticated(authClient, *orgStore),
 			},
 			ServiceProviders: []jsonRpcProvider.Provider{
-				roles.New(dbpool, authorizer),
+				roles.New(roleStore, authorizer),
 				organizations.New(orgStore, authorizer, authClient, mgClient),
 				permissions.New(dbpool, authorizer),
 				buildings.New(buildingsStore, authorizer),
 				labels.New(labelStore, authorizer),
-				jobs.New(dbpool, authorizer, authClient, columnJobLinksStore, labelStore, buildingsStore),
+				jobs.New(jobsStore, authorizer, columnJobLinksStore),
 				events.New(authorizer, eventStore),
 				columns.New(dbpool, authorizer, columnStore),
 				columnJobLinks.New(columnJobLinksStore, authorizer),
+				board.New(jobsStore, authorizer, authClient, columnJobLinksStore, labelStore, buildingsStore),
 			},
 		},
 		// Add more RPC server configurations for other services here
