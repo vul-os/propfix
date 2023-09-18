@@ -79,12 +79,3 @@ func (h *RoleHandler) UpdateRoleHandler(w http.ResponseWriter, r *http.Request) 
 
 	w.WriteHeader(http.StatusOK)
 }
-
-func SetupRoutes(router *mux.Router, store *Store) {
-	handler := NewRoleHandler(store)
-
-	router.HandleFunc("/roles", handler.CreateRoleHandler).Methods("POST")
-	router.HandleFunc("/roles/{roleID}", handler.DeleteRoleHandler).Methods("DELETE")
-	router.HandleFunc("/roles/{roleID}", handler.GetRoleByIDHandler).Methods("GET")
-	router.HandleFunc("/roles/{roleID}", handler.UpdateRoleHandler).Methods("PUT")
-}
