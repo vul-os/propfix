@@ -31,11 +31,14 @@ function JobDataGrid() {
   };
 
   const handleExportToCSV = () => {
-    exportToCSV(selectedRows, 'jobs'); // Export selected rows to CSV
+    console.log(board.jobs, selectedRows)
+    const retRows = selectedRows?.map((sid) => board.jobs && board.jobs[sid])
+    exportToCSV(retRows, 'jobs'); // Export selected rows to CSV
   };
 
   const handleExportToExcel = () => {
-    exportToExcel(selectedRows, 'jobs'); // Export selected rows to Excel
+    const retRows = selectedRows?.map((sid) => board.jobs && board.jobs[sid])
+    exportToExcel(retRows, 'jobs'); // Export selected rows to Excel
   };
   
    const onClose = () => {
@@ -236,7 +239,7 @@ function JobDataGrid() {
   
             }}
             size="small"
-            onClick={() => handleExportToCSV}
+            onClick={handleExportToCSV}
           >
             <Icon
             icon="grommet-icons:document-csv"
@@ -258,7 +261,7 @@ function JobDataGrid() {
   
             }}
             size="small"
-            onClick={() => handleExportToExcel}
+            onClick={handleExportToExcel}
           >
           <Icon
             icon="file-icons:microsoft-excel"
@@ -274,11 +277,14 @@ function JobDataGrid() {
         columns={columns}
         pageSize={10}
         rowsPerPageOptions={[10]}
-        checkboxSelection
         onRowClick={handleRowClick}
         getRowHeight={() => 60} // Set the desired row height (in pixels)
-        onSelectionChange={handleRowSelectionChange} // Handle row selection change
-      />
+        checkboxSelection
+        onRowSelectionModelChange={(newRowSelectionModel) => {
+          setSelectedRows(newRowSelectionModel);
+        }}
+        rowSelectionModel={selectedRows}
+        />
       
       )}
 
