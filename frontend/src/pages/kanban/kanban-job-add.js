@@ -1,53 +1,35 @@
 import PropTypes from 'prop-types';
-import { useState, useCallback, useMemo } from 'react';
-// @mui
+import { useState, useCallback } from 'react';
 import Paper from '@mui/material/Paper';
 import ClickAwayListener from '@mui/material/ClickAwayListener';
 import InputBase, { inputBaseClasses } from '@mui/material/InputBase';
-// _mock
-// utils
 
-// ----------------------------------------------------------------------
-
-export default function KanbanJobAdd({ onAddJob, onCloseAddJob }) {
+export default function KanbanJobAdd({ columnId, onAddJob, openAddJob }) {
   const [name, setName] = useState('');
-
-  const defaultJob = useMemo(
-    () => ({
-      name,
-      "priority": "High",
-      "description": "",
-      "tenantIdentifier": "",
-      "assigneeIds": [],
-      "unitIdentifier": "",
-      "buildingId": "",
-      "labels": [],
-      "attachments": [],
-      "cost": 0,
-      "hours": 0,
-      "dueDate": ""
-    }),
-    [name]
-  );
 
   const handleKeyUpAddJob = useCallback(
     (event) => {
       if (event.key === 'Enter') {
-        if (name) {
-          onAddJob(defaultJob);
+        event.preventDefault();
+        if (name.trim()) {
+          openAddJob.onFalse();
+          onAddJob(name.trim(), columnId);
+          setName(''); // Clear the input after adding the job
         }
       }
     },
-    [defaultJob, name, onAddJob]
+    [columnId, name, onAddJob, openAddJob]
   );
 
   const handleClickAddJob = useCallback(() => {
-    if (name) {
-      onAddJob(defaultJob);
+    if (name.trim()) {
+      openAddJob.onFalse();
+      onAddJob(name.trim(), columnId);
+      setName(''); // Clear the input after adding the job
     } else {
-      onCloseAddJob();
+      openAddJob.onFalse();
     }
-  }, [defaultJob, name, onAddJob, onCloseAddJob]);
+  }, [columnId, name, onAddJob, openAddJob]);
 
   const handleChangeName = useCallback((event) => {
     setName(event.target.value);
@@ -82,3 +64,9 @@ export default function KanbanJobAdd({ onAddJob, onCloseAddJob }) {
     </ClickAwayListener>
   );
 }
+
+KanbanJobAdd.propTypes = {
+  columnId: PropTypes.string.isRequired,
+  onAddJob: PropTypes.func.isRequired,
+  openAddJob: PropTypes.object.isRequired, // You can specify the correct PropTypes shape
+};

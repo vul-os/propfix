@@ -6,12 +6,12 @@ import Avatar from '@mui/material/Avatar';
 import InputBase from '@mui/material/InputBase';
 import Switch from '@mui/material/Switch';
 
-export default function MessageInput({ user, createMessage }) {
-  const [isPublic, setIsPublic] = useState(false); // State for the switch
+export default function MessageInput({ user, createMessage, activeOrganization }) {
+  const [isPublic, setIsPublic] = useState(activeOrganization === ""); // State for the switch
   const [message, setMessage] = useState(""); // State for the switch
 
   const handleSwitchChange = () => {
-    setIsPublic(!isPublic);
+    if (activeOrganization !== "") setIsPublic(!isPublic);
   };
 
   const handleMessageSend = async () => {

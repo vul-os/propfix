@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import IconButton from '@mui/material/IconButton';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import SaveIcon from '@mui/icons-material/Save';
@@ -29,6 +30,7 @@ export default function Labels() {
   const [editing, setEditing] = useState(null);
   const [editedLabel, setEditedLabel] = useState({});
   const [openDialog, setOpenDialog] = useState(false); // State for the dialog
+  const [isEditing, setIsEditing] = useState(false); // Separate state for editing
   const { getIdToken, activeOrganization } = useAuthContext();
 
   useEffect(() => {
@@ -48,55 +50,81 @@ export default function Labels() {
   };
 
   const startEditing = (label) => {
-    setEditedLabel({organizationId: activeOrganization, ...label});
+    setEditedLabel({ organizationId: activeOrganization, ...label });
+    setIsEditing(true); // Set the editing state
     setEditing(label.id);
+  };
+
+  const updateLabelInState = (updatedLabel) => {
+    setLabels((prevLabels) =>
+      prevLabels.map((label) =>
+        label.id === updatedLabel.id ? { ...label, ...updatedLabel } : label
+      )
+    );
   };
 
   const saveEditing = async () => {
     console.log('Save changes for label:', editedLabel);
     try {
       const token = await getIdToken();
-      if (editing) {
+      if (isEditing) {
         await updateLabel(editedLabel, token);
+        updateLabelInState(editedLabel);
       } else {
-        const createdLabel = await createLabel(editedLabel, token); // Create a new label
-        if (createdLabel) {
-          // Add the newly created label to the list
-          setLabels((prevLabels) => [...prevLabels, createdLabel]);
-        }
+        await createNewLabel(editedLabel, token);
       }
+      setIsEditing(false); // Reset the editing state
       setEditing(null);
-      setOpenDialog(false); // Close the dialog
+      setOpenDialog(false);
     } catch (error) {
       console.error('Error saving label:', error);
     }
   };
 
   const closeEditing = () => {
+    setIsEditing(false); // Reset the editing state
     setEditing(null);
-    setOpenDialog(false); // Close the dialog
+    setOpenDialog(false);
   };
 
   const handleDeleteLabel = async (label) => {
     try {
       const token = await getIdToken();
       await deleteLabel(label.id, token);
-      // Remove the deleted label from the list
       setLabels((prevLabels) => prevLabels.filter((l) => l.id !== label.id));
     } catch (error) {
       console.error('Error deleting label:', error);
     }
   };
+  
+
+  const createNewLabel = async (newLabel, token) => {
+    try {
+      const createdLabel = await createLabel(newLabel, token);
+      if (createdLabel.id) {
+        setLabels((prevLabels) => [...prevLabels, createdLabel]);
+      }
+    } catch (error) {
+      console.error('Error creating label:', error);
+    }
+  };
 
   return (
     <div className="labels-page">
-      <Typography variant="h4">Labels ({labels.length})</Typography>
+      <Typography variant="h4">
+        Labels ({labels.length})
+        <IconButton onClick={fetchLabels} aria-label="Refresh">
+          <RefreshIcon />
+        </IconButton>
+      </Typography>
 
       <TableContainer sx={{ marginTop: theme.spacing(2) }} component={Paper}>
         <Table aria-label="labels table">
           <TableHead>
             <TableRow>
-              <TableCell>Label Name</TableCell>
+              <TableCell>
+                Label Name
+              </TableCell>
               <TableCell>Color</TableCell>
               <TableCell>Actions</TableCell>
             </TableRow>
@@ -132,7 +160,7 @@ export default function Labels() {
                         height: '24px',
                         borderRadius: '50%',
                       }}
-                  />
+                    />
                   )}
                 </TableCell>
                 <TableCell>
@@ -162,25 +190,27 @@ export default function Labels() {
         </Table>
       </TableContainer>
 
-      {/* Add the FAB here */}
       <IconButton
         color="primary"
         aria-label="Add Label"
-        onClick={() => setOpenDialog(true)} // Open the dialog on click
+        onClick={() => {
+          setEditedLabel({ organizationId: activeOrganization, name: '', color: '#000000' });
+          setIsEditing(false); // Reset the editing state
+          setOpenDialog(true);
+        }}
         style={{
           position: 'fixed',
-          bottom: '16px', // Adjusted position
-          right: '16px', // Adjusted position
-          backgroundColor: '#fff', // Added background color
-          boxShadow: '0px 4px 16px rgba(0, 0, 0, 0.1)', // Added box shadow
+          bottom: '16px',
+          right: '16px',
+          backgroundColor: '#fff',
+          boxShadow: '0px 4px 16px rgba(0, 0, 0, 0.1)',
         }}
       >
         <AddIcon />
       </IconButton>
 
-      {/* Add the dialog component here */}
-      <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
-        <DialogTitle>{editing ? 'Edit Label' : 'Add Label'}</DialogTitle>
+      <Dialog open={openDialog} onClose={closeEditing}>
+        <DialogTitle>{isEditing ? 'Edit Label' : 'Add New Label'}</DialogTitle>
         <DialogContent>
           <TextField
             label="Label Name"
@@ -194,7 +224,6 @@ export default function Labels() {
             value={editedLabel.color}
             onChange={(e) => setEditedLabel({ ...editedLabel, color: e.target.value })}
           />
-          {/* Add more fields as needed */}
         </DialogContent>
         <DialogActions>
           <Button onClick={closeEditing}>Cancel</Button>

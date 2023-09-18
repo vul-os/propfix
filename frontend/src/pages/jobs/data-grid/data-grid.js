@@ -363,5 +363,4 @@ function JobDataGrid() {
     </Container>
   );
 }
-
 export default JobDataGrid;
