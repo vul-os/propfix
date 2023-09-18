@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"fmt"
 
 	"firebase.google.com/go/v4/auth"
 	jsonRpcProvider "github.com/exolutionza/propfix-backend-go/internal/api/jsonRpc/service/provider"
@@ -208,14 +209,18 @@ func (a *adaptor) RemoveMember(r *http.Request, args *RemoveMemberRequest, resul
 		return errors.New("not permitted")
 	}
 
-	err = a.store.RemoveMember(args.OrganizationId, args.UserId)
+	err = a.store.RemoveMember(args.OrganizationId, args.UserId) 
 	if err != nil {
 		return err
 	}
 
+	fmt.Printf("Removed member with ID: %s\n", args.UserId)
+
 	result.Status = "Member removed from the organization"
 	return nil
 }
+
+
 
 type RemovePendingMemberRequest struct {
 	OrganizationId string `json:"organizationId"`
@@ -227,19 +232,22 @@ type RemovePendingMemberResponse struct {
 }
 
 func (a *adaptor) RemovePendingMember(r *http.Request, args *RemovePendingMemberRequest, result *RemovePendingMemberResponse) error {
-	ok, err := a.authz.CheckPermission(r, "organizations", "delete_pending_member")
-	if err != nil || !ok {
-		return errors.New("not permitted")
-	}
+    ok, err := a.authz.CheckPermission(r, "organizations", "delete_pending_member")
+    if err != nil || !ok {
+        return errors.New("not permitted")
+    }
 
-	err = a.store.RemovePendingMember(args.OrganizationId, args.Email)
-	if err != nil {
-		return err
-	}
+    fmt.Println("Removed pending member:", args.OrganizationId, args.Email) // Log the removed pending member
 
-	result.Status = "Pending member removed from the organization"
-	return nil
+    err = a.store.RemovePendingMember(args.OrganizationId, args.Email)
+    if err != nil {
+        return err
+    }
+
+    result.Status = "Pending member removed from the organization"
+    return nil
 }
+
 
 func (a *adaptor) fetchUserData(userIDs []string) ([]user.User, error) {
 	ctx := context.Background()

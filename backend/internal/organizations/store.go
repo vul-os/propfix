@@ -161,7 +161,7 @@ func (s *OrganizationStore) RemoveMember(orgID, userID string) error {
 	return nil
 }
 
-func (s *OrganizationStore) AddPendingMember(orgID, userID string) error {
+func (s *OrganizationStore) AddPendingMember(orgID, email string) error {
 	ctx := context.Background()
 
 	query := `
@@ -170,7 +170,7 @@ func (s *OrganizationStore) AddPendingMember(orgID, userID string) error {
 		WHERE id = $2
 	`
 
-	_, err := s.pool.Exec(ctx, query, userID, orgID)
+	_, err := s.pool.Exec(ctx, query, email, orgID)
 	if err != nil {
 		fmt.Println("Error adding pending member to organization:", err)
 		return err
@@ -179,7 +179,7 @@ func (s *OrganizationStore) AddPendingMember(orgID, userID string) error {
 	return nil
 }
 
-func (s *OrganizationStore) RemovePendingMember(orgID, userID string) error {
+func (s *OrganizationStore) RemovePendingMember(orgID, email string) error {
 	ctx := context.Background()
 
 	query := `
@@ -188,7 +188,7 @@ func (s *OrganizationStore) RemovePendingMember(orgID, userID string) error {
 		WHERE id = $2
 	`
 
-	_, err := s.pool.Exec(ctx, query, userID, orgID)
+	_, err := s.pool.Exec(ctx, query, email, orgID)
 	if err != nil {
 		fmt.Println("Error removing pending member from organization:", err)
 		return err
