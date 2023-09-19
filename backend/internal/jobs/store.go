@@ -187,7 +187,7 @@ func (a *Store) GetJobsByOrganization(identifier string, permitted bool) ([]Job,
 	if permitted {
 		query = fmt.Sprintf(`SELECT id, name, organization_id, rent_paid, priority, description, reporter_id, assignee_ids, unit_identifier, building_id, label_ids, attachments, cost, hours, due_date, created_at, closed_at FROM jobs WHERE organization_id = '%s'`, identifier)
 	} else {
-		query = fmt.Sprintf(`SELECT id, name, organization_id, rent_paid, priority, description, reporter_id, assignee_ids, unit_identifier, building_id, label_ids, attachments, cost, hours, due_date, created_at, closed_at FROM jobs WHERE tenant_identifier = '%s'`, identifier)
+		query = fmt.Sprintf(`SELECT id, name, organization_id, rent_paid, priority, description, reporter_id, assignee_ids, unit_identifier, building_id, label_ids, attachments, cost, hours, due_date, created_at, closed_at FROM jobs WHERE reporter_id = '%s'`, identifier)
 	}
 	rows, err := a.dbpool.Query(ctx, query)
 	if err != nil {
