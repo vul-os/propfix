@@ -3,16 +3,16 @@ import { useState, useCallback } from 'react';
 import moment from 'moment';
 
 // @mui
-import IconButton from '@mui/material/IconButton';
-import CloseIcon from '@mui/icons-material/Close';
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
 import Tooltip from '@mui/material/Tooltip';
 import MenuItem from '@mui/material/MenuItem';
 import IconButton from '@mui/material/IconButton';
+
 // hooks
 import { useBoolean } from '../../../hooks/use-boolean';
 import { useResponsive } from '../../../hooks/use-responsive';
+
 // components
 import Iconify from '../../../components/iconify';
 import { ConfirmDialog } from '../../../components/custom-dialog';
@@ -28,14 +28,13 @@ export default function Toolbar({
   columns,
   onChangeColumn,
   selectedColumn,
-  onClose, // Function to close the popover
 }) {
-  const [openPopover, setOpenPopover] = useState(null); // Define openPopover
-  const [confirmationOpen, setConfirmationOpen] = useState(false); // Define confirmationOpen
-
-  const onOpen = (event) => {
-    setOpenPopover(event.currentTarget);
-  };
+  const smUp = useResponsive('up', 'sm');
+  const confirm = useBoolean();
+  const [open, setOpen] = useState(false);
+  const onOpen = useCallback((event) => {
+    setOpen(event.currentTarget);
+  }, []);
 
   const closePopover = useCallback(() => {
     setOpen(false);
@@ -104,15 +103,8 @@ export default function Toolbar({
           </Tooltip>
 
           <Tooltip title="Delete job">
-            <IconButton onClick={() => setConfirmationOpen(true)}> {/* Open confirmation dialog */}
+            <IconButton onClick={confirm.onTrue}>
               <Iconify icon="solar:trash-bin-trash-bold" />
-            </IconButton>
-          </Tooltip>
-
-          {/* Add close button here */}
-          <Tooltip title="Close">
-            <IconButton onClick={onClose}>
-              <CloseIcon />
             </IconButton>
           </Tooltip>
         </Stack>
@@ -139,8 +131,8 @@ export default function Toolbar({
       </CustomPopover>
 
       <ConfirmDialog
-        open={confirmationOpen} // Use confirmationOpen
-        onClose={() => setConfirmationOpen(false)} // Close confirmation dialog
+        open={confirm.value}
+        onClose={confirm.onFalse}
         title="Delete"
         content={
           <>
