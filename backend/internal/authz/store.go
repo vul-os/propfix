@@ -12,11 +12,12 @@ import (
 )
 
 type Role struct {
-	ID          string    `json:"id"`
-	Name        string    `json:"name"`
-	Description string    `json:"description"`
-	UserIDs     []string  `json:"userIds"`
-	CreatedAt   time.Time `json:"createdAt"`
+	ID             string    `json:"id"`
+	Name           string    `json:"name"`
+	Description    string    `json:"description"`
+	UserIDs        []string  `json:"userIds"`
+	CreatedAt      time.Time `json:"createdAt"`
+	OrganizationId string    `json:"organizationId"`
 	// Add more fields as needed
 }
 

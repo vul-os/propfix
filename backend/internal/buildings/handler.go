@@ -96,7 +96,7 @@ func (h *adaptor) GetBuilding(r *http.Request, args *GetBuildingRequest, reply *
 }
 
 type DeleteBuildingRequest struct {
-	BuildingID string `json:"buildingId"`
+	ID string `json:"id"`
 }
 
 type DeleteBuildingResponse struct {
@@ -109,7 +109,7 @@ func (h *adaptor) DeleteBuilding(r *http.Request, args *DeleteBuildingRequest, r
 		return errors.New("not permitted")
 	}
 
-	err = h.store.Delete(args.BuildingID)
+	err = h.store.Delete(args.ID)
 	if err != nil {
 		return err
 	}
