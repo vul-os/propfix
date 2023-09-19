@@ -124,8 +124,8 @@ func (a *adaptor) UpdateRole(r *http.Request, args *UpdateRoleRequest, result *U
 }
 
 type AddMemberRequest struct {
-	RoleID string `json:"role_id"`
-	UserID string `json:"user_id"`
+	RoleID string `json:"roleId"`
+	UserID string `json:"userId"`
 }
 
 type AddMemberResponse struct {
@@ -149,15 +149,15 @@ func (a *adaptor) AddMember(r *http.Request, args *AddMemberRequest, result *Add
 }
 
 type RemoveMemberRequest struct {
-	RoleID string `json:"role_id"`
-	UserID string `json:"user_id"`
+	RoleID string `json:"roleId"`
+	UserID string `json:"userId"`
 }
 
 type RemoveMemberResponse struct {
 	Message string `json:"message"`
 }
 
-func (a *adaptor) RemoveMemberFromRole(r *http.Request, args *RemoveMemberRequest, result *RemoveMemberResponse) error {
+func (a *adaptor) RemoveMember(r *http.Request, args *RemoveMemberRequest, result *RemoveMemberResponse) error {
 	ok, err := a.authz.CheckPermission(r, "roles", "remove_member")
 	if err != nil || !ok {
 		return errors.New("not permitted")
