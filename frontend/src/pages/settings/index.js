@@ -6,7 +6,8 @@ import Tab from '@mui/material/Tab';
 import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
 import Profile from './profile';
-import Labels from './labels';
+import Roles from './roles';
+import Labels from './labels'
 import Buildings from './building';
 import Organization from './organization';
 
@@ -54,6 +55,8 @@ export default function Settings() {
   const tabs = [
     { label: 'Profile', content: <Profile /> },
     { label: 'Organization', content: <Organization /> },
+    { label: 'Roles', content: <Roles /> },
+
     { label: 'Buildings', content: <Buildings /> },
     { label: 'Labels', content: <Labels /> },
     // { label: 'buildings', content: <Buildings /> },
