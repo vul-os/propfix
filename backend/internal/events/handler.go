@@ -12,7 +12,7 @@ import (
 )
 
 type adaptor struct {
-	store *EventsStore
+	store *Store
 	authz *authz.Authz
 }
 
@@ -24,7 +24,7 @@ func (a *adaptor) Name() jsonRpcProvider.Name {
 
 func New(
 	authz *authz.Authz,
-	store *EventsStore,
+	store *Store,
 ) *adaptor {
 	return &adaptor{
 		store: store,
@@ -53,13 +53,16 @@ func (a *adaptor) CreateEvent(r *http.Request, args *CreateEventRequest, result 
 	if !ok || accessType == "" {
 		return errors.New("not permitted")
 	}
-	fmt.Println(user)
-	eventID, createdAt, err := a.store.CreateEvent(args.Event, accessType, user.ID)
+
+	toCreateEvent := args.Event
+	toCreateEvent.Visibility = accessType
+
+	eventID, createdAt, err := a.store.CreateEvent(toCreateEvent, user.ID)
 	if err != nil {
 		return fmt.Errorf("Failed to create event: %v", err)
 	}
 
-	newEvent := args.Event
+	newEvent := toCreateEvent
 	newEvent.ID = eventID
 	newEvent.CreatedAt = createdAt
 	newEvent.MemberID = user.ID
