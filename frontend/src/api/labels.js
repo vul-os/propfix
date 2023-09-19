@@ -5,7 +5,7 @@ const API_BASE_URL = `${config.apiUrl}/api/authenticated`;
 
 export async function createLabel(label, idToken) {
   try {
-    const params = [{label}];
+    const params = [{label: label}];
     return await jsonRpcRequest('Labels.CreateLabel', params, idToken);
   } catch (error) {
     console.error('Error creating label:', error);
