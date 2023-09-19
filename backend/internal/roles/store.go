@@ -92,3 +92,43 @@ func (s *Store) UpdateRole(role authz.Role) error {
 
 	return nil
 }
+
+func (s *Store) AddMember(roleID, userID string) error {
+	ctx := context.Background()
+	query := `
+		UPDATE roles
+		SET user_ids = array_append(user_ids, $2)
+		WHERE id = $1
+	`
+	res, err := s.dbpool.Exec(ctx, query, roleID, userID)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected := res.RowsAffected()
+	if rowsAffected == 0 {
+		return errors.New("role not found")
+	}
+
+	return nil
+}
+
+func (s *Store) RemoveMember(roleID, userID string) error {
+	ctx := context.Background()
+	query := `
+		UPDATE roles
+		SET user_ids = array_remove(user_ids, $2)
+		WHERE id = $1
+	`
+	res, err := s.dbpool.Exec(ctx, query, roleID, userID)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected := res.RowsAffected()
+	if rowsAffected == 0 {
+		return errors.New("role not found")
+	}
+
+	return nil
+}
