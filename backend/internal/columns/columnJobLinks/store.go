@@ -121,6 +121,10 @@ func (s *Store) AddJobToFirstColumn(organizationID, jobID string) error {
 			FROM columns
 			WHERE organization_id = $1 AND name = 'New Jobs'
 			LIMIT 1
+		),
+		delete_previous AS (
+			DELETE FROM ColumnJobLinks 
+			WHERE job_id = $3 AND column_id IN (SELECT id FROM column_data)
 		)
 		INSERT INTO ColumnJobLinks (id, column_id, job_id, order_index, date_updated)
 		SELECT $2, column_data.id, $3, 0, $4
@@ -130,6 +134,22 @@ func (s *Store) AddJobToFirstColumn(organizationID, jobID string) error {
 	_, err := s.pool.Exec(ctx, query, organizationID, linkID, jobID, dateUpdated)
 	if err != nil {
 		return errors.New("Failed to add job to first column")
+	}
+
+	return nil
+}
+
+// RemoveJobFromAllColumns removes the given jobID from all columns in the ColumnJobLinks table.
+func (s *Store) RemoveJobFromAllColumns(jobID string) error {
+	ctx := context.Background()
+
+	query := `
+		DELETE FROM ColumnJobLinks
+		WHERE job_id = $1
+	`
+
+	if _, err := s.pool.Exec(ctx, query, jobID); err != nil {
+		return fmt.Errorf("Failed to remove job with ID %s from all columns: %v", jobID, err)
 	}
 
 	return nil

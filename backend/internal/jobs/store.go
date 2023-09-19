@@ -27,8 +27,10 @@ type Job struct {
 	Attachments    []string  `json:"attachments"`
 	Cost           float64   `json:"cost"`
 	Hours          int       `json:"hours"`
+	RentPaid       bool      `json:"rentPaid"`
 	DueDate        time.Time `json:"dueDate"`
 	CreatedAt      time.Time `json:"createdAt"`
+	ClosedAt       time.Time `json:"closedAt"`
 }
 
 type Store struct {
@@ -43,30 +45,27 @@ func NewJobStore(dbpool *pgxpool.Pool) *Store {
 
 func (s *Store) CreateJob(job *Job) error {
 	ctx := context.Background()
-
-	// Generate a unique ID for the job
 	id, err := shortid.Generate()
 	if err != nil {
 		return err
 	}
 
-	// Set the job ID and creation timestamp
 	job.ID = id
 	job.CreatedAt = time.Now()
 
 	sqlQuery := `
 		INSERT INTO jobs (id, name, organization_id, priority, description, reporter_id,
 		assignee_ids, unit_identifier, building_id, label_ids, attachments, cost, hours,
-		due_date, created_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+		rent_paid, due_date, created_at, closed_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
 	`
 
 	_, err = s.dbpool.Exec(ctx, sqlQuery,
 		job.ID, job.Name, job.OrganizationID, job.Priority,
 		job.Description, job.ReporterID, job.AssigneeIDs,
 		job.UnitIdentifier, job.BuildingID, job.LabelIDs,
-		job.Attachments, job.Cost, job.Hours, job.DueDate,
-		job.CreatedAt)
+		job.Attachments, job.Cost, job.Hours, job.RentPaid,
+		job.DueDate, job.CreatedAt, job.ClosedAt)
 
 	if err != nil {
 		return err
@@ -83,14 +82,14 @@ func (s *Store) UpdateJob(job *Job) error {
         SET name = $1, organization_id = $2, priority = $3, description = $4,
         reporter_id = $5, assignee_ids = $6, unit_identifier = $7,
         building_id = $8, label_ids = $9, attachments = $10, cost = $11, hours = $12,
-        due_date = $13
-        WHERE id = $14
+		rent_paid = $13, due_date = $14, closed_at = $15
+        WHERE id = $16
     `
 
 	_, err := s.dbpool.Exec(ctx, sqlQuery,
 		job.Name, job.OrganizationID, job.Priority, job.Description, job.ReporterID,
 		job.AssigneeIDs, job.UnitIdentifier, job.BuildingID, job.LabelIDs, job.Attachments,
-		job.Cost, job.Hours, job.DueDate, job.ID)
+		job.Cost, job.Hours, job.RentPaid, job.DueDate, job.ClosedAt, job.ID)
 
 	if err != nil {
 		return err
@@ -115,29 +114,25 @@ func (s *Store) DeleteJob(jobID string) error {
 func (s *Store) GetJobByID(jobID string) (*Job, error) {
 	ctx := context.Background()
 
-	// Define the SQL query to retrieve a job by its ID
 	sqlQuery := `
         SELECT id, name, organization_id, priority, description, reporter_id,
         assignee_ids, unit_identifier, building_id, label_ids, attachments, cost, hours,
-        due_date, created_at
+		rent_paid, due_date, created_at, closed_at
         FROM jobs
         WHERE id = $1
     `
 
-	// Query the database to fetch the job by ID
 	row := s.dbpool.QueryRow(ctx, sqlQuery, jobID)
 
-	// Create a Job struct to store the result
 	var job Job
 	err := row.Scan(
 		&job.ID, &job.Name, &job.OrganizationID, &job.Priority, &job.Description,
 		&job.ReporterID, &job.AssigneeIDs, &job.UnitIdentifier,
 		&job.BuildingID, &job.LabelIDs, &job.Attachments, &job.Cost, &job.Hours,
-		&job.DueDate, &job.CreatedAt,
+		&job.RentPaid, &job.DueDate, &job.CreatedAt, &job.ClosedAt,
 	)
 	if err != nil {
 		if err == pgx.ErrNoRows {
-			// Handle the case where no job with the given ID was found
 			return nil, fmt.Errorf("job not found")
 		}
 		return nil, err
@@ -146,15 +141,53 @@ func (s *Store) GetJobByID(jobID string) (*Job, error) {
 	return &job, nil
 }
 
+// closeJob sets the ClosedAt time to the current timestamp for a given job ID.
+func (s *Store) CloseJob(jobID string) error {
+	ctx := context.Background()
+
+	sqlQuery := `
+        UPDATE jobs
+        SET closed_at = $1
+        WHERE id = $2
+    `
+
+	_, err := s.dbpool.Exec(ctx, sqlQuery, time.Now(), jobID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// reopenJob sets the ClosedAt time to zero value (or null) for a given job ID.
+func (s *Store) ReOpenJob(jobID string) error {
+	ctx := context.Background()
+
+	// Note: Setting closed_at to null. If your database design doesn't support null values
+	// for this field, you'll have to adjust the query accordingly.
+	sqlQuery := `
+        UPDATE jobs
+        SET closed_at = NULL
+        WHERE id = $1
+    `
+
+	_, err := s.dbpool.Exec(ctx, sqlQuery, jobID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (a *Store) GetJobsByOrganization(identifier string, permitted bool) ([]Job, error) {
 	ctx := context.Background()
 	fmt.Println(identifier, permitted)
 	// Initialize query based on permissions
 	query := ""
 	if permitted {
-		query = fmt.Sprintf(`SELECT id, name, organization_id, priority, description, reporter_id, assignee_ids, unit_identifier, building_id, label_ids, attachments, cost, hours, due_date, created_at FROM jobs WHERE organization_id = '%s'`, identifier)
+		query = fmt.Sprintf(`SELECT id, name, organization_id, rent_paid, priority, description, reporter_id, assignee_ids, unit_identifier, building_id, label_ids, attachments, cost, hours, due_date, created_at, closed_at FROM jobs WHERE organization_id = '%s'`, identifier)
 	} else {
-		query = fmt.Sprintf(`SELECT id, name, organization_id, priority, description, reporter_id, assignee_ids, unit_identifier, building_id, label_ids, attachments, cost, hours, due_date, created_at FROM jobs WHERE tenant_identifier = '%s'`, identifier)
+		query = fmt.Sprintf(`SELECT id, name, organization_id, rent_paid, priority, description, reporter_id, assignee_ids, unit_identifier, building_id, label_ids, attachments, cost, hours, due_date, created_at, closed_at FROM jobs WHERE tenant_identifier = '%s'`, identifier)
 	}
 	rows, err := a.dbpool.Query(ctx, query)
 	if err != nil {
@@ -167,10 +200,10 @@ func (a *Store) GetJobsByOrganization(identifier string, permitted bool) ([]Job,
 	for rows.Next() {
 		var job Job
 		err := rows.Scan(
-			&job.ID, &job.Name, &job.OrganizationID, &job.Priority, &job.Description,
+			&job.ID, &job.Name, &job.OrganizationID, &job.RentPaid, &job.Priority, &job.Description,
 			&job.ReporterID, &job.AssigneeIDs, &job.UnitIdentifier,
 			&job.BuildingID, &job.LabelIDs, &job.Attachments, &job.Cost, &job.Hours,
-			&job.DueDate, &job.CreatedAt,
+			&job.DueDate, &job.CreatedAt, &job.ClosedAt,
 		)
 		if err != nil {
 			return nil, err
