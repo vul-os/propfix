@@ -5,8 +5,8 @@ import CreateIcon from '@mui/icons-material/Create';
 import UpdateIcon from '@mui/icons-material/Update';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { useMediaQuery, useTheme } from '@mui/material';
-import { fToNow } from '../../../utils/format-time';
 import { zonedTimeToUtc } from 'date-fns-tz'; // Import 'zonedTimeToUtc'
+import { fToNow } from '../../../utils/format-time';
 
 export default function CrudStep({ event, member }) {
   let icon;
@@ -58,11 +58,14 @@ export default function CrudStep({ event, member }) {
   // Convert event.createdAt to 'Africa/Johannesburg' time zone.
   const createdAtInJohannesburg = zonedTimeToUtc(event.createdAt, 'Africa/Johannesburg');
 
+  // Calculate the time difference and format it using fToNow
+  const timeDifference = fToNow(createdAtInJohannesburg);
+
   return (
     <div style={styles.container}>
       <Avatar style={styles.avatar}>{icon}</Avatar>
       <Typography variant="caption" style={{ fontSize: '12px', color: '#a8a8a8', paddingLeft: '20px' }}>
-        {fToNow(createdAtInJohannesburg)} {/* Use the converted time */}
+        {timeDifference}
       </Typography>
       <Typography variant="subtitle2" style={{ fontSize: '12px', color: '#a8a8a8', paddingLeft: '20px' }}>
         {member && member?.displayName}

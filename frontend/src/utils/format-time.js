@@ -1,5 +1,5 @@
 import { format, getTime, formatDistanceToNow } from 'date-fns';
-import { enUS } from 'date-fns/locale';
+import { zonedTimeToUtc } from 'date-fns-tz'; // Import zonedTimeToUtc
 
 // ----------------------------------------------------------------------
 
@@ -19,12 +19,26 @@ export function fTimestamp(date) {
   return date ? getTime(new Date(date)) : '';
 }
 
-export function fToNow(date) {
-  return date
-    ? formatDistanceToNow(new Date(date), {
-        addSuffix: true,
-        locale: enUS, // You can change the locale as needed
-        timeZone: 'Africa/Johannesburg', // South Africa time zone
-      })
-    : '';
+export function fToNow(date, timeZone) {
+  if (!date) {
+    return '';
+  }
+
+  // Convert the input date to UTC using zonedTimeToUtc
+  const utcDate = zonedTimeToUtc(new Date(date), timeZone);
+
+  const timeDifferenceInSeconds = Math.abs(
+    Math.floor((new Date().getTime() - utcDate.getTime()) / 1000)
+  );
+
+  if (timeDifferenceInSeconds === 0) {
+    return 'now'; // Event was created at this exact moment
+  } else if (timeDifferenceInSeconds <= 60) {
+    return `${timeDifferenceInSeconds} second${timeDifferenceInSeconds > 1 ? 's' : ''} ago`; // Event was created within 60 seconds
+  } else {
+    // Event was created more than 60 seconds ago
+    const minutesDifference = Math.floor(timeDifferenceInSeconds / 60);
+    return `${minutesDifference} minute${minutesDifference > 1 ? 's' : ''} ago`;
+  }
 }
+
