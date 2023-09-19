@@ -101,6 +101,29 @@ export default function PopOver({
     return file;
   } 
 
+  const handleCloseJob = () => {
+    const now = new Date()
+    setNewJob(prevJob => ({
+      ...prevJob,
+      closedAt: now,
+    }));
+    const newBoardJobs = { ...board.jobs };
+    delete newBoardJobs[job.id];
+
+    const newJobs = jobs.filter(j => j.id !== job.id);
+    console.log(board, newBoardJobs, job.id)
+
+    setBoard({...board, jobs: newBoardJobs})
+    setJobs(newJobs)
+  }
+
+  const handleReOpenJob = () => {
+    setNewJob(prevJob => ({
+      ...prevJob,
+      closedAt: null,
+    }));
+  }
+
   const handleDrop = async (acceptedFiles) => {
     try {
       const idToken = await getIdToken();
@@ -322,6 +345,8 @@ export default function PopOver({
         columns={board && board.columns}
         onChangeColumn={onChangeColumn}
         selectedColumn={job && selectedColumnMap[job.id]}
+        onCloseJob={handleCloseJob}
+        onReOpenJob={handleReOpenJob}
       />
       <Divider />
       <Scrollbar
