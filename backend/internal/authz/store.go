@@ -97,7 +97,7 @@ func (s *Authz) CheckJobPermission(r *http.Request, jobId, resource, permission 
 		SELECT EXISTS (
 			SELECT 1
 			FROM jobs
-			WHERE tenant_identifier = $1 AND id = $2
+			WHERE reporter_id = $1 AND id = $2
 			LIMIT 1
 		)
 	`
@@ -132,7 +132,7 @@ func (s *Authz) CheckJobPermissionAndOrg(r *http.Request, jobId, orgId, resource
 		SELECT EXISTS (
 			SELECT 1
 			FROM jobs
-			WHERE tenant_identifier = $1 AND id = $2
+			WHERE reporter_id = $1 AND id = $2
 			LIMIT 1
 		)
 	`

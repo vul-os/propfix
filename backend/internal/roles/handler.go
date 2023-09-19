@@ -2,7 +2,6 @@ package roles
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 
 	jsonRpcProvider "github.com/exolutionza/propfix-backend-go/internal/api/jsonRpc/service/provider"
@@ -27,98 +26,54 @@ func New(store *Store, authz *authz.Authz) *adaptor {
 	}
 }
 
-type CreateRoleRequest struct {
-	Role authz.Role `json:"role"`
+// ... (Previous code for CreateRole, DeleteRole, GetRole, UpdateRole)
+
+type AddMemberRequest struct {
+	RoleID string `json:"role_id"`
+	UserID string `json:"user_id"`
 }
 
-type CreateRoleResponse struct {
-	ID string `json:"id"`
-}
-
-func (a *adaptor) CreateRole(r *http.Request, request *CreateRoleRequest, response *CreateRoleResponse) error {
-	ok, err := a.authz.CheckPermission(r, "roles", "create")
-	if err != nil || !ok {
-		return errors.New("not permitted")
-	}
-
-	id, err := a.store.CreateRole(request.Role)
-	if err != nil {
-		return err
-	}
-
-	*response = CreateRoleResponse{
-		ID: id,
-	}
-	return nil
-}
-
-type DeleteRoleRequest struct {
-	ID string `json:"id"`
-}
-
-type DeleteRoleResponse struct {
+type AddMemberResponse struct {
 	Message string `json:"message"`
 }
 
-func (a *adaptor) DeleteRole(r *http.Request, args *DeleteRoleRequest, result *DeleteRoleResponse) error {
-	ok, err := a.authz.CheckPermission(r, "roles", "delete")
+func (a *adaptor) AddMember(r *http.Request, args *AddMemberRequest, result *AddMemberResponse) error {
+	ok, err := a.authz.CheckPermission(r, "roles", "add_member")
 	if err != nil || !ok {
 		return errors.New("not permitted")
 	}
 
-	err = a.store.DeleteRole(args.ID)
+	err = a.store.AddMember(args.RoleID, args.UserID)
 	if err != nil {
-		result.Message = "Failed to delete role"
+		result.Message = "Failed to add member to role"
 		return err
 	}
 
-	result.Message = fmt.Sprintf("Role with ID %s deleted successfully", args.ID)
+	result.Message = "Member added to role successfully"
 	return nil
 }
 
-type GetRoleRequest struct {
-	ID string `json:"id"`
+type RemoveMemberFromRoleRequest struct {
+	RoleID string `json:"role_id"`
+	UserID string `json:"user_id"`
 }
 
-type GetRoleResponse struct {
-	Role authz.Role `json:"role"`
-}
-
-func (a *adaptor) GetRole(r *http.Request, args *GetRoleRequest, result *GetRoleResponse) error {
-	ok, err := a.authz.CheckPermission(r, "roles", "read")
-	if err != nil || !ok {
-		return errors.New("not permitted")
-	}
-
-	role, err := a.store.GetRoleByID(args.ID)
-	if err != nil {
-		return err
-	}
-
-	result.Role = role
-	return nil
-}
-
-type UpdateRoleRequest struct {
-	Role authz.Role `json:"role"`
-}
-
-type UpdateRoleResponse struct {
+type RemoveMemberFromRoleResponse struct {
 	Message string `json:"message"`
 }
 
-func (a *adaptor) UpdateRole(r *http.Request, args *UpdateRoleRequest, result *UpdateRoleResponse) error {
-	ok, err := a.authz.CheckPermission(r, "roles", "update")
+func (a *adaptor) RemoveMemberFromRole(r *http.Request, args *RemoveMemberFromRoleRequest, result *RemoveMemberFromRoleResponse) error {
+	ok, err := a.authz.CheckPermission(r, "roles", "remove_member")
 	if err != nil || !ok {
 		return errors.New("not permitted")
 	}
 
-	err = a.store.UpdateRole(args.Role)
+	err = a.store.RemoveMember(args.RoleID, args.UserID)
 	if err != nil {
-		result.Message = "Failed to update role"
+		result.Message = "Failed to remove member from role"
 		return err
 	}
 
-	result.Message = "Role updated successfully"
+	result.Message = "Member removed from role successfully"
 	return nil
 }
