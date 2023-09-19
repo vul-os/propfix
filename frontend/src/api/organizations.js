@@ -59,22 +59,26 @@ export async function inviteMember(email, organizationId, idToken) {
 }
 
 // Function to remove a member from an organization
-export async function removeMember(organizationId, userId, idToken) {
+export async function removeMember(userId, organizationId, idToken) {
   try {
-    const params = [{ organizationId, userId }];
-    return await jsonRpcRequest('Organizations.RemoveMember', params, idToken);
+    const params = { userId, organizationId };
+    await jsonRpcRequest('Organizations.RemoveMember', params, idToken);
+
+    // Log the removed member
+    console.log(`Removed member with ID: ${userId}`);
   } catch (error) {
-    console.error('Error removing a member:', error);
-    return null;
+    console.error('Error removing member:', error);
   }
 }
 
-export async function removePendingMember(organizationId, userId, idToken) {
+
+// Function to remove a pending member from an organization
+export async function removePendingMember(email, organizationId, idToken) {
   try {
-    const params = [{ organizationId, userId }];
-    return await jsonRpcRequest('Organizations.RemovePendingMember', params, idToken);
+    const params = [{ email, organizationId }];
+    await jsonRpcRequest('Organizations.RemovePendingMember', params, idToken);
   } catch (error) {
-    console.error('Error removing a pending member:', error);
-    return null;
+    console.error('Error removing pending member:', error);
   }
 }
+

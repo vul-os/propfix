@@ -1,9 +1,30 @@
 import React, { useState, useEffect } from 'react';
-import { Table, TableBody, TableCell, TableHead, TableRow, Avatar, Button, Typography, Box, Dialog, DialogTitle, DialogContent, DialogActions, TextField, IconButton } from '@mui/material';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
+  Avatar,
+  Button,
+  Typography,
+  Box,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  IconButton,
+} from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { useTheme } from '@mui/material/styles';
 import { useAuthContext } from '../../contexts/auth';
-import { getAllMembers, inviteMember, removePendingMember, removeMember } from '../../api/organizations';
+import {
+  getAllMembers,
+  inviteMember,
+  removePendingMember,
+  removeMember,
+} from '../../api/organizations';
 
 export default function Organization() {
   const theme = useTheme();
@@ -11,11 +32,12 @@ export default function Organization() {
   const [pendingMembers, setPendingMembers] = useState([]);
   const [openInviteDialog, setOpenInviteDialog] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteEmailError, setInviteEmailError] = useState(null); // State for invite email error
   const [pendingMemberToDelete, setPendingMemberToDelete] = useState(null);
   const [memberToDelete, setMemberToDelete] = useState(null);
 
   const { getIdToken, activeOrganization, organizations } = useAuthContext();
-  const currentOrg = organizations.find(org => org.id === activeOrganization);
+  const currentOrg = organizations.find((org) => org.id === activeOrganization);
 
   const fetchMembers = async () => {
     try {
@@ -41,28 +63,42 @@ export default function Organization() {
   const handleCloseDialog = () => {
     setOpenInviteDialog(false);
     setInviteEmail('');
+    setInviteEmailError(null); // Reset invite email error
   };
 
   const handleInvite = async () => {
     try {
+      setInviteEmailError(null); // Reset invite email error
+
+      // Validate email format for invite
+      if (!isValidEmail(inviteEmail)) {
+        setInviteEmailError('Invalid email address');
+        return;
+      }
+
       const token = await getIdToken();
       await inviteMember(inviteEmail, activeOrganization, token);
       console.log(`Successfully invited member with email: ${inviteEmail}`);
+      handleCloseDialog();
     } catch (error) {
       console.error(`Error inviting member: ${error}`);
     }
-    handleCloseDialog();
   };
 
   const iconButtonStyle = { color: '#637381' };
 
-  // Function to handle removing a pending member
   const handleRemovePendingMember = async () => {
     try {
       if (pendingMemberToDelete) {
         const token = await getIdToken();
-        await removePendingMember(activeOrganization, pendingMemberToDelete, token);
-        setPendingMembers((prevPendingMembers) => prevPendingMembers.filter((email) => email !== pendingMemberToDelete));
+        await removePendingMember(pendingMemberToDelete, activeOrganization, token);
+
+        // Log the removed pending member
+        console.log(`Removed pending member: ${pendingMemberToDelete}`);
+
+        setPendingMembers((prevPendingMembers) =>
+          prevPendingMembers.filter((email) => email !== pendingMemberToDelete)
+        );
         setPendingMemberToDelete(null);
       }
     } catch (error) {
@@ -70,18 +106,26 @@ export default function Organization() {
     }
   };
 
-  // Function to handle removing a member
   const handleRemoveMember = async () => {
     try {
       if (memberToDelete) {
         const token = await getIdToken();
-        await removeMember(activeOrganization, memberToDelete, token);
-        setMembers((prevMembers) => prevMembers.filter((member) => member.id !== memberToDelete));
+        console.log("Removing member with ID:", memberToDelete); // Debugging log
+        await removeMember(memberToDelete, activeOrganization, token);
+        setMembers((prevMembers) =>
+          prevMembers.filter((user) => user.Id !== memberToDelete)
+        );
         setMemberToDelete(null);
       }
     } catch (error) {
       console.error(`Error removing member: ${error}`);
     }
+  };
+
+  // Function to check if the email is valid
+  const isValidEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
   };
 
   return (
@@ -91,7 +135,12 @@ export default function Organization() {
         <Typography variant="subtitle1">{activeOrganization || 'N/A'}</Typography>
       </Box>
 
-      <Button variant="contained" sx={{marginBottom: "15px"}} color="primary" onClick={handleOpenDialog}>
+      <Button
+        variant="contained"
+        sx={{ marginBottom: '15px' }}
+        color="primary"
+        onClick={handleOpenDialog}
+      >
         Invite Member
       </Button>
 
@@ -106,6 +155,8 @@ export default function Organization() {
             fullWidth
             value={inviteEmail}
             onChange={(e) => setInviteEmail(e.target.value)}
+            error={!!inviteEmailError} // Highlight invite email field red if there's an error
+            helperText={inviteEmailError} // Display invite email error message
           />
         </DialogContent>
         <DialogActions>
@@ -178,7 +229,9 @@ export default function Organization() {
             </TableBody>
           </Table>
         ) : (
-          <Typography variant="body1" color="textSecondary">No pending members.</Typography>
+          <Typography variant="body1" color="textSecondary">
+            No pending members.
+          </Typography>
         )}
       </Box>
 

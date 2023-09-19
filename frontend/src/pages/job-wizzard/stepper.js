@@ -32,7 +32,7 @@ export default function ExoStepper({ handleClose }) {
   const [files, setFiles] = useState([]);
 
   const { getIdToken } = useAuthContext();
-  const navigate = useNavigate();
+  const navigate = useNavigate(); // Import useNavigate hook
 
   useEffect(() => {
     getUserLocation();
@@ -163,6 +163,11 @@ export default function ExoStepper({ handleClose }) {
 
   const handleFinish = async () => {
     const idToken = await getIdToken();
+
+    // Calculate due date two weeks from now
+    const twoWeeksFromNow = new Date();
+    twoWeeksFromNow.setDate(twoWeeksFromNow.getDate() + 14);
+
     const jobData = {
       ...job,
       labels: selectedLabels ? selectedLabels.map((l) => l.id) : [],
@@ -170,16 +175,18 @@ export default function ExoStepper({ handleClose }) {
       attachments,
       organizationId: selectedBuilding.organizationId,
       priority: 'low',
-    }
+      dueDate: twoWeeksFromNow.toISOString(), // Convert to ISO string format
+    };
 
     const createdJob = await createJob(jobData, idToken);
 
     if (createdJob) {
       console.log('Job created successfully:', createdJob);
+      handleClose();
+      navigate('/jobs'); // Redirect to the jobs page
     } else {
       console.error('Job creation failed.');
     }
-    handleClose()
   };
 
   const isStepValid = () => {
@@ -222,7 +229,7 @@ export default function ExoStepper({ handleClose }) {
           />
         );
       case 2:
-        return <ReviewSubmitStep building={selectedBuilding} job={job} />;
+        return <ReviewSubmitStep building={selectedBuilding} job={job} files={files} />;
       default:
         return 'Unknown step';
     }
@@ -248,7 +255,7 @@ export default function ExoStepper({ handleClose }) {
           </Box>
         </div>
       ) : (
-        <div style={{ padding: '16px' }}> {/* Add padding to create space */}
+        <div style={{ padding: '16px' }}>
           {getStepContent(activeStep)}
           <Box sx={{ display: 'flex', flexDirection: 'row', pt: 2 }}>
             <Button
