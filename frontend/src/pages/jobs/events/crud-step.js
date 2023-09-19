@@ -6,6 +6,7 @@ import UpdateIcon from '@mui/icons-material/Update';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { useMediaQuery, useTheme } from '@mui/material';
 import { fToNow } from '../../../utils/format-time';
+import { zonedTimeToUtc } from 'date-fns-tz'; // Import 'zonedTimeToUtc'
 
 export default function CrudStep({ event, member }) {
   let icon;
@@ -14,7 +15,7 @@ export default function CrudStep({ event, member }) {
   const theme = useTheme();
   const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
   const isMediumScreen = useMediaQuery(theme.breakpoints.only('md'));
-  
+
   const styles = {
     container: {
       display: 'flex',
@@ -30,7 +31,11 @@ export default function CrudStep({ event, member }) {
       width: '25px',
       height: '25px',
       padding: '10px', // Add padding to the Avatar
-      marginLeft: isSmallScreen ? 'calc(30% - 12px)' : isMediumScreen ? 'calc(35% - 12px)' : 'calc(25% - 12px)', // Set margin based on screen size with 5px offset
+      marginLeft: isSmallScreen
+        ? 'calc(30% - 12px)'
+        : isMediumScreen
+        ? 'calc(35% - 12px)'
+        : 'calc(25% - 12px)', // Set margin based on screen size with 5px offset
     },
     icon: {
       color: 'black',
@@ -50,11 +55,14 @@ export default function CrudStep({ event, member }) {
     action = 'deleted';
   }
 
+  // Convert event.createdAt to 'Africa/Johannesburg' time zone.
+  const createdAtInJohannesburg = zonedTimeToUtc(event.createdAt, 'Africa/Johannesburg');
+
   return (
     <div style={styles.container}>
       <Avatar style={styles.avatar}>{icon}</Avatar>
       <Typography variant="caption" style={{ fontSize: '12px', color: '#a8a8a8', paddingLeft: '20px' }}>
-        {fToNow(event.createdAt)}
+        {fToNow(createdAtInJohannesburg)} {/* Use the converted time */}
       </Typography>
       <Typography variant="subtitle2" style={{ fontSize: '12px', color: '#a8a8a8', paddingLeft: '20px' }}>
         {member && member?.displayName}

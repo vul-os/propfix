@@ -1,4 +1,5 @@
 import { format, getTime, formatDistanceToNow } from 'date-fns';
+import { enUS } from 'date-fns/locale';
 
 // ----------------------------------------------------------------------
 
@@ -22,6 +23,8 @@ export function fToNow(date) {
   return date
     ? formatDistanceToNow(new Date(date), {
         addSuffix: true,
+        locale: enUS, // You can change the locale as needed
+        timeZone: 'Africa/Johannesburg', // South Africa time zone
       })
     : '';
 }
