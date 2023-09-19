@@ -39,10 +39,11 @@ export async function updateJob(job, idToken) {
 // Function to delete a job by ID
 export async function deleteJob(jobId, idToken) {
   try {
-    const params = [jobId, idToken];
-    await jsonRpcRequest('Jobs.DeleteJob', params, idToken);
+    const params = [{id: jobId}];
+    return await jsonRpcRequest('Jobs.DeleteJob', params, idToken);
   } catch (error) {
     console.error('Error deleting job:', error);
+    return null
   }
 }
 

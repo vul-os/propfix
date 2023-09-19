@@ -43,7 +43,7 @@ export const BoardProvider = ({ children }) => {
     // };
   
     return (
-      <BoardContext.Provider value={{ board, setBoard, boardLoading, jobs }}> 
+      <BoardContext.Provider value={{ board, setBoard, boardLoading, jobs, setJobs }}> 
         {children}
       </BoardContext.Provider>
     );
