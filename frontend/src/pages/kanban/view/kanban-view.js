@@ -32,6 +32,7 @@ export default function KanbanView() {
           attachments: [],
           organizationId: activeOrganization,
           priority: 'low',
+          rentPaid: false,
         }
         const destinationColumn = board?.columns[columnId];
         

@@ -50,7 +50,7 @@ export default function PopOver({
   onClosePopOver,
 }) {
   const { getIdToken, user, activeOrganization } = useAuthContext(); 
-  const { board, setBoard, boardLoading } = useBoardContext(); // Use the BoardProvider context
+  const { board, setBoard, boardLoading, jobs, setJobs } = useBoardContext(); // Use the BoardProvider context
   const [selectedColumnMap, setSelectedColumnMap] = useState({});
   const [newJob, setNewJob] = useState({...job});
 
@@ -100,6 +100,29 @@ export default function PopOver({
 
     return file;
   } 
+
+  const handleCloseJob = () => {
+    const now = new Date()
+    setNewJob(prevJob => ({
+      ...prevJob,
+      closedAt: now,
+    }));
+    const newBoardJobs = { ...board.jobs };
+    delete newBoardJobs[job.id];
+
+    const newJobs = jobs.filter(j => j.id !== job.id);
+    console.log(board, newBoardJobs, job.id)
+
+    setBoard({...board, jobs: newBoardJobs})
+    setJobs(newJobs)
+  }
+
+  const handleReOpenJob = () => {
+    setNewJob(prevJob => ({
+      ...prevJob,
+      closedAt: null,
+    }));
+  }
 
   const handleDrop = async (acceptedFiles) => {
     try {
@@ -176,18 +199,32 @@ export default function PopOver({
   );
 
   const handleDeleteJob = useCallback(
-    async (newJob) => {
+    async () => {
       try {
         const token = await getIdToken(); // Get the JWT token from the auth context
         const res = await deleteJob(job.id, token); // Pass the token to the deleteJob function
-        if (!!res.success) enqueueSnackbar('Job deleted!', {
-          anchorOrigin: { vertical: 'top', horizontal: 'center' },
-        });
+        onClosePopOver()
+        console.log(res)
+        if (res?.success) {
+          const newBoardJobs = { ...board.jobs };
+          delete newBoardJobs[job.id];
+
+          const newJobs = jobs.filter(j => j.id !== job.id);
+          console.log(board, newBoardJobs, job.id)
+
+          setBoard({...board, jobs: newBoardJobs})
+          setJobs(newJobs)
+
+          // await fetchEvents()
+          // enqueueSnackbar('Job deleted!', {
+          //   anchorOrigin: { vertical: 'top', horizontal: 'center' },
+          // });
+        } 
       } catch (error) {
         console.error(error);
       }
     },
-    [getIdToken, enqueueSnackbar]
+    [getIdToken, enqueueSnackbar, board]
   );
 
   const onChangeColumn = async (jobId, newSelectedColumn, selectedColumn) => {  
@@ -308,6 +345,8 @@ export default function PopOver({
         columns={board && board.columns}
         onChangeColumn={onChangeColumn}
         selectedColumn={job && selectedColumnMap[job.id]}
+        onCloseJob={handleCloseJob}
+        onReOpenJob={handleReOpenJob}
       />
       <Divider />
       <Scrollbar

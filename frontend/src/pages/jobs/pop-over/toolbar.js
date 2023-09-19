@@ -1,24 +1,30 @@
 import PropTypes from 'prop-types';
 import { useState, useCallback } from 'react';
+import moment from 'moment';
+
 // @mui
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
 import Tooltip from '@mui/material/Tooltip';
 import MenuItem from '@mui/material/MenuItem';
 import IconButton from '@mui/material/IconButton';
+
 // hooks
 import { useBoolean } from '../../../hooks/use-boolean';
 import { useResponsive } from '../../../hooks/use-responsive';
+
 // components
 import Iconify from '../../../components/iconify';
 import { ConfirmDialog } from '../../../components/custom-dialog';
-import CustomPopover, { usePopover } from '../../../components/custom-popover';
+import CustomPopover from '../../../components/custom-popover';
 
 // ----------------------------------------------------------------------
 
 export default function Toolbar({
   job,
   onDelete,
+  onCloseJob,
+  onReOpenJob,
   columns,
   onChangeColumn,
   selectedColumn,
@@ -30,24 +36,39 @@ export default function Toolbar({
     setOpen(event.currentTarget);
   }, []);
 
-  const onClose = useCallback(() => {
+  const closePopover = useCallback(() => {
     setOpen(false);
   }, []);
-  
+
+  const onDel = () => {
+    closePopover();
+    confirm.setValue(false);
+    onDelete();
+  };
+
   const handleChangeCol = useCallback(
     (newValue) => {
-      onClose();
+      closePopover();
       if (job && job.id) {
-        onChangeColumn(job.id, newValue, selectedColumn)
+        onChangeColumn(job.id, newValue, selectedColumn);
       }
     },
-    [open]
+    [closePopover, job, onChangeColumn, selectedColumn]
   );
 
   const handleSelectedCheck = (k) => {
-    console.log(k, selectedColumn, columns)
-    return selectedColumn && (selectedColumn.name === columns[k].name)
-  }
+    return selectedColumn && selectedColumn.name === columns[k].name;
+  };
+
+  const isJobClosed = moment(job.closedAt).year() === 0;
+
+  const handleToggleJobStatus = () => {
+    if (isJobClosed) {
+      onReOpenJob(job.id);
+    } else {
+      onCloseJob(job.id);
+    }
+  };
 
   return (
     <>
@@ -60,12 +81,11 @@ export default function Toolbar({
       >
         {!smUp && (
           <Tooltip title="Back">
-            <IconButton onClick={() => setOpen(null)} sx={{ mr: 1 }}>
+            <IconButton onClick={closePopover} sx={{ mr: 1 }}>
               <Iconify icon="eva:arrow-ios-back-fill" />
             </IconButton>
           </Tooltip>
         )}
-
         <Button
           size="small"
           variant="soft"
@@ -76,32 +96,38 @@ export default function Toolbar({
         </Button>
 
         <Stack direction="row" justifyContent="flex-end" flexGrow={1}>
+          <Tooltip title={isJobClosed ? "Reopen job" : "Close job"}>
+            <IconButton onClick={handleToggleJobStatus}>
+              <Iconify icon={isJobClosed ? "eva:checkmark-fill" : "eva:close-fill"} />
+            </IconButton>
+          </Tooltip>
+
           <Tooltip title="Delete job">
             <IconButton onClick={confirm.onTrue}>
               <Iconify icon="solar:trash-bin-trash-bold" />
             </IconButton>
           </Tooltip>
         </Stack>
+
       </Stack>
 
       <CustomPopover
         open={open}
-        onClose={onClose}
+        onClose={closePopover}
         arrow="top-right"
         sx={{ width: 140 }}
       >
         {columns && Object.keys(columns).map((k) => {
-          return <MenuItem
-            key={columns[k].id}
-            selected={handleSelectedCheck(k)}
-            onClick={() => {
-              handleChangeCol(columns[k]);
-            }}
-          >
-            {columns[k].name}
-          </MenuItem>
-        })
-        }
+          return (
+            <MenuItem
+              key={columns[k].id}
+              selected={handleSelectedCheck(k)}
+              onClick={() => handleChangeCol(columns[k])}
+            >
+              {columns[k].name}
+            </MenuItem>
+          );
+        })}
       </CustomPopover>
 
       <ConfirmDialog
@@ -110,11 +136,11 @@ export default function Toolbar({
         title="Delete"
         content={
           <>
-            Are you sure want to delete <strong> {job.name} </strong>?
+            Are you sure you want to delete <strong>{job.name}</strong>?
           </>
         }
         action={
-          <Button variant="contained" color="error" onClick={onDelete}>
+          <Button variant="contained" color="error" onClick={onDel}>
             Delete
           </Button>
         }
@@ -123,3 +149,12 @@ export default function Toolbar({
   );
 }
 
+Toolbar.propTypes = {
+  job: PropTypes.object.isRequired,
+  onDelete: PropTypes.func.isRequired,
+  onClose: PropTypes.func.isRequired,
+  onReOpen: PropTypes.func.isRequired,
+  columns: PropTypes.array.isRequired,
+  onChangeColumn: PropTypes.func.isRequired,
+  selectedColumn: PropTypes.object.isRequired,
+};
