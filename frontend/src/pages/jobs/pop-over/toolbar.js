@@ -33,6 +33,12 @@ export default function Toolbar({
   const onClose = useCallback(() => {
     setOpen(false);
   }, []);
+
+  const onDel = () => {
+    setOpen(false)
+    confirm.setValue(false)
+    onDelete()
+  }
   
   const handleChangeCol = useCallback(
     (newValue) => {
@@ -114,7 +120,7 @@ export default function Toolbar({
           </>
         }
         action={
-          <Button variant="contained" color="error" onClick={onDelete}>
+          <Button variant="contained" color="error" onClick={onDel}>
             Delete
           </Button>
         }

@@ -146,7 +146,7 @@ function JobDataGrid() {
       field: 'unitIdentifier',
       headerName: 'Unit Number',
       width: 200,
-      valueGetter: (params) => params.row.unitIdentifier.toUpperCase(), // Convert cell content to uppercase
+      valueGetter: (params) => params.row.unitIdentifier?.toUpperCase(), // Convert cell content to uppercase
       renderCell: (params) => (
         <strong>{params.value}</strong> // Wrap cell content in a <strong> element for bold text
       ),
