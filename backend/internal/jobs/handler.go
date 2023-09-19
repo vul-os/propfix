@@ -70,9 +70,8 @@ type CreateJobResponse struct {
 }
 
 func (a *adaptor) CreateJob(r *http.Request, args *CreateJobRequest, result *CreateJobResponse) error {
-
 	user, ok := r.Context().Value("user").(user.User)
-	if !ok {
+	if !ok || user.ID == "" {
 		return errors.New("not permitted")
 	}
 
