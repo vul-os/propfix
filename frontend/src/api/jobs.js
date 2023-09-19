@@ -47,6 +47,26 @@ export async function deleteJob(jobId, idToken) {
   }
 }
 
+export async function closeJob(jobId, idToken) {
+  try {
+    const params = [{id: jobId}];
+    return await jsonRpcRequest('Jobs.CloseJob', params, idToken);
+  } catch (error) {
+    console.error('Error deleting job:', error);
+    return null
+  }
+}
+
+export async function reOpenJob(jobId, idToken) {
+  try {
+    const params = [{id: jobId}];
+    return await jsonRpcRequest('Jobs.ReOpenJob', params, idToken);
+  } catch (error) {
+    console.error('Error deleting job:', error);
+    return null
+  }
+}
+
 // Function to fetch all jobs
 export async function getAllJobs(idToken, organizationId) {
   try {

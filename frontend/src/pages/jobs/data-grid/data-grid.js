@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import moment from 'moment';
+import { styled } from '@mui/material/styles';
 import { DataGrid } from '@mui/x-data-grid';
 import Avatar from '@mui/material/Avatar';
 import Tooltip from '@mui/material/Tooltip';
@@ -18,7 +20,17 @@ import { useBoardContext } from '../../../contexts/board'; // Import the BoardPr
 import CreateJobDialog from '../../job-wizzard/dialog';
 import { exportToCSV, exportToExcel } from './utils';
 
-
+const StyledDataGrid = styled(DataGrid)(() => ({
+  '& .super-app-theme--Open': {
+    backgroundColor: "rgba(255, 0, 0, 0.2)", // slight red
+    '&:hover': {
+      backgroundColor: "rgba(255, 0, 0, 0.3)", // slight red
+    }
+  },
+  '& .super-app-theme--Closed': {
+    backgroundColor: "", // slight red
+  },
+}));
 
 function JobDataGrid() {
   const { board, jobs, boardLoading } = useBoardContext(); // Use the BoardProvider context
@@ -28,6 +40,10 @@ function JobDataGrid() {
    const onClose = () => {
     setOpen(false);
   }
+
+  const highlightRowStyle = {
+    backgroundColor: "rgba(255, 0, 0, 0.01)", // slight red
+  };
 
   const avatarRenderer = (params) => {
     const members = board?.members
@@ -197,6 +213,8 @@ function JobDataGrid() {
 
     { field: 'cost', headerName: 'Cost', type: 'number', width: 60 , headerAlign: '-5px', },
     { field: 'createdAt', headerName: 'Created At', width: 160, renderCell: renderDate },
+    { field: 'closedAt', headerName: 'Closed At', width: 160, renderCell: renderDate },
+
   ];
 
   const handleRowClick = (params) => {
@@ -256,15 +274,22 @@ function JobDataGrid() {
       </Typography>
 
       {jobs && !boardLoading && (
-        <DataGrid
-        rows={jobs}
-        columns={columns}
-        pageSize={10}
-        rowsPerPageOptions={[10]}
-        checkboxSelection
-        onRowClick={handleRowClick}
-        getRowHeight={() => 60} // Set the desired row height (in pixels)
-      />
+        <StyledDataGrid
+          rows={jobs}
+          columns={columns}
+          pageSize={10}
+          rowsPerPageOptions={[10]}
+          checkboxSelection
+          onRowClick={handleRowClick}
+          getRowHeight={() => 60} // Set the desired row height (in pixels)
+          getRowClassName={(params) => {
+            const date = params.row.closedAt;
+            if (date && date !== "0001-01-01T00:00:00Z" && moment(date).isValid()) {
+              return `super-app-theme--Open`;
+            }
+            return `super-app-theme--Closed`;
+          }}
+       />
       
       )}
 

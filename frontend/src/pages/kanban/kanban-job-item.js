@@ -51,7 +51,7 @@ export default function KanbanJobItem({ job, members, index, openPopUp, setOpenP
       }}
     >
       {assignees.map((user) => {
-
+        console.log(user)
         return <Avatar key={user?.id} alt={ user?.displayName} src={user?.photoUrl} />
       })}
     </AvatarGroup>
