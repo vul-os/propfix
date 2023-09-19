@@ -14,22 +14,7 @@ import {
   Avatar,
 } from '@mui/material';
 
-export default function AddMember({ open, onClose, members, onAddMember }) {
-  const [selectedMember, setSelectedMember] = useState(null);
-
-  const handleAddMember = () => {
-    if (selectedMember) {
-      onAddMember(selectedMember.id);
-      // setSelectedMember(null);
-      onClose();
-    }
-  };
-
-  useEffect(() => {
-    if (open) {
-      // setSelectedMember(null); // Reset selected member when the dialog opens
-    }
-  }, [open]);
+export default function AddMember({ open, onClose, members, selectedMember, setSelectedMember }) {
 
   return (
     <Dialog open={open} onClose={onClose} aria-labelledby="add-member-dialog-title">
@@ -39,9 +24,9 @@ export default function AddMember({ open, onClose, members, onAddMember }) {
           {members.map((member) => (
             <ListItem
               key={member.id}
-              button
-              onClick={() => setSelectedMember(member)}
-              selected={selectedMember?.id === member.id}
+              onClick={() => {
+                onClose(member)
+              }}
             >
               <ListItemAvatar>
                 <Avatar src={member.photoUrl} alt={member.displayName} />
@@ -54,14 +39,6 @@ export default function AddMember({ open, onClose, members, onAddMember }) {
           ))}
         </List>
       </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose} color="primary">
-          Cancel
-        </Button>
-        <Button onClick={handleAddMember} color="primary" disabled={!selectedMember}>
-          Add
-        </Button>
-      </DialogActions>
     </Dialog>
   );
 }
