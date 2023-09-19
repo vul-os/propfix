@@ -80,14 +80,14 @@ func (s *Store) UpdateJob(job *Job) error {
 	sqlQuery := `
         UPDATE jobs
         SET name = $1, organization_id = $2, priority = $3, description = $4,
-        reporter_id = $5, assignee_ids = $6, unit_identifier = $7,
-        building_id = $8, label_ids = $9, attachments = $10, cost = $11, hours = $12,
-		rent_paid = $13, due_date = $14, closed_at = $15
-        WHERE id = $16
+        assignee_ids = $5, unit_identifier = $6,
+        building_id = $7, label_ids = $8, attachments = $9, cost = $10, hours = $11,
+		rent_paid = $12, due_date = $13, closed_at = $14
+        WHERE id = $15
     `
 
 	_, err := s.dbpool.Exec(ctx, sqlQuery,
-		job.Name, job.OrganizationID, job.Priority, job.Description, job.ReporterID,
+		job.Name, job.OrganizationID, job.Priority, job.Description,
 		job.AssigneeIDs, job.UnitIdentifier, job.BuildingID, job.LabelIDs, job.Attachments,
 		job.Cost, job.Hours, job.RentPaid, job.DueDate, job.ClosedAt, job.ID)
 
@@ -163,15 +163,16 @@ func (s *Store) CloseJob(jobID string) error {
 func (s *Store) ReOpenJob(jobID string) error {
 	ctx := context.Background()
 
+	var zeroTime time.Time
 	// Note: Setting closed_at to null. If your database design doesn't support null values
 	// for this field, you'll have to adjust the query accordingly.
 	sqlQuery := `
         UPDATE jobs
-        SET closed_at = NULL
+        SET closed_at = $2
         WHERE id = $1
     `
 
-	_, err := s.dbpool.Exec(ctx, sqlQuery, jobID)
+	_, err := s.dbpool.Exec(ctx, sqlQuery, jobID, zeroTime)
 	if err != nil {
 		return err
 	}
