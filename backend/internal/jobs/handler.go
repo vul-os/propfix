@@ -8,10 +8,12 @@ import (
 	"github.com/exolutionza/propfix-backend-go/internal/authz"
 	"github.com/exolutionza/propfix-backend-go/internal/columns/columnJobLinks"
 	"github.com/exolutionza/propfix-backend-go/internal/user"
+	"github.com/exolutionza/propfix-backend-go/internal/events"
 )
 
 type adaptor struct {
 	store               *Store
+	eventStore          *events.Store
 	authz               *authz.Authz
 	columnJobLinksStore *columnJobLinks.Store
 }
@@ -24,11 +26,13 @@ func (a *adaptor) Name() jsonRpcProvider.Name {
 
 func New(
 	store *Store,
+	es *events.Store,
 	authz *authz.Authz,
 	cjls *columnJobLinks.Store,
 ) *adaptor {
 	return &adaptor{
 		store:               store,
+		eventStore: 		 es,
 		authz:               authz,
 		columnJobLinksStore: cjls,
 	}
@@ -44,7 +48,7 @@ type GetJobResponse struct {
 	Job Job `json:"job"`
 }
 
-func (a *adaptor) GetJob(r *http.Request, args *GetJobRequest, result *GetJobResponse) error {
+ func (a *adaptor) GetJob(r *http.Request, args *GetJobRequest, result *GetJobResponse) error {
 	ok, err := a.authz.CheckJobPermission(r, args.ID, "jobs", "get")
 	if err != nil || ok != "private" {
 		return errors.New("not permitted")
@@ -103,6 +107,20 @@ func (a *adaptor) CreateJob(r *http.Request, args *CreateJobRequest, result *Cre
 		return err
 	}
 
+	// Create an event for job creation
+	event := events.Event{
+		Type:       "CREATE",
+		Visibility: "private", // You can adjust the visibility as needed
+		JobID:      job.ID,
+		MemberID:   user.ID,
+		Data:       nil, // You can pass additional data as needed
+	}
+
+	_, _, err = a.eventStore.CreateEvent(event, user.ID)
+	if err != nil {
+		return err
+	}
+
 	result.ID = job.ID
 	return nil
 }
@@ -117,13 +135,34 @@ type UpdateJobResponse struct {
 	Success bool `json:"success"`
 }
 
+
 func (a *adaptor) UpdateJob(r *http.Request, args *UpdateJobRequest, result *UpdateJobResponse) error {
 	ok, err := a.authz.CheckPermissionAndOrgs(r, "jobs", "update", args.Job.OrganizationID)
 	if err != nil || !ok {
 		return errors.New("not permitted")
 	}
+
+	user, ok := r.Context().Value("user").(user.User)
+	if !ok || user.ID == "" {
+		return errors.New("not permitted")
+	}
+
 	// Use the jobs package to update a job
 	err = a.store.UpdateJob(&args.Job)
+	if err != nil {
+		return err
+	}
+
+	// Create an event for job update
+	event := events.Event{
+		Type:       "UPDATE",
+		Visibility: "private", // You can adjust the visibility as needed
+		JobID:      args.Job.ID,
+		MemberID:   user.ID,
+		Data:       args.Job, // You can pass additional data as needed
+	}
+
+	_, _, err = a.eventStore.CreateEvent(event, user.ID)
 	if err != nil {
 		return err
 	}
@@ -131,6 +170,7 @@ func (a *adaptor) UpdateJob(r *http.Request, args *UpdateJobRequest, result *Upd
 	result.Success = true
 	return nil
 }
+
 
 // JSON-RPC request for deleting a job
 type DeleteJobRequest struct {

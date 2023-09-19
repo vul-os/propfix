@@ -108,7 +108,7 @@ func Server() {
 				permissions.New(dbpool, authorizer),
 				buildings.New(buildingsStore, authorizer),
 				labels.New(labelStore, authorizer),
-				jobs.New(jobsStore, authorizer, columnJobLinksStore),
+				jobs.New(jobsStore, eventStore, authorizer, columnJobLinksStore),
 				events.New(authorizer, eventStore),
 				columns.New(dbpool, authorizer, columnStore),
 				columnJobLinks.New(columnJobLinksStore, authorizer),
