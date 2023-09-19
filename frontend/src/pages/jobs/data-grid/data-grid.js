@@ -311,7 +311,7 @@ function JobDataGrid() {
       />
 
       {/* Filter Dropdown */}
-      <FormControl variant="outlined" sx={{ minWidth: 150, marginBottom: '16px', marginLeft: '10px' }}>
+      <FormControl variant="outlined" sx={{ minWidth: 150, marginBottom: '16px' }}>
         <InputLabel htmlFor="filter-select">Filter Priority</InputLabel>
         <Select
           value={filterValue}
@@ -363,4 +363,5 @@ function JobDataGrid() {
     </Container>
   );
 }
+
 export default JobDataGrid;
