@@ -79,6 +79,7 @@ func (a *adaptor) CreateJob(r *http.Request, args *CreateJobRequest, result *Cre
 		Name:           args.Job.Name,
 		OrganizationID: args.Job.OrganizationID,
 		Priority:       args.Job.Priority,
+		RentPaid:       args.Job.RentPaid,
 		Description:    args.Job.Description,
 		ReporterID:     user.ID,
 		AssigneeIDs:    args.Job.AssigneeIDs,
@@ -89,6 +90,7 @@ func (a *adaptor) CreateJob(r *http.Request, args *CreateJobRequest, result *Cre
 		Cost:           args.Job.Cost,
 		Hours:          args.Job.Hours,
 		DueDate:        args.Job.DueDate,
+		ClosedAt:       args.Job.ClosedAt,
 	}
 
 	// Use the jobs package to create a job
@@ -150,6 +152,73 @@ func (a *adaptor) DeleteJob(r *http.Request, args *DeleteJobRequest, result *Del
 
 	// Use the jobs package to delete a job
 	err = a.store.DeleteJob(args.ID)
+	if err != nil {
+		return err
+	}
+
+	result.Success = true
+	return nil
+}
+
+// JSON-RPC request for closing a job
+type CloseJobRequest struct {
+	ID string `json:"id"`
+}
+
+// JSON-RPC response for closing a job
+type CloseJobResponse struct {
+	Success bool `json:"success"`
+}
+
+func (a *adaptor) CloseJob(r *http.Request, args *CloseJobRequest, result *CloseJobResponse) error {
+	ok, err := a.authz.CheckJobPermission(r, args.ID, "jobs", "close")
+	if err != nil || ok != "private" {
+		return errors.New("not permitted")
+	}
+
+	// Use the jobs package to close the job
+	err = a.store.CloseJob(args.ID)
+	if err != nil {
+		return err
+	}
+
+	err = a.columnJobLinksStore.RemoveJobFromAllColumns(args.ID)
+	if err != nil {
+		return err
+	}
+
+	result.Success = true
+	return nil
+}
+
+// JSON-RPC request for reopening a job
+type ReOpenJobRequest struct {
+	ID string `json:"id"`
+}
+
+// JSON-RPC response for reopening a job
+type ReOpenJobResponse struct {
+	Success bool `json:"success"`
+}
+
+func (a *adaptor) ReOpenJob(r *http.Request, args *ReOpenJobRequest, result *ReOpenJobResponse) error {
+	ok, err := a.authz.CheckJobPermission(r, args.ID, "jobs", "reopen")
+	if err != nil || ok != "private" {
+		return errors.New("not permitted")
+	}
+	// Use the jobs package to close the job
+	j, err := a.store.GetJobByID(args.ID)
+	if err != nil {
+		return err
+	}
+	// Use the jobs package to reopen the job
+	err = a.store.ReOpenJob(args.ID)
+	if err != nil {
+		return err
+	}
+
+	// Get the ID of the first column and add the job to it
+	err = a.columnJobLinksStore.AddJobToFirstColumn(j.OrganizationID, args.ID)
 	if err != nil {
 		return err
 	}
