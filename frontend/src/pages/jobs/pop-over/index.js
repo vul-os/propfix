@@ -415,6 +415,7 @@ export default function PopOver({
         selectedColumn={job && selectedColumnMap[job.id]}
         onCloseJob={handleCloseJob}
         onReOpenJob={handleReOpenJob}
+        onClosePopOver={onClose}
       />
       <Divider />
       <Scrollbar
