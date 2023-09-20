@@ -60,7 +60,7 @@ export default function Toolbar({
     return selectedColumn && selectedColumn.name === columns[k].name;
   };
 
-  const isJobClosed = moment(job.closedAt).year() === 0;
+  const isJobClosed = job?.closedAt && job?.closedAt !== "0001-01-01T00:00:00Z" && moment(job?.closedAt).isValid()
 
   const handleToggleJobStatus = () => {
     if (isJobClosed) {
@@ -148,13 +148,3 @@ export default function Toolbar({
     </>
   );
 }
-
-Toolbar.propTypes = {
-  job: PropTypes.object.isRequired,
-  onDelete: PropTypes.func.isRequired,
-  onClose: PropTypes.func.isRequired,
-  onReOpen: PropTypes.func.isRequired,
-  columns: PropTypes.array.isRequired,
-  onChangeColumn: PropTypes.func.isRequired,
-  selectedColumn: PropTypes.object.isRequired,
-};

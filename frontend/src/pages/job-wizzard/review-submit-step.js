@@ -1,10 +1,9 @@
-import React, { useState } from 'react';
+import React from 'react';
 import Stack from '@mui/material/Stack';
-import { styled } from '@mui/material/styles'; // Import styled
-import TextField from '@mui/material/TextField'; // Import TextField component
+import { styled } from '@mui/material/styles';
+import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import BuildingCard from './buildings/building-card';
-import InputName from '../../components/input-name';
 
 const StyledLabel = styled('span')(({ theme }) => ({
   ...theme.typography.caption,
@@ -14,7 +13,6 @@ const StyledLabel = styled('span')(({ theme }) => ({
   fontWeight: theme.typography.fontWeightSemiBold,
 }));
 
-// Define JobLabels component
 function JobLabels({ labels }) {
   return (
     <div>
@@ -28,64 +26,47 @@ function JobLabels({ labels }) {
   );
 }
 
-// Define JobName component
-function JobName({ name, onChange }) {
+function JobIssue({ issue }) {
   return (
     <div>
-      <StyledLabel>Name</StyledLabel>
+      <StyledLabel>Issue</StyledLabel>
       <TextField
         fullWidth
+        multiline
         size="small"
         InputProps={{
-          sx: { typography: 'body2' },
+          readOnly: true,
         }}
-        value={name}
-        onChange={onChange}
+        value={issue}
       />
     </div>
   );
 }
 
-// Define JobDescription component
-function JobDescription({ description, onChange }) {
-  return (
-    <div>
-      <StyledLabel>Description</StyledLabel>
-      <TextField
-        fullWidth
-        multiline  // Make it multiline
-        size="small"
-        InputProps={{
-          sx: { typography: 'body2' },
-        }}
-        value={description}
-        onChange={onChange}
-      />
-    </div>
-  );
-}
-
-// Define JobAttachments component
 function JobAttachments({ attachments }) {
   return (
     <div>
       <StyledLabel>Attachments</StyledLabel>
-      {/* Render attachments here */}
+      <div style={{ display: 'flex' }}>
+        {attachments.map((file, index) => (
+          <div key={index} style={{ marginRight: '10px' }}>
+            <img
+              src={URL.createObjectURL(file)}
+              alt={`Uploaded File ${index}`}
+              style={{
+                width: 64,
+                height: 64,
+              }}
+            />
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
 
-export default function ReviewSubmitStep({ building, job }) {
-  const [editedJob, setEditedJob] = useState({ ...job });
 
-  const handleNameChange = (e) => {
-    setEditedJob({ ...editedJob, name: e.target.value });
-  };
-
-  const handleDescriptionChange = (e) => {
-    setEditedJob({ ...editedJob, description: e.target.value });
-  };
-
+export default function ReviewSubmitStep({ building, job, files }) {
   return (
     <Stack spacing={2}>
       {building ? (
@@ -97,13 +78,22 @@ export default function ReviewSubmitStep({ building, job }) {
       )}
       <div style={{ display: 'flex', justifyContent: 'center' }}>
         <Typography variant="body1" sx={{ fontSize: '25px', fontWeight: 'bold', color: '#333' }}>
-          {editedJob.unitIdentifier}
+          {job.unitIdentifier}
         </Typography>
       </div>
-      <div style={{ /* Container styling */ margin: '10px', minWidth: '200px', cursor: 'pointer', borderRadius: '8px', padding: '10px', backgroundColor: 'rgb(255, 255, 255)', border: '1px solid rgb(204, 204, 204)' }}>
-        <JobName name={editedJob.name} onChange={handleNameChange} />
-        <JobDescription description={editedJob.description} onChange={handleDescriptionChange} />
-        <JobAttachments attachments={editedJob.attachmenturls || []} />
+      <div
+        style={{
+          margin: '10px',
+          minWidth: '200px',
+          cursor: 'default',
+          borderRadius: '8px',
+          padding: '10px',
+          backgroundColor: 'rgb(255, 255, 255)',
+          border: '1px solid rgb(204, 204, 204)',
+        }}
+      >
+        <JobIssue issue={job.name} />
+        <JobAttachments attachments={files || []} />
       </div>
     </Stack>
   );

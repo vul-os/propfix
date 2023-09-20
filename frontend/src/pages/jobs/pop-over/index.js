@@ -2,7 +2,7 @@ import PropTypes from 'prop-types';
 import { useState, useCallback, useEffect } from 'react';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
-
+import moment from 'moment';
 // @mui
 import { styled, alpha } from '@mui/material/styles';
 import Drawer from '@mui/material/Drawer';
@@ -12,7 +12,7 @@ import Stack from '@mui/material/Stack';
 import { useAuthContext } from '../../../contexts/auth'; 
 import { useBoardContext } from '../../../contexts/board'; 
 import { getAllEvents, createEvent } from '../../../api/events';
-import { updateJob, deleteJob } from '../../../api/jobs';
+import { updateJob, deleteJob, closeJob, reOpenJob } from '../../../api/jobs';
 import { moveJob } from '../../../api/columnJobLinks';
 import { uploadFile, getFile, deleteFile } from '../../../api/attachments';
 
@@ -101,28 +101,80 @@ export default function PopOver({
     return file;
   } 
 
-  const handleCloseJob = () => {
-    const now = new Date()
-    setNewJob(prevJob => ({
-      ...prevJob,
-      closedAt: now,
-    }));
-    const newBoardJobs = { ...board.jobs };
-    delete newBoardJobs[job.id];
+  const handleCloseJob = useCallback(
+    async () => {
+      try {
+        const token = await getIdToken(); // Get the JWT token from the auth context
+        const res = await closeJob(job.id, token); // Pass the token to the deleteJob function
+        onClosePopOver()
+        console.log(res)
+        if (res?.success) {
+          const newBoardJobs = { ...board.jobs };
+          const currentDateTime = moment().utc().format('YYYY-MM-DDTHH:mm:ss[Z]'); 
 
-    const newJobs = jobs.filter(j => j.id !== job.id);
-    console.log(board, newBoardJobs, job.id)
+          const newJ = {...job}
+          newJ.closedAt = currentDateTime
+          const newJobs = jobs.filter(j => j.id !== job.id);
+          const newnewJobs = [...newJobs, newJ]
+          newBoardJobs[job.id] = newJ
+          // console.log(board, newBoardJobs, job.id)
 
-    setBoard({...board, jobs: newBoardJobs})
-    setJobs(newJobs)
-  }
+          const cols = { ...board.columns }
+          const updatedColumns = Object.fromEntries(
+            Object.entries(cols).map(
+              ([columnKey, columnValue]) => [
+                columnKey, 
+                { ...columnValue, jobIds: columnValue.jobIds.filter(id => id !== job.id) }
+              ]
+            )
+          );
+          setBoard({...board, jobs: newBoardJobs, columns: updatedColumns})
+          setJobs(newnewJobs)
+        } 
+      } catch (error) {
+        console.error(error);
+      }
+    },
+    [getIdToken, enqueueSnackbar, board, job]
+  );
 
-  const handleReOpenJob = () => {
-    setNewJob(prevJob => ({
-      ...prevJob,
-      closedAt: null,
-    }));
-  }
+
+
+  const handleReOpenJob = useCallback(
+    async () => {
+      try {
+
+        const token = await getIdToken(); // Get the JWT token from the auth context
+        const res = await reOpenJob(job.id, token); // Pass the token to the deleteJob function
+        onClosePopOver()
+        console.log(res)
+        if (res?.success) {
+          const newBoardJobs = { ...board.jobs };
+
+          const newJ = {...job}
+          newJ.closedAt = '0001-01-01T00:00:00Z'
+          const newJobs = jobs.filter(j => j.id !== job.id);
+          const newnewJobs = [...newJobs, newJ]
+          newBoardJobs[job.id] = newJ
+
+          const cols = { ...board.columns }
+          const updatedColumns = Object.fromEntries(
+            Object.entries(cols).map(([columnId, columnData]) => {
+              if (columnData.name === 'New Jobs') {
+                return [columnId, { ...columnData, jobIds: [...columnData.jobIds, job.id] }];
+              }
+              return [columnId, columnData];
+            })
+          );
+          setBoard({...board, jobs: newBoardJobs, columns: updatedColumns})
+          setJobs(newnewJobs)
+        }
+      } catch (error) {
+        console.error(error);
+      }
+    },
+    [getIdToken, enqueueSnackbar, board]
+  );
 
   const handleDrop = async (acceptedFiles) => {
     try {
@@ -183,14 +235,28 @@ export default function PopOver({
     }
   };
 
+  function objectsHaveSameValues(obj1, obj2) {
+    const keys1 = Object.keys(obj1);
+    const keys2 = Object.keys(obj2);
+
+    if (keys1.length !== keys2.length) {
+        return false;
+    }
+
+    return keys1.every(key => obj1[key] === obj2[key]);
+  }
+
+
   const handleUpdateJob = useCallback(
     async (newJob) => {
       try {
-        const token = await getIdToken(); // Get the JWT token from the auth context
-        const res = await updateJob(newJob, token); // Pass the token to the deleteJob function
-        if (!!res.success) enqueueSnackbar('Job updated!', {
-          anchorOrigin: { vertical: 'top', horizontal: 'center' },
-        });
+        if (!objectsHaveSameValues(newJob, job)) {
+          const token = await getIdToken(); // Get the JWT token from the auth context
+          const res = await updateJob(newJob, token); // Pass the token to the deleteJob function
+          if (!!res.success) enqueueSnackbar('Job updated!', {
+            anchorOrigin: { vertical: 'top', horizontal: 'center' },
+          });
+        }
       } catch (error) {
         console.error(error);
       }
@@ -224,7 +290,7 @@ export default function PopOver({
         console.error(error);
       }
     },
-    [getIdToken, enqueueSnackbar, board]
+    [getIdToken, enqueueSnackbar, board, job]
   );
 
   const onChangeColumn = async (jobId, newSelectedColumn, selectedColumn) => {  

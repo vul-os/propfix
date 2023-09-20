@@ -1,4 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
+import moment from 'moment';
+import { styled } from '@mui/material/styles';
 import { DataGrid } from '@mui/x-data-grid';
 import Avatar from '@mui/material/Avatar';
 import Tooltip from '@mui/material/Tooltip';
@@ -9,50 +11,46 @@ import Fab from '@mui/material/Fab';
 import AddIcon from '@mui/icons-material/Add';
 import Chip from '@mui/material/Chip';
 import EventIcon from '@mui/icons-material/Event';
-import HomeIcon from '@mui/icons-material/Home';
-import Button from '@mui/material/Button';
+import HomeIcon from '@mui/icons-material/Home'; 
+import Button from '@mui/material/Button'; // Import the Button component from Material-UI
 import { Icon } from '@iconify/react';
-import TextField from '@mui/material/TextField'; // Import TextField for the search bar
-import FormControl from '@mui/material/FormControl'; // Add this import
-import InputLabel from '@mui/material/InputLabel'; // Add this import
-import Select from '@mui/material/Select'; // Add this import
-import MenuItem from '@mui/material/MenuItem'; // Add this import
 import Iconify from '../../../components/iconify';
 import PopOver from '../pop-over';
-import { useBoardContext } from '../../../contexts/board';
+import { useBoardContext } from '../../../contexts/board'; // Import the BoardProvider context
 import CreateJobDialog from '../../job-wizzard/dialog';
 import { exportToCSV, exportToExcel } from './utils';
-// import React, { useState, useEffect, useMemo } from 'react';
-// import { DataGrid } from '@mui/x-data-grid';
 
+const StyledDataGrid = styled(DataGrid)(() => ({
+  '& .super-app-theme--Open': {
+    backgroundColor: "rgba(255, 0, 0, 0.2)", // slight red
+    '&:hover': {
+      backgroundColor: "rgba(255, 0, 0, 0.3)", // slight red
+    }
+  },
+  '& .super-app-theme--Closed': {
+    backgroundColor: "", // slight red
+  },
+}));
 
 function JobDataGrid() {
-  const { board, jobs, boardLoading } = useBoardContext();
+  const { board, jobs, boardLoading } = useBoardContext(); // Use the BoardProvider context
   const [open, setOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState(null);
-  const [filterModel, setFilterModel] = useState({
-    items: [],
-  });
-  const [searchText, setSearchText] = useState('');
-  const [filterValue, setFilterValue] = useState('');
-
-  const filterOptions = [
-    { label: 'All', value: '' },
-    { label: 'High Priority', value: 'high' },
-    { label: 'Medium Priority', value: 'medium' },
-    { label: 'Low Priority', value: 'low' },
-  ];
-
-  const onClose = () => {
+  
+   const onClose = () => {
     setOpen(false);
   }
 
+  const highlightRowStyle = {
+    backgroundColor: "rgba(255, 0, 0, 0.01)", // slight red
+  };
+
   const avatarRenderer = (params) => {
-    const members = board?.members;
+    const members = board?.members
     const assignees = Array.isArray(params.value) ? params.value : [params.value];
     return (
       <Stack direction="row" spacing={2} alignItems="center" justifyContent="center">
-        {members && assignees.length > 0 && assignees.map((assigneeId) => (members[assigneeId]?.displayName &&
+        {members && assignees.length > 0 && assignees.map((assigneeId) => ( members[assigneeId]?.displayName &&
           <Tooltip key={assigneeId} title={members[assigneeId]?.displayName || ''}>
             <Avatar src={members[assigneeId]?.photoUrl} alt={members[assigneeId]?.displayName || ''} sx={{ margin: 0, padding: 0 }} />
           </Tooltip>
@@ -60,33 +58,36 @@ function JobDataGrid() {
       </Stack>
     );
   };
-
+  
+  
   const renderLabel = (params) => {
     if (!(params && params.value && params.value.length)) {
-      return null;
+      return null; // Return null if there are no labels to render
     }
-
+  
+    // Calculate the label lengths and create an array of objects
     const labeledChips = params.value.map((labelId) => ({
       label: board?.labels[labelId] ? board.labels[labelId].name : "",
       length: board?.labels[labelId] ? board.labels[labelId].name.length : 0,
     }));
-
+  
+    // Sort the labeledChips array based on label length in ascending order
     labeledChips.sort((a, b) => a.length - b.length);
-
+  
     return (
       <Stack direction="row">
         <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center' }}>
           {labeledChips.map((labeledChip, index) => (
             <Chip
-              key={index}
+              key={index} // Use index as the key since labels may have the same length
               style={{
                 backgroundColor: board?.labels[params.value[index]]
                   ? board.labels[params.value[index]].color
                   : "red",
-                color: 'white',
-                marginRight: '8px',
-                marginBottom: index === labeledChips.length - 1 ? '4px' : '2px',
-                marginTop: index === 0 ? '4px' : '0px',
+                color: 'white', // Set text color to white
+                marginRight: '8px', // Add margin between chips
+                marginBottom: index === labeledChips.length - 1 ? '4px' : '2px', // Add margin at the bottom for the last chip in the row
+                marginTop: index === 0 ? '4px' : '0px', // Add margin at the top for the first chip in the row
               }}
               label={labeledChip.label}
               size="small"
@@ -97,7 +98,9 @@ function JobDataGrid() {
       </Stack>
     );
   };
-
+  
+  
+  
   const renderDate = (params) => {
     const formattedDate = formatDate(params.value);
     return (
@@ -112,28 +115,28 @@ function JobDataGrid() {
     const building = params.value && board?.buildings[params.value]?.buildingName;
     return (
       <Stack direction="row" alignItems="center">
-        <HomeIcon sx={{ marginRight: 2 }} />
-        <span>{building}</span>
+        <HomeIcon sx={{ marginRight: 2 }} /> {/* Home icon with 1rem (10px) right margin */}
+        <span>{building}</span> {/* Building ID value */}
       </Stack>
     );
   };
-
+  
   const renderPriority = (params) => {
     let { value: priority } = params;
     priority = priority.toLowerCase();
-
+  
     const getIcon = () => {
       if (priority === 'low') return 'solar:double-alt-arrow-down-bold-duotone';
       if (priority === 'medium') return 'solar:double-alt-arrow-right-bold-duotone';
       return 'solar:double-alt-arrow-up-bold-duotone';
     };
-
+  
     const getIconColor = () => {
       if (priority === 'low') return 'info.main';
       if (priority === 'medium') return 'warning.main';
       return 'error.main';
     };
-
+  
     return (
       <Stack direction="row" alignItems="center">
         <Iconify
@@ -143,7 +146,7 @@ function JobDataGrid() {
             color: getIconColor(),
           }}
         />
-        {priority.toUpperCase()}
+        <strong>{priority.toUpperCase()}</strong>
       </Stack>
     );
   };
@@ -154,101 +157,69 @@ function JobDataGrid() {
   };
 
   const columns = [
-    { field: 'id', headerName: <strong>ID</strong>, width: 150 },
+    { field: 'id', headerName: 'ID', width: 150 },
     {
       field: 'unitIdentifier',
-      headerName: <strong>UNIT NUMBER</strong>,
+      headerName: 'Unit Number',
       width: 200,
-      fontWeight: '600',
-      valueGetter: (params) => params.row.unitIdentifier.toUpperCase(),
+      valueGetter: (params) => params.row.unitIdentifier?.toUpperCase(), // Convert cell content to uppercase
       renderCell: (params) => (
-        <strong>{params.value}</strong>
+        <strong>{params.value}</strong> // Wrap cell content in a <strong> element for bold text
       ),
     },
     {
       field: 'buildingId',
-      headerName: <strong>BUILDING</strong>,
+      headerName: 'Building',
       width: 200,
       renderCell: renderBuilding,
     },
-    { field: 'name', headerName: <strong>NAME</strong>, width: 200 },
+    { field: 'name', headerName: 'Name', width: 200 },
     {
       field: 'labels',
-      headerName: <strong>LABELS</strong>,
+      headerName: 'Labels',
       width: 200,
       renderCell: renderLabel,
     },
-    { field: 'dueDate', headerName: <strong>Due Date</strong>, width: 200, renderCell: renderDate },
+    { field: 'dueDate', headerName: 'Due Date', width: 200,renderCell: renderDate},
     {
       field: 'priority',
-      headerName: <strong>Priority</strong>,
+      headerName: 'Priority',
       width: 150,
+
       renderCell: renderPriority,
     },
-    { field: 'description', headerName: <strong>Description</strong>, width: 200 },
+    { field: 'description', headerName: 'Description', width: 200 },
+    // {
+    //   field: 'reporter',
+    //   headerName: 'Reporter',
+    //   width: 200,
+    //   renderCell: avatarRenderer,
+    // },
     {
       field: 'assigneeIds',
-      headerName: <strong>Assignees</strong>,
+      headerName: 'Assignees',
       width: 150,
       renderCell: avatarRenderer,
     },
-    {
-      field: 'rentPaid',
-      headerName: <strong>Rent Paid</strong>,
-      width: 150,
-      renderCell: (params) => (
-        <Stack direction="row" alignItems="center">
-          {params.value ? 'Yes' : 'No'}
-        </Stack>
-      ),
-    },
-    {
+
+     // Add the Hour column after the Assignees column
+     {
       field: 'hours',
-      headerName: <strong>Hours</strong>,
+      headerName: 'Hours',
       width: 100,
-      align: 'left',
-      headerAlign: 'left',
+      align: '-4px',
+      headerAlign: '-5px',
     },
-    {
-      field: 'cost',
-      headerName: <strong>Cost</strong>,
-      type: 'number',
-      width: 100,
-      align: 'left',
-      headerAlign: 'left',
-    },
-    { field: 'createdAt', headerName: <strong>Created At</strong>, width: 160, renderCell: renderDate, headerAlign: 'left', align: 'left' },
+
+    { field: 'cost', headerName: 'Cost', type: 'number', width: 60 , headerAlign: '-5px', },
+    { field: 'createdAt', headerName: 'Created At', width: 160, renderCell: renderDate },
+    { field: 'closedAt', headerName: 'Closed At', width: 160, renderCell: renderDate },
+
   ];
 
   const handleRowClick = (params) => {
     setSelectedRow(params.row);
   };
-
-  // Filter the jobs based on search text
-  const handleFilterChange = (e) => {
-    setFilterValue(e.target.value);
-  };
-
-  const filteredJobs = useMemo(() => {
-    let filtered = jobs;
-    if (searchText) {
-      const searchTextLower = searchText.toLowerCase();
-      filtered = jobs.filter(
-        (job) =>
-          job.name.toLowerCase().includes(searchTextLower) ||
-          job.unitIdentifier.toLowerCase().includes(searchTextLower)
-      );
-    }
-    return filtered;
-  }, [jobs, searchText]);
-
-  const filteredJobsWithFilter = useMemo(() => {
-    let filtered = filteredJobs;
-    if (filterValue) {
-      filtered = filtered.filter((job) => job.priority.toLowerCase() === filterValue);
-    }
-    return filtered;
-  }, [filteredJobs, filterValue]);
 
   return (
     <Container maxWidth={false} sx={{ height: 1 }}>
@@ -257,91 +228,69 @@ function JobDataGrid() {
         <Stack direction="row" spacing={2}>
           <Button
             variant="contained"
-            sx={{
+            sx={{ 
               backgroundColor: 'black;',
               color: 'white',
-              borderRadius: '50%',
-              minWidth: 0,
-              width: '40px',
-              height: '40px',
+              borderRadius: '50%', // Use 50% to make it round
+              minWidth: 0, // To prevent automatic width expansion
+              width: '40px', // Set a fixed width (adjust as needed)
+              height: '40px', // Set a fixed height (adjust as needed)
               WebkitBorderRadius: '30px',
               display: 'flex',
-              alignItems: 'center',
+              alignItems: 'center', // Align items vertically
+  
             }}
             size="small"
-            onClick={() => exportToCSV(filteredJobsWithFilter, 'jobs')} // Use filteredJobsWithFilter here
+            onClick={() => exportToCSV(jobs, 'jobs')}
           >
             <Icon
-              icon="grommet-icons:document-csv"
-              style={{ fontSize: '20px', marginRight: '1.5px' }}
-            />
+            icon="grommet-icons:document-csv"
+            style={{ fontSize:'20px', marginRight: '1.5px',}} // Adjust the fontSize here
+  />
           </Button>
           <Button
             variant="contained"
-            sx={{
+            sx={{ 
               backgroundColor: 'black;',
               color: 'white',
-              borderRadius: '50%',
-              minWidth: 0,
-              width: '40px',
-              height: '40px',
+              borderRadius: '50%', // Use 50% to make it round
+              minWidth: 0, // To prevent automatic width expansion
+              width: '40px', // Set a fixed width (adjust as needed)
+              height: '40px', // Set a fixed height (adjust as needed)
               WebkitBorderRadius: '30px',
               display: 'flex',
-              alignItems: 'center',
+              alignItems: 'center', // Align items vertically
+  
             }}
             size="small"
-            onClick={() => exportToExcel(filteredJobsWithFilter, 'jobs')} // Use filteredJobsWithFilter here
+            onClick={() => exportToExcel(jobs, 'jobs')}
           >
-            <Icon
-              icon="file-icons:microsoft-excel"
-              style={{ fontSize: '20px', marginRight: '1.5px' }}
-            />
+          <Icon
+            icon="file-icons:microsoft-excel"
+            style={{ fontSize:'20px', marginRight: '1.5px', }} // Adjust the fontSize here
+/>
           </Button>
         </Stack>
       </Typography>
 
-      {/* Search Bar */}
-      <TextField
-        label="Search Jobs"
-        variant="outlined"
-        fullWidth
-        value={searchText}
-        onChange={(e) => setSearchText(e.target.value)}
-        style={{ width: '200px', marginBottom: '16px' }}
-      />
-
-      {/* Filter Dropdown */}
-      <FormControl variant="outlined" sx={{ minWidth: 150, marginBottom: '16px' }}>
-        <InputLabel htmlFor="filter-select">Filter Priority</InputLabel>
-        <Select
-          value={filterValue}
-          onChange={handleFilterChange}
-          label="Filter Priority"
-          inputProps={{
-            name: 'filter',
-            id: 'filter-select',
-          }}
-        >
-          {filterOptions.map((option) => (
-            <MenuItem key={option.value} value={option.value}>
-              {option.label}
-            </MenuItem>
-          ))}
-        </Select>
-      </FormControl>
-
-      {filteredJobsWithFilter && !boardLoading && (
-        <DataGrid
-          rows={filteredJobsWithFilter}
+      {jobs && !boardLoading && (
+        <StyledDataGrid
+          rows={jobs}
           columns={columns}
           pageSize={10}
           rowsPerPageOptions={[10]}
           checkboxSelection
           onRowClick={handleRowClick}
-          getRowHeight={() => 60}
-          filterModel={filterModel}
-          onFilterModelChange={handleFilterChange}
-        />
+          getRowHeight={() => 60} // Set the desired row height (in pixels)
+          getRowClassName={(params) => {
+            const date = params.row.closedAt;
+            if (date && date !== "0001-01-01T00:00:00Z" && moment(date).isValid()) {
+              return `super-app-theme--Open`;
+            }
+            return `super-app-theme--Closed`;
+          }}
+       />
+      
       )}
 
       {selectedRow && (
@@ -351,10 +300,10 @@ function JobDataGrid() {
           onClosePopOver={() => setSelectedRow(null)}
         />
       )}
-      <Fab
-        color="primary"
-        aria-label="add"
-        style={{ position: 'fixed', bottom: '75px', right: '16px' }}
+      <Fab 
+        color="primary" 
+        aria-label="add" 
+        style={{ position: 'fixed', bottom: '75px', right: '16px' }} 
         onClick={() => setOpen(true)}
       >
         <AddIcon />
@@ -364,4 +313,4 @@ function JobDataGrid() {
   );
 }
 
-export default JobDataGrid;
+export default JobDataGrid; 
