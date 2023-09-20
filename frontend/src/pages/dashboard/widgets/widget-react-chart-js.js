@@ -50,7 +50,6 @@ const generateEventHandler = (chartRef, eventType, callback) => {
 export default function WidgetChart({
   title,
   subheader,
-  displayName,
   name,
   templates,
   generateChartConfig,
@@ -70,7 +69,7 @@ export default function WidgetChart({
         const response = await executeQuery(name, templates, activeOrganization, token);
 
         if (response.data) {
-          const { data, options, onEvent, eventType } = generateChartConfig(response.data, displayName, theme, navigate);
+          const { data, options, onEvent, eventType } = generateChartConfig(response.data, theme, navigate);
           const handleEvent = generateEventHandler(chartRef, eventType, onEvent);
           setChart({ [eventType]: handleEvent, ref: chartRef, data, options });
         }

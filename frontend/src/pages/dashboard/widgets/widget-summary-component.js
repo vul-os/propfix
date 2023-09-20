@@ -19,20 +19,16 @@ const StyledIcon = styled('div')(({ theme }) => ({
   marginBottom: theme.spacing(3),
 }));
 
-// ----------------------------------------------------------------------
-
-WidgetSummaryComponent.propTypes = {
-  color: PropTypes.string,
-  icon: PropTypes.string,
-  title: PropTypes.string.isRequired,
-  total: PropTypes.number.isRequired,
-  sx: PropTypes.object,
-};
-
-export default function WidgetSummaryComponent({ title, total, icon, currency = null, color = 'secondary', sx, ...other }) {
-
-  const totalToDisplay =  currency ? fCurrency(total) : fShortenNumber(total)
-
+export default function WidgetSummaryComponent({ title, total, icon, type = null, color = 'secondary', sx, ...other }) {
+  console.log(total)
+  let totalToDisplay = ""
+  if (type === "float") {
+    totalToDisplay = total
+  }
+  else {
+    totalToDisplay = type ? fCurrency(total) : fShortenNumber(total)
+  }
+ 
   return (
     <Card
       sx={{

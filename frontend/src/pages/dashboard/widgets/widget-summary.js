@@ -27,7 +27,7 @@ export default function WidgetSummary({ name, templates, ...other }) {
   
           // Handle the successful response here
           console.log('Request was successful');
-  
+          
           setData(firstElement); // Set the retrieved data in state
         }
       } catch (error) {

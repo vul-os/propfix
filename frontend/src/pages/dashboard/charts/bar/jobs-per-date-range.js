@@ -4,7 +4,7 @@ const DATA_CLOSED_INDEX = "jobs_closed";
 const DATA_OPENED_INDEX = "num_jobs";
 const LABELS_INDEX = "job_date";
 
-export function generateChartConfigBar(responseData, displayName, theme, navigate) {
+export function generateChartConfigBar(responseData, theme, navigate) {
     const rawLabels = responseData[LABELS_INDEX];
 
     // Format the dates using moment
@@ -12,12 +12,12 @@ export function generateChartConfigBar(responseData, displayName, theme, navigat
 
     const datasets = [
     {
-        label: `${displayName} Created`,
+        label: `Jobs Created`,
         data: responseData[DATA_OPENED_INDEX],
         backgroundColor: theme.palette.primary.main,  // adjust the color as per your theme
     },
     {
-        label: `${displayName} Closed`,
+        label: `Jobs Closed`,
         data: responseData[DATA_CLOSED_INDEX],
         backgroundColor: theme.palette.secondary.main,
     },
@@ -104,7 +104,6 @@ export const ChartOptionsBar = {
   title: "Created & Closed Jobs",
   subheader: "Number of Jobs created & closed for a date range",
   name: "jobs_created_closed",
-  displayName: 'Jobs',
   templates: {
   },
   type: 'bar',
