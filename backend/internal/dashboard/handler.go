@@ -40,8 +40,8 @@ type ExecuteQueryRequest struct {
 }
 
 type ExecuteQueryResponse struct {
-	Columns []string    `json:"columns"`
-	Data    interface{} `json:"data"`
+	Data    map[string][]interface{} `json:"data"`
+	Columns []string                 `json:"columns"`
 }
 
 func (h *adaptor) ExecuteQuery(r *http.Request, args *ExecuteQueryRequest, reply *ExecuteQueryResponse) error {
@@ -59,6 +59,7 @@ func (h *adaptor) ExecuteQuery(r *http.Request, args *ExecuteQueryRequest, reply
 
 	td := args.TemplateDict
 	td["userId"] = user.ID
+	td["organizationId"] = args.OrganizationID
 
 	// Process the file contents
 	fileContents := ProcessFile(args.Name)
@@ -93,22 +94,31 @@ func (h *adaptor) ExecuteQuery(r *http.Request, args *ExecuteQueryRequest, reply
 		columns = append(columns, string(fd.Name))
 	}
 
+	// Create a placeholder for each column
+	columnData := make(map[string][]interface{})
+	for _, col := range columns {
+		columnData[col] = []interface{}{}
+	}
+
 	// Fetch rows and map values
-	var data [][]interface{}
 	for rows.Next() {
 		values, err := rows.Values()
 		if err != nil {
 			return fmt.Errorf("fetching row values error: %w", err)
 		}
-		data = append(data, values)
+
+		for index, value := range values {
+			columnName := columns[index]
+			columnData[columnName] = append(columnData[columnName], value)
+		}
 	}
 
 	if rows.Err() != nil {
 		return fmt.Errorf("reading rows error: %w", rows.Err())
 	}
 
+	reply.Data = columnData
 	reply.Columns = columns
-	reply.Data = data
 
 	return nil
 }
