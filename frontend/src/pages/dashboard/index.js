@@ -9,6 +9,10 @@ import { ChartOptionsBar as OptionsBarA } from "./charts/bar/jobs-per-date-range
 import { ChartOptionsBar as OptionsBarB } from "./charts/bar/jobs-cost-hours";
 
 import { ChartOptionsPie as OptionsPieA } from "./charts/pie/jobs-per-building";
+import { ChartOptionsPie as OptionsPieB } from "./charts/pie/cost-per-building";
+import { ChartOptionsPie as OptionsPieC } from "./charts/pie/cost-per-unit";
+import { ChartOptionsPie as OptionsPieD } from "./charts/pie/hours-per-building";
+import { ChartOptionsPie as OptionsPieE } from "./charts/pie/hours-per-unit";
 
 const Dashboard = () => {
 
@@ -99,6 +103,18 @@ const Dashboard = () => {
         <Grid item xs={12} md={6} lg={8}>
           <WidgetChart navigate={handleNavigate} {...OptionsBarB} height={280} />
         </Grid>
+        <Grid item xs={12} md={6} lg={4}>
+          <WidgetChart navigate={handleNavigate} {...OptionsPieB} height={280} />
+        </Grid>  
+        <Grid item xs={12} md={6} lg={4}>
+          <WidgetChart navigate={handleNavigate} {...OptionsPieC} height={280} />
+        </Grid>      
+        <Grid item xs={12} md={6} lg={4}>
+          <WidgetChart navigate={handleNavigate} {...OptionsPieD} height={280} />
+        </Grid> 
+        <Grid item xs={12} md={6} lg={4}>
+          <WidgetChart navigate={handleNavigate} {...OptionsPieE} height={280} />
+        </Grid> 
       </Grid>
 
 
