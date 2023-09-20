@@ -56,7 +56,7 @@ function App() {
                   <Route path="/auth/login" element={<LoginPage />} />
                   <Route path="/auth/signup" element={<SignUpPage />} />
                   <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
-                  <Route path="/accept-invite/:organizationId" element={<AcceptInvite />} />
+                  <Route path="/accept-invite/:organizationId" element={<AuthGuard><AcceptInvite /></AuthGuard>} />
                   <Route
                     path="/"
                     element={
