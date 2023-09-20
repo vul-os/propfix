@@ -76,6 +76,7 @@ func (m *MailgunClient) SendInvite(userEmail, orgID, orgName string) error {
 			<p><a href="%s">Click here to accept the invitation</a></p>
 		</body>
 		</html>
+		
 	`, orgName, inviteURL)
 
 	return m.Send(userEmail, subject, text, html)

@@ -9,12 +9,12 @@ import (
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
-type EventsStore struct {
+type Store struct {
 	pool *pgxpool.Pool
 }
 
-func NewEventsStore(pool *pgxpool.Pool) *EventsStore {
-	return &EventsStore{
+func NewEventsStore(pool *pgxpool.Pool) *Store {
+	return &Store{
 		pool: pool,
 	}
 }
@@ -29,7 +29,7 @@ type Event struct {
 	CreatedAt  time.Time   `json:"createdAt"`
 }
 
-func (s *EventsStore) CreateEvent(event Event, accessType string, userId string) (string, time.Time, error) {
+func (s *Store) CreateEvent(event Event, userId string) (string, time.Time, error) {
 	// Perform basic validation on the event data before insertion
 	if event.Type == "" || event.JobID == "" {
 		return "", time.Time{}, fmt.Errorf("Type, Data, JobID, and MemberID are required fields")
@@ -45,7 +45,7 @@ func (s *EventsStore) CreateEvent(event Event, accessType string, userId string)
 		VALUES ($1, $2, $3, $4, $5, $6, $7)
 	`
 
-	_, err := s.pool.Exec(ctx, query, event.ID, event.Type, event.JobID, userId, event.Data, event.CreatedAt, accessType)
+	_, err := s.pool.Exec(ctx, query, event.ID, event.Type, event.JobID, userId, event.Data, event.CreatedAt, event.Visibility)
 	if err != nil {
 		return "", time.Time{}, fmt.Errorf("Failed to create event: %v", err)
 	}
@@ -53,7 +53,7 @@ func (s *EventsStore) CreateEvent(event Event, accessType string, userId string)
 	return event.ID, event.CreatedAt, nil
 }
 
-func (s *EventsStore) GetEvent(eventID string) (*Event, error) {
+func (s *Store) GetEvent(eventID string) (*Event, error) {
 	ctx := context.Background()
 	query := `
 		SELECT id, type, job_id, member_id, data, created_at, visibility
@@ -70,7 +70,7 @@ func (s *EventsStore) GetEvent(eventID string) (*Event, error) {
 	return &event, nil
 }
 
-func (s *EventsStore) UpdateEvent(event Event) error {
+func (s *Store) UpdateEvent(event Event) error {
 	// Perform basic validation on the event data before update
 	if event.Type == "" || event.JobID == "" || event.MemberID == "" {
 		return fmt.Errorf("Type, Data, JobID, and MemberID are required fields")
@@ -93,7 +93,7 @@ func (s *EventsStore) UpdateEvent(event Event) error {
 	return nil
 }
 
-func (s *EventsStore) DeleteEvent(eventID string) error {
+func (s *Store) DeleteEvent(eventID string) error {
 	ctx := context.Background()
 	query := `
 		DELETE FROM events
@@ -108,7 +108,7 @@ func (s *EventsStore) DeleteEvent(eventID string) error {
 	return nil
 }
 
-func (s *EventsStore) DeleteAllEventsForJobID(jobID string) error {
+func (s *Store) DeleteAllEventsForJobID(jobID string) error {
 	ctx := context.Background()
 	query := `
 		DELETE FROM events
@@ -123,7 +123,7 @@ func (s *EventsStore) DeleteAllEventsForJobID(jobID string) error {
 	return nil
 }
 
-func (s *EventsStore) GetAllEvents(jobID string, visibility string) ([]Event, error) {
+func (s *Store) GetAllEvents(jobID string, visibility string) ([]Event, error) {
 	ctx := context.Background()
 	query := `
 		SELECT id, type, job_id, member_id, data, created_at, visibility

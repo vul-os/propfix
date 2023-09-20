@@ -2,6 +2,7 @@ package roles
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 
 	jsonRpcProvider "github.com/exolutionza/propfix-backend-go/internal/api/jsonRpc/service/provider"
@@ -26,11 +27,105 @@ func New(store *Store, authz *authz.Authz) *adaptor {
 	}
 }
 
-// ... (Previous code for CreateRole, DeleteRole, GetRole, UpdateRole)
+type CreateRoleRequest struct {
+	Role authz.Role `json:"role"`
+}
+
+type CreateRoleResponse struct {
+	ID string `json:"id"`
+}
+
+func (a *adaptor) CreateRole(r *http.Request, request *CreateRoleRequest, response *CreateRoleResponse) error {
+	ok, err := a.authz.CheckPermission(r, "roles", "create")
+	if err != nil || !ok {
+		return errors.New("not permitted")
+	}
+
+	id, err := a.store.CreateRole(request.Role)
+	if err != nil {
+		return err
+	}
+
+	*response = CreateRoleResponse{
+		ID: id,
+	}
+	return nil
+}
+
+type DeleteRoleRequest struct {
+	ID string `json:"id"`
+}
+
+type DeleteRoleResponse struct {
+	Message string `json:"message"`
+}
+
+func (a *adaptor) DeleteRole(r *http.Request, args *DeleteRoleRequest, result *DeleteRoleResponse) error {
+	ok, err := a.authz.CheckPermission(r, "roles", "delete")
+	if err != nil || !ok {
+		return errors.New("not permitted")
+	}
+
+	err = a.store.DeleteRole(args.ID)
+	if err != nil {
+		result.Message = "Failed to delete role"
+		return err
+	}
+
+	result.Message = fmt.Sprintf("Role with ID %s deleted successfully", args.ID)
+	return nil
+}
+
+type GetRoleRequest struct {
+	ID string `json:"id"`
+}
+
+type GetRoleResponse struct {
+	Role authz.Role `json:"role"`
+}
+
+func (a *adaptor) GetRole(r *http.Request, args *GetRoleRequest, result *GetRoleResponse) error {
+	ok, err := a.authz.CheckPermission(r, "roles", "read")
+	if err != nil || !ok {
+		return errors.New("not permitted")
+	}
+
+	role, err := a.store.GetRoleByID(args.ID)
+	if err != nil {
+		return err
+	}
+
+	result.Role = role
+	return nil
+}
+
+type UpdateRoleRequest struct {
+	Role authz.Role `json:"role"`
+}
+
+type UpdateRoleResponse struct {
+	Message string `json:"message"`
+}
+
+func (a *adaptor) UpdateRole(r *http.Request, args *UpdateRoleRequest, result *UpdateRoleResponse) error {
+	ok, err := a.authz.CheckPermission(r, "roles", "update")
+	if err != nil || !ok {
+		return errors.New("not permitted")
+	}
+
+	err = a.store.UpdateRole(args.Role)
+	if err != nil {
+		result.Message = "Failed to update role"
+		return err
+	}
+
+	result.Message = "Role updated successfully"
+	return nil
+}
 
 type AddMemberRequest struct {
-	RoleID string `json:"role_id"`
-	UserID string `json:"user_id"`
+	RoleID string `json:"roleId"`
+	UserID string `json:"userId"`
 }
 
 type AddMemberResponse struct {
@@ -53,16 +148,16 @@ func (a *adaptor) AddMember(r *http.Request, args *AddMemberRequest, result *Add
 	return nil
 }
 
-type RemoveMemberFromRoleRequest struct {
-	RoleID string `json:"role_id"`
-	UserID string `json:"user_id"`
+type RemoveMemberRequest struct {
+	RoleID string `json:"roleId"`
+	UserID string `json:"userId"`
 }
 
-type RemoveMemberFromRoleResponse struct {
+type RemoveMemberResponse struct {
 	Message string `json:"message"`
 }
 
-func (a *adaptor) RemoveMemberFromRole(r *http.Request, args *RemoveMemberFromRoleRequest, result *RemoveMemberFromRoleResponse) error {
+func (a *adaptor) RemoveMember(r *http.Request, args *RemoveMemberRequest, result *RemoveMemberResponse) error {
 	ok, err := a.authz.CheckPermission(r, "roles", "remove_member")
 	if err != nil || !ok {
 		return errors.New("not permitted")
@@ -75,5 +170,28 @@ func (a *adaptor) RemoveMemberFromRole(r *http.Request, args *RemoveMemberFromRo
 	}
 
 	result.Message = "Member removed from role successfully"
+	return nil
+}
+
+type GetAllRolesRequest struct {
+	OrganizationID string `json:"organizationId"`
+}
+
+type GetAllRolesResponse struct {
+	Roles []authz.Role `json:"roles"`
+}
+
+func (h *adaptor) GetAllRoles(r *http.Request, args *GetAllRolesRequest, reply *GetAllRolesResponse) error {
+	ok, err := h.authz.CheckPermission(r, "roles", "getall")
+	if err != nil || !ok {
+		return errors.New("not permitted")
+	}
+
+	roles, err := h.store.GetAllRoles(args.OrganizationID)
+	if err != nil {
+		return err
+	}
+
+	reply.Roles = roles
 	return nil
 }

@@ -17,7 +17,8 @@ func createRolesTable(dbpool *pgxpool.Pool) error {
 			name TEXT NOT NULL,
 			description TEXT,
 			user_ids TEXT[],
-			created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+			created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			organization_id TEXT
 		)
 	`)
 	if err != nil {
