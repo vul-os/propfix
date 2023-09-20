@@ -27,6 +27,8 @@ import { KanbanView } from './pages/kanban/view';
 import JobDataGrid from './pages/jobs/data-grid/data-grid';
 import EventsList from './pages/jobs/events/events-list';
 
+import Dashboard from './pages/dashboard';
+
 // Import the Stepper component
 import Stepper from './pages/job-wizzard/stepper'; // Make sure this path is correct
 import AcceptInvite from './pages/auth/accept-invite';
@@ -111,6 +113,20 @@ function App() {
                           <DashboardLayout>
                             <Routes>
                               <Route path="/" element={<Stepper />} />
+                            </Routes>
+                          </DashboardLayout>
+                        </BoardProvider>
+                      </AuthGuard>
+                    }
+                  />
+                  <Route
+                    path="/dashboard/*"
+                    element={
+                      <AuthGuard>
+                        <BoardProvider>
+                          <DashboardLayout>
+                            <Routes>
+                              <Route path="/" element={<Dashboard />} />
                             </Routes>
                           </DashboardLayout>
                         </BoardProvider>
