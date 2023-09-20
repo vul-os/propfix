@@ -23,6 +23,7 @@ import (
 	"github.com/exolutionza/propfix-backend-go/internal/authz"
 	"github.com/exolutionza/propfix-backend-go/internal/buildings"
 	"github.com/exolutionza/propfix-backend-go/internal/columns"
+	"github.com/exolutionza/propfix-backend-go/internal/dashboard"
 	"github.com/exolutionza/propfix-backend-go/internal/events"
 	"github.com/exolutionza/propfix-backend-go/internal/jobs"
 	"github.com/exolutionza/propfix-backend-go/internal/labels"
@@ -113,6 +114,7 @@ func Server() {
 				columns.New(dbpool, authorizer, columnStore),
 				columnJobLinks.New(columnJobLinksStore, authorizer),
 				board.New(jobsStore, authorizer, authClient, columnJobLinksStore, labelStore, buildingsStore),
+				dashboard.New(dbpool, authorizer),
 			},
 		},
 		// Add more RPC server configurations for other services here
