@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import moment from 'moment';
+import IntroJs from 'intro.js';
 import { styled } from '@mui/material/styles';
 import { DataGrid } from '@mui/x-data-grid';
 import Avatar from '@mui/material/Avatar';
@@ -19,6 +20,7 @@ import PopOver from '../pop-over';
 import { useBoardContext } from '../../../contexts/board'; // Import the BoardProvider context
 import CreateJobDialog from '../../job-wizzard/dialog';
 import { exportToCSV, exportToExcel } from './utils';
+import 'intro.js/introjs.css';
 
 const StyledDataGrid = styled(DataGrid)(() => ({
   '& .super-app-theme--Open': {
@@ -221,6 +223,25 @@ function JobDataGrid() {
     setSelectedRow(params.row);
   };
 
+  useEffect(() => {
+    const intro = IntroJs();
+    intro.setOptions({
+      steps: [
+        {
+          element: document.querySelector('.intro-step-fab'),
+          intro: "Click this button to create a new job.",
+        },
+        // Add more steps as needed.
+      ],
+      showStepNumbers: true,
+    });
+    intro.start();
+
+    return () => {
+      intro.exit();
+    };
+  }, []);
+
   return (
     <Container maxWidth={false} sx={{ height: 1 }}>
       <Typography variant="h4" sx={{ mb: { xs: 3, md: 5 }, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -305,6 +326,7 @@ function JobDataGrid() {
         aria-label="add" 
         style={{ position: 'fixed', bottom: '75px', right: '16px' }} 
         onClick={() => setOpen(true)}
+        className="intro-step-fab"
       >
         <AddIcon />
       </Fab>
