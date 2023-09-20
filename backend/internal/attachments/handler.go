@@ -16,7 +16,7 @@ import (
 
 type FileUploadHandler struct {
 	bucket      *storage.BucketHandle
-	eventsStore *events.EventsStore
+	eventsStore *events.Store
 }
 
 type UploadResponse struct {
@@ -24,7 +24,7 @@ type UploadResponse struct {
 	ObjectName string `json:"objectName"`
 }
 
-func NewFileUploadHandler(bucket *storage.BucketHandle, eventsStore *events.EventsStore) (*FileUploadHandler, error) {
+func NewFileUploadHandler(bucket *storage.BucketHandle, eventsStore *events.Store) (*FileUploadHandler, error) {
 	return &FileUploadHandler{
 		bucket:      bucket,
 		eventsStore: eventsStore,
