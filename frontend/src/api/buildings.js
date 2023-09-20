@@ -23,9 +23,9 @@ export async function updateBuilding(building, idToken) {
   }
 }
 
-export async function deleteBuilding(building, idToken) {
+export async function deleteBuilding(id, idToken) {
   try {
-    const params = [{building}];
+    const params = [{id}];
     await jsonRpcRequest('Buildings.DeleteBuilding', params, idToken);
   } catch (error) {
     console.error('Error deleting building:', error);
