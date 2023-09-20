@@ -24,11 +24,11 @@ func (s *Store) CreateRole(role authz.Role) (string, error) {
 	ctx := context.Background()
 	roleID := uuid.New().String()
 	query := `
-		INSERT INTO roles (id, name, description, user_ids, created_at)
-		VALUES ($1, $2, $3, $4, $5)
+		INSERT INTO roles (id, name, description, user_ids, created_at, organization_id)
+		VALUES ($1, $2, $3, $4, $5, $6)
 	`
 
-	_, err := s.dbpool.Exec(ctx, query, roleID, role.Name, role.Description, role.UserIDs, time.Now())
+	_, err := s.dbpool.Exec(ctx, query, roleID, role.Name, role.Description, role.UserIDs, time.Now(), role.OrganizationId)
 	if err != nil {
 		return "", err
 	}
@@ -58,14 +58,14 @@ func (s *Store) DeleteRole(roleID string) error {
 func (s *Store) GetRoleByID(roleID string) (authz.Role, error) {
 	ctx := context.Background()
 	query := `
-		SELECT id, name, description, user_ids, created_at
+		SELECT id, name, description, user_ids, created_at, organization_id
 		FROM roles
 		WHERE id = $1
 	`
 	row := s.dbpool.QueryRow(ctx, query, roleID)
 
 	var role authz.Role
-	err := row.Scan(&role.ID, &role.Name, &role.Description, &role.UserIDs, &role.CreatedAt)
+	err := row.Scan(&role.ID, &role.Name, &role.Description, &role.UserIDs, &role.CreatedAt, &role.OrganizationId)
 	if err != nil {
 		return authz.Role{}, err
 	}
@@ -91,4 +91,71 @@ func (s *Store) UpdateRole(role authz.Role) error {
 	}
 
 	return nil
+}
+
+func (s *Store) AddMember(roleID, userID string) error {
+	ctx := context.Background()
+	query := `
+		UPDATE roles
+		SET user_ids = array_append(user_ids, $2)
+		WHERE id = $1
+	`
+	res, err := s.dbpool.Exec(ctx, query, roleID, userID)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected := res.RowsAffected()
+	if rowsAffected == 0 {
+		return errors.New("role not found")
+	}
+
+	return nil
+}
+
+func (s *Store) RemoveMember(roleID, userID string) error {
+	ctx := context.Background()
+	query := `
+		UPDATE roles
+		SET user_ids = array_remove(user_ids, $2)
+		WHERE id = $1
+	`
+	res, err := s.dbpool.Exec(ctx, query, roleID, userID)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected := res.RowsAffected()
+	if rowsAffected == 0 {
+		return errors.New("role not found")
+	}
+
+	return nil
+}
+
+func (s *Store) GetAllRoles(organizationID string) ([]authz.Role, error) {
+	ctx := context.Background()
+	query := `
+		SELECT id, name, description, user_ids, created_at, organization_id
+		FROM roles
+        WHERE organization_id = $1
+    `
+
+	rows, err := s.dbpool.Query(ctx, query, organizationID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	roles := make([]authz.Role, 0)
+	for rows.Next() {
+		var role authz.Role
+		err := rows.Scan(&role.ID, &role.Name, &role.Description, &role.UserIDs, &role.CreatedAt, &role.OrganizationId)
+		if err != nil {
+			return nil, err
+		}
+		roles = append(roles, role)
+	}
+
+	return roles, nil
 }

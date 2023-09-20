@@ -12,11 +12,12 @@ import (
 )
 
 type Role struct {
-	ID          string    `json:"id"`
-	Name        string    `json:"name"`
-	Description string    `json:"description"`
-	UserIDs     []string  `json:"userIds"`
-	CreatedAt   time.Time `json:"createdAt"`
+	ID             string    `json:"id"`
+	Name           string    `json:"name"`
+	Description    string    `json:"description"`
+	UserIDs        []string  `json:"userIds"`
+	CreatedAt      time.Time `json:"createdAt"`
+	OrganizationId string    `json:"organizationId"`
 	// Add more fields as needed
 }
 
@@ -97,7 +98,7 @@ func (s *Authz) CheckJobPermission(r *http.Request, jobId, resource, permission 
 		SELECT EXISTS (
 			SELECT 1
 			FROM jobs
-			WHERE tenant_identifier = $1 AND id = $2
+			WHERE reporter_id = $1 AND id = $2
 			LIMIT 1
 		)
 	`
@@ -132,7 +133,7 @@ func (s *Authz) CheckJobPermissionAndOrg(r *http.Request, jobId, orgId, resource
 		SELECT EXISTS (
 			SELECT 1
 			FROM jobs
-			WHERE tenant_identifier = $1 AND id = $2
+			WHERE reporter_id = $1 AND id = $2
 			LIMIT 1
 		)
 	`
