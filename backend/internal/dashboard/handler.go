@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"text/template"
 
@@ -12,6 +13,7 @@ import (
 	"github.com/exolutionza/propfix-backend-go/internal/authz"
 	"github.com/exolutionza/propfix-backend-go/internal/user"
 
+	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
@@ -109,6 +111,17 @@ func (h *adaptor) ExecuteQuery(r *http.Request, args *ExecuteQueryRequest, reply
 
 		for index, value := range values {
 			columnName := columns[index]
+			if floatVal, ok := value.(pgtype.Numeric); ok {
+				simpleFloat, err := floatVal.Value()
+				if err == nil && simpleFloat != nil {
+					sf := simpleFloat.(string) // Override value with simple float
+					// Convert the string to a float64
+					value, err = strconv.ParseFloat(sf, 64)
+					if err != nil {
+						return fmt.Errorf("error parsing float %w", err)
+					}
+				}
+			}
 			columnData[columnName] = append(columnData[columnName], value)
 		}
 	}
