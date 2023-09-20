@@ -13,6 +13,7 @@ import {
 } from 'firebase/auth';
 
 import { jsonRpcRequest } from '../api/jsonrpc/client'; // Adjust the path based on your project's structure
+import { getFirstRole } from '../api/roles'; // Adjust the path based on your project's structure
 
 // Initialize Firebase with your configuration
 const firebaseConfig = {
@@ -120,6 +121,7 @@ export const AuthProvider = (props) => {
   const [activeOrganization, setActiveOrganization] = useState("");
   const [organizations, setOrganizations] = useState([]);
   const [haveFetchedOrganizations, setHaveFetchedOrganizations] = useState(false);
+  const [role, setRole] = useState(null)
 
   const initialize = async () => {
     if (initialized.current) {
@@ -167,6 +169,27 @@ export const AuthProvider = (props) => {
   useEffect(() => {
     initialize();
   }, []);
+
+  useEffect(() => {
+    initialize();
+  
+    // Fetch the first role whenever activeOrganization changes
+    if (activeOrganization) {
+      const fetchRole = async () => {
+        try {
+          const idToken = await getIdToken();  // Use the existing getIdToken function
+          const roleData = await getFirstRole(activeOrganization, idToken);
+          if (roleData?.role) {
+            setRole(roleData.role?.name?.toLowerCase());  // Assume the response has a property called "role"
+          }
+        } catch (error) {
+          console.error("Error fetching role:", error);
+        }
+      };
+  
+      fetchRole();
+    }
+  }, [activeOrganization]);
 
   const signIn = async (email, password) => {
     try {
@@ -273,6 +296,7 @@ export const AuthProvider = (props) => {
         setActiveOrganization,
         haveFetchedOrganizations,
         organizations,
+        role
       }}
     >
       {children}

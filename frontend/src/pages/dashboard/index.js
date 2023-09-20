@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Typography, Container, Grid, IconButton, Box, useTheme } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
+import { useAuthContext } from '../../contexts/auth'; 
 
 import WidgetChart from "./widgets/widget-react-chart-js";
 import WidgetSummary from "./widgets/widget-summary";
@@ -18,10 +19,15 @@ const Dashboard = () => {
 
   const navigate = useNavigate();
   const theme = useTheme();
+  const { role } = useAuthContext(); // Use the BoardProvider context
 
   const handleNavigate = (url) => {
     navigate(url);
   };
+
+  if (role && !['admin'].includes(role)) {
+    return navigate('/')
+  }
 
   return (
     <Container maxWidth="xl">

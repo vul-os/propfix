@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+
 import moment from 'moment';
 import { styled } from '@mui/material/styles';
 import { DataGrid } from '@mui/x-data-grid';
@@ -33,10 +35,11 @@ const StyledDataGrid = styled(DataGrid)(() => ({
 }));
 
 function JobDataGrid() {
+  const navigate = useNavigate()
   const { board, jobs, boardLoading } = useBoardContext(); // Use the BoardProvider context
   const [open, setOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState(null);
-  
+
    const onClose = () => {
     setOpen(false);
   }

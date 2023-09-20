@@ -36,9 +36,9 @@ export default function Toolbar({
     setOpen(event.currentTarget);
   }, []);
 
-  const closePopover = useCallback(() => {
+  const closePopover = () => {
     setOpen(false);
-  }, []);
+  };
 
   const onDel = () => {
     closePopover();
@@ -81,7 +81,7 @@ export default function Toolbar({
       >
         {!smUp && (
           <Tooltip title="Back">
-            <IconButton onClick={closePopover} sx={{ mr: 1 }}>
+            <IconButton onClick={() => closePopover()} sx={{ mr: 1 }}>
               <Iconify icon="eva:arrow-ios-back-fill" />
             </IconButton>
           </Tooltip>
