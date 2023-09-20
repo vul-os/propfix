@@ -3,9 +3,9 @@ import { jsonRpcRequest } from './jsonrpc/client';
 
 const API_BASE_URL = `${config.apiUrl}/api/authenticated`;
 
-export async function createBuilding(buildingData, idToken) {
+export async function createBuilding(building, idToken) {
   try {
-    const params = [buildingData, idToken];
+    const params = [{building}];
     return await jsonRpcRequest('Buildings.CreateBuilding', params, idToken);
   } catch (error) {
     console.error('Error creating building:', error);
@@ -23,9 +23,9 @@ export async function updateBuilding(building, idToken) {
   }
 }
 
-export async function deleteBuilding(buildingId, idToken) {
+export async function deleteBuilding(building, idToken) {
   try {
-    const params = [buildingId, idToken];
+    const params = [{building}];
     await jsonRpcRequest('Buildings.DeleteBuilding', params, idToken);
   } catch (error) {
     console.error('Error deleting building:', error);
