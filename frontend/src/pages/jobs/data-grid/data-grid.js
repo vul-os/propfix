@@ -118,8 +118,10 @@ function JobDataGrid() {
     const building = params.value && board?.buildings[params.value]?.buildingName;
     return (
       <Stack direction="row" alignItems="center">
-        <HomeIcon sx={{ marginRight: 2 }} /> {/* Home icon with 1rem (10px) right margin */}
-        <span>{building}</span> {/* Building ID value */}
+        { building && 
+          <HomeIcon sx={{ marginRight: 2 }} /> 
+        }
+        <span>{building}</span> 
       </Stack>
     );
   };
