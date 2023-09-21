@@ -1,4 +1,5 @@
 import { format, getTime, formatDistanceToNow } from 'date-fns';
+import { zonedTimeToUtc } from 'date-fns-tz'; // Import zonedTimeToUtc
 
 // ----------------------------------------------------------------------
 
@@ -19,9 +20,17 @@ export function fTimestamp(date) {
 }
 
 export function fToNow(date) {
+    // Parse event.createdAt as a Date object (assuming it's in ISO 8601 format)
+    const eventCreatedAt = new Date(date);
+
+    // Subtract 2 hours from the date to adjust for the time zone difference
+    eventCreatedAt.setHours(eventCreatedAt.getHours() - 2);
   return date
-    ? formatDistanceToNow(new Date(date), {
+    ? formatDistanceToNow(new Date(eventCreatedAt), {
         addSuffix: true,
       })
     : '';
 }
+
+
+

@@ -8,18 +8,9 @@ const arrayToString = (arr) => {
 };
 
 export const exportToCSV = (dataToExport, fileName) => {
-  // Convert arrays in the data to strings
-  const dataWithArraysConverted = dataToExport.map((item) => ({
-    ...item,
-    // Convert specific properties containing arrays to strings
-    propertyWithArray: Array.isArray(item.propertyWithArray)
-      ? arrayToString(item.propertyWithArray)
-      : item.propertyWithArray,
-    // Add more properties as needed
-  }));
 
   // Create a worksheet
-  const ws = XLSX.utils.json_to_sheet(dataWithArraysConverted);
+  const ws = XLSX.utils.json_to_sheet(dataToExport);
 
   // Generate a CSV string from the worksheet
   const csvData = XLSX.utils.sheet_to_csv(ws);
@@ -36,18 +27,9 @@ export const exportToCSV = (dataToExport, fileName) => {
 };
 
 export const exportToExcel = (dataToExport, fileName) => {
-  // Convert arrays in the data to strings
-  const dataWithArraysConverted = dataToExport.map((item) => ({
-    ...item,
-    // Convert specific properties containing arrays to strings
-    propertyWithArray: Array.isArray(item.propertyWithArray)
-      ? arrayToString(item.propertyWithArray)
-      : item.propertyWithArray,
-    // Add more properties as needed
-  }));
 
   // Create a worksheet
-  const ws = XLSX.utils.json_to_sheet(dataWithArraysConverted);
+  const ws = XLSX.utils.json_to_sheet(dataToExport);
 
   // Create a workbook and add the worksheet
   const wb = XLSX.utils.book_new();
