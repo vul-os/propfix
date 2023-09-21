@@ -117,6 +117,10 @@ function JobDataGrid() {
       <Stack direction="row" alignItems="center">
         <HomeIcon sx={{ marginRight: 2 }} />
         <span>{building}</span>
+        { building && 
+          <HomeIcon sx={{ marginRight: 2 }} /> 
+        }
+        <span>{building}</span> 
       </Stack>
     );
   };
