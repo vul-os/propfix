@@ -5,7 +5,7 @@ import CreateIcon from '@mui/icons-material/Create';
 import UpdateIcon from '@mui/icons-material/Update';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { useMediaQuery, useTheme } from '@mui/material';
-import { zonedTimeToUtc } from 'date-fns-tz'; // Import 'zonedTimeToUtc'
+import PropTypes from 'prop-types'; // Import PropTypes
 import { fToNow } from '../../../utils/format-time';
 
 export default function CrudStep({ event, member }) {
@@ -55,17 +55,12 @@ export default function CrudStep({ event, member }) {
     action = 'deleted';
   }
 
-  // Convert event.createdAt to 'Africa/Johannesburg' time zone.
-  const createdAtInJohannesburg = zonedTimeToUtc(event.createdAt, 'Africa/Johannesburg');
-
-  // Calculate the time difference and format it using fToNow
-  const timeDifference = fToNow(createdAtInJohannesburg);
 
   return (
     <div style={styles.container}>
       <Avatar style={styles.avatar}>{icon}</Avatar>
       <Typography variant="caption" style={{ fontSize: '12px', color: '#a8a8a8', paddingLeft: '20px' }}>
-        {timeDifference}
+        {fToNow(event.createdAt)}
       </Typography>
       <Typography variant="subtitle2" style={{ fontSize: '12px', color: '#a8a8a8', paddingLeft: '20px' }}>
         {member && member?.displayName}
@@ -76,3 +71,12 @@ export default function CrudStep({ event, member }) {
     </div>
   );
 }
+
+// Define PropTypes for event and member props
+CrudStep.propTypes = {
+  event: PropTypes.shape({
+    type: PropTypes.string.isRequired,
+    createdAt: PropTypes.string.isRequired,
+  }).isRequired,
+  member: PropTypes.object, // You can define PropTypes for member as well if needed
+};

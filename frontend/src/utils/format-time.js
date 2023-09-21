@@ -19,26 +19,18 @@ export function fTimestamp(date) {
   return date ? getTime(new Date(date)) : '';
 }
 
-export function fToNow(date, timeZone) {
-  if (!date) {
-    return '';
-  }
+export function fToNow(date) {
+    // Parse event.createdAt as a Date object (assuming it's in ISO 8601 format)
+    const eventCreatedAt = new Date(date);
 
-  // Convert the input date to UTC using zonedTimeToUtc
-  const utcDate = zonedTimeToUtc(new Date(date), timeZone);
-
-  const timeDifferenceInSeconds = Math.abs(
-    Math.floor((new Date().getTime() - utcDate.getTime()) / 1000)
-  );
-
-  if (timeDifferenceInSeconds === 0) {
-    return 'now'; // Event was created at this exact moment
-  } else if (timeDifferenceInSeconds <= 60) {
-    return `${timeDifferenceInSeconds} second${timeDifferenceInSeconds > 1 ? 's' : ''} ago`; // Event was created within 60 seconds
-  } else {
-    // Event was created more than 60 seconds ago
-    const minutesDifference = Math.floor(timeDifferenceInSeconds / 60);
-    return `${minutesDifference} minute${minutesDifference > 1 ? 's' : ''} ago`;
-  }
+    // Subtract 2 hours from the date to adjust for the time zone difference
+    eventCreatedAt.setHours(eventCreatedAt.getHours() - 2);
+  return date
+    ? formatDistanceToNow(new Date(eventCreatedAt), {
+        addSuffix: true,
+      })
+    : '';
 }
+
+
 
