@@ -29,7 +29,7 @@ const StyledAccount = styled('div')(({ theme }) => ({
 
 export default function Nav({ openNav, onCloseNav, navConfig }) {
   const { pathname } = useLocation();
-  const { user } = useAuthContext();
+  const { user, role } = useAuthContext();
 
   const isDesktop = useResponsive('up', 'lg');
 
@@ -69,7 +69,7 @@ export default function Nav({ openNav, onCloseNav, navConfig }) {
         </Link>
       </Box>
 
-      <NavSection data={navConfig} />
+      <NavSection data={navConfig(role)} />
 
       <Box sx={{ flexGrow: 1 }} />
 

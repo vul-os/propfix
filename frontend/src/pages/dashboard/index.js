@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Typography, Container, Grid, IconButton, Box, useTheme } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
+import { useAuthContext } from '../../contexts/auth'; 
 
 import WidgetChart from "./widgets/widget-react-chart-js";
 import WidgetSummary from "./widgets/widget-summary";
@@ -9,15 +10,24 @@ import { ChartOptionsBar as OptionsBarA } from "./charts/bar/jobs-per-date-range
 import { ChartOptionsBar as OptionsBarB } from "./charts/bar/jobs-cost-hours";
 
 import { ChartOptionsPie as OptionsPieA } from "./charts/pie/jobs-per-building";
+import { ChartOptionsPie as OptionsPieB } from "./charts/pie/cost-per-building";
+import { ChartOptionsPie as OptionsPieC } from "./charts/pie/cost-per-unit";
+import { ChartOptionsPie as OptionsPieD } from "./charts/pie/hours-per-building";
+import { ChartOptionsPie as OptionsPieE } from "./charts/pie/hours-per-unit";
 
 const Dashboard = () => {
 
   const navigate = useNavigate();
   const theme = useTheme();
+  const { role } = useAuthContext(); // Use the BoardProvider context
 
   const handleNavigate = (url) => {
     navigate(url);
   };
+
+  if (role && !['admin'].includes(role)) {
+    return navigate('/')
+  }
 
   return (
     <Container maxWidth="xl">
@@ -99,6 +109,18 @@ const Dashboard = () => {
         <Grid item xs={12} md={6} lg={8}>
           <WidgetChart navigate={handleNavigate} {...OptionsBarB} height={280} />
         </Grid>
+        <Grid item xs={12} md={6} lg={4}>
+          <WidgetChart navigate={handleNavigate} {...OptionsPieB} height={280} />
+        </Grid>  
+        <Grid item xs={12} md={6} lg={4}>
+          <WidgetChart navigate={handleNavigate} {...OptionsPieC} height={280} />
+        </Grid>      
+        <Grid item xs={12} md={6} lg={4}>
+          <WidgetChart navigate={handleNavigate} {...OptionsPieD} height={280} />
+        </Grid> 
+        <Grid item xs={12} md={6} lg={4}>
+          <WidgetChart navigate={handleNavigate} {...OptionsPieE} height={280} />
+        </Grid> 
       </Grid>
 
 

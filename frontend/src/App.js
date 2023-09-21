@@ -28,6 +28,7 @@ import JobDataGrid from './pages/jobs/data-grid/data-grid';
 import EventsList from './pages/jobs/events/events-list';
 
 import Dashboard from './pages/dashboard';
+import Root from './pages/root';
 
 // Import the Stepper component
 import Stepper from './pages/job-wizzard/stepper'; // Make sure this path is correct
@@ -55,13 +56,13 @@ function App() {
                   <Route path="/auth/login" element={<LoginPage />} />
                   <Route path="/auth/signup" element={<SignUpPage />} />
                   <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
-                  <Route path="/accept-invite/:organizationId" element={<AcceptInvite />} />
+                  <Route path="/accept-invite/:organizationId" element={<AuthGuard><AcceptInvite /></AuthGuard>} />
                   <Route
                     path="/"
                     element={
                       <AuthGuard>
                         <BoardProvider>
-                          <DashboardLayout><KanbanView /></DashboardLayout>
+                          <DashboardLayout><Root /></DashboardLayout>
                         </BoardProvider>
                       </AuthGuard>
                     }
@@ -127,6 +128,20 @@ function App() {
                           <DashboardLayout>
                             <Routes>
                               <Route path="/" element={<Dashboard />} />
+                            </Routes>
+                          </DashboardLayout>
+                        </BoardProvider>
+                      </AuthGuard>
+                    }
+                  />
+                  <Route
+                    path="/board/*"
+                    element={
+                      <AuthGuard>
+                        <BoardProvider>
+                          <DashboardLayout>
+                            <Routes>
+                              <Route path="/" element={<KanbanView />} />
                             </Routes>
                           </DashboardLayout>
                         </BoardProvider>

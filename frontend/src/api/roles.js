@@ -73,3 +73,13 @@ export async function addMember(roleId, userId, idToken) {
       return null;
     }
   }
+
+  export async function getFirstRole(organizationId, idToken) {
+    try {
+      const params = [{ organizationId }];
+      return await jsonRpcRequest('Roles.GetFirstRole', params, idToken);
+    } catch (error) {
+      console.error('Error removing member from role:', error);
+      return null;
+    }
+  }
