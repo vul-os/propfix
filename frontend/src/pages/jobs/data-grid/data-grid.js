@@ -219,7 +219,7 @@ function JobDataGrid() {
     const intro = IntroJs();
 
     const introCompleted = localStorage.getItem('introCompleted');
-    if (!introCompleted) {
+    if (1) {
       intro.setOptions({
         steps: [
           {
