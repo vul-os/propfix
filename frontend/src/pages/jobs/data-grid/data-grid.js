@@ -158,6 +158,7 @@ function JobDataGrid() {
 
   const columns = [
     { field: 'id', headerName: 'ID', width: 150 },
+    { field: 'createdAt', headerName: 'Created At', width: 160, renderCell: renderDate },
     {
       field: 'unitIdentifier',
       headerName: 'Unit Number',
@@ -211,8 +212,7 @@ function JobDataGrid() {
       headerAlign: '-5px',
     },
 
-    { field: 'cost', headerName: 'Cost', type: 'number', width: 60 , headerAlign: '-5px', },
-    { field: 'createdAt', headerName: 'Created At', width: 160, renderCell: renderDate },
+    { field: 'cost', headerName: 'Cost', type: 'number', width: 70 , headerAlign: '-5px', align:'-4px', },
     { field: 'closedAt', headerName: 'Closed At', width: 160, renderCell: renderDate },
 
   ];
