@@ -5,6 +5,7 @@ import CreateIcon from '@mui/icons-material/Create';
 import UpdateIcon from '@mui/icons-material/Update';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { useMediaQuery, useTheme } from '@mui/material';
+import PropTypes from 'prop-types'; // Import PropTypes
 import { fToNow } from '../../../utils/format-time';
 
 export default function CrudStep({ event, member }) {
@@ -14,7 +15,7 @@ export default function CrudStep({ event, member }) {
   const theme = useTheme();
   const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
   const isMediumScreen = useMediaQuery(theme.breakpoints.only('md'));
-  
+
   const styles = {
     container: {
       display: 'flex',
@@ -30,7 +31,11 @@ export default function CrudStep({ event, member }) {
       width: '25px',
       height: '25px',
       padding: '10px', // Add padding to the Avatar
-      marginLeft: isSmallScreen ? 'calc(30% - 12px)' : isMediumScreen ? 'calc(35% - 12px)' : 'calc(25% - 12px)', // Set margin based on screen size with 5px offset
+      marginLeft: isSmallScreen
+        ? 'calc(30% - 12px)'
+        : isMediumScreen
+        ? 'calc(35% - 12px)'
+        : 'calc(25% - 12px)', // Set margin based on screen size with 5px offset
     },
     icon: {
       color: 'black',
@@ -50,6 +55,7 @@ export default function CrudStep({ event, member }) {
     action = 'deleted';
   }
 
+
   return (
     <div style={styles.container}>
       <Avatar style={styles.avatar}>{icon}</Avatar>
@@ -65,3 +71,12 @@ export default function CrudStep({ event, member }) {
     </div>
   );
 }
+
+// Define PropTypes for event and member props
+CrudStep.propTypes = {
+  event: PropTypes.shape({
+    type: PropTypes.string.isRequired,
+    createdAt: PropTypes.string.isRequired,
+  }).isRequired,
+  member: PropTypes.object, // You can define PropTypes for member as well if needed
+};

@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+
 import { DragDropContext, Droppable } from '@hello-pangea/dnd';
 import Stack from '@mui/material/Stack';
 import Container from '@mui/material/Container';
@@ -16,10 +18,11 @@ import { useBoardContext } from '../../../contexts/board';
 import PopOver from '../../jobs/pop-over';
 
 export default function KanbanView() {
-  const { board, setBoard, boardLoading } = useBoardContext(); // Use the BoardProvider context
+  const { role, board, setBoard, boardLoading } = useBoardContext(); // Use the BoardProvider context
   const { getIdToken, activeOrganization } = useAuthContext(); 
   const [openPopUp, setOpenPopUp] = useState(false);
   const [job, setJob] = useState({});
+  const navigate = useNavigate()
 
   const onJobAdd = useCallback(
     async (name, columnId) => {
@@ -136,6 +139,10 @@ export default function KanbanView() {
       ))}
     </Stack>
   );
+
+  if (role && !['admin', 'basic'].includes(role)) {
+    return navigate('/')
+  }
 
   return (
     <Container

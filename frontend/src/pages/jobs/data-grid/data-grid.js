@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+
 import moment from 'moment';
+import IntroJs from 'intro.js';
 import { styled } from '@mui/material/styles';
 import { DataGrid } from '@mui/x-data-grid';
 import Avatar from '@mui/material/Avatar';
@@ -12,37 +15,39 @@ import AddIcon from '@mui/icons-material/Add';
 import Chip from '@mui/material/Chip';
 import EventIcon from '@mui/icons-material/Event';
 import HomeIcon from '@mui/icons-material/Home'; 
-import Button from '@mui/material/Button'; // Import the Button component from Material-UI
+import Button from '@mui/material/Button'; 
 import { Icon } from '@iconify/react';
 import Iconify from '../../../components/iconify';
 import PopOver from '../pop-over';
-import { useBoardContext } from '../../../contexts/board'; // Import the BoardProvider context
+import { useBoardContext } from '../../../contexts/board';
 import CreateJobDialog from '../../job-wizzard/dialog';
 import { exportToCSV, exportToExcel } from './utils';
+import 'intro.js/introjs.css';
 
 const StyledDataGrid = styled(DataGrid)(() => ({
   '& .super-app-theme--Open': {
-    backgroundColor: "rgba(255, 0, 0, 0.2)", // slight red
+    backgroundColor: "rgba(255, 0, 0, 0.2)",
     '&:hover': {
-      backgroundColor: "rgba(255, 0, 0, 0.3)", // slight red
+      backgroundColor: "rgba(255, 0, 0, 0.3)",
     }
   },
   '& .super-app-theme--Closed': {
-    backgroundColor: "", // slight red
+    backgroundColor: "",
   },
 }));
 
 function JobDataGrid() {
+  const navigate = useNavigate()
   const { board, jobs, boardLoading } = useBoardContext(); // Use the BoardProvider context
   const [open, setOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState(null);
-  
+
    const onClose = () => {
     setOpen(false);
   }
 
   const highlightRowStyle = {
-    backgroundColor: "rgba(255, 0, 0, 0.01)", // slight red
+    backgroundColor: "rgba(255, 0, 0, 0.01)",
   };
 
   const avatarRenderer = (params) => {
@@ -58,36 +63,33 @@ function JobDataGrid() {
       </Stack>
     );
   };
-  
-  
+
   const renderLabel = (params) => {
     if (!(params && params.value && params.value.length)) {
-      return null; // Return null if there are no labels to render
+      return null;
     }
-  
-    // Calculate the label lengths and create an array of objects
+
     const labeledChips = params.value.map((labelId) => ({
       label: board?.labels[labelId] ? board.labels[labelId].name : "",
       length: board?.labels[labelId] ? board.labels[labelId].name.length : 0,
     }));
-  
-    // Sort the labeledChips array based on label length in ascending order
+
     labeledChips.sort((a, b) => a.length - b.length);
-  
+
     return (
       <Stack direction="row">
         <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center' }}>
           {labeledChips.map((labeledChip, index) => (
             <Chip
-              key={index} // Use index as the key since labels may have the same length
+              key={index}
               style={{
                 backgroundColor: board?.labels[params.value[index]]
                   ? board.labels[params.value[index]].color
                   : "red",
-                color: 'white', // Set text color to white
-                marginRight: '8px', // Add margin between chips
-                marginBottom: index === labeledChips.length - 1 ? '4px' : '2px', // Add margin at the bottom for the last chip in the row
-                marginTop: index === 0 ? '4px' : '0px', // Add margin at the top for the first chip in the row
+                color: 'white',
+                marginRight: '8px',
+                marginBottom: index === labeledChips.length - 1 ? '4px' : '2px',
+                marginTop: index === 0 ? '4px' : '0px',
               }}
               label={labeledChip.label}
               size="small"
@@ -98,9 +100,7 @@ function JobDataGrid() {
       </Stack>
     );
   };
-  
-  
-  
+
   const renderDate = (params) => {
     const formattedDate = formatDate(params.value);
     return (
@@ -115,28 +115,30 @@ function JobDataGrid() {
     const building = params.value && board?.buildings[params.value]?.buildingName;
     return (
       <Stack direction="row" alignItems="center">
-        <HomeIcon sx={{ marginRight: 2 }} /> {/* Home icon with 1rem (10px) right margin */}
-        <span>{building}</span> {/* Building ID value */}
+        { building && 
+          <HomeIcon sx={{ marginRight: 2 }} /> 
+        }
+        <span>{building}</span> 
       </Stack>
     );
   };
-  
+
   const renderPriority = (params) => {
     let { value: priority } = params;
     priority = priority.toLowerCase();
-  
+
     const getIcon = () => {
       if (priority === 'low') return 'solar:double-alt-arrow-down-bold-duotone';
       if (priority === 'medium') return 'solar:double-alt-arrow-right-bold-duotone';
       return 'solar:double-alt-arrow-up-bold-duotone';
     };
-  
+
     const getIconColor = () => {
       if (priority === 'low') return 'info.main';
       if (priority === 'medium') return 'warning.main';
       return 'error.main';
     };
-  
+
     return (
       <Stack direction="row" alignItems="center">
         <Iconify
@@ -163,9 +165,9 @@ function JobDataGrid() {
       field: 'unitIdentifier',
       headerName: 'Unit Number',
       width: 200,
-      valueGetter: (params) => params.row.unitIdentifier?.toUpperCase(), // Convert cell content to uppercase
+      valueGetter: (params) => params.row.unitIdentifier?.toUpperCase(),
       renderCell: (params) => (
-        <strong>{params.value}</strong> // Wrap cell content in a <strong> element for bold text
+        <strong>{params.value}</strong>
       ),
     },
     {
@@ -190,12 +192,6 @@ function JobDataGrid() {
       renderCell: renderPriority,
     },
     { field: 'description', headerName: 'Description', width: 200 },
-    // {
-    //   field: 'reporter',
-    //   headerName: 'Reporter',
-    //   width: 200,
-    //   renderCell: avatarRenderer,
-    // },
     {
       field: 'assigneeIds',
       headerName: 'Assignees',
@@ -203,8 +199,7 @@ function JobDataGrid() {
       renderCell: avatarRenderer,
     },
 
-     // Add the Hour column after the Assignees column
-     {
+    {
       field: 'hours',
       headerName: 'Hours',
       width: 100,
@@ -214,12 +209,35 @@ function JobDataGrid() {
 
     { field: 'cost', headerName: 'Cost', type: 'number', width: 70 , headerAlign: '-5px', align:'-4px', },
     { field: 'closedAt', headerName: 'Closed At', width: 160, renderCell: renderDate },
-
   ];
 
   const handleRowClick = (params) => {
     setSelectedRow(params.row);
   };
+
+  useEffect(() => {
+    const intro = IntroJs();
+
+    const introCompleted = localStorage.getItem('introCompleted');
+    if (1) {
+      intro.setOptions({
+        steps: [
+          {
+            element: document.querySelector('.intro-step-fab'),
+            intro: "Click this button to create a new job.",
+          },
+        ],
+        showStepNumbers: true,
+      });
+      intro.start();
+
+      localStorage.setItem('introCompleted', 'true');
+    }
+
+    return () => {
+      intro.exit();
+    };
+  }, []);
 
   return (
     <Container maxWidth={false} sx={{ height: 1 }}>
@@ -231,44 +249,42 @@ function JobDataGrid() {
             sx={{ 
               backgroundColor: 'black;',
               color: 'white',
-              borderRadius: '50%', // Use 50% to make it round
-              minWidth: 0, // To prevent automatic width expansion
-              width: '40px', // Set a fixed width (adjust as needed)
-              height: '40px', // Set a fixed height (adjust as needed)
+              borderRadius: '50%',
+              minWidth: 0,
+              width: '40px',
+              height: '40px',
               WebkitBorderRadius: '30px',
               display: 'flex',
-              alignItems: 'center', // Align items vertically
-  
+              alignItems: 'center',
             }}
             size="small"
             onClick={() => exportToCSV(jobs, 'jobs')}
           >
             <Icon
-            icon="grommet-icons:document-csv"
-            style={{ fontSize:'20px', marginRight: '1.5px',}} // Adjust the fontSize here
-  />
+              icon="grommet-icons:document-csv"
+              style={{ fontSize:'20px', marginRight: '1.5px',}}
+            />
           </Button>
           <Button
             variant="contained"
             sx={{ 
               backgroundColor: 'black;',
               color: 'white',
-              borderRadius: '50%', // Use 50% to make it round
-              minWidth: 0, // To prevent automatic width expansion
-              width: '40px', // Set a fixed width (adjust as needed)
-              height: '40px', // Set a fixed height (adjust as needed)
+              borderRadius: '50%',
+              minWidth: 0,
+              width: '40px',
+              height: '40px',
               WebkitBorderRadius: '30px',
               display: 'flex',
-              alignItems: 'center', // Align items vertically
-  
+              alignItems: 'center',
             }}
             size="small"
             onClick={() => exportToExcel(jobs, 'jobs')}
           >
-          <Icon
-            icon="file-icons:microsoft-excel"
-            style={{ fontSize:'20px', marginRight: '1.5px', }} // Adjust the fontSize here
-/>
+            <Icon
+              icon="file-icons:microsoft-excel"
+              style={{ fontSize:'20px', marginRight: '1.5px', }}
+            />
           </Button>
         </Stack>
       </Typography>
@@ -281,7 +297,7 @@ function JobDataGrid() {
           rowsPerPageOptions={[10]}
           checkboxSelection
           onRowClick={handleRowClick}
-          getRowHeight={() => 60} // Set the desired row height (in pixels)
+          getRowHeight={() => 60}
           getRowClassName={(params) => {
             const date = params.row.closedAt;
             if (date && date !== "0001-01-01T00:00:00Z" && moment(date).isValid()) {
@@ -289,8 +305,7 @@ function JobDataGrid() {
             }
             return `super-app-theme--Closed`;
           }}
-       />
-      
+        />
       )}
 
       {selectedRow && (
@@ -305,6 +320,7 @@ function JobDataGrid() {
         aria-label="add" 
         style={{ position: 'fixed', bottom: '75px', right: '16px' }} 
         onClick={() => setOpen(true)}
+        className="intro-step-fab"
       >
         <AddIcon />
       </Fab>
@@ -313,4 +329,4 @@ function JobDataGrid() {
   );
 }
 
-export default JobDataGrid; 
+export default JobDataGrid;

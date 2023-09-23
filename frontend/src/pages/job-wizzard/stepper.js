@@ -176,6 +176,7 @@ export default function ExoStepper({ handleClose }) {
       organizationId: selectedBuilding.organizationId,
       priority: 'low',
       dueDate: twoWeeksFromNow.toISOString(), // Convert to ISO string format
+      
     };
 
     const createdJob = await createJob(jobData, idToken);

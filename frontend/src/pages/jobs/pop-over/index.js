@@ -242,6 +242,8 @@ export default function PopOver({
     if (keys1.length !== keys2.length) {
         return false;
     }
+    // console.log(obj1, obj2)
+    // console.log(keys1.every(key => obj1[key] === obj2[key]))
 
     return keys1.every(key => obj1[key] === obj2[key]);
   }
@@ -261,7 +263,7 @@ export default function PopOver({
         console.error(error);
       }
     },
-    [getIdToken, enqueueSnackbar]
+    [getIdToken, enqueueSnackbar, job]
   );
 
   const handleDeleteJob = useCallback(
@@ -413,6 +415,7 @@ export default function PopOver({
         selectedColumn={job && selectedColumnMap[job.id]}
         onCloseJob={handleCloseJob}
         onReOpenJob={handleReOpenJob}
+        onClosePopOver={onClose}
       />
       <Divider />
       <Scrollbar

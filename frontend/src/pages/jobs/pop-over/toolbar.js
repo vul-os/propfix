@@ -1,5 +1,5 @@
 import PropTypes from 'prop-types';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect} from 'react';
 import moment from 'moment';
 
 // @mui
@@ -28,6 +28,7 @@ export default function Toolbar({
   columns,
   onChangeColumn,
   selectedColumn,
+  onClosePopOver,
 }) {
   const smUp = useResponsive('up', 'sm');
   const confirm = useBoolean();
@@ -36,9 +37,9 @@ export default function Toolbar({
     setOpen(event.currentTarget);
   }, []);
 
-  const closePopover = useCallback(() => {
+  const closePopover = () => {
     setOpen(false);
-  }, []);
+  };
 
   const onDel = () => {
     closePopover();
@@ -81,7 +82,7 @@ export default function Toolbar({
       >
         {!smUp && (
           <Tooltip title="Back">
-            <IconButton onClick={closePopover} sx={{ mr: 1 }}>
+            <IconButton onClick={() => onClosePopOver()} sx={{ mr: 1 }}>
               <Iconify icon="eva:arrow-ios-back-fill" />
             </IconButton>
           </Tooltip>

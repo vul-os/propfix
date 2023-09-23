@@ -8,19 +8,22 @@ const PRIMARY = {
   lighter: '#FF1A5B', // Red color
   light: '#FF1A5B',   // Red color
   main: '#FF1A5B',    // Red color
+  lightest: '#B5B5B5',   // A slightly darker gray
+
   dark: '#FF1A5B',    // Red color
   darker: '#FF1A5B',  // Red color
   contrastText: '#FFFFFF',
 };
 
 const SECONDARY = {
-  lighter: '#EFD6FF',
-  light: '#C684FF',
-  main: '#8E33FF',
-  dark: '#5119B7',
-  darker: '#27097A',
-  contrastText: '#FFFFFF',
+  lighter: '#DADADA',  // A light gray
+  light: '#B5B5B5',   // A slightly darker gray
+  main: '#4A4A4A',    // A much darker gray than before
+  dark: '#6B6B6B',    // A darker gray
+  darker: '#464646',  // A very dark gray
+  contrastText: '#FFFFFF', // Stays white
 };
+
 
 const INFO = {
   lighter: '#CAFDF5',
