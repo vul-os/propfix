@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"text/template"
 
@@ -12,6 +13,7 @@ import (
 	"github.com/exolutionza/propfix-backend-go/internal/authz"
 	"github.com/exolutionza/propfix-backend-go/internal/user"
 
+	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
@@ -40,8 +42,8 @@ type ExecuteQueryRequest struct {
 }
 
 type ExecuteQueryResponse struct {
-	Columns []string    `json:"columns"`
-	Data    interface{} `json:"data"`
+	Data    map[string][]interface{} `json:"data"`
+	Columns []string                 `json:"columns"`
 }
 
 func (h *adaptor) ExecuteQuery(r *http.Request, args *ExecuteQueryRequest, reply *ExecuteQueryResponse) error {
@@ -59,6 +61,7 @@ func (h *adaptor) ExecuteQuery(r *http.Request, args *ExecuteQueryRequest, reply
 
 	td := args.TemplateDict
 	td["userId"] = user.ID
+	td["organizationId"] = args.OrganizationID
 
 	// Process the file contents
 	fileContents := ProcessFile(args.Name)
@@ -93,22 +96,42 @@ func (h *adaptor) ExecuteQuery(r *http.Request, args *ExecuteQueryRequest, reply
 		columns = append(columns, string(fd.Name))
 	}
 
+	// Create a placeholder for each column
+	columnData := make(map[string][]interface{})
+	for _, col := range columns {
+		columnData[col] = []interface{}{}
+	}
+
 	// Fetch rows and map values
-	var data [][]interface{}
 	for rows.Next() {
 		values, err := rows.Values()
 		if err != nil {
 			return fmt.Errorf("fetching row values error: %w", err)
 		}
-		data = append(data, values)
+
+		for index, value := range values {
+			columnName := columns[index]
+			if floatVal, ok := value.(pgtype.Numeric); ok {
+				simpleFloat, err := floatVal.Value()
+				if err == nil && simpleFloat != nil {
+					sf := simpleFloat.(string) // Override value with simple float
+					// Convert the string to a float64
+					value, err = strconv.ParseFloat(sf, 64)
+					if err != nil {
+						return fmt.Errorf("error parsing float %w", err)
+					}
+				}
+			}
+			columnData[columnName] = append(columnData[columnName], value)
+		}
 	}
 
 	if rows.Err() != nil {
 		return fmt.Errorf("reading rows error: %w", rows.Err())
 	}
 
+	reply.Data = columnData
 	reply.Columns = columns
-	reply.Data = data
 
 	return nil
 }

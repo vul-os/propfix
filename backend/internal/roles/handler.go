@@ -7,6 +7,7 @@ import (
 
 	jsonRpcProvider "github.com/exolutionza/propfix-backend-go/internal/api/jsonRpc/service/provider"
 	"github.com/exolutionza/propfix-backend-go/internal/authz"
+	"github.com/exolutionza/propfix-backend-go/internal/user"
 )
 
 const Name = "Roles"
@@ -193,5 +194,32 @@ func (h *adaptor) GetAllRoles(r *http.Request, args *GetAllRolesRequest, reply *
 	}
 
 	reply.Roles = roles
+	return nil
+}
+
+type GetFirstRoleRequest struct {
+	OrganizationID string `json:"organizationId"`
+}
+
+type GetFirstRoleResponse struct {
+	Role *authz.Role `json:"role"`
+}
+
+func (a *adaptor) GetFirstRole(r *http.Request, args *GetFirstRoleRequest, result *GetFirstRoleResponse) error {
+	// ok, err := a.authz.CheckPermission(r, "roles", "read")
+	// if err != nil || !ok {
+	// 	return errors.New("not permitted")
+	// }
+	user, ok := r.Context().Value("user").(user.User)
+	if !ok || user.ID == "" {
+		return errors.New("not permitted")
+	}
+
+	role, err := a.store.GetFirstRoleByUserID(user.ID, args.OrganizationID)
+	if err != nil {
+		return err
+	}
+
+	result.Role = role
 	return nil
 }
