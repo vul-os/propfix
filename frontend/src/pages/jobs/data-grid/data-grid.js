@@ -18,6 +18,12 @@ import { Icon } from '@iconify/react';
 import Drawer from '@mui/material/Drawer';
 import TextField from '@mui/material/TextField'; // Import TextField for form control
 import FormControl from '@mui/material/FormControl';
+import { DemoContainer } from '@mui/x-date-pickers/internals/demo';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { DateField } from '@mui/x-date-pickers/DateField';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import Box from '@mui/material/Box';
 import Iconify from '../../../components/iconify';
 import PopOver from '../pop-over';
 import { useBoardContext } from '../../../contexts/board'; // Import the BoardProvider context
@@ -360,19 +366,28 @@ const toggleSidebar = () => {
     </div>
 
     {/* Add the horizontal line below the "Filters" heading */}
-    <hr style={{ width: '100%', borderTop: '1px solid #DBDBDB', margin: '8px 0' }} />
+    <hr style={{ width: '100vw', borderTop: '1px solid #DBDBDB', margin: '20px 0', position: 'absolute', left: '0' }} />
 
     {/* Add the "Created At" heading */}
-    <h3 style={{ fontSize: '16px', margin: '16px 0 8px 0' }}>Created At</h3>
+    <h3 style={{ fontSize: '15px', margin: '40px 0 0px 0', fontWeight: '600', }}>Created At</h3>
   </div>
-    {/* Add the data field */}
+  <div style={{ marginLeft: '15px' }}>
+      <LocalizationProvider dateAdapter={AdapterDayjs}>
+        <Box sx={{ marginRight: '20px' }}> {/* Apply margin-right to the Box */}
+          <DatePicker label="Start Date" />
+        </Box>
+      </LocalizationProvider>
+  </div>
+
+  <div style={{ marginLeft: '15px' }}>
+      <LocalizationProvider dateAdapter={AdapterDayjs}>
+        <Box sx={{ marginTop: '20px',}}> {/* Apply margin-right to the Box */}
+          <DatePicker label="End Date" />
+        </Box>
+      </LocalizationProvider>
+    </div>
 </Drawer>
 
-
-
-
-      
-      
 
       {jobs && !boardLoading && (
         <StyledDataGrid
