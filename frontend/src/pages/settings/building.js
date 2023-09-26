@@ -5,6 +5,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import SaveIcon from '@mui/icons-material/Save';
 import DeleteIcon from '@mui/icons-material/Delete';
 import CloseIcon from '@mui/icons-material/Close';
+import RefreshIcon from '@mui/icons-material/Refresh'; // Added for the refresh button
 import Typography from '@mui/material/Typography';
 import Table from '@mui/material/Table';
 import TableHead from '@mui/material/TableHead';
@@ -30,7 +31,21 @@ export default function Buildings() {
   const [editedBuilding, setEditedBuilding] = useState({});
   const [openDialog, setOpenDialog] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [refreshing, setRefreshing] = useState(false); // Added for refresh button
   const { getIdToken, activeOrganization } = useAuthContext();
+
+  const handleRefresh = async () => {
+    setRefreshing(true); // Start refreshing
+    try {
+      const token = await getIdToken();
+      const response = await getAllBuildings(0, 0, '', token);
+      setBuildings(response.buildings || []);
+    } catch (error) {
+      console.error('Error fetching buildings:', error);
+    } finally {
+      setRefreshing(false); // Stop refreshing
+    }
+  };
 
   useEffect(() => {
     if (activeOrganization) {
@@ -75,7 +90,7 @@ export default function Buildings() {
         await updateBuilding(editedBuilding, token);
         updateBuildingInState(editedBuilding);
       } else {
-        await createNewBuilding(editedBuilding, token); // Use createNewBuilding
+        await createNewBuilding(editedBuilding, token);
       }
       setIsEditing(false);
       setEditing(null);
@@ -114,7 +129,30 @@ export default function Buildings() {
 
   return (
     <div className="buildings-page">
-      <Typography variant="h4">Buildings ({buildings.length})</Typography>
+      <div style={{ display: 'flex', alignItems: 'center' }}>
+        <Typography variant="h4" style={{ marginRight: '16px' }}>
+          Buildings ({buildings.length})
+        </Typography>
+
+        <IconButton
+          color="primary"
+          aria-label="Refresh Buildings"
+          onClick={handleRefresh}
+          disabled={refreshing}
+          style={{
+            backgroundColor: 'transparent',
+            border: 'none',
+            boxShadow: 'none',
+            color: 'grey',
+            transition: 'box-shadow 0.3s ease', // Add transition for smooth effect
+            '&:hover': {
+              boxShadow: '0px 0px 8px rgba(128, 128, 128, 0.8)', // Apply shadow on hover
+            },
+          }}
+        >
+          <RefreshIcon />
+        </IconButton>
+      </div>
 
       <TableContainer sx={{ marginTop: theme.spacing(2) }} component={Paper}>
         <Table aria-label="buildings table">
@@ -150,7 +188,9 @@ export default function Buildings() {
                     <TextField
                       label="Address"
                       value={editedBuilding.address || ''}
-                      onChange={(e) => setEditedBuilding({ ...editedBuilding, address: e.target.value })}
+                      onChange={(e) =>
+                        setEditedBuilding({ ...editedBuilding, address: e.target.value })
+                      }
                       fullWidth
                       margin="dense"
                     />
@@ -162,7 +202,7 @@ export default function Buildings() {
                   {editing === building.id ? (
                     <TextField
                       label="Latitude"
-                      type="number" // Set the input type to number
+                      type="number"
                       value={editedBuilding.latitude || ''}
                       onChange={(e) =>
                         setEditedBuilding({ ...editedBuilding, latitude: parseFloat(e.target.value) || 0 })
@@ -178,7 +218,7 @@ export default function Buildings() {
                   {editing === building.id ? (
                     <TextField
                       label="Longitude"
-                      type="number" // Set the input type to number
+                      type="number"
                       value={editedBuilding.longitude || ''}
                       onChange={(e) =>
                         setEditedBuilding({ ...editedBuilding, longitude: parseFloat(e.target.value) || 0 })
@@ -228,8 +268,8 @@ export default function Buildings() {
             organizationId: activeOrganization,
             buildingName: '',
             address: '',
-            latitude: 0, // Set initial latitude to 0
-            longitude: 0, // Set initial longitude to 0
+            latitude: 0,
+            longitude: 0,
           });
           setIsEditing(false);
           setOpenDialog(true);
@@ -266,7 +306,7 @@ export default function Buildings() {
           />
           <TextField
             label="Latitude"
-            type="number" // Set the input type to number
+            type="number"
             value={editedBuilding.latitude || 0}
             onChange={(e) =>
               setEditedBuilding({ ...editedBuilding, latitude: parseFloat(e.target.value) || 0 })
@@ -276,7 +316,7 @@ export default function Buildings() {
           />
           <TextField
             label="Longitude"
-            type="number" // Set the input type to number
+            type="number"
             value={editedBuilding.longitude || 0}
             onChange={(e) =>
               setEditedBuilding({ ...editedBuilding, longitude: parseFloat(e.target.value) || 0 })
