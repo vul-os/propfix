@@ -16,6 +16,7 @@ import {
   TextField,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
+import RefreshIcon from '@mui/icons-material/Refresh'; 
 import { useAuthContext } from '../../contexts/auth';
 import { getAllMembers } from '../../api/organizations';
 import { getAllRoles, removeMember, addMember } from '../../api/roles';
@@ -100,12 +101,28 @@ export default function Roles() {
     }
   }, [activeOrganization]);
 
+  const handleRefreshRoles = async () => {
+    // Call the fetchRoles function to refresh roles
+    await fetchRoles();
+  };
+
+
 
   return (
     <>
-      {roles.map((role) => (
+      <div style={{ display: 'flex', alignItems: 'center' }}>
+        <Typography variant="h4">Roles ({roles.length})</Typography>
+        <IconButton
+          onClick={handleRefreshRoles} // Call the handleRefreshRoles function
+          aria-label="Refresh"
+        >
+          <RefreshIcon />
+        </IconButton>
+      </div>
+
+      {roles.map((role, index) => ( 
         <div key={role.id}>
-          <Typography variant="h6">{role.name}</Typography>
+          <Typography variant="h6">{role.name} ({role.userIds.length}) </Typography>
           <Typography variant="body2">{role.description}</Typography>
           <Table>
             <TableHead>
