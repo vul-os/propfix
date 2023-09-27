@@ -121,8 +121,8 @@ export default function Roles() {
         </IconButton>
       </div>
 
-      {roles.map((role, index) => ( 
-        <div key={role.id}>
+      {roles.map((role, index) => (
+        <div key={role.id} style={{ overflowX: 'auto' }}>
           <div style={{ display: 'flex', alignItems: 'center' }}>
             <Typography variant="h6">{role.name} ({role.userIds.length}) </Typography>
             <IconButton
@@ -140,10 +140,10 @@ export default function Roles() {
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell>Avatar</TableCell>
-                <TableCell>Name</TableCell>
-                <TableCell>Email</TableCell>
-                <TableCell align="right">Actions</TableCell>
+                <TableCell style={{ whiteSpace: 'nowrap' }}>Avatar</TableCell>
+                <TableCell style={{ whiteSpace: 'nowrap' }}>Name</TableCell>
+                <TableCell style={{ whiteSpace: 'nowrap' }}>Email</TableCell>
+                <TableCell align="right" style={{ whiteSpace: 'nowrap' }}>Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
