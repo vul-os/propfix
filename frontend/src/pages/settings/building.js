@@ -5,7 +5,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import SaveIcon from '@mui/icons-material/Save';
 import DeleteIcon from '@mui/icons-material/Delete';
 import CloseIcon from '@mui/icons-material/Close';
-import RefreshIcon from '@mui/icons-material/Refresh'; // Added for the refresh button
+import RefreshIcon from '@mui/icons-material/Refresh'; // Import the RefreshIcon
 import Typography from '@mui/material/Typography';
 import Table from '@mui/material/Table';
 import TableHead from '@mui/material/TableHead';
@@ -129,30 +129,25 @@ export default function Buildings() {
 
   return (
     <div className="buildings-page">
-      <div style={{ display: 'flex', alignItems: 'center' }}>
-        <Typography variant="h4" style={{ marginRight: '16px' }}>
-          Buildings ({buildings.length})
-        </Typography>
+  <div style={{ display: 'flex', alignItems: 'center' }}>
+    <Typography variant="h4" style={{ marginRight: '8px' }}> {/* Decrease marginRight */}
+      Buildings ({buildings.length})
+    </Typography>
 
-        <IconButton
-          color="primary"
-          aria-label="Refresh Buildings"
-          onClick={handleRefresh}
-          disabled={refreshing}
-          style={{
-            backgroundColor: 'transparent',
-            border: 'none',
-            boxShadow: 'none',
-            color: 'grey',
-            transition: 'box-shadow 0.3s ease', // Add transition for smooth effect
-            '&:hover': {
-              boxShadow: '0px 0px 8px rgba(128, 128, 128, 0.8)', // Apply shadow on hover
-            },
-          }}
-        >
-          <RefreshIcon />
-        </IconButton>
-      </div>
+    <IconButton
+      color=""
+      aria-label="Refresh Buildings"
+      onClick={handleRefresh}
+      disabled={refreshing}
+      style={{
+        backgroundColor: '',
+        border: 'none',
+        boxShadow: 'none',
+      }}
+    >
+      <RefreshIcon />
+    </IconButton>
+  </div>
 
       <TableContainer sx={{ marginTop: theme.spacing(2) }} component={Paper}>
         <Table aria-label="buildings table">
