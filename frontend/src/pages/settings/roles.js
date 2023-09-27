@@ -16,7 +16,8 @@ import {
   TextField,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
-import RefreshIcon from '@mui/icons-material/Refresh'; 
+import RefreshIcon from '@mui/icons-material/Refresh';
+import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import { useAuthContext } from '../../contexts/auth';
 import { getAllMembers } from '../../api/organizations';
 import { getAllRoles, removeMember, addMember } from '../../api/roles';
@@ -122,7 +123,19 @@ export default function Roles() {
 
       {roles.map((role, index) => ( 
         <div key={role.id}>
-          <Typography variant="h6">{role.name} ({role.userIds.length}) </Typography>
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <Typography variant="h6">{role.name} ({role.userIds.length}) </Typography>
+            <IconButton
+              onClick={() => {
+                setSelectedRole(role);
+                setOpenAddMemberDialog(true);
+              }}
+              color="primary"
+              style={{ marginLeft: '8px' }}
+            >
+              <AddCircleOutlineIcon />
+            </IconButton>
+          </div>
           <Typography variant="body2">{role.description}</Typography>
           <Table>
             <TableHead>
