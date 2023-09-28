@@ -5,7 +5,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import SaveIcon from '@mui/icons-material/Save';
 import DeleteIcon from '@mui/icons-material/Delete';
 import CloseIcon from '@mui/icons-material/Close';
-import RefreshIcon from '@mui/icons-material/Refresh'; // Import the RefreshIcon
+import RefreshIcon from '@mui/icons-material/Refresh';
 import Typography from '@mui/material/Typography';
 import Table from '@mui/material/Table';
 import TableHead from '@mui/material/TableHead';
@@ -31,11 +31,11 @@ export default function Buildings() {
   const [editedBuilding, setEditedBuilding] = useState({});
   const [openDialog, setOpenDialog] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [refreshing, setRefreshing] = useState(false); // Added for refresh button
+  const [refreshing, setRefreshing] = useState(false);
   const { getIdToken, activeOrganization } = useAuthContext();
 
   const handleRefresh = async () => {
-    setRefreshing(true); // Start refreshing
+    setRefreshing(true);
     try {
       const token = await getIdToken();
       const response = await getAllBuildings(0, 0, '', token);
@@ -43,7 +43,7 @@ export default function Buildings() {
     } catch (error) {
       console.error('Error fetching buildings:', error);
     } finally {
-      setRefreshing(false); // Stop refreshing
+      setRefreshing(false);
     }
   };
 
@@ -67,8 +67,8 @@ export default function Buildings() {
     setEditedBuilding({
       organizationId: activeOrganization,
       ...building,
-      latitude: parseFloat(building.latitude), // Parse latitude to float
-      longitude: parseFloat(building.longitude), // Parse longitude to float
+      latitude: parseFloat(building.latitude),
+      longitude: parseFloat(building.longitude),
     });
     setIsEditing(true);
     setEditing(building.id);
@@ -129,26 +129,25 @@ export default function Buildings() {
 
   return (
     <div className="buildings-page">
-  <div style={{ display: 'flex', alignItems: 'center' }}>
-    <Typography variant="h4" style={{ marginRight: '8px' }}> {/* Decrease marginRight */}
-      Buildings ({buildings.length})
-    </Typography>
-
-    <IconButton
-      color=""
-      aria-label="Refresh Buildings"
-      onClick={handleRefresh}
-      disabled={refreshing}
-      style={{
-        backgroundColor: '',
-        border: 'none',
-        boxShadow: 'none',
-      }}
-    >
-      <RefreshIcon />
-    </IconButton>
-  </div>
-
+      <div style={{ display: 'flex', alignItems: 'center' }}>
+        <Typography variant="h4" style={{ marginRight: '0px' }}>
+          Buildings ({buildings.length})
+        </Typography>
+        <IconButton
+          color=""
+          aria-label="Refresh Buildings"
+          onClick={handleRefresh}
+          disabled={refreshing}
+          style={{
+            backgroundColor: '',
+            border: 'none',
+            boxShadow: 'none',
+          }}
+        >
+          <RefreshIcon />
+        </IconButton>
+      </div>
+      
       <TableContainer sx={{ marginTop: theme.spacing(2) }} component={Paper}>
         <Table aria-label="buildings table">
           <TableHead>
