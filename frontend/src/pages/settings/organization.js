@@ -168,14 +168,15 @@ export default function Organization() {
           </Button>
         </DialogActions>
       </Dialog>
-
+      
+      <div style={{ overflowX: 'auto' }}>
       <Table>
         <TableHead>
           <TableRow>
-            <TableCell>Avatar</TableCell>
-            <TableCell>Name</TableCell>
-            <TableCell>Email</TableCell>
-            <TableCell>Actions</TableCell>
+            <TableCell style={{ whiteSpace: 'nowrap' }}>Avatar</TableCell>
+            <TableCell style={{ whiteSpace: 'nowrap' }}>Name</TableCell>
+            <TableCell style={{ whiteSpace: 'nowrap' }}>Email</TableCell>
+            <TableCell style={{ whiteSpace: 'nowrap' }}>Actions</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
@@ -199,16 +200,18 @@ export default function Organization() {
           ))}
         </TableBody>
       </Table>
+    </div>
 
       <Box mt={5}>
         <Typography variant="h6">Pending Members</Typography>
 
         {pendingMembers.length ? (
+          <div style={{ overflowX: 'auto' }}>
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell>Email</TableCell>
-                <TableCell>Actions</TableCell>
+                <TableCell style={{ whiteSpace: 'nowrap' }}>Email</TableCell>
+                <TableCell style={{ whiteSpace: 'nowrap' }}>Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -228,6 +231,7 @@ export default function Organization() {
               ))}
             </TableBody>
           </Table>
+         </div>
         ) : (
           <Typography variant="body1" color="textSecondary">
             No pending members.
