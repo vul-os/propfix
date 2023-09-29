@@ -204,7 +204,7 @@ export default function JobDetails({ job, setJob, members, labels, files, handle
     job && members && labels && <Stack
       spacing={3}
       sx={{
-        pt: 3,
+        pt: 0,
         pb: 5,
         px: 2.5,
       }}
