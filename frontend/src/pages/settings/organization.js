@@ -132,7 +132,7 @@ export default function Organization() {
     <>
       <Box mb={3}>
         <Typography variant="h6">{currentOrg?.name || 'N/A'}</Typography>
-        <Typography variant="subtitle1">{activeOrganization || 'N/A'}</Typography>
+        <Typography variant="subtitle1" style={{ fontSize: '14px', color: 'grey' }}>{activeOrganization || 'N/A'}</Typography>
       </Box>
 
       <Button
