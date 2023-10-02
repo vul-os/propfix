@@ -112,7 +112,7 @@ export default function Roles() {
   return (
     <>
       <div style={{ display: 'flex', alignItems: 'center' }}>
-        <Typography variant="h4">Roles ({roles.length})</Typography>
+        <Typography variant="h4">Roles</Typography>
         <IconButton
           onClick={handleRefreshRoles} // Call the handleRefreshRoles function
           aria-label="Refresh"
@@ -121,7 +121,7 @@ export default function Roles() {
         </IconButton>
       </div>
 
-      {roles.map((role, index) => (
+      {roles.map((role) => (
         <div key={role.id} style={{ overflowX: 'auto' }}>
           <div style={{ display: 'flex', alignItems: 'center' }}>
             <Typography variant="h6">{role.name} ({role.userIds.length}) </Typography>
@@ -174,16 +174,6 @@ export default function Roles() {
               })}
             </TableBody>
           </Table>
-          <Button
-            variant="outlined"
-            color="primary"
-            onClick={() => {
-              setSelectedRole(role);
-              setOpenAddMemberDialog(true);
-            }}
-          >
-            Add Member
-          </Button>
         </div>
       ))}
 

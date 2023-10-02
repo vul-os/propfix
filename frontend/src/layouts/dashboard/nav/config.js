@@ -1,6 +1,8 @@
 import HomeIcon from '@mui/icons-material/Home';
 import ListItemIcon from '@mui/material/ListItemIcon';
-import StoreIcon from '@mui/icons-material/Store';
+import DashboardIcon from '@mui/icons-material/Dashboard';
+import AppsIcon from '@mui/icons-material/Apps';
+import WorkIcon from '@mui/icons-material/Work';
 import { StyledNavItemIcon } from '../../../components/nav-section/styles';
 import SvgColor from '../../../components/svg-color';
 
@@ -21,19 +23,19 @@ const navConfig = (role) => {
         title: 'Dashboard',
         path: '/',
         breadcrumbsIcon: <HomeIcon />,
-        icon: icon('ic_analytics'),
+        icon: <DashboardIcon />,
       },
       {
         title: 'Board',
         path: '/board',
-        breadcrumbsIcon:  <StoreIcon />,
-        icon: icon('ic_cart'),
+        breadcrumbsIcon: <AppsIcon />,
+        icon: <AppsIcon />,
       },
       {
         title: 'Jobs',
         path: '/jobs',
-        breadcrumbsIcon:  <StoreIcon />,
-        icon: icon('ic_cart'),
+        breadcrumbsIcon: <WorkIcon />,
+        icon: <WorkIcon />,
       },
     ]
   }
@@ -42,14 +44,14 @@ const navConfig = (role) => {
     {
       title: 'Board',
       path: '/',
-      breadcrumbsIcon:  <StoreIcon />,
-      icon: icon('ic_cart'),
+      breadcrumbsIcon: <AppsIcon />,
+      icon: <AppsIcon />,
     },
     {
       title: 'Jobs',
       path: '/jobs',
-      breadcrumbsIcon:  <StoreIcon />,
-      icon: icon('ic_cart'),
+      breadcrumbsIcon: <WorkIcon />,
+      icon: <workIcon />,
     },
   ]
   }
@@ -57,8 +59,8 @@ const navConfig = (role) => {
     {
       title: 'Jobs',
       path: '/',
-      breadcrumbsIcon:  <StoreIcon />,
-      icon: icon('ic_cart'),
+      breadcrumbsIcon: <WorkIcon />,
+      icon: <WorkIcon />,
     },
   ]
 } 
