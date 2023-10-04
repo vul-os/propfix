@@ -54,11 +54,25 @@ function JobDataGrid() {
   const [open, setOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState(null);
 
-const [filterOpen, setFilterOpen] = useState(false); // Add filter state
-const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [filterOpen, setFilterOpen] = useState(false); // Add filter state
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
-const [minCost, setMinCost] = useState(0); // Define minCost state
-const [maxCost, setMaxCost] = useState(1000); // Define maxCost state
+  const [minCost, setMinCost] = useState(0); // Define minCost state
+  const [maxCost, setMaxCost] = useState(1000); // Define maxCost state
+
+  const [searchText, setSearchText] = useState('');
+  const [filteredJobs, setFilteredJobs] = useState([]);
+
+  useEffect(() => {
+    if (searchText.trim() === '') {
+      setFilteredJobs(jobs);
+    } else {
+      const filtered = jobs.filter((job) =>
+        job.name.toLowerCase().includes(searchText.toLowerCase())
+      );
+      setFilteredJobs(filtered);
+    }
+  }, [jobs, searchText]);
 
 
 
@@ -104,7 +118,8 @@ const toggleSidebar = () => {
     // Sort the labeledChips array based on label length in ascending order
     labeledChips.sort((a, b) => a.length - b.length);
 
-  
+    
+
     return (
       <Stack direction="row">
         <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center' }}>
@@ -167,6 +182,8 @@ const toggleSidebar = () => {
       if (priority === 'medium') return 'warning.main';
       return 'error.main';
     };
+
+    
   
     return (
       <Stack direction="row" alignItems="center">
@@ -340,7 +357,7 @@ const toggleSidebar = () => {
 
 {/* Sidebar */}
 <Drawer anchor="right" open={sidebarOpen} onClose={toggleSidebar}>
-  <div style={{ width: '250px', padding: '16px', maxHeight: '80vh', overflowY: 'auto', height: '100%', display: 'flex', flexDirection: 'column' }}>
+<div style={{ width: '300px', padding: '16px', maxHeight: '100%', overflowY: 'auto', display: 'flex', flexDirection: 'column', overflowX: 'hidden', }}>
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
       <h2 style={{ fontSize: '18px', margin: 0 }}>Filters</h2>
       <div style={{ display: 'flex', alignItems: 'center' }}>
@@ -370,8 +387,15 @@ const toggleSidebar = () => {
       </div>
     </div>
 
-    {/* Add the horizontal line below the "Filters" heading */}
-    <hr style={{ width: '100%', borderTop: '1px solid #DBDBDB', margin: '20px 0' }} />
+    <TextField
+  label="Search Jobs"
+  variant="outlined"
+  fullWidth
+  value={searchText}
+  onChange={(e) => setSearchText(e.target.value)}
+  sx={{ marginTop: '30px', marginBottom: '15px', }} // Add this line to move the search bar 10px up
+/>
+   
 
     {/* Add the "Created At" heading */}
     <h3 style={{ fontSize: '15px', margin: '5px 0 10px 5px', fontWeight: '600' }}>Created At</h3>
@@ -446,9 +470,15 @@ const toggleSidebar = () => {
         {/* End Date */}
         <h3 style={{ fontSize: '15px', margin: '30px 0 10px 5px', fontWeight: '600' }}>Due Date</h3>
     
+        <LocalizationProvider dateAdapter={AdapterDayjs}>
+      <Box sx={{ marginRight: '20px', width: '100%' }}>
+        <DatePicker label="Start Date" />
+      </Box>
+    </LocalizationProvider>
+    
     <LocalizationProvider dateAdapter={AdapterDayjs}>
-      <Box sx={{ marginRight: '20px' }}>
-        <DatePicker label="Due Date" />
+      <Box sx={{ marginTop: '20px', width: '100%' }}>
+        <DatePicker label="End Date" />
       </Box>
     </LocalizationProvider>
 
