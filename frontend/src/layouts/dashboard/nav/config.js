@@ -21,20 +21,20 @@ const navConfig = (role) => {
         title: 'Dashboard',
         path: '/',
         breadcrumbsIcon: <HomeIcon />,
-        icon: <Icon icon="carbon:dashboard" style={{ marginRight: '20px', fontSize: '25px' }} />
+        icon: <Icon icon="carbon:dashboard" style={{ marginRight: '18px', fontSize: '22px' }} />
       },
       {
         title: 'Board',
         path: '/board',
         breadcrumbsIcon:  <StoreIcon />,
-        icon: <Icon icon="system-uicons:clipboard" style={{ marginRight: '15px', fontSize: '30px' }} />
+        icon: <Icon icon="system-uicons:clipboard" style={{ marginRight: '18px', fontSize: '22px' }} />
 
       },
       {
         title: 'Jobs',
         path: '/jobs',
         breadcrumbsIcon:  <StoreIcon />,
-        icon: <Icon icon="ph:briefcase-thin" style={{ marginRight: '15px', fontSize: '30px' }} />
+        icon: <Icon icon="ph:briefcase-thin" style={{ marginRight: '18px', fontSize: '22px' }} />
       },
     ]
   }
