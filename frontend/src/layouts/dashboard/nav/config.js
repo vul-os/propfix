@@ -1,15 +1,13 @@
 import HomeIcon from '@mui/icons-material/Home';
 import ListItemIcon from '@mui/material/ListItemIcon';
-import DashboardIcon from '@mui/icons-material/Dashboard';
-import AppsIcon from '@mui/icons-material/Apps';
-import WorkIcon from '@mui/icons-material/Work';
-import { StyledNavItemIcon } from '../../../components/nav-section/styles';
+import StoreIcon from '@mui/icons-material/Store';
+import { Icon } from '@iconify/react';
 import SvgColor from '../../../components/svg-color';
+import { StyledNavItemIcon } from '../../../components/nav-section/styles';
 
 
 const icon = (name) =>
 <StyledNavItemIcon><SvgColor src={`/assets/icons/navbar/${name}.svg`} sx={{ width: 1, height: 1 }} /> </StyledNavItemIcon> 
-
 
 const urlIcon = (url) => 
 <ListItemIcon>
@@ -23,19 +21,20 @@ const navConfig = (role) => {
         title: 'Dashboard',
         path: '/',
         breadcrumbsIcon: <HomeIcon />,
-        icon: <DashboardIcon />,
+        icon: <Icon icon="carbon:dashboard" style={{ marginRight: '20px', fontSize: '25px' }} />
       },
       {
         title: 'Board',
         path: '/board',
-        breadcrumbsIcon: <AppsIcon />,
-        icon: <AppsIcon />,
+        breadcrumbsIcon:  <StoreIcon />,
+        icon: <Icon icon="system-uicons:clipboard" style={{ marginRight: '15px', fontSize: '30px' }} />
+
       },
       {
         title: 'Jobs',
         path: '/jobs',
-        breadcrumbsIcon: <WorkIcon />,
-        icon: <WorkIcon />,
+        breadcrumbsIcon:  <StoreIcon />,
+        icon: <Icon icon="ph:briefcase-thin" style={{ marginRight: '15px', fontSize: '30px' }} />
       },
     ]
   }
@@ -44,14 +43,14 @@ const navConfig = (role) => {
     {
       title: 'Board',
       path: '/',
-      breadcrumbsIcon: <AppsIcon />,
-      icon: <AppsIcon />,
+      breadcrumbsIcon:  <StoreIcon />,
+      icon: icon('ic_cart'),
     },
     {
       title: 'Jobs',
       path: '/jobs',
-      breadcrumbsIcon: <WorkIcon />,
-      icon: <workIcon />,
+      breadcrumbsIcon:  <StoreIcon />,
+      icon: icon('ic_cart'),
     },
   ]
   }
@@ -59,8 +58,8 @@ const navConfig = (role) => {
     {
       title: 'Jobs',
       path: '/',
-      breadcrumbsIcon: <WorkIcon />,
-      icon: <WorkIcon />,
+      breadcrumbsIcon:  <StoreIcon />,
+      icon: icon('ic_cart'),
     },
   ]
 } 
