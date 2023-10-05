@@ -48,17 +48,30 @@ export default function JobDetails({
     [job?.reporterId, members]
   );
 
-  const handleUpdateField = useCallback((field, type='string') => {
+  // Add state for the selected building
+  const [building, setBuilding] = useState(job?.building || ''); // Initial value from job or an empty string
+
+  const handleUpdateField = useCallback((field, type = 'string') => {
     return (event) => {
       const value = event.target ? event.target.value : event;
-      let retVal = value
-      if (type === 'int') retVal = parseInt(value, 10)
-      if (type === 'float') retVal = parseFloat(value)
+      let retVal = value;
+      if (type === 'int') retVal = parseInt(value, 10);
+      if (type === 'float') retVal = parseFloat(value);
       setJob((prevJob) => ({
         ...prevJob,
         [field]: retVal,
       }));
     };
+  }, []);
+
+  // Update the setJob function to include the building field
+  const handleUpdateBuilding = useCallback((event) => {
+    const value = event.target ? event.target.value : event;
+    setBuilding(value);
+    setJob((prevJob) => ({
+      ...prevJob,
+      building: value,
+    }));
   }, []);
 
   const handleToggleAssignee = useCallback((member) => {
@@ -246,6 +259,22 @@ export default function JobDetails({
     </Stack>
   ), [job?.hours, handleUpdateField]);
 
+  // Add rendering for the building field
+  const renderBuilding = useMemo(() => (
+    <Stack direction="row">
+      <StyledLabel>Building</StyledLabel>
+      <TextField
+        fullWidth
+        size="small"
+        InputProps={{
+          sx: { typography: 'body2' },
+        }}
+        value={building}
+        onChange={handleUpdateBuilding}
+      />
+    </Stack>
+  ), [building, handleUpdateBuilding]);
+
   return (
     job && members && labels && <Stack
       spacing={3}
@@ -267,6 +296,7 @@ export default function JobDetails({
       {renderAttachments}
       {renderCost} {/* New field: Cost */}
       {renderHours} {/* New field: Hours */}
+      {renderBuilding} {/* New field: Building */}
     </Stack>
   );
 }
