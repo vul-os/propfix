@@ -30,6 +30,11 @@ import (
 	"github.com/exolutionza/propfix-backend-go/internal/organizations"
 	"github.com/exolutionza/propfix-backend-go/internal/permissions"
 	"github.com/exolutionza/propfix-backend-go/internal/roles"
+	"github.com/exolutionza/propfix-backend-go/internal/inspectionTemplateItems"
+	"github.com/exolutionza/propfix-backend-go/internal/inspectionTemplates"
+	"github.com/exolutionza/propfix-backend-go/internal/inspectionAreas"
+
+
 
 	"github.com/exolutionza/propfix-backend-go/internal/mail"
 
@@ -89,6 +94,9 @@ func Server() {
 	buildingsStore := buildings.NewBuildingsStore(dbpool)
 	jobsStore := jobs.NewJobStore(dbpool)
 	roleStore := roles.NewRoleStore(dbpool)
+	inspectionTemplateItemsStore := inspectionTemplateItems.NewInspectionTemplateItemsStore(dbpool)
+	inspectionTemplatesStore := inspectionTemplates.NewInspectionTemplatesStore(dbpool)
+	inspectionAreasStore := inspectionAreas.NewInspectionAreasStore(dbpool)
 
 	rpcServerConfigs := []jsonRpcServer.RPCServerConfig{
 		{
@@ -115,6 +123,11 @@ func Server() {
 				columnJobLinks.New(columnJobLinksStore, authorizer),
 				board.New(jobsStore, authorizer, authClient, columnJobLinksStore, labelStore, buildingsStore),
 				dashboard.New(dbpool, authorizer),
+				inspectionTemplateItems.New(inspectionTemplateItemsStore, authorizer),
+				inspectionTemplates.New(inspectionTemplatesStore, authorizer),
+				inspectionAreas.New(inspectionAreasStore, authorizer),
+
+
 			},
 		},
 		// Add more RPC server configurations for other services here
