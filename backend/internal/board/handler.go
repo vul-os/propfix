@@ -10,7 +10,7 @@ import (
 	jsonRpcProvider "github.com/exolutionza/propfix-backend-go/internal/api/jsonRpc/service/provider"
 	"github.com/exolutionza/propfix-backend-go/internal/authz"
 	"github.com/exolutionza/propfix-backend-go/internal/buildings"
-	"github.com/exolutionza/propfix-backend-go/internal/columns/columnJobLinks"
+	"github.com/exolutionza/propfix-backend-go/internal/columnJobLinks"
 	"github.com/exolutionza/propfix-backend-go/internal/jobs"
 	"github.com/exolutionza/propfix-backend-go/internal/labels"
 	"github.com/exolutionza/propfix-backend-go/internal/user"

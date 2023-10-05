@@ -13,7 +13,7 @@ import (
 	jsonRpcServer "github.com/exolutionza/propfix-backend-go/internal/api/jsonRpc/server"
 	jsonRpcProvider "github.com/exolutionza/propfix-backend-go/internal/api/jsonRpc/service/provider"
 	"github.com/exolutionza/propfix-backend-go/internal/board"
-	"github.com/exolutionza/propfix-backend-go/internal/columns/columnJobLinks"
+	"github.com/exolutionza/propfix-backend-go/internal/columnJobLinks"
 
 	"github.com/exolutionza/propfix-backend-go/internal/attachments"
 	"github.com/go-chi/chi"
