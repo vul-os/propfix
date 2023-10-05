@@ -3,10 +3,12 @@ package roles
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/exolutionza/propfix-backend-go/internal/authz"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
@@ -71,6 +73,30 @@ func (s *Store) GetRoleByID(roleID string) (authz.Role, error) {
 	}
 
 	return role, nil
+}
+
+func (s *Store) GetFirstRoleByUserID(userID string, organizationID string) (*authz.Role, error) {
+	ctx := context.Background()
+	query := `
+		SELECT id, name, description, user_ids, created_at, organization_id
+		FROM roles
+		WHERE $1 = ANY(user_ids) and organization_id = $2
+		ORDER BY name ASC
+		LIMIT 1
+	`
+
+	row := s.dbpool.QueryRow(ctx, query, userID, organizationID)
+
+	var role authz.Role
+	err := row.Scan(&role.ID, &role.Name, &role.Description, &role.UserIDs, &role.CreatedAt, &role.OrganizationId)
+	if err != nil {
+		fmt.Println(role)
+		if err == pgx.ErrNoRows {
+			return nil, nil // No roles found for the user
+		}
+		return nil, err
+	}
+	return &role, nil
 }
 
 func (s *Store) UpdateRole(role authz.Role) error {
