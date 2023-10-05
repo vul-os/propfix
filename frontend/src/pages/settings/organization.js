@@ -132,7 +132,7 @@ export default function Organization() {
     <div>
       <Box mb={3}>
         <Typography variant="h6">{currentOrg?.name || 'N/A'}</Typography>
-        <Typography variant="subtitle1">{activeOrganization || 'N/A'}</Typography>
+        <Typography variant="subtitle1" style={{ fontSize: '14px', color: 'grey' }}>{activeOrganization || 'N/A'}</Typography>
       </Box>
 
       <Button
@@ -168,6 +168,7 @@ export default function Organization() {
           </Button>
         </DialogActions>
       </Dialog>
+<<<<<<< HEAD
 
       <div style={{ overflowX: 'auto', maxWidth: '100%' }}>
         <Table>
@@ -201,11 +202,47 @@ export default function Organization() {
           </TableBody>
         </Table>
       </div>
+=======
+      
+      <div style={{ overflowX: 'auto' }}>
+      <Table>
+        <TableHead>
+          <TableRow>
+            <TableCell style={{ whiteSpace: 'nowrap' }}>Avatar</TableCell>
+            <TableCell style={{ whiteSpace: 'nowrap' }}>Name</TableCell>
+            <TableCell style={{ whiteSpace: 'nowrap' }}>Email</TableCell>
+            <TableCell style={{ whiteSpace: 'nowrap' }}>Actions</TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {members.map((member) => (
+            <TableRow key={member.id}>
+              <TableCell>
+                <Avatar src={member.photoUrl} alt={member.displayName || member.email} />
+              </TableCell>
+              <TableCell>{member.displayName || 'N/A'}</TableCell>
+              <TableCell>{member.email}</TableCell>
+              <TableCell>
+                <IconButton
+                  color="secondary"
+                  onClick={() => setMemberToDelete(member.id)}
+                  style={iconButtonStyle}
+                >
+                  <DeleteIcon />
+                </IconButton>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+>>>>>>> d589fb085acb3da33e50a219a6907a661059e29e
 
       <Box mt={5}>
         <Typography variant="h6">Pending Members</Typography>
 
         {pendingMembers.length ? (
+<<<<<<< HEAD
           <div style={{ overflowX: 'auto', maxWidth: '100%' }}>
             <Table>
               <TableHead>
@@ -232,6 +269,34 @@ export default function Organization() {
               </TableBody>
             </Table>
           </div>
+=======
+          <div style={{ overflowX: 'auto' }}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell style={{ whiteSpace: 'nowrap' }}>Email</TableCell>
+                <TableCell style={{ whiteSpace: 'nowrap' }}>Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {pendingMembers.map((email, index) => (
+                <TableRow key={index}>
+                  <TableCell>{email}</TableCell>
+                  <TableCell>
+                    <IconButton
+                      color="secondary"
+                      onClick={() => setPendingMemberToDelete(email)}
+                      style={iconButtonStyle}
+                    >
+                      <DeleteIcon />
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+         </div>
+>>>>>>> d589fb085acb3da33e50a219a6907a661059e29e
         ) : (
           <Typography variant="body1" color="textSecondary">
             No pending members.
