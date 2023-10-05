@@ -436,7 +436,7 @@ export default function PopOver({
             px: 2.5,
           }}
         >
-          <JobDetails job={newJob} setJob={setNewJob} members={board?.members} labels={board?.labels} files={files} handleDrop={handleDrop} handleRemoveFile={handleRemoveFile} />
+          <JobDetails job={newJob} setJob={setNewJob} buildings={board?.buildings} members={board?.members} labels={board?.labels} files={files} handleDrop={handleDrop} handleRemoveFile={handleRemoveFile} />
           <EventsList events={events} members={board?.members}/>
         </Stack>
       </Scrollbar>

@@ -1,23 +1,25 @@
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import PropTypes from 'prop-types';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import { styled, alpha } from '@mui/material/styles';
+import Autocomplete from '@mui/material/Autocomplete'; // Correct import order
 import Chip from '@mui/material/Chip';
 import Switch from '@mui/material/Switch';
 import Stack from '@mui/material/Stack';
+import Box from '@mui/material/Box';
 import Avatar from '@mui/material/Avatar';
 import TextField from '@mui/material/TextField';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import Tooltip from '@mui/material/Tooltip';
 import IconButton from '@mui/material/IconButton';
-import { useBoolean } from '../../../hooks/use-boolean';
 import InputName from '../../../components/input-name';
 import Priority from './priority';
 import Attachments from './attachments';
 import Iconify from '../../../components/iconify';
 import MembersDialog from './members-dialog';
 import LabelAutocomplete from '../../labels/label-autocomplete';
+import { useBoolean } from '../../../hooks/use-boolean';
 
 dayjs.extend(utc);
 
@@ -29,10 +31,12 @@ const StyledLabel = styled('span')(({ theme }) => ({
   fontWeight: theme.typography.fontWeightSemiBold,
 }));
 
+
 export default function JobDetails({
   job,
   setJob,
   members,
+  buildings,
   labels,
   files,
   handleDrop,
@@ -48,9 +52,6 @@ export default function JobDetails({
     [job?.reporterId, members]
   );
 
-  // Add state for the selected building
-  const [building, setBuilding] = useState(job?.building || ''); // Initial value from job or an empty string
-
   const handleUpdateField = useCallback((field, type = 'string') => {
     return (event) => {
       const value = event.target ? event.target.value : event;
@@ -62,16 +63,6 @@ export default function JobDetails({
         [field]: retVal,
       }));
     };
-  }, []);
-
-  // Update the setJob function to include the building field
-  const handleUpdateBuilding = useCallback((event) => {
-    const value = event.target ? event.target.value : event;
-    setBuilding(value);
-    setJob((prevJob) => ({
-      ...prevJob,
-      building: value,
-    }));
   }, []);
 
   const handleToggleAssignee = useCallback((member) => {
@@ -108,6 +99,43 @@ export default function JobDetails({
     </Stack>
   ), [job.priority, handleUpdateField]);
 
+
+  const renderBuildings = useMemo(() => {
+    const currentBuilding = job?.buildingId && buildings[job?.buildingId];
+    // Create an array of building options with IDs
+    const buildingOptions = buildings ? Object.keys(buildings).map((k) => ({
+      id: k,
+      label: buildings[k]?.buildingName, // Use 'label' instead of 'name'
+    })) : []
+
+    return (
+      <Stack direction="row" alignItems="center">
+        <StyledLabel>Building</StyledLabel>
+        <Autocomplete
+          fullWidth
+          size="small"
+          options={buildingOptions}
+          value={currentBuilding?.buildingName ? currentBuilding.buildingName : null }
+          renderOption={(props, option) => (
+            <Box component="li"{...props}>
+              {option.label} 
+            </Box>
+          )} 
+          onChange={(event, newValue) => {
+            console.log(newValue)
+            if (newValue?.id) {
+              setJob((prevJob) => ({
+                ...prevJob,
+                buildingId: newValue.id,
+              }));
+            }
+          }}
+          renderInput={(params) => <TextField {...params} />}
+        />
+      </Stack>
+    );
+  }, [job?.buildingId, handleUpdateField, buildings]);
+  
   const renderLabel = useMemo(() => (
     <Stack direction="row">
       <StyledLabel sx={{ height: 24, lineHeight: '24px' }}>Labels</StyledLabel>
@@ -259,22 +287,6 @@ export default function JobDetails({
     </Stack>
   ), [job?.hours, handleUpdateField]);
 
-  // Add rendering for the building field
-  const renderBuilding = useMemo(() => (
-    <Stack direction="row">
-      <StyledLabel>Building</StyledLabel>
-      <TextField
-        fullWidth
-        size="small"
-        InputProps={{
-          sx: { typography: 'body2' },
-        }}
-        value={building}
-        onChange={handleUpdateBuilding}
-      />
-    </Stack>
-  ), [building, handleUpdateBuilding]);
-
   return (
     job && members && labels && <Stack
       spacing={3}
@@ -294,9 +306,9 @@ export default function JobDetails({
       {renderAssignee}
       {renderDescription}
       {renderAttachments}
-      {renderCost} {/* New field: Cost */}
-      {renderHours} {/* New field: Hours */}
-      {renderBuilding} {/* New field: Building */}
+      {renderCost}
+      {renderHours} 
+      {renderBuildings}
     </Stack>
   );
 }
