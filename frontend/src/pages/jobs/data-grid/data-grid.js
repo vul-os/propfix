@@ -28,12 +28,13 @@ import InputLabel from '@mui/material/InputLabel'; // Add this import
 import Select from '@mui/material/Select'; // Add this import
 import MenuItem from '@mui/material/MenuItem'; // Add this import
 import Slider from '@mui/material/Slider'; // Import the Slider component from Material-UI
-
 import Iconify from '../../../components/iconify';
 import PopOver from '../pop-over';
 import { useBoardContext } from '../../../contexts/board'; // Import the BoardProvider context
 import CreateJobDialog from '../../job-wizzard/dialog';
 import { exportToCSV, exportToExcel } from './utils';
+import Filter from '../filters';
+
 
 
 
@@ -54,17 +55,37 @@ function JobDataGrid() {
   const [open, setOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState(null);
 
-const [filterOpen, setFilterOpen] = useState(false); // Add filter state
-const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [filterOpen, setFilterOpen] = useState(false); // Add filter state
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
-const [minCost, setMinCost] = useState(0); // Define minCost state
-const [maxCost, setMaxCost] = useState(1000); // Define maxCost state
+  const [minCost, setMinCost] = useState(0); // Define minCost state
+  const [maxCost, setMaxCost] = useState(1000); // Define maxCost state
+
+  const [searchText, setSearchText] = useState('');
+  const [filteredJobs, setFilteredJobs] = useState([]);
+
+  
+  
+  
+
+  useEffect(() => {
+    if (searchText.trim() === '') {
+      setFilteredJobs(jobs);
+    } else {
+      const filtered = jobs.filter((job) =>
+        job.name.toLowerCase().includes(searchText.toLowerCase())
+      );
+      setFilteredJobs(filtered);
+    }
+  }, [jobs, searchText]);
 
 
 
-const toggleSidebar = () => {
-  setSidebarOpen(!sidebarOpen);
-};
+  const toggleSidebar = () => {
+    console.log('Toggling sidebar'); // Add this line for debugging
+    setSidebarOpen(!sidebarOpen);
+  };
+  
 
   
    const onClose = () => {
@@ -104,7 +125,8 @@ const toggleSidebar = () => {
     // Sort the labeledChips array based on label length in ascending order
     labeledChips.sort((a, b) => a.length - b.length);
 
-  
+    
+
     return (
       <Stack direction="row">
         <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center' }}>
@@ -167,6 +189,8 @@ const toggleSidebar = () => {
       if (priority === 'medium') return 'warning.main';
       return 'error.main';
     };
+
+    
   
     return (
       <Stack direction="row" alignItems="center">
@@ -254,6 +278,7 @@ const toggleSidebar = () => {
 
     // Function to handle filter button click
     const handleFilterClick = () => {
+      console.log('Filter button clicked'); // Add this line for debugging
       toggleSidebar();
     };
     
@@ -307,6 +332,10 @@ const toggleSidebar = () => {
             style={{ fontSize:'20px', marginRight: '1.5px', }} // Adjust the fontSize here
 />
           </Button>
+          <Filter
+  sidebarOpen={sidebarOpen} // Ensure this is correctly connected to the filterOpen state
+  toggleSidebar={toggleSidebar}
+/>
         </Stack>
       </Typography>
 
@@ -332,200 +361,11 @@ const toggleSidebar = () => {
             },
           }}
           size="small"
-          onClick={handleFilterClick} // Call the filter button click handler
+          onClick={() => toggleSidebar()} // Call the filter button click handler
         >
           <h3 style={{ margin: 0, fontSize: '17px', marginTop:'3px', marginRight: '10px'}}>Filters</h3> {/* Add this line for the "Filters" heading */}
           <FilterListIcon style={{ fontSize: '20px', marginTop: '3px', }} />
         </Button>
-
-{/* Sidebar */}
-<Drawer anchor="right" open={sidebarOpen} onClose={toggleSidebar}>
-  <div style={{ width: '250px', padding: '16px', maxHeight: '80vh', overflowY: 'auto', height: '100%', display: 'flex', flexDirection: 'column' }}>
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-      <h2 style={{ fontSize: '18px', margin: 0 }}>Filters</h2>
-      <div style={{ display: 'flex', alignItems: 'center' }}>
-        <button
-          onClick={() => {
-            // Handle reset filter logic here
-          }}
-          style={{
-            background: 'transparent',
-            border: 'none',
-            cursor: 'pointer',
-            marginRight: '8px',
-          }}
-        >
-          <Icon icon="carbon:reset" style={{ fontSize: '20px' }} />
-        </button>
-        <button
-          onClick={toggleSidebar}
-          style={{
-            background: 'transparent',
-            border: 'none',
-            cursor: 'pointer',
-          }}
-        >
-          <Icon icon="ph:x" style={{ fontSize: '20px' }} />
-        </button>
-      </div>
-    </div>
-
-    {/* Add the horizontal line below the "Filters" heading */}
-    <hr style={{ width: '100%', borderTop: '1px solid #DBDBDB', margin: '20px 0' }} />
-
-    {/* Add the "Created At" heading */}
-    <h3 style={{ fontSize: '15px', margin: '5px 0 10px 5px', fontWeight: '600' }}>Created At</h3>
-    
-    <LocalizationProvider dateAdapter={AdapterDayjs}>
-      <Box sx={{ marginRight: '20px', width: '100%' }}>
-        <DatePicker label="Start Date" />
-      </Box>
-    </LocalizationProvider>
-    
-    <LocalizationProvider dateAdapter={AdapterDayjs}>
-      <Box sx={{ marginTop: '20px' }}>
-        <DatePicker label="End Date" />
-      </Box>
-    </LocalizationProvider>
-    
-    {/* Unit number */}
-    <h3 style={{ fontSize: '15px', margin: '30px 0 10px 5px', fontWeight: '600' }}>Unit Number</h3>
-    
-    {/* Dropdown menu */}
-    <FormControl variant="outlined" fullWidth>
-      <InputLabel id="unit-number-label">Select Unit Number</InputLabel>
-      <Select
-        labelId="unit-number-label"
-        id="unit-number-select"
-        label="Select Unit Number"
-      >
-        <MenuItem value={1}>Unit 101</MenuItem>
-        <MenuItem value={2}>Unit 102</MenuItem>
-        <MenuItem value={3}>Unit 103</MenuItem>
-        {/* Add more units as needed */}
-      </Select>
-    </FormControl>
-
-      {/* Dropdown */}
-      <h3 style={{ fontSize: '15px', margin: '30px 0 10px 5px', fontWeight: '600' }}>Building</h3>
-    
-    {/* Dropdown menu */}
-    <FormControl variant="outlined" fullWidth>
-      <InputLabel id="unit-number-label">Select Building</InputLabel>
-      <Select
-        labelId="unit-number-label"
-        id="unit-number-select"
-        label="Select Unit Number"
-      >
-        <MenuItem value={1}>Unit 101</MenuItem>
-        <MenuItem value={2}>Unit 102</MenuItem>
-        <MenuItem value={3}>Unit 103</MenuItem>
-        {/* Add more units as needed */}
-      </Select>
-    </FormControl>
-
-    
-          {/* Names */}
-          <h3 style={{ fontSize: '15px', margin: '30px 0 10px 5px', fontWeight: '600' }}>Names</h3>
-    
-    {/* Names menu */}
-    <FormControl variant="outlined" fullWidth>
-      <InputLabel id="unit-number-label">Select Names</InputLabel>
-      <Select
-        labelId="unit-number-label"
-        id="unit-number-select"
-        label="Select Unit Number"
-      >
-        <MenuItem value={1}>Unit 101</MenuItem>
-        <MenuItem value={2}>Unit 102</MenuItem>
-        <MenuItem value={3}>Unit 103</MenuItem>
-        {/* Add more units as needed */}
-      </Select>
-    </FormControl>
-
-        {/* End Date */}
-        <h3 style={{ fontSize: '15px', margin: '30px 0 10px 5px', fontWeight: '600' }}>Due Date</h3>
-    
-    <LocalizationProvider dateAdapter={AdapterDayjs}>
-      <Box sx={{ marginRight: '20px' }}>
-        <DatePicker label="Due Date" />
-      </Box>
-    </LocalizationProvider>
-
-      {/* Names */}
-      <h3 style={{ fontSize: '15px', margin: '30px 0 10px 5px', fontWeight: '600' }}>Priority</h3>
-    
-    {/* Names menu */}
-    <FormControl variant="outlined" fullWidth>
-      <InputLabel id="unit-number-label">Select Priority</InputLabel>
-      <Select
-        labelId="unit-number-label"
-        id="unit-number-select"
-        label="Select Unit Number"
-      >
-        <MenuItem value={1}>Unit 101</MenuItem>
-        <MenuItem value={2}>Unit 102</MenuItem>
-        <MenuItem value={3}>Unit 103</MenuItem>
-        {/* Add more units as needed */}
-      </Select>
-    </FormControl>
-
-      {/* Names */}
-      <h3 style={{ fontSize: '15px', margin: '30px 0 10px 5px', fontWeight: '600' }}>Assignees</h3>
-    
-    {/* Names menu */}
-    <FormControl variant="outlined" fullWidth>
-      <InputLabel id="unit-number-label">Select Assignees</InputLabel>
-      <Select
-        labelId="unit-number-label"
-        id="unit-number-select"
-        label="Select Unit Number"
-      >
-        <MenuItem value={1}>Unit 101</MenuItem>
-        <MenuItem value={2}>Unit 102</MenuItem>
-        <MenuItem value={3}>Unit 103</MenuItem>
-        {/* Add more units as needed */}
-      </Select>
-    </FormControl>
-
-      {/* Hours */}
-      <h3 style={{ fontSize: '15px', margin: '30px 0 10px 5px', fontWeight: '600' }}>Hours</h3>
-      <FormControl variant="outlined" fullWidth>
-      <InputLabel id="unit-number-label">Select Hours</InputLabel>
-      <Select
-        labelId="unit-number-label"
-        id="unit-number-select"
-        label="Select Unit Number"
-      >
-        <MenuItem value={1}>Unit 101</MenuItem>
-        <MenuItem value={2}>Unit 102</MenuItem>
-        <MenuItem value={3}>Unit 103</MenuItem>
-        {/* Add more units as needed */}
-      </Select>
-    </FormControl>
-
-     {/* Hours */}
-     <h3 style={{ fontSize: '15px', margin: '30px 0 10px 5px', fontWeight: '600' }}>Cost</h3>
-         {/* Range slider for Cost */}
-    <div style={{ padding: '0 5px' }}>
-      <Slider
-        value={[minCost, maxCost]} // Replace 'minCost' and 'maxCost' with your state values
-        onChange={(event, newValue) => {
-          // Handle slider value change here
-          const [newMinCost, newMaxCost] = newValue;
-          setMinCost(newMinCost); // Update your state with the new min cost
-          setMaxCost(newMaxCost); // Update your state with the new max cost
-        }}
-        valueLabelDisplay="auto" // Show value labels
-        valueLabelFormat={(value) => `$${value}`} // Format the value labels
-        min={0} // Minimum value
-        max={1000} // Maximum value
-      />
-    </div>
-  </div>
-</Drawer>
-
-
 
 
       {jobs && !boardLoading && (
