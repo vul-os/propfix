@@ -6,9 +6,9 @@ import (
 
 	jsonRpcProvider "github.com/exolutionza/propfix-backend-go/internal/api/jsonRpc/service/provider"
 	"github.com/exolutionza/propfix-backend-go/internal/authz"
-	"github.com/exolutionza/propfix-backend-go/internal/columns/columnJobLinks"
-	"github.com/exolutionza/propfix-backend-go/internal/user"
+	"github.com/exolutionza/propfix-backend-go/internal/columnJobLinks"
 	"github.com/exolutionza/propfix-backend-go/internal/events"
+	"github.com/exolutionza/propfix-backend-go/internal/user"
 )
 
 type adaptor struct {
@@ -32,7 +32,7 @@ func New(
 ) *adaptor {
 	return &adaptor{
 		store:               store,
-		eventStore: 		 es,
+		eventStore:          es,
 		authz:               authz,
 		columnJobLinksStore: cjls,
 	}
@@ -48,7 +48,7 @@ type GetJobResponse struct {
 	Job Job `json:"job"`
 }
 
- func (a *adaptor) GetJob(r *http.Request, args *GetJobRequest, result *GetJobResponse) error {
+func (a *adaptor) GetJob(r *http.Request, args *GetJobRequest, result *GetJobResponse) error {
 	ok, err := a.authz.CheckJobPermission(r, args.ID, "jobs", "get")
 	if err != nil || ok != "private" {
 		return errors.New("not permitted")
@@ -137,7 +137,6 @@ type UpdateJobResponse struct {
 	Success bool `json:"success"`
 }
 
-
 func (a *adaptor) UpdateJob(r *http.Request, args *UpdateJobRequest, result *UpdateJobResponse) error {
 	ok, err := a.authz.CheckPermissionAndOrgs(r, "jobs", "update", args.Job.OrganizationID)
 	if err != nil || !ok {
@@ -172,7 +171,6 @@ func (a *adaptor) UpdateJob(r *http.Request, args *UpdateJobRequest, result *Upd
 	result.Success = true
 	return nil
 }
-
 
 // JSON-RPC request for deleting a job
 type DeleteJobRequest struct {
