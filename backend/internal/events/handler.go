@@ -5,21 +5,20 @@ import (
 	"fmt"
 	"net/http"
 
-	jsonRpcProvider "github.com/exolutionza/propfix-backend-go/internal/api/jsonRpc/service/provider"
-	"github.com/exolutionza/propfix-backend-go/internal/user"
-
+	"github.com/exolutionza/propfix-backend-go/internal/api/jsonRpc/service/provider"
 	"github.com/exolutionza/propfix-backend-go/internal/authz"
+	"github.com/exolutionza/propfix-backend-go/internal/user"
 )
+
+const name = "Events"
 
 type adaptor struct {
 	store *Store
 	authz *authz.Authz
 }
 
-const Name = "Events"
-
-func (a *adaptor) Name() jsonRpcProvider.Name {
-	return Name
+func (a *adaptor) Name() provider.Name {
+	return name
 }
 
 func New(
@@ -42,9 +41,6 @@ type CreateEventResponse struct {
 
 func (a *adaptor) CreateEvent(r *http.Request, args *CreateEventRequest, result *CreateEventResponse) error {
 	accessType, err := a.authz.CheckJobPermission(r, args.Event.JobID, "events", "create")
-	// if err != nil || accessType == "" {
-	// 	return errors.New("not permitted")
-	// }
 
 	if args.Event.Visibility == "public" && accessType == "private" {
 		accessType = "public"
@@ -141,7 +137,8 @@ func (a *adaptor) DeleteEvent(r *http.Request, args *DeleteEventRequest, result 
 }
 
 type GetAllEventsRequest struct {
-	JobID string `json:"jobId"`
+	JobID   string   `json:"jobId"`
+	Filters []string `json:"filters"`
 }
 
 type GetAllEventsResponse struct {
@@ -154,11 +151,16 @@ func (a *adaptor) GetAllEvents(r *http.Request, args *GetAllEventsRequest, resul
 		return errors.New("not permitted")
 	}
 
-	var events []Event
-	events, err = a.store.GetAllEvents(args.JobID, accessType)
+	user, ok := r.Context().Value("user").(user.User)
+	if !ok || user.ID == "" {
+		return errors.New("not permitted")
+	}
+
+	events, err := a.store.GetAllEvents(args.JobID, accessType, user, args.Filters)
 	if err != nil {
 		return fmt.Errorf("Failed to get public events: %v", err)
 	}
 	result.Events = events
+
 	return nil
 }
