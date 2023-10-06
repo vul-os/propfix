@@ -1,6 +1,5 @@
 {
-  "name": "@example/basics",
-  "type": "module",
+  "name": "@lexington/starter",
   "version": "0.0.1",
   "private": true,
   "scripts": {
@@ -10,10 +9,12 @@
     "preview": "astro preview",
     "astro": "astro"
   },
-  "dependencies": {
-    "@astrojs/tailwind": "^3.0.1",
-    "astro": "^2.0.6",
-    "flowbite": "^1.6.3",
-    "tailwindcss": "^3.2.4"
+  "devDependencies": {
+    "@astrojs/sitemap": "^3.0.0",
+    "@astrojs/tailwind": "^5.0.0",
+    "@astrolib/seo": "^0.6.0",
+    "@tailwindcss/forms": "^0.5.6",
+    "@tailwindcss/typography": "^0.5.9",
+    "astro": "^3.0.7"
   }
 }
