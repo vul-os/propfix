@@ -1,4 +1,3 @@
-// store.go in the inspectionAreas package
 package inspectionAreas
 
 import (
@@ -9,8 +8,9 @@ import (
 )
 
 type InspectionArea struct {
-	ID   string `json:"id"`
-	Area string `json:"area"`
+	ID             string `json:"id"`
+	Area           string `json:"area"`
+	OrganizationID string `json:"organizationId"`
 }
 
 type Store struct {
@@ -27,12 +27,12 @@ func (is *Store) Create(area InspectionArea) (string, error) {
 	ctx := context.Background()
 	areaID := uuid.New().String()
 	query := `
-		INSERT INTO inspection_areas (id, area)
-		VALUES ($1, $2)
+		INSERT INTO inspection_areas (id, area, organization_id)
+		VALUES ($1, $2, $3)
 		RETURNING id
 	`
 
-	err := is.pool.QueryRow(ctx, query, areaID, area.Area).Scan(&areaID)
+	err := is.pool.QueryRow(ctx, query, areaID, area.Area, area.OrganizationID).Scan(&areaID)
 	if err != nil {
 		return "", err
 	}
@@ -44,11 +44,11 @@ func (is *Store) Update(area InspectionArea) error {
 	ctx := context.Background()
 	query := `
 		UPDATE inspection_areas
-		SET area = $1
-		WHERE id = $2
+		SET area = $1, organization_id = $2
+		WHERE id = $3
 	`
 
-	_, err := is.pool.Exec(ctx, query, area.Area, area.ID)
+	_, err := is.pool.Exec(ctx, query, area.Area, area.OrganizationID, area.ID)
 	if err != nil {
 		return err
 	}
@@ -58,14 +58,14 @@ func (is *Store) Update(area InspectionArea) error {
 func (is *Store) Get(id string) (*InspectionArea, error) {
 	ctx := context.Background()
 	query := `
-		SELECT id, area
+		SELECT id, area, organization_id
 		FROM inspection_areas
 		WHERE id = $1
 	`
 	row := is.pool.QueryRow(ctx, query, id)
 
 	var area InspectionArea
-	err := row.Scan(&area.ID, &area.Area)
+	err := row.Scan(&area.ID, &area.Area, &area.OrganizationID)
 	if err != nil {
 		return nil, err
 	}
@@ -77,7 +77,7 @@ func (is *Store) Delete(id string) error {
 	ctx := context.Background()
 	query := `
 		DELETE FROM inspection_areas
-		WHERE id = $1 
+		WHERE id = $1
 	`
 
 	_, err := is.pool.Exec(ctx, query, id)
@@ -92,7 +92,7 @@ func (is *Store) List() ([]InspectionArea, error) {
 	ctx := context.Background()
 
 	query := `
-		SELECT id, area
+		SELECT id, area, organization_id
 		FROM inspection_areas
 	`
 
@@ -105,7 +105,7 @@ func (is *Store) List() ([]InspectionArea, error) {
 	areas := make([]InspectionArea, 0)
 	for rows.Next() {
 		var area InspectionArea
-		err := rows.Scan(&area.ID, &area.Area)
+		err := rows.Scan(&area.ID, &area.Area, &area.OrganizationID)
 		if err != nil {
 			return nil, err
 		}

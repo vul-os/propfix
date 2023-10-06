@@ -9,12 +9,13 @@ import (
 )
 
 type InspectionTemplateItem struct {
-	ID                 string    `json:"id"`
-	OrderIndex         int       `json:"orderIndex"`
-	Item               string    `json:"item"`
-	AreaID             string    `json:"areaID"`
-	InspectionTemplateID string  `json:"inspectionTemplateID"`
-	CreatedAt          time.Time `json:"createdAt"`
+	ID                   string    `json:"id"`
+	OrderIndex           int       `json:"orderIndex"`
+	Item                 string    `json:"item"`
+	AreaID               string    `json:"areaID"`
+	InspectionTemplateID string    `json:"inspectionTemplateID"`
+	CreatedAt            time.Time `json:"createdAt"`
+	OrganizationID       string    `json:"organizationId"`
 }
 
 type Store struct {

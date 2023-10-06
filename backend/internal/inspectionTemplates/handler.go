@@ -1,4 +1,3 @@
-// handler.go in the inspectionTemplates package
 package inspectionTemplates
 
 import (
@@ -36,7 +35,8 @@ type CreateInspectionTemplateResponse struct {
 }
 
 func (h *adaptor) CreateInspectionTemplate(r *http.Request, args *CreateInspectionTemplateRequest, reply *CreateInspectionTemplateResponse) error {
-	ok, err := h.authz.CheckPermission(r, "inspectiontemplates", "create")
+	// Check permission and organization for the "create" action on the "inspectiontemplates" resource.
+	ok, err := h.authz.CheckPermissionAndOrgs(r, "inspectiontemplates", "create", args.Template.OrganizationID)
 	if err != nil || !ok {
 		return errors.New("not permitted")
 	}
@@ -59,6 +59,7 @@ type UpdateInspectionTemplateResponse struct {
 }
 
 func (h *adaptor) UpdateInspectionTemplate(r *http.Request, args *UpdateInspectionTemplateRequest, reply *UpdateInspectionTemplateResponse) error {
+	// Check permission for the "update" action on the "inspectiontemplates" resource.
 	ok, err := h.authz.CheckPermission(r, "inspectiontemplates", "update")
 	if err != nil || !ok {
 		return errors.New("not permitted")
@@ -82,14 +83,15 @@ type GetInspectionTemplateResponse struct {
 }
 
 func (h *adaptor) GetInspectionTemplate(r *http.Request, args *GetInspectionTemplateRequest, reply *GetInspectionTemplateResponse) error {
-	template, err := h.store.Get(args.TemplateID)
-	if err != nil {
-		return err
-	}
-
+	// Check permission for the "get" action on the "inspectiontemplates" resource.
 	ok, err := h.authz.CheckPermission(r, "inspectiontemplates", "get")
 	if err != nil || !ok {
 		return errors.New("not permitted")
+	}
+
+	template, err := h.store.Get(args.TemplateID)
+	if err != nil {
+		return err
 	}
 
 	reply.Template = *template
@@ -105,6 +107,7 @@ type DeleteInspectionTemplateResponse struct {
 }
 
 func (h *adaptor) DeleteInspectionTemplate(r *http.Request, args *DeleteInspectionTemplateRequest, reply *DeleteInspectionTemplateResponse) error {
+	// Check permission for the "delete" action on the "inspectiontemplates" resource.
 	ok, err := h.authz.CheckPermission(r, "inspectiontemplates", "delete")
 	if err != nil || !ok {
 		return errors.New("not permitted")
@@ -126,6 +129,12 @@ type ListInspectionTemplatesResponse struct {
 }
 
 func (h *adaptor) ListInspectionTemplates(r *http.Request, _ *ListInspectionTemplatesRequest, reply *ListInspectionTemplatesResponse) error {
+	// Check permission for the "list" action on the "inspectiontemplates" resource.
+	ok, err := h.authz.CheckPermission(r, "inspectiontemplates", "list")
+	if err != nil || !ok {
+		return errors.New("not permitted")
+	}
+
 	templates, err := h.store.List()
 	if err != nil {
 		return err

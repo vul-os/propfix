@@ -1,4 +1,3 @@
-// store.go in the inspectionTemplates package
 package inspectionTemplates
 
 import (
@@ -10,9 +9,10 @@ import (
 )
 
 type InspectionTemplate struct {
-	ID        string    `json:"id"`
-	Area      string    `json:"area"`
-	CreatedAt time.Time `json:"createdAt"`
+	ID             string    `json:"id"`
+	Area           string    `json:"area"`
+	CreatedAt      time.Time `json:"createdAt"`
+	OrganizationID string    `json:"organizationId"`
 }
 
 type Store struct {
@@ -29,12 +29,12 @@ func (is *Store) Create(template InspectionTemplate) (string, error) {
 	ctx := context.Background()
 	templateID := uuid.New().String()
 	query := `
-		INSERT INTO inspection_templates (id, area, created_at)
-		VALUES ($1, $2, $3)
+		INSERT INTO inspection_templates (id, area, created_at, organization_id)
+		VALUES ($1, $2, $3, $4)
 		RETURNING id
 	`
 
-	err := is.pool.QueryRow(ctx, query, templateID, template.Area, time.Now()).Scan(&templateID)
+	err := is.pool.QueryRow(ctx, query, templateID, template.Area, time.Now(), template.OrganizationID).Scan(&templateID)
 	if err != nil {
 		return "", err
 	}
@@ -60,14 +60,14 @@ func (is *Store) Update(template InspectionTemplate) error {
 func (is *Store) Get(id string) (*InspectionTemplate, error) {
 	ctx := context.Background()
 	query := `
-		SELECT id, area, created_at
+		SELECT id, area, created_at, organization_id
 		FROM inspection_templates
 		WHERE id = $1
 	`
 	row := is.pool.QueryRow(ctx, query, id)
 
 	var template InspectionTemplate
-	err := row.Scan(&template.ID, &template.Area, &template.CreatedAt)
+	err := row.Scan(&template.ID, &template.Area, &template.CreatedAt, &template.OrganizationID)
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +94,7 @@ func (is *Store) List() ([]InspectionTemplate, error) {
 	ctx := context.Background()
 
 	query := `
-		SELECT id, area, created_at
+		SELECT id, area, created_at, organization_id
 		FROM inspection_templates
 	`
 
@@ -107,7 +107,7 @@ func (is *Store) List() ([]InspectionTemplate, error) {
 	templates := make([]InspectionTemplate, 0)
 	for rows.Next() {
 		var template InspectionTemplate
-		err := rows.Scan(&template.ID, &template.Area, &template.CreatedAt)
+		err := rows.Scan(&template.ID, &template.Area, &template.CreatedAt, &template.OrganizationID)
 		if err != nil {
 			return nil, err
 		}

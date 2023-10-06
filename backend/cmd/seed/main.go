@@ -1,11 +1,11 @@
 package main
 
 import (
-	"context"
-	"fmt"
-	"log"
+    "context"
+    "fmt"
+    "log"
 
-	"github.com/jackc/pgx/v4/pgxpool"
+    "github.com/jackc/pgx/v4/pgxpool"
 )
 
 func createRolesTable(dbpool *pgxpool.Pool) error {
@@ -186,62 +186,178 @@ func createLabelsTable(dbpool *pgxpool.Pool) error {
 	return nil
 }
 
+
+func createInspectionItemsTable(dbpool *pgxpool.Pool) error {
+    ctx := context.Background()
+
+    _, err := dbpool.Exec(ctx, `
+        CREATE TABLE IF NOT EXISTS inspection_items (
+            id TEXT PRIMARY KEY,
+            inspection_id TEXT NOT NULL,
+            inspection_template_id TEXT NOT NULL,
+            checked BOOLEAN,
+            checked_at TIMESTAMPTZ,
+            comments TEXT
+        )
+    `)
+    if err != nil {
+        return err
+    }
+    return nil
+}
+
+func createInspectionTemplateItemsTable(dbpool *pgxpool.Pool) error {
+    ctx := context.Background()
+
+    _, err := dbpool.Exec(ctx, `
+        CREATE TABLE IF NOT EXISTS inspection_template_items (
+            id TEXT PRIMARY KEY,
+            order_index INTEGER,
+            item TEXT NOT NULL,
+            area_id TEXT NOT NULL,
+            inspection_template_id TEXT NOT NULL,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+    `)
+    if err != nil {
+        return err
+    }
+    return nil
+}
+
+func createInspectionTemplatesTable(dbpool *pgxpool.Pool) error {
+    ctx := context.Background()
+
+    _, err := dbpool.Exec(ctx, `
+        CREATE TABLE IF NOT EXISTS inspection_templates (
+            id TEXT PRIMARY KEY,
+            area TEXT NOT NULL,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+    `)
+    if err != nil {
+        return err
+    }
+    return nil
+}
+
+func createInspectionsTable(dbpool *pgxpool.Pool) error {
+    ctx := context.Background()
+
+    _, err := dbpool.Exec(ctx, `
+        CREATE TABLE IF NOT EXISTS inspections (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            schedule_date TIMESTAMPTZ NOT NULL,
+            assignee_ids TEXT[]
+        )
+    `)
+    if err != nil {
+        return err
+    }
+    return nil
+}
+
+func createInspectionAreasTable(dbpool *pgxpool.Pool) error {
+    ctx := context.Background()
+
+    _, err := dbpool.Exec(ctx, `
+        CREATE TABLE IF NOT EXISTS inspection_areas (
+            id TEXT PRIMARY KEY,
+            area TEXT NOT NULL
+        )
+    `)
+    if err != nil {
+        return err
+    }
+    return nil
+}
+
+
 func main() {
+    // neon.tech
+    connStr := "user=exolutiontech password=***REMOVED-DB-PASSWORD*** dbname=neondb host=ep-autumn-math-44120355.us-east-2.aws.neon.tech sslmode=verify-full"
+    dbpool, err := pgxpool.Connect(context.Background(), connStr)
+    if err != nil {
+        log.Fatal("Error connecting to the database: ", err)
+    }
+    defer dbpool.Close()
 
-	// neon.tech
-	connStr := "user=exolutiontech password=***REMOVED-DB-PASSWORD*** dbname=neondb host=ep-autumn-math-44120355.us-east-2.aws.neon.tech sslmode=verify-full"
-	dbpool, err := pgxpool.Connect(context.Background(), connStr)
-	if err != nil {
-		log.Fatal("Error connecting to the database: ", err)
-	}
-	defer dbpool.Close()
+    err = createOrganizationsTable(dbpool)
+    if err != nil {
+        log.Fatal("Error creating organizations table: ", err)
+    }
 
-	err = createOrganizationsTable(dbpool)
-	if err != nil {
-		log.Fatal("Error creating organizations table: ", err)
-	}
+    err = createRolesTable(dbpool)
+    if err != nil {
+        log.Fatal("Error creating roles table: ", err)
+    }
 
-	err = createRolesTable(dbpool)
-	if err != nil {
-		log.Fatal("Error creating roles table: ", err)
-	}
+    err = createBuildingsTable(dbpool)
+    if err != nil {
+        log.Fatal("Error creating buildings table: ", err)
+    }
 
-	err = createBuildingsTable(dbpool)
-	if err != nil {
-		log.Fatal("Error creating buildings table: ", err)
-	}
+    err = createColumnsTable(dbpool)
+    if err != nil {
+        log.Fatal("Error creating columns table: ", err)
+    }
 
-	err = createColumnsTable(dbpool)
-	if err != nil {
-		log.Fatal("Error creating columns table: ", err)
-	}
+    err = createEventsTable(dbpool)
+    if err != nil {
+        log.Fatal("Error creating events table: ", err)
+    }
 
-	err = createEventsTable(dbpool)
-	if err != nil {
-		log.Fatal("Error creating events table: ", err)
-	}
+    err = createPermissionsTable(dbpool)
+    if err != nil {
+        log.Fatal("Error creating permissions table: ", err)
+    }
 
-	err = createPermissionsTable(dbpool)
-	if err != nil {
-		log.Fatal("Error creating permissions table: ", err)
-	}
+    err = createJobsTable(dbpool)
+    if err != nil {
+        log.Fatal("Error creating jobs table: ", err)
+    }
 
-	err = createJobsTable(dbpool)
-	if err != nil {
-		log.Fatal("Error creating jobs table: ", err)
-	}
+    err = createLabelsTable(dbpool)
+    if err != nil {
+        log.Fatal("Error creating labels table: ", err)
+    }
 
-	err = createLabelsTable(dbpool)
-	if err != nil {
-		log.Fatal("Error creating labels table: ", err)
-	}
+    err = createColumnJobLinksTable(dbpool)
+    if err != nil {
+        log.Fatal("Error creating labels table: ", err)
+    }
 
-	err = createColumnJobLinksTable(dbpool)
-	if err != nil {
-		log.Fatal("Error creating labels table: ", err)
-	}
-	// Call other create table functions here
+    // Create the InspectionAreas table
+    err = createInspectionAreasTable(dbpool)
+    if err != nil {
+        log.Fatal("Error creating inspection_areas table: ", err)
+    }
 
-	// ALTER TABLE ColumnJobLinks ADD CONSTRAINT unique_job_column UNIQUE(job_id, column_id);
+    // Create the InspectionItems table
+    err = createInspectionItemsTable(dbpool)
+    if err != nil {
+        log.Fatal("Error creating inspection_items table: ", err)
+    }
 
+    // Create the InspectionTemplateItems table
+    err = createInspectionTemplateItemsTable(dbpool)
+    if err != nil {
+        log.Fatal("Error creating inspection_template_items table: ", err)
+    }
+
+    // Create the InspectionTemplates table
+    err = createInspectionTemplatesTable(dbpool)
+    if err != nil {
+        log.Fatal("Error creating inspection_templates table: ", err)
+    }
+
+    // Create the Inspections table
+    err = createInspectionsTable(dbpool)
+    if err != nil {
+        log.Fatal("Error creating inspections table: ", err)
+    }
+
+    // Call other create table functions here
+    // ALTER TABLE ColumnJobLinks ADD CONSTRAINT unique_job_column UNIQUE(job_id, column_id);
 }

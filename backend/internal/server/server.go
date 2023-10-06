@@ -33,6 +33,9 @@ import (
 	"github.com/exolutionza/propfix-backend-go/internal/inspectionTemplateItems"
 	"github.com/exolutionza/propfix-backend-go/internal/inspectionTemplates"
 	"github.com/exolutionza/propfix-backend-go/internal/inspectionAreas"
+	"github.com/exolutionza/propfix-backend-go/internal/inspections"
+	"github.com/exolutionza/propfix-backend-go/internal/inspectionItems"
+
 
 
 
@@ -97,6 +100,9 @@ func Server() {
 	inspectionTemplateItemsStore := inspectionTemplateItems.NewInspectionTemplateItemsStore(dbpool)
 	inspectionTemplatesStore := inspectionTemplates.NewInspectionTemplatesStore(dbpool)
 	inspectionAreasStore := inspectionAreas.NewInspectionAreasStore(dbpool)
+	inspectionsStore := inspections.NewInspectionsStore(dbpool)
+	inspectionItemsStore := inspectionItems.NewInspectionItemsStore(dbpool)
+
 
 	rpcServerConfigs := []jsonRpcServer.RPCServerConfig{
 		{
@@ -126,7 +132,8 @@ func Server() {
 				inspectionTemplateItems.New(inspectionTemplateItemsStore, authorizer),
 				inspectionTemplates.New(inspectionTemplatesStore, authorizer),
 				inspectionAreas.New(inspectionAreasStore, authorizer),
-
+				inspections.New(inspectionsStore, authorizer),
+				inspectionItems.New(inspectionItemsStore, authorizer),
 
 			},
 		},

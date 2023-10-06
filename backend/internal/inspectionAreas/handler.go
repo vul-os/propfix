@@ -1,4 +1,3 @@
-// handler.go in the inspectionAreas package
 package inspectionAreas
 
 import (
@@ -36,7 +35,8 @@ type CreateInspectionAreaResponse struct {
 }
 
 func (h *adaptor) CreateInspectionArea(r *http.Request, args *CreateInspectionAreaRequest, reply *CreateInspectionAreaResponse) error {
-	ok, err := h.authz.CheckPermission(r, "inspectionareas", "create")
+	// Check permission and organization for the "create" action on the "inspectionareas" resource.
+	ok, err := h.authz.CheckPermissionAndOrgs(r, "inspectionareas", "create", args.Area.OrganizationID)
 	if err != nil || !ok {
 		return errors.New("not permitted")
 	}
@@ -59,6 +59,7 @@ type UpdateInspectionAreaResponse struct {
 }
 
 func (h *adaptor) UpdateInspectionArea(r *http.Request, args *UpdateInspectionAreaRequest, reply *UpdateInspectionAreaResponse) error {
+	// Check permission for the "update" action on the "inspectionareas" resource.
 	ok, err := h.authz.CheckPermission(r, "inspectionareas", "update")
 	if err != nil || !ok {
 		return errors.New("not permitted")
@@ -82,14 +83,15 @@ type GetInspectionAreaResponse struct {
 }
 
 func (h *adaptor) GetInspectionArea(r *http.Request, args *GetInspectionAreaRequest, reply *GetInspectionAreaResponse) error {
-	area, err := h.store.Get(args.AreaID)
-	if err != nil {
-		return err
-	}
-
+	// Check permission for the "get" action on the "inspectionareas" resource.
 	ok, err := h.authz.CheckPermission(r, "inspectionareas", "get")
 	if err != nil || !ok {
 		return errors.New("not permitted")
+	}
+
+	area, err := h.store.Get(args.AreaID)
+	if err != nil {
+		return err
 	}
 
 	reply.Area = *area
@@ -105,6 +107,7 @@ type DeleteInspectionAreaResponse struct {
 }
 
 func (h *adaptor) DeleteInspectionArea(r *http.Request, args *DeleteInspectionAreaRequest, reply *DeleteInspectionAreaResponse) error {
+	// Check permission for the "delete" action on the "inspectionareas" resource.
 	ok, err := h.authz.CheckPermission(r, "inspectionareas", "delete")
 	if err != nil || !ok {
 		return errors.New("not permitted")
@@ -126,6 +129,12 @@ type ListInspectionAreasResponse struct {
 }
 
 func (h *adaptor) ListInspectionAreas(r *http.Request, _ *ListInspectionAreasRequest, reply *ListInspectionAreasResponse) error {
+	// Check permission for the "list" action on the "inspectionareas" resource.
+	ok, err := h.authz.CheckPermission(r, "inspectionareas", "list")
+	if err != nil || !ok {
+		return errors.New("not permitted")
+	}
+
 	areas, err := h.store.List()
 	if err != nil {
 		return err
