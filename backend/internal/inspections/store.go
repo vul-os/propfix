@@ -58,17 +58,17 @@ func (is *Store) Update(inspection Inspection) error {
 	return nil
 }
 
-func (is *Store) Get(id string, organizationID string) (*Inspection, error) {
+func (is *Store) Get(id string) (*Inspection, error) {
 	ctx := context.Background()
 	query := `
-		SELECT id, name, schedule_date, assignee_ids
+		SELECT id, name, schedule_date, assignee_ids, organization_id
 		FROM inspections
-		WHERE id = $1 AND organization_id = $2
+		WHERE id = $1
 	`
-	row := is.pool.QueryRow(ctx, query, id, organizationID)
+	row := is.pool.QueryRow(ctx, query, id)
 
 	var inspection Inspection
-	err := row.Scan(&inspection.ID, &inspection.Name, &inspection.ScheduleDate, &inspection.AssigneeIDs)
+	err := row.Scan(&inspection.ID, &inspection.Name, &inspection.ScheduleDate, &inspection.AssigneeIDs, &inspection.OrganizationID)
 	if err != nil {
 		return nil, err
 	}
@@ -76,14 +76,14 @@ func (is *Store) Get(id string, organizationID string) (*Inspection, error) {
 	return &inspection, nil
 }
 
-func (is *Store) Delete(id string, organizationID string) error {
+func (is *Store) Delete(id string) error {
 	ctx := context.Background()
 	query := `
 		DELETE FROM inspections
-		WHERE id = $1 AND organization_id = $2
+		WHERE id = $1
 	`
 
-	_, err := is.pool.Exec(ctx, query, id, organizationID)
+	_, err := is.pool.Exec(ctx, query, id)
 	if err != nil {
 		return err
 	}

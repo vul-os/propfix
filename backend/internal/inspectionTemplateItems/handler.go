@@ -77,8 +77,7 @@ func (h *adaptor) UpdateInspectionTemplateItem(r *http.Request, args *UpdateInsp
 }
 
 type GetInspectionTemplateItemRequest struct {
-	ItemID         string `json:"itemID"`
-	OrganizationID string `json:"organizationId"`
+	ID string `json:"id"`
 }
 
 type GetInspectionTemplateItemResponse struct {
@@ -86,15 +85,15 @@ type GetInspectionTemplateItemResponse struct {
 }
 
 func (h *adaptor) GetInspectionTemplateItem(r *http.Request, args *GetInspectionTemplateItemRequest, reply *GetInspectionTemplateItemResponse) error {
-	// Check permission and organization for the "get" action on the "inspectiontemplateitems" resource.
-	ok, err := h.authz.CheckPermissionAndOrgs(r, "inspectiontemplateitems", "get", args.OrganizationID)
-	if err != nil || !ok {
-		return errors.New("not permitted")
-	}
-
-	item, err := h.store.Get(args.ItemID, args.OrganizationID)
+	item, err := h.store.Get(args.ID)
 	if err != nil {
 		return err
+	}
+
+	// Check permission and organization for the "get" action on the "inspectiontemplateitems" resource.
+	ok, err := h.authz.CheckPermissionAndOrgs(r, "inspectiontemplateitems", "get", item.OrganizationID)
+	if err != nil || !ok {
+		return errors.New("not permitted")
 	}
 
 	reply.Item = *item
@@ -111,13 +110,18 @@ type DeleteInspectionTemplateItemResponse struct {
 }
 
 func (h *adaptor) DeleteInspectionTemplateItem(r *http.Request, args *DeleteInspectionTemplateItemRequest, reply *DeleteInspectionTemplateItemResponse) error {
-	// Check permission and organization for the "delete" action on the "inspectiontemplateitems" resource.
-	ok, err := h.authz.CheckPermissionAndOrgs(r, "inspectiontemplateitems", "delete", args.OrganizationID)
+	item, err := h.store.Get(args.ID)
+	if err != nil {
+		return err
+	}
+
+	// Check permission and organization for the "get" action on the "inspectiontemplateitems" resource.
+	ok, err := h.authz.CheckPermissionAndOrgs(r, "inspectiontemplateitems", "get", item.OrganizationID)
 	if err != nil || !ok {
 		return errors.New("not permitted")
 	}
 
-	err = h.store.Delete(args.ID, args.OrganizationID)
+	err = h.store.Delete(args.ID)
 	if err != nil {
 		return err
 	}

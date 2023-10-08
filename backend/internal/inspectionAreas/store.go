@@ -55,14 +55,14 @@ func (is *Store) Update(area InspectionArea) error {
 	return nil
 }
 
-func (is *Store) Get(id, organizationID string) (*InspectionArea, error) {
+func (is *Store) Get(id string) (*InspectionArea, error) {
 	ctx := context.Background()
 	query := `
 		SELECT id, area, organization_id
 		FROM inspection_areas
-		WHERE id = $1 AND organization_id = $2
+		WHERE id = $1
 	`
-	row := is.pool.QueryRow(ctx, query, id, organizationID)
+	row := is.pool.QueryRow(ctx, query, id)
 
 	var area InspectionArea
 	err := row.Scan(&area.ID, &area.Area, &area.OrganizationID)
@@ -73,14 +73,14 @@ func (is *Store) Get(id, organizationID string) (*InspectionArea, error) {
 	return &area, nil
 }
 
-func (is *Store) Delete(id, organizationID string) error {
+func (is *Store) Delete(id string) error {
 	ctx := context.Background()
 	query := `
 		DELETE FROM inspection_areas
-		WHERE id = $1 AND organization_id = $2
+		WHERE id = $1
 	`
 
-	_, err := is.pool.Exec(ctx, query, id, organizationID)
+	_, err := is.pool.Exec(ctx, query, id)
 	if err != nil {
 		return err
 	}

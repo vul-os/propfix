@@ -77,8 +77,7 @@ func (h *adaptor) UpdateInspectionTemplate(r *http.Request, args *UpdateInspecti
 }
 
 type GetInspectionTemplateRequest struct {
-	TemplateID     string `json:"templateID"`
-	OrganizationID string `json:"organizationId"`
+	ID string `json:"id"`
 }
 
 type GetInspectionTemplateResponse struct {
@@ -86,15 +85,15 @@ type GetInspectionTemplateResponse struct {
 }
 
 func (h *adaptor) GetInspectionTemplate(r *http.Request, args *GetInspectionTemplateRequest, reply *GetInspectionTemplateResponse) error {
-	// Check permission and organization for the "get" action on the "inspectiontemplates" resource.
-	ok, err := h.authz.CheckPermissionAndOrgs(r, "inspectiontemplates", "get", args.OrganizationID)
-	if err != nil || !ok {
-		return errors.New("not permitted")
-	}
-
-	template, err := h.store.Get(args.TemplateID, args.OrganizationID) // Pass the OrganizationID parameter
+	template, err := h.store.Get(args.ID) // Pass the OrganizationID parameter
 	if err != nil {
 		return err
+	}
+
+	// Check permission and organization for the "get" action on the "inspectiontemplates" resource.
+	ok, err := h.authz.CheckPermissionAndOrgs(r, "inspectiontemplates", "get", template.OrganizationID)
+	if err != nil || !ok {
+		return errors.New("not permitted")
 	}
 
 	reply.Template = *template
@@ -111,13 +110,18 @@ type DeleteInspectionTemplateResponse struct {
 }
 
 func (h *adaptor) DeleteInspectionTemplate(r *http.Request, args *DeleteInspectionTemplateRequest, reply *DeleteInspectionTemplateResponse) error {
-	// Check permission and organization for the "delete" action on the "inspectiontemplates" resource.
-	ok, err := h.authz.CheckPermissionAndOrgs(r, "inspectiontemplates", "delete", args.OrganizationID)
+	template, err := h.store.Get(args.ID) // Pass the OrganizationID parameter
+	if err != nil {
+		return err
+	}
+
+	// Check permission and organization for the "get" action on the "inspectiontemplates" resource.
+	ok, err := h.authz.CheckPermissionAndOrgs(r, "inspectiontemplates", "get", template.OrganizationID)
 	if err != nil || !ok {
 		return errors.New("not permitted")
 	}
 
-	err = h.store.Delete(args.ID, args.OrganizationID) // Pass the OrganizationID parameter
+	err = h.store.Delete(args.ID) // Pass the OrganizationID parameter
 	if err != nil {
 		return err
 	}

@@ -78,14 +78,14 @@ func (is *Store) Get(id string) (*InspectionItem, error) {
 	return &item, nil
 }
 
-func (is *Store) Delete(id string, organizationID string) error {
+func (is *Store) Delete(id string) error {
 	ctx := context.Background()
 	query := `
         DELETE FROM inspection_items
-        WHERE id = $1 AND organization_id = $2
+        WHERE id = $1
     `
 
-	_, err := is.pool.Exec(ctx, query, id, organizationID)
+	_, err := is.pool.Exec(ctx, query, id)
 	if err != nil {
 		return err
 	}

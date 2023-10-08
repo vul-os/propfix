@@ -60,17 +60,17 @@ func (is *Store) Update(item InspectionTemplateItem) error {
 	return nil
 }
 
-func (is *Store) Get(id string, organizationID string) (*InspectionTemplateItem, error) {
+func (is *Store) Get(id string) (*InspectionTemplateItem, error) {
 	ctx := context.Background()
 	query := `
-		SELECT id, order_index, item, area_id, inspection_template_id, created_at
+		SELECT id, order_index, item, area_id, inspection_template_id, created_at, organization_id
 		FROM inspection_template_items
-		WHERE id = $1 AND organization_id = $2
+		WHERE id = $1
 	`
-	row := is.pool.QueryRow(ctx, query, id, organizationID)
+	row := is.pool.QueryRow(ctx, query, id)
 
 	var item InspectionTemplateItem
-	err := row.Scan(&item.ID, &item.OrderIndex, &item.Item, &item.AreaID, &item.InspectionTemplateID, &item.CreatedAt)
+	err := row.Scan(&item.ID, &item.OrderIndex, &item.Item, &item.AreaID, &item.InspectionTemplateID, &item.CreatedAt, &item.OrganizationID)
 	if err != nil {
 		return nil, err
 	}
@@ -78,14 +78,14 @@ func (is *Store) Get(id string, organizationID string) (*InspectionTemplateItem,
 	return &item, nil
 }
 
-func (is *Store) Delete(id string, organizationID string) error {
+func (is *Store) Delete(id string) error {
 	ctx := context.Background()
 	query := `
 		DELETE FROM inspection_template_items
-		WHERE id = $1 AND organization_id = $2
+		WHERE id = $1
 	`
 
-	_, err := is.pool.Exec(ctx, query, id, organizationID)
+	_, err := is.pool.Exec(ctx, query, id)
 	if err != nil {
 		return err
 	}

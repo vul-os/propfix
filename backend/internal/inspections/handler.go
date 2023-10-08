@@ -84,15 +84,14 @@ type GetInspectionResponse struct {
 }
 
 func (h *adaptor) GetInspection(r *http.Request, args *GetInspectionRequest, reply *GetInspectionResponse) error {
-	// Check permission for the "get" action on the "inspections" resource.
-	ok, err := h.authz.CheckPermissionAndOrgs(r, "inspections", "get", args.OrganizationID)
-	if err != nil || !ok {
-		return errors.New("not permitted")
-	}
-
-	inspection, err := h.store.Get(args.InspectionID, args.OrganizationID) // Pass the OrganizationID parameter
+	inspection, err := h.store.Get(args.InspectionID) // Pass the OrganizationID parameter
 	if err != nil {
 		return err
+	}
+	// Check permission for the "get" action on the "inspections" resource.
+	ok, err := h.authz.CheckPermissionAndOrgs(r, "inspections", "get", inspection.OrganizationID)
+	if err != nil || !ok {
+		return errors.New("not permitted")
 	}
 
 	reply.Inspection = *inspection
@@ -100,8 +99,7 @@ func (h *adaptor) GetInspection(r *http.Request, args *GetInspectionRequest, rep
 }
 
 type DeleteInspectionRequest struct {
-	ID             string `json:"id"`
-	OrganizationID string // Add the OrganizationID field
+	ID string `json:"id"`
 }
 
 type DeleteInspectionResponse struct {
@@ -109,13 +107,16 @@ type DeleteInspectionResponse struct {
 }
 
 func (h *adaptor) DeleteInspection(r *http.Request, args *DeleteInspectionRequest, reply *DeleteInspectionResponse) error {
-	// Check permission for the "delete" action on the "inspections" resource.
-	ok, err := h.authz.CheckPermissionAndOrgs(r, "inspections", "delete", args.OrganizationID)
+	inspection, err := h.store.Get(args.ID) // Pass the OrganizationID parameter
+	if err != nil {
+		return err
+	}
+	// Check permission for the "get" action on the "inspections" resource.
+	ok, err := h.authz.CheckPermissionAndOrgs(r, "inspections", "get", inspection.OrganizationID)
 	if err != nil || !ok {
 		return errors.New("not permitted")
 	}
-
-	err = h.store.Delete(args.ID, args.OrganizationID) // Pass the OrganizationID parameter
+	err = h.store.Delete(args.ID) // Pass the OrganizationID parameter
 	if err != nil {
 		return err
 	}

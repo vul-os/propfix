@@ -83,7 +83,6 @@ type GetInspectionItemResponse struct {
 }
 
 func (h *adaptor) GetInspectionItem(r *http.Request, args *GetInspectionItemRequest, reply *GetInspectionItemResponse) error {
-
 	item, err := h.store.Get(args.ID)
 	if err != nil {
 		return err
@@ -113,12 +112,12 @@ func (h *adaptor) DeleteInspectionItem(r *http.Request, args *DeleteInspectionIt
 		return err
 	}
 	// Check permission and organization for the "get" action on the "inspectionitems" resource.
-	ok, err := h.authz.CheckPermissionAndOrgs(r, "inspectionitems", "delete", item.OrganizationID)
+	ok, err := h.authz.CheckPermissionAndOrgs(r, "inspectionitems", "get", item.OrganizationID)
 	if err != nil || !ok {
 		return errors.New("not permitted")
 	}
 
-	err = h.store.Delete(args.ID, item.OrganizationID)
+	err = h.store.Delete(args.ID)
 	if err != nil {
 		return err
 	}

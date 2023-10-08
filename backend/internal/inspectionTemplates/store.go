@@ -57,14 +57,14 @@ func (is *Store) Update(template InspectionTemplate) error {
 	return nil
 }
 
-func (is *Store) Get(id string, organizationID string) (*InspectionTemplate, error) {
+func (is *Store) Get(id string) (*InspectionTemplate, error) {
 	ctx := context.Background()
 	query := `
 		SELECT id, area, created_at, organization_id
 		FROM inspection_templates
-		WHERE id = $1 AND organization_id = $2
+		WHERE id = $1
 	`
-	row := is.pool.QueryRow(ctx, query, id, organizationID)
+	row := is.pool.QueryRow(ctx, query, id)
 
 	var template InspectionTemplate
 	err := row.Scan(&template.ID, &template.Area, &template.CreatedAt, &template.OrganizationID)
@@ -75,14 +75,14 @@ func (is *Store) Get(id string, organizationID string) (*InspectionTemplate, err
 	return &template, nil
 }
 
-func (is *Store) Delete(id string, organizationID string) error {
+func (is *Store) Delete(id string) error {
 	ctx := context.Background()
 	query := `
 		DELETE FROM inspection_templates
-		WHERE id = $1 AND organization_id = $2
+		WHERE id = $1
 	`
 
-	_, err := is.pool.Exec(ctx, query, id, organizationID)
+	_, err := is.pool.Exec(ctx, query, id)
 	if err != nil {
 		return err
 	}
