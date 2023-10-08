@@ -44,25 +44,25 @@ func (is *Store) Update(area InspectionArea) error {
 	ctx := context.Background()
 	query := `
 		UPDATE inspection_areas
-		SET area = $1, organization_id = $2
-		WHERE id = $3
+		SET area = $1
+		WHERE id = $2 AND organization_id = $3
 	`
 
-	_, err := is.pool.Exec(ctx, query, area.Area, area.OrganizationID, area.ID)
+	_, err := is.pool.Exec(ctx, query, area.Area, area.ID, area.OrganizationID)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (is *Store) Get(id string) (*InspectionArea, error) {
+func (is *Store) Get(id, organizationID string) (*InspectionArea, error) {
 	ctx := context.Background()
 	query := `
 		SELECT id, area, organization_id
 		FROM inspection_areas
-		WHERE id = $1
+		WHERE id = $1 AND organization_id = $2
 	`
-	row := is.pool.QueryRow(ctx, query, id)
+	row := is.pool.QueryRow(ctx, query, id, organizationID)
 
 	var area InspectionArea
 	err := row.Scan(&area.ID, &area.Area, &area.OrganizationID)
@@ -73,14 +73,14 @@ func (is *Store) Get(id string) (*InspectionArea, error) {
 	return &area, nil
 }
 
-func (is *Store) Delete(id string) error {
+func (is *Store) Delete(id, organizationID string) error {
 	ctx := context.Background()
 	query := `
 		DELETE FROM inspection_areas
-		WHERE id = $1
+		WHERE id = $1 AND organization_id = $2
 	`
 
-	_, err := is.pool.Exec(ctx, query, id)
+	_, err := is.pool.Exec(ctx, query, id, organizationID)
 	if err != nil {
 		return err
 	}
@@ -88,15 +88,16 @@ func (is *Store) Delete(id string) error {
 	return nil
 }
 
-func (is *Store) List() ([]InspectionArea, error) {
+func (is *Store) GetAll(organizationID string) ([]InspectionArea, error) {
 	ctx := context.Background()
 
 	query := `
 		SELECT id, area, organization_id
 		FROM inspection_areas
+		WHERE organization_id = $1
 	`
 
-	rows, err := is.pool.Query(ctx, query)
+	rows, err := is.pool.Query(ctx, query, organizationID)
 	if err != nil {
 		return nil, err
 	}

@@ -75,7 +75,8 @@ func (h *adaptor) UpdateInspection(r *http.Request, args *UpdateInspectionReques
 }
 
 type GetInspectionRequest struct {
-	InspectionID string `json:"inspectionID"`
+	InspectionID   string `json:"inspectionID"`
+	OrganizationID string // Add the OrganizationID field
 }
 
 type GetInspectionResponse struct {
@@ -84,12 +85,12 @@ type GetInspectionResponse struct {
 
 func (h *adaptor) GetInspection(r *http.Request, args *GetInspectionRequest, reply *GetInspectionResponse) error {
 	// Check permission for the "get" action on the "inspections" resource.
-	ok, err := h.authz.CheckPermission(r, "inspections", "get")
+	ok, err := h.authz.CheckPermissionAndOrgs(r, "inspections", "get", args.OrganizationID)
 	if err != nil || !ok {
 		return errors.New("not permitted")
 	}
 
-	inspection, err := h.store.Get(args.InspectionID)
+	inspection, err := h.store.Get(args.InspectionID, args.OrganizationID) // Pass the OrganizationID parameter
 	if err != nil {
 		return err
 	}
@@ -99,7 +100,8 @@ func (h *adaptor) GetInspection(r *http.Request, args *GetInspectionRequest, rep
 }
 
 type DeleteInspectionRequest struct {
-	ID string `json:"id"`
+	ID             string `json:"id"`
+	OrganizationID string // Add the OrganizationID field
 }
 
 type DeleteInspectionResponse struct {
@@ -108,12 +110,12 @@ type DeleteInspectionResponse struct {
 
 func (h *adaptor) DeleteInspection(r *http.Request, args *DeleteInspectionRequest, reply *DeleteInspectionResponse) error {
 	// Check permission for the "delete" action on the "inspections" resource.
-	ok, err := h.authz.CheckPermission(r, "inspections", "delete")
+	ok, err := h.authz.CheckPermissionAndOrgs(r, "inspections", "delete", args.OrganizationID)
 	if err != nil || !ok {
 		return errors.New("not permitted")
 	}
 
-	err = h.store.Delete(args.ID)
+	err = h.store.Delete(args.ID, args.OrganizationID) // Pass the OrganizationID parameter
 	if err != nil {
 		return err
 	}
@@ -122,20 +124,22 @@ func (h *adaptor) DeleteInspection(r *http.Request, args *DeleteInspectionReques
 	return nil
 }
 
-type ListInspectionsRequest struct{}
+type GetAllInspectionsRequest struct {
+	OrganizationID string // Add the OrganizationID field
+}
 
-type ListInspectionsResponse struct {
+type GetAllInspectionsResponse struct {
 	Inspections []Inspection `json:"inspections"`
 }
 
-func (h *adaptor) ListInspections(r *http.Request, _ *ListInspectionsRequest, reply *ListInspectionsResponse) error {
+func (h *adaptor) GetAllInspections(r *http.Request, args *GetAllInspectionsRequest, reply *GetAllInspectionsResponse) error {
 	// Check permission for the "list" action on the "inspections" resource.
-	ok, err := h.authz.CheckPermission(r, "inspections", "list")
+	ok, err := h.authz.CheckPermissionAndOrgs(r, "inspections", "GetAll", args.OrganizationID)
 	if err != nil || !ok {
 		return errors.New("not permitted")
 	}
 
-	inspections, err := h.store.List()
+	inspections, err := h.store.GetAll(args.OrganizationID) // Pass the OrganizationID parameter
 	if err != nil {
 		return err
 	}

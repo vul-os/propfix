@@ -59,8 +59,8 @@ type UpdateInspectionAreaResponse struct {
 }
 
 func (h *adaptor) UpdateInspectionArea(r *http.Request, args *UpdateInspectionAreaRequest, reply *UpdateInspectionAreaResponse) error {
-	// Check permission for the "update" action on the "inspectionareas" resource.
-	ok, err := h.authz.CheckPermission(r, "inspectionareas", "update")
+	// Check permission and organization for the "update" action on the "inspectionareas" resource.
+	ok, err := h.authz.CheckPermissionAndOrgs(r, "inspectionareas", "update", args.Area.OrganizationID)
 	if err != nil || !ok {
 		return errors.New("not permitted")
 	}
@@ -75,7 +75,8 @@ func (h *adaptor) UpdateInspectionArea(r *http.Request, args *UpdateInspectionAr
 }
 
 type GetInspectionAreaRequest struct {
-	AreaID string `json:"areaID"`
+	AreaID         string `json:"areaID"`
+	OrganizationID string `json:"organizationId"`
 }
 
 type GetInspectionAreaResponse struct {
@@ -83,13 +84,13 @@ type GetInspectionAreaResponse struct {
 }
 
 func (h *adaptor) GetInspectionArea(r *http.Request, args *GetInspectionAreaRequest, reply *GetInspectionAreaResponse) error {
-	// Check permission for the "get" action on the "inspectionareas" resource.
-	ok, err := h.authz.CheckPermission(r, "inspectionareas", "get")
+	// Check permission and organization for the "get" action on the "inspectionareas" resource.
+	ok, err := h.authz.CheckPermissionAndOrgs(r, "inspectionareas", "get", args.OrganizationID)
 	if err != nil || !ok {
 		return errors.New("not permitted")
 	}
 
-	area, err := h.store.Get(args.AreaID)
+	area, err := h.store.Get(args.AreaID, args.OrganizationID)
 	if err != nil {
 		return err
 	}
@@ -99,7 +100,8 @@ func (h *adaptor) GetInspectionArea(r *http.Request, args *GetInspectionAreaRequ
 }
 
 type DeleteInspectionAreaRequest struct {
-	ID string `json:"id"`
+	ID             string `json:"id"`
+	OrganizationID string `json:"organizationId"`
 }
 
 type DeleteInspectionAreaResponse struct {
@@ -107,13 +109,13 @@ type DeleteInspectionAreaResponse struct {
 }
 
 func (h *adaptor) DeleteInspectionArea(r *http.Request, args *DeleteInspectionAreaRequest, reply *DeleteInspectionAreaResponse) error {
-	// Check permission for the "delete" action on the "inspectionareas" resource.
-	ok, err := h.authz.CheckPermission(r, "inspectionareas", "delete")
+	// Check permission and organization for the "delete" action on the "inspectionareas" resource.
+	ok, err := h.authz.CheckPermissionAndOrgs(r, "inspectionareas", "delete", args.OrganizationID)
 	if err != nil || !ok {
 		return errors.New("not permitted")
 	}
 
-	err = h.store.Delete(args.ID)
+	err = h.store.Delete(args.ID, args.OrganizationID)
 	if err != nil {
 		return err
 	}
@@ -122,20 +124,22 @@ func (h *adaptor) DeleteInspectionArea(r *http.Request, args *DeleteInspectionAr
 	return nil
 }
 
-type ListInspectionAreasRequest struct{}
+type GetAllInspectionAreasRequest struct {
+	OrganizationID string `json:"organizationId"`
+}
 
-type ListInspectionAreasResponse struct {
+type GetAllInspectionAreasResponse struct {
 	Areas []InspectionArea `json:"areas"`
 }
 
-func (h *adaptor) ListInspectionAreas(r *http.Request, _ *ListInspectionAreasRequest, reply *ListInspectionAreasResponse) error {
-	// Check permission for the "list" action on the "inspectionareas" resource.
-	ok, err := h.authz.CheckPermission(r, "inspectionareas", "list")
+func (h *adaptor) GetAllInspectionAreas(r *http.Request, args *GetAllInspectionAreasRequest, reply *GetAllInspectionAreasResponse) error {
+
+	ok, err := h.authz.CheckPermissionAndOrgs(r, "inspectionareas", "GetAll", args.OrganizationID)
 	if err != nil || !ok {
 		return errors.New("not permitted")
 	}
 
-	areas, err := h.store.List()
+	areas, err := h.store.GetAll(args.OrganizationID)
 	if err != nil {
 		return err
 	}

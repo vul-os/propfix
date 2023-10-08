@@ -47,28 +47,28 @@ func (is *Store) Update(inspection Inspection) error {
 	ctx := context.Background()
 	query := `
 		UPDATE inspections
-		SET name = $1, schedule_date = $2, assignee_ids = $3, organization_id = $4
-		WHERE id = $5
+		SET name = $1, schedule_date = $2, assignee_ids = $3
+		WHERE id = $4 AND organization_id = $5
 	`
 
-	_, err := is.pool.Exec(ctx, query, inspection.Name, inspection.ScheduleDate, inspection.AssigneeIDs, inspection.OrganizationID, inspection.ID)
+	_, err := is.pool.Exec(ctx, query, inspection.Name, inspection.ScheduleDate, inspection.AssigneeIDs, inspection.ID, inspection.OrganizationID)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (is *Store) Get(id string) (*Inspection, error) {
+func (is *Store) Get(id string, organizationID string) (*Inspection, error) {
 	ctx := context.Background()
 	query := `
-		SELECT id, name, schedule_date, assignee_ids, organization_id
+		SELECT id, name, schedule_date, assignee_ids
 		FROM inspections
-		WHERE id = $1
+		WHERE id = $1 AND organization_id = $2
 	`
-	row := is.pool.QueryRow(ctx, query, id)
+	row := is.pool.QueryRow(ctx, query, id, organizationID)
 
 	var inspection Inspection
-	err := row.Scan(&inspection.ID, &inspection.Name, &inspection.ScheduleDate, &inspection.AssigneeIDs, &inspection.OrganizationID)
+	err := row.Scan(&inspection.ID, &inspection.Name, &inspection.ScheduleDate, &inspection.AssigneeIDs)
 	if err != nil {
 		return nil, err
 	}
@@ -76,14 +76,14 @@ func (is *Store) Get(id string) (*Inspection, error) {
 	return &inspection, nil
 }
 
-func (is *Store) Delete(id string) error {
+func (is *Store) Delete(id string, organizationID string) error {
 	ctx := context.Background()
 	query := `
 		DELETE FROM inspections
-		WHERE id = $1 
+		WHERE id = $1 AND organization_id = $2
 	`
 
-	_, err := is.pool.Exec(ctx, query, id)
+	_, err := is.pool.Exec(ctx, query, id, organizationID)
 	if err != nil {
 		return err
 	}
@@ -91,15 +91,16 @@ func (is *Store) Delete(id string) error {
 	return nil
 }
 
-func (is *Store) List() ([]Inspection, error) {
+func (is *Store) GetAll(organizationID string) ([]Inspection, error) {
 	ctx := context.Background()
 
 	query := `
-		SELECT id, name, schedule_date, assignee_ids, organization_id
+		SELECT id, name, schedule_date, assignee_ids
 		FROM inspections
+		WHERE organization_id = $1
 	`
 
-	rows, err := is.pool.Query(ctx, query)
+	rows, err := is.pool.Query(ctx, query, organizationID)
 	if err != nil {
 		return nil, err
 	}
@@ -108,7 +109,7 @@ func (is *Store) List() ([]Inspection, error) {
 	inspections := make([]Inspection, 0)
 	for rows.Next() {
 		var inspection Inspection
-		err := rows.Scan(&inspection.ID, &inspection.Name, &inspection.ScheduleDate, &inspection.AssigneeIDs, &inspection.OrganizationID)
+		err := rows.Scan(&inspection.ID, &inspection.Name, &inspection.ScheduleDate, &inspection.AssigneeIDs)
 		if err != nil {
 			return nil, err
 		}

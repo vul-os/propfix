@@ -32,12 +32,12 @@ func (is *Store) Create(item InspectionTemplateItem) (string, error) {
 	ctx := context.Background()
 	itemID := uuid.New().String()
 	query := `
-		INSERT INTO inspection_template_items (id, order_index, item, area_id, inspection_template_id, created_at)
-		VALUES ($1, $2, $3, $4, $5, $6)
+		INSERT INTO inspection_template_items (id, order_index, item, area_id, inspection_template_id, created_at, organization_id)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
 		RETURNING id
 	`
 
-	err := is.pool.QueryRow(ctx, query, itemID, item.OrderIndex, item.Item, item.AreaID, item.InspectionTemplateID, time.Now()).Scan(&itemID)
+	err := is.pool.QueryRow(ctx, query, itemID, item.OrderIndex, item.Item, item.AreaID, item.InspectionTemplateID, time.Now(), item.OrganizationID).Scan(&itemID)
 	if err != nil {
 		return "", err
 	}
@@ -50,24 +50,24 @@ func (is *Store) Update(item InspectionTemplateItem) error {
 	query := `
 		UPDATE inspection_template_items
 		SET order_index = $1, item = $2, area_id = $3, inspection_template_id = $4
-		WHERE id = $5
+		WHERE id = $5 AND organization_id = $6
 	`
 
-	_, err := is.pool.Exec(ctx, query, item.OrderIndex, item.Item, item.AreaID, item.InspectionTemplateID, item.ID)
+	_, err := is.pool.Exec(ctx, query, item.OrderIndex, item.Item, item.AreaID, item.InspectionTemplateID, item.ID, item.OrganizationID)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (is *Store) Get(id string) (*InspectionTemplateItem, error) {
+func (is *Store) Get(id string, organizationID string) (*InspectionTemplateItem, error) {
 	ctx := context.Background()
 	query := `
 		SELECT id, order_index, item, area_id, inspection_template_id, created_at
 		FROM inspection_template_items
-		WHERE id = $1
+		WHERE id = $1 AND organization_id = $2
 	`
-	row := is.pool.QueryRow(ctx, query, id)
+	row := is.pool.QueryRow(ctx, query, id, organizationID)
 
 	var item InspectionTemplateItem
 	err := row.Scan(&item.ID, &item.OrderIndex, &item.Item, &item.AreaID, &item.InspectionTemplateID, &item.CreatedAt)
@@ -78,14 +78,14 @@ func (is *Store) Get(id string) (*InspectionTemplateItem, error) {
 	return &item, nil
 }
 
-func (is *Store) Delete(id string) error {
+func (is *Store) Delete(id string, organizationID string) error {
 	ctx := context.Background()
 	query := `
 		DELETE FROM inspection_template_items
-		WHERE id = $1 
+		WHERE id = $1 AND organization_id = $2
 	`
 
-	_, err := is.pool.Exec(ctx, query, id)
+	_, err := is.pool.Exec(ctx, query, id, organizationID)
 	if err != nil {
 		return err
 	}
@@ -93,15 +93,16 @@ func (is *Store) Delete(id string) error {
 	return nil
 }
 
-func (is *Store) List() ([]InspectionTemplateItem, error) {
+func (is *Store) GetAll(organizationID string) ([]InspectionTemplateItem, error) {
 	ctx := context.Background()
 
 	query := `
 		SELECT id, order_index, item, area_id, inspection_template_id, created_at
 		FROM inspection_template_items
+		WHERE organization_id = $1
 	`
 
-	rows, err := is.pool.Query(ctx, query)
+	rows, err := is.pool.Query(ctx, query, organizationID)
 	if err != nil {
 		return nil, err
 	}

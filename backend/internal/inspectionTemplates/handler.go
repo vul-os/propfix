@@ -27,7 +27,8 @@ func (h *adaptor) Name() jsonRpcProvider.Name {
 }
 
 type CreateInspectionTemplateRequest struct {
-	Template InspectionTemplate `json:"template"`
+	Template       InspectionTemplate `json:"template"`
+	OrganizationID string             `json:"organizationId"`
 }
 
 type CreateInspectionTemplateResponse struct {
@@ -36,7 +37,7 @@ type CreateInspectionTemplateResponse struct {
 
 func (h *adaptor) CreateInspectionTemplate(r *http.Request, args *CreateInspectionTemplateRequest, reply *CreateInspectionTemplateResponse) error {
 	// Check permission and organization for the "create" action on the "inspectiontemplates" resource.
-	ok, err := h.authz.CheckPermissionAndOrgs(r, "inspectiontemplates", "create", args.Template.OrganizationID)
+	ok, err := h.authz.CheckPermissionAndOrgs(r, "inspectiontemplates", "create", args.OrganizationID)
 	if err != nil || !ok {
 		return errors.New("not permitted")
 	}
@@ -51,7 +52,8 @@ func (h *adaptor) CreateInspectionTemplate(r *http.Request, args *CreateInspecti
 }
 
 type UpdateInspectionTemplateRequest struct {
-	Template InspectionTemplate `json:"template"`
+	Template       InspectionTemplate `json:"template"`
+	OrganizationID string             `json:"organizationId"`
 }
 
 type UpdateInspectionTemplateResponse struct {
@@ -59,8 +61,8 @@ type UpdateInspectionTemplateResponse struct {
 }
 
 func (h *adaptor) UpdateInspectionTemplate(r *http.Request, args *UpdateInspectionTemplateRequest, reply *UpdateInspectionTemplateResponse) error {
-	// Check permission for the "update" action on the "inspectiontemplates" resource.
-	ok, err := h.authz.CheckPermission(r, "inspectiontemplates", "update")
+	// Check permission and organization for the "update" action on the "inspectiontemplates" resource.
+	ok, err := h.authz.CheckPermissionAndOrgs(r, "inspectiontemplates", "update", args.OrganizationID)
 	if err != nil || !ok {
 		return errors.New("not permitted")
 	}
@@ -75,7 +77,8 @@ func (h *adaptor) UpdateInspectionTemplate(r *http.Request, args *UpdateInspecti
 }
 
 type GetInspectionTemplateRequest struct {
-	TemplateID string `json:"templateID"`
+	TemplateID     string `json:"templateID"`
+	OrganizationID string `json:"organizationId"`
 }
 
 type GetInspectionTemplateResponse struct {
@@ -83,13 +86,13 @@ type GetInspectionTemplateResponse struct {
 }
 
 func (h *adaptor) GetInspectionTemplate(r *http.Request, args *GetInspectionTemplateRequest, reply *GetInspectionTemplateResponse) error {
-	// Check permission for the "get" action on the "inspectiontemplates" resource.
-	ok, err := h.authz.CheckPermission(r, "inspectiontemplates", "get")
+	// Check permission and organization for the "get" action on the "inspectiontemplates" resource.
+	ok, err := h.authz.CheckPermissionAndOrgs(r, "inspectiontemplates", "get", args.OrganizationID)
 	if err != nil || !ok {
 		return errors.New("not permitted")
 	}
 
-	template, err := h.store.Get(args.TemplateID)
+	template, err := h.store.Get(args.TemplateID, args.OrganizationID) // Pass the OrganizationID parameter
 	if err != nil {
 		return err
 	}
@@ -99,7 +102,8 @@ func (h *adaptor) GetInspectionTemplate(r *http.Request, args *GetInspectionTemp
 }
 
 type DeleteInspectionTemplateRequest struct {
-	ID string `json:"id"`
+	ID             string `json:"id"`
+	OrganizationID string `json:"organizationId"`
 }
 
 type DeleteInspectionTemplateResponse struct {
@@ -107,13 +111,13 @@ type DeleteInspectionTemplateResponse struct {
 }
 
 func (h *adaptor) DeleteInspectionTemplate(r *http.Request, args *DeleteInspectionTemplateRequest, reply *DeleteInspectionTemplateResponse) error {
-	// Check permission for the "delete" action on the "inspectiontemplates" resource.
-	ok, err := h.authz.CheckPermission(r, "inspectiontemplates", "delete")
+	// Check permission and organization for the "delete" action on the "inspectiontemplates" resource.
+	ok, err := h.authz.CheckPermissionAndOrgs(r, "inspectiontemplates", "delete", args.OrganizationID)
 	if err != nil || !ok {
 		return errors.New("not permitted")
 	}
 
-	err = h.store.Delete(args.ID)
+	err = h.store.Delete(args.ID, args.OrganizationID) // Pass the OrganizationID parameter
 	if err != nil {
 		return err
 	}
@@ -122,20 +126,22 @@ func (h *adaptor) DeleteInspectionTemplate(r *http.Request, args *DeleteInspecti
 	return nil
 }
 
-type ListInspectionTemplatesRequest struct{}
+type GetAllInspectionTemplatesRequest struct {
+	OrganizationID string `json:"organizationId"`
+}
 
-type ListInspectionTemplatesResponse struct {
+type GetAllInspectionTemplatesResponse struct {
 	Templates []InspectionTemplate `json:"templates"`
 }
 
-func (h *adaptor) ListInspectionTemplates(r *http.Request, _ *ListInspectionTemplatesRequest, reply *ListInspectionTemplatesResponse) error {
-	// Check permission for the "list" action on the "inspectiontemplates" resource.
-	ok, err := h.authz.CheckPermission(r, "inspectiontemplates", "list")
+func (h *adaptor) GetAllInspectionItemsInspectionTemplates(r *http.Request, args *GetAllInspectionTemplatesRequest, reply *GetAllInspectionTemplatesResponse) error {
+	// Check permission and organization for the "list" action on the "inspectiontemplates" resource.
+	ok, err := h.authz.CheckPermissionAndOrgs(r, "inspectiontemplates", "list", args.OrganizationID)
 	if err != nil || !ok {
 		return errors.New("not permitted")
 	}
 
-	templates, err := h.store.List()
+	templates, err := h.store.GetAll(args.OrganizationID) // Pass the OrganizationID parameter
 	if err != nil {
 		return err
 	}
