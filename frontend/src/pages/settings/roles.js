@@ -16,6 +16,8 @@ import {
   TextField,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import { useAuthContext } from '../../contexts/auth';
 import { getAllMembers } from '../../api/organizations';
 import { getAllRoles, removeMember, addMember } from '../../api/roles';
@@ -100,20 +102,48 @@ export default function Roles() {
     }
   }, [activeOrganization]);
 
+  const handleRefreshRoles = async () => {
+    // Call the fetchRoles function to refresh roles
+    await fetchRoles();
+  };
+
+
 
   return (
     <>
+      <div style={{ display: 'flex', alignItems: 'center' }}>
+        <Typography variant="h4">Roles</Typography>
+        <IconButton
+          onClick={handleRefreshRoles} // Call the handleRefreshRoles function
+          aria-label="Refresh"
+        >
+          <RefreshIcon />
+        </IconButton>
+      </div>
+
       {roles.map((role) => (
-        <div key={role.id}>
-          <Typography variant="h6">{role.name}</Typography>
+        <div key={role.id} style={{ overflowX: 'auto' }}>
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <Typography variant="h6">{role.name} ({role.userIds.length}) </Typography>
+            <IconButton
+              onClick={() => {
+                setSelectedRole(role);
+                setOpenAddMemberDialog(true);
+              }}
+              color="primary"
+              style={{ marginLeft: '8px' }}
+            >
+              <AddCircleOutlineIcon />
+            </IconButton>
+          </div>
           <Typography variant="body2">{role.description}</Typography>
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell>Avatar</TableCell>
-                <TableCell>Name</TableCell>
-                <TableCell>Email</TableCell>
-                <TableCell align="right">Actions</TableCell>
+                <TableCell style={{ whiteSpace: 'nowrap' }}>Avatar</TableCell>
+                <TableCell style={{ whiteSpace: 'nowrap' }}>Name</TableCell>
+                <TableCell style={{ whiteSpace: 'nowrap' }}>Email</TableCell>
+                <TableCell align="right" style={{ whiteSpace: 'nowrap' }}>Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -144,16 +174,6 @@ export default function Roles() {
               })}
             </TableBody>
           </Table>
-          <Button
-            variant="outlined"
-            color="primary"
-            onClick={() => {
-              setSelectedRole(role);
-              setOpenAddMemberDialog(true);
-            }}
-          >
-            Add Member
-          </Button>
         </div>
       ))}
 

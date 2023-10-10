@@ -431,7 +431,7 @@ export default function PopOver({
         <Stack
           spacing={3}
           sx={{
-            pt: 3,
+            pt: 1,
             pb: 5,
             px: 2.5,
           }}
