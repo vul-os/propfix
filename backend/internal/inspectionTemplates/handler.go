@@ -27,8 +27,7 @@ func (h *adaptor) Name() jsonRpcProvider.Name {
 }
 
 type CreateInspectionTemplateRequest struct {
-	Template       InspectionTemplate `json:"template"`
-	OrganizationID string             `json:"organizationId"`
+	Template InspectionTemplate `json:"template"`
 }
 
 type CreateInspectionTemplateResponse struct {
@@ -37,7 +36,7 @@ type CreateInspectionTemplateResponse struct {
 
 func (h *adaptor) CreateInspectionTemplate(r *http.Request, args *CreateInspectionTemplateRequest, reply *CreateInspectionTemplateResponse) error {
 	// Check permission and organization for the "create" action on the "inspectiontemplates" resource.
-	ok, err := h.authz.CheckPermissionAndOrgs(r, "inspectiontemplates", "create", args.OrganizationID)
+	ok, err := h.authz.CheckPermissionAndOrgs(r, "inspectiontemplates", "create", args.Template.OrganizationID)
 	if err != nil || !ok {
 		return errors.New("not permitted")
 	}
@@ -62,7 +61,7 @@ type UpdateInspectionTemplateResponse struct {
 
 func (h *adaptor) UpdateInspectionTemplate(r *http.Request, args *UpdateInspectionTemplateRequest, reply *UpdateInspectionTemplateResponse) error {
 	// Check permission and organization for the "update" action on the "inspectiontemplates" resource.
-	ok, err := h.authz.CheckPermissionAndOrgs(r, "inspectiontemplates", "update", args.OrganizationID)
+	ok, err := h.authz.CheckPermissionAndOrgs(r, "inspectiontemplates", "update", args.Template.OrganizationID)
 	if err != nil || !ok {
 		return errors.New("not permitted")
 	}
@@ -138,9 +137,9 @@ type GetAllInspectionTemplatesResponse struct {
 	Templates []InspectionTemplate `json:"templates"`
 }
 
-func (h *adaptor) GetAllInspectionItemsInspectionTemplates(r *http.Request, args *GetAllInspectionTemplatesRequest, reply *GetAllInspectionTemplatesResponse) error {
+func (h *adaptor) GetAllInspectionTemplates(r *http.Request, args *GetAllInspectionTemplatesRequest, reply *GetAllInspectionTemplatesResponse) error {
 	// Check permission and organization for the "list" action on the "inspectiontemplates" resource.
-	ok, err := h.authz.CheckPermissionAndOrgs(r, "inspectiontemplates", "list", args.OrganizationID)
+	ok, err := h.authz.CheckPermissionAndOrgs(r, "inspectiontemplates", "GetAll", args.OrganizationID)
 	if err != nil || !ok {
 		return errors.New("not permitted")
 	}

@@ -27,8 +27,7 @@ func (h *adaptor) Name() jsonRpcProvider.Name {
 }
 
 type CreateInspectionTemplateItemRequest struct {
-	Item           InspectionTemplateItem `json:"item"`
-	OrganizationID string                 `json:"organizationId"`
+	Item InspectionTemplateItem `json:"item"`
 }
 
 type CreateInspectionTemplateItemResponse struct {
@@ -37,7 +36,7 @@ type CreateInspectionTemplateItemResponse struct {
 
 func (h *adaptor) CreateInspectionTemplateItem(r *http.Request, args *CreateInspectionTemplateItemRequest, reply *CreateInspectionTemplateItemResponse) error {
 	// Check permission and organization for the "create" action on the "inspectiontemplateitems" resource.
-	ok, err := h.authz.CheckPermissionAndOrgs(r, "inspectiontemplateitems", "create", args.OrganizationID)
+	ok, err := h.authz.CheckPermissionAndOrgs(r, "inspectiontemplateitems", "create", args.Item.OrganizationID)
 	if err != nil || !ok {
 		return errors.New("not permitted")
 	}
@@ -52,8 +51,7 @@ func (h *adaptor) CreateInspectionTemplateItem(r *http.Request, args *CreateInsp
 }
 
 type UpdateInspectionTemplateItemRequest struct {
-	Item           InspectionTemplateItem `json:"item"`
-	OrganizationID string                 `json:"organizationId"`
+	Item InspectionTemplateItem `json:"item"`
 }
 
 type UpdateInspectionTemplateItemResponse struct {
@@ -62,7 +60,7 @@ type UpdateInspectionTemplateItemResponse struct {
 
 func (h *adaptor) UpdateInspectionTemplateItem(r *http.Request, args *UpdateInspectionTemplateItemRequest, reply *UpdateInspectionTemplateItemResponse) error {
 	// Check permission and organization for the "update" action on the "inspectiontemplateitems" resource.
-	ok, err := h.authz.CheckPermissionAndOrgs(r, "inspectiontemplateitems", "update", args.OrganizationID)
+	ok, err := h.authz.CheckPermissionAndOrgs(r, "inspectiontemplateitems", "update", args.Item.OrganizationID)
 	if err != nil || !ok {
 		return errors.New("not permitted")
 	}
@@ -138,7 +136,7 @@ type GetAllInspectionTemplateItemsResponse struct {
 	Items []InspectionTemplateItem `json:"items"`
 }
 
-func (h *adaptor) GetAllInspectionItemsInspectionTemplateItems(r *http.Request, args *GetAllInspectionTemplateItemsRequest, reply *GetAllInspectionTemplateItemsResponse) error {
+func (h *adaptor) GetAllInspectionTemplateItem(r *http.Request, args *GetAllInspectionTemplateItemsRequest, reply *GetAllInspectionTemplateItemsResponse) error {
 
 	ok, err := h.authz.CheckPermissionAndOrgs(r, "inspectiontemplateitems", "GetAll", args.OrganizationID)
 	if err != nil || !ok {

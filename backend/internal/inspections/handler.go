@@ -75,8 +75,7 @@ func (h *adaptor) UpdateInspection(r *http.Request, args *UpdateInspectionReques
 }
 
 type GetInspectionRequest struct {
-	InspectionID   string `json:"inspectionID"`
-	OrganizationID string // Add the OrganizationID field
+	InspectionID string `json:"id"`
 }
 
 type GetInspectionResponse struct {
