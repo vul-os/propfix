@@ -2,6 +2,9 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   Typography,
   IconButton,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -9,72 +12,113 @@ import {
   Button,
   TextField,
 } from '@mui/material';
-import { DataGrid } from '@mui/x-data-grid';
-import DeleteIcon from '@mui/icons-material/Delete';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import { DataGrid } from '@mui/x-data-grid';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { useAuthContext } from '../../contexts/auth';
-import { getAllInspectionTemplateItems, deleteInspectionTemplateItem, createInspectionTemplateItem } from '../../api/inspectionTemplateItems';
 import { useBoardContext } from '../../contexts/board';
+import { getAllInspectionTemplateItems, createInspectionTemplateItem } from '../../api/inspectionTemplateItems';
+import { getAllInspectionTemplates } from '../../api/inspectionTemplates';
+
+import InspectionTemplateItems from './inspection-template-items';
 
 export default function InspectionTemplate() {
+  const [templates, setTemplates] = useState([]);
   const [items, setItems] = useState([]);
   const [openDialog, setOpenDialog] = useState(false);
-  const [selectedItem, setSelectedItem] = useState(null);
+  const [newItem, setNewItem] = useState({});
+  const [selectedTemplateId, setSelectedTemplateId] = useState(null);
 
-  const { board, setBoard, boardLoading, jobs, setJobs } = useBoardContext();
-  const { getIdToken, activeOrganization, organizations } = useAuthContext();
-  const iconButtonStyle = { color: '#637381' };
+  const { getIdToken, activeOrganization } = useAuthContext();
+  const { board } = useBoardContext();
+
+  const fetchTemplates = useCallback(async () => {
+    try {
+      const token = await getIdToken();
+      const response = await getAllInspectionTemplates(activeOrganization, token);
+      console.log(response)
+      setTemplates(response.templates || []);
+    } catch (error) {
+      console.error('Error fetching inspection templates:', error);
+    }
+  }, [getIdToken, activeOrganization]);
 
   const fetchItems = useCallback(async () => {
     try {
       const token = await getIdToken();
       const response = await getAllInspectionTemplateItems(activeOrganization, token);
-      console.log(response);
+      console.log(response)
       setItems(response.items || []);
     } catch (error) {
       console.error('Error fetching inspection template items:', error);
     }
-  }, [getIdToken]);
+  }, [getIdToken, activeOrganization]);
 
   useEffect(() => {
     if (activeOrganization) {
+      fetchTemplates();
       fetchItems();
     }
-  }, [activeOrganization]);
+  }, [activeOrganization, fetchTemplates, fetchItems]);
 
-  const handleRefreshItems = async () => {
-    await fetchItems();
+  const groupItemsByTemplate = () => {
+    const groupedItems = {};
+  
+    // Map the templates to their respective items
+    templates.forEach((template) => {
+      const templateId = template.id;
+      groupedItems[templateId] = items.filter((item) => item.inspectionTemplateID === templateId);
+    });
+  
+    return groupedItems;
   };
+  
 
-  const handleAddNewRow = () => {
+  const handleAddNewRow = (templateId) => {
+    setNewItem({
+      orderIndex: 0,
+      item: '',
+      inspectionTemplateID: templateId,
+      createdAt: new Date().toISOString(),
+    });
+    setSelectedTemplateId(templateId);
     setOpenDialog(true);
   };
 
-  const initialNewItem = {
-    orderIndex: 0,
-    item: '',
-    areaID: '98d9cbff-77f3-4431-aee0-0284e916a155',
-    inspectionTemplateID: '98d9cbff-77f3-4431-aee0-0284e916a155',
-    createdAt: new Date().toISOString(),
-  };
-
-  const [newItem, setNewItem] = useState(initialNewItem);
-
   const handleCloseDialog = () => {
-    setNewItem(initialNewItem);
     setOpenDialog(false);
   };
 
   const handleCreateNewItem = async () => {
     try {
-      const it = {...newItem, 'organizationId': activeOrganization}
-      console.log(newItem, it)
+      const itemToCreate = {
+        ...newItem,
+        organizationId: activeOrganization,
+      };
       const token = await getIdToken();
-      await createInspectionTemplateItem(it, token);
-      await fetchItems();
-      handleCloseDialog();
+      await createInspectionTemplateItem(itemToCreate, token);
+      fetchItems();
+      setOpenDialog(false);
     } catch (error) {
       console.error('Error creating a new inspection template item:', error);
+    }
+  };
+
+  const handleRemoveItem = (itemId) => {
+    try {
+      // Implement item removal logic here
+      // You may call an API or update the state directly
+    } catch (error) {
+      console.error('Error removing an inspection template item:', error);
+    }
+  };
+
+  const handleUpdateItem = (itemId, templateId) => {
+    try {
+      // Implement item update logic here
+      // You may call an API or update the state directly
+    } catch (error) {
+      console.error('Error updating an inspection template item:', error);
     }
   };
 
@@ -90,24 +134,29 @@ export default function InspectionTemplate() {
   return (
     <>
       <div style={{ display: 'flex', alignItems: 'center' }}>
-        <Typography variant="h4">Data Grid</Typography>
-        <IconButton onClick={handleRefreshItems} aria-label="Refresh">
+        <Typography variant="h4">Inspection Templates</Typography>
+        <IconButton onClick={fetchItems} aria-label="Refresh">
           <RefreshIcon />
         </IconButton>
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={handleAddNewRow} aria-label="AddNewRow">
-        
-          Add New Row
-        </Button>
       </div>
 
-      <DataGrid
-        rows={items}
-        columns={columns}
-        autoHeight
-      />
+      {templates.map((template) => (
+        <Accordion key={template.id}>
+          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+            <Typography variant="h6">{template.name}</Typography>
+          </AccordionSummary>
+          <AccordionDetails>
+            <Typography>Template ID: {template.id}</Typography>
+            <InspectionTemplateItems
+              templateId={template.id}
+              items={groupItemsByTemplate()[template.id] || []}
+              columns={columns}
+              removeItem={handleRemoveItem}
+              updateItem={handleUpdateItem}
+            />
+          </AccordionDetails>
+        </Accordion>
+      ))}
 
       <Dialog open={openDialog} onClose={handleCloseDialog}>
         <DialogTitle>Add New Row</DialogTitle>
@@ -116,28 +165,14 @@ export default function InspectionTemplate() {
             label="Order Index"
             type="number"
             value={newItem.orderIndex}
-            onChange={(e) => setNewItem({ ...newItem, orderIndex: e.target.value })}
+            onChange={(e) =>
+              setNewItem({ ...newItem, orderIndex: e.target.value })
+            }
           />
           <TextField
             label="Item"
             value={newItem.item}
             onChange={(e) => setNewItem({ ...newItem, item: e.target.value })}
-          />
-          <TextField
-            label="Area ID"
-            value={newItem.areaID}
-            onChange={(e) => setNewItem({ ...newItem, areaID: e.target.value })}
-          />
-          <TextField
-            label="Template ID"
-            value={newItem.inspectionTemplateID}
-            onChange={(e) => setNewItem({ ...newItem, inspectionTemplateID: e.target.value })}
-          />
-          <TextField
-            label="Created At"
-            type="datetime-local"
-            value={newItem.createdAt}
-            onChange={(e) => setNewItem({ ...newItem, createdAt: e.target.value })}
           />
         </DialogContent>
         <DialogActions>
