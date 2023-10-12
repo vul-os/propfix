@@ -25,7 +25,6 @@ import (
 	"github.com/exolutionza/propfix-backend-go/internal/columns"
 	"github.com/exolutionza/propfix-backend-go/internal/dashboard"
 	"github.com/exolutionza/propfix-backend-go/internal/events"
-	"github.com/exolutionza/propfix-backend-go/internal/inspectionAreas"
 	"github.com/exolutionza/propfix-backend-go/internal/inspectionItems"
 	"github.com/exolutionza/propfix-backend-go/internal/inspectionTemplateItems"
 	"github.com/exolutionza/propfix-backend-go/internal/inspectionTemplates"
@@ -96,7 +95,6 @@ func Server() {
 	roleStore := roles.NewRoleStore(dbpool)
 	inspectionTemplateItemsStore := inspectionTemplateItems.NewInspectionTemplateItemsStore(dbpool)
 	inspectionTemplatesStore := inspectionTemplates.NewInspectionTemplatesStore(dbpool)
-	inspectionAreasStore := inspectionAreas.NewInspectionAreasStore(dbpool)
 	inspectionsStore := inspections.NewInspectionsStore(dbpool)
 	inspectionItemsStore := inspectionItems.NewInspectionItemsStore(dbpool)
 
@@ -127,7 +125,6 @@ func Server() {
 				dashboard.New(dbpool, authorizer),
 				inspectionTemplateItems.New(inspectionTemplateItemsStore, authorizer),
 				inspectionTemplates.New(inspectionTemplatesStore, authorizer),
-				inspectionAreas.New(inspectionAreasStore, authorizer),
 				inspections.New(inspectionsStore, authorizer),
 				inspectionItems.New(inspectionItemsStore, authorizer),
 			},

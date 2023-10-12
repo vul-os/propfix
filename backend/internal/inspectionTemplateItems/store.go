@@ -12,7 +12,6 @@ type InspectionTemplateItem struct {
 	ID                   string    `json:"id"`
 	OrderIndex           int       `json:"orderIndex"`
 	Item                 string    `json:"item"`
-	AreaID               string    `json:"areaID"`
 	InspectionTemplateID string    `json:"inspectionTemplateID"`
 	CreatedAt            time.Time `json:"createdAt"`
 	OrganizationID       string    `json:"organizationId"`
@@ -32,12 +31,12 @@ func (is *Store) Create(item InspectionTemplateItem) (string, error) {
 	ctx := context.Background()
 	itemID := uuid.New().String()
 	query := `
-		INSERT INTO inspection_template_items (id, order_index, item, area_id, inspection_template_id, created_at, organization_id)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		INSERT INTO inspection_template_items (id, order_index, item, inspection_template_id, created_at, organization_id)
+		VALUES ($1, $2, $3, $4, $5, $6)
 		RETURNING id
 	`
 
-	err := is.pool.QueryRow(ctx, query, itemID, item.OrderIndex, item.Item, item.AreaID, item.InspectionTemplateID, time.Now(), item.OrganizationID).Scan(&itemID)
+	err := is.pool.QueryRow(ctx, query, itemID, item.OrderIndex, item.Item, item.InspectionTemplateID, time.Now(), item.OrganizationID).Scan(&itemID)
 	if err != nil {
 		return "", err
 	}
@@ -49,11 +48,11 @@ func (is *Store) Update(item InspectionTemplateItem) error {
 	ctx := context.Background()
 	query := `
 		UPDATE inspection_template_items
-		SET order_index = $1, item = $2, area_id = $3, inspection_template_id = $4
-		WHERE id = $5 AND organization_id = $6
+		SET order_index = $1, item = $2, inspection_template_id = $3
+		WHERE id = $4 AND organization_id = $5
 	`
 
-	_, err := is.pool.Exec(ctx, query, item.OrderIndex, item.Item, item.AreaID, item.InspectionTemplateID, item.ID, item.OrganizationID)
+	_, err := is.pool.Exec(ctx, query, item.OrderIndex, item.Item, item.InspectionTemplateID, item.ID, item.OrganizationID)
 	if err != nil {
 		return err
 	}
@@ -63,14 +62,14 @@ func (is *Store) Update(item InspectionTemplateItem) error {
 func (is *Store) Get(id string) (*InspectionTemplateItem, error) {
 	ctx := context.Background()
 	query := `
-		SELECT id, order_index, item, area_id, inspection_template_id, created_at, organization_id
+		SELECT id, order_index, item, inspection_template_id, created_at, organization_id
 		FROM inspection_template_items
 		WHERE id = $1
 	`
 	row := is.pool.QueryRow(ctx, query, id)
 
 	var item InspectionTemplateItem
-	err := row.Scan(&item.ID, &item.OrderIndex, &item.Item, &item.AreaID, &item.InspectionTemplateID, &item.CreatedAt, &item.OrganizationID)
+	err := row.Scan(&item.ID, &item.OrderIndex, &item.Item, &item.InspectionTemplateID, &item.CreatedAt, &item.OrganizationID)
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +96,7 @@ func (is *Store) GetAll(organizationID string) ([]InspectionTemplateItem, error)
 	ctx := context.Background()
 
 	query := `
-		SELECT id, order_index, item, area_id, inspection_template_id, created_at
+		SELECT id, order_index, item, inspection_template_id, created_at
 		FROM inspection_template_items
 		WHERE organization_id = $1
 	`
@@ -111,7 +110,7 @@ func (is *Store) GetAll(organizationID string) ([]InspectionTemplateItem, error)
 	items := make([]InspectionTemplateItem, 0)
 	for rows.Next() {
 		var item InspectionTemplateItem
-		err := rows.Scan(&item.ID, &item.OrderIndex, &item.Item, &item.AreaID, &item.InspectionTemplateID, &item.CreatedAt)
+		err := rows.Scan(&item.ID, &item.OrderIndex, &item.Item, &item.InspectionTemplateID, &item.CreatedAt)
 		if err != nil {
 			return nil, err
 		}

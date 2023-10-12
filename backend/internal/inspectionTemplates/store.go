@@ -10,9 +10,9 @@ import (
 
 type InspectionTemplate struct {
 	ID             string    `json:"id"`
-	Area           string    `json:"area"`
 	CreatedAt      time.Time `json:"createdAt"`
 	OrganizationID string    `json:"organizationId"`
+	Name           string    `json:"name"`
 }
 
 type Store struct {
@@ -29,12 +29,12 @@ func (is *Store) Create(template InspectionTemplate) (string, error) {
 	ctx := context.Background()
 	templateID := uuid.New().String()
 	query := `
-		INSERT INTO inspection_templates (id, area, created_at, organization_id)
-		VALUES ($1, $2, $3, $4)
-		RETURNING id
-	`
+        INSERT INTO inspection_templates (id, created_at, organization_id, name)
+        VALUES ($1, $2, $3, $4)
+        RETURNING id
+    `
 
-	err := is.pool.QueryRow(ctx, query, templateID, template.Area, time.Now(), template.OrganizationID).Scan(&templateID)
+	err := is.pool.QueryRow(ctx, query, templateID, time.Now(), template.OrganizationID, template.Name).Scan(&templateID)
 	if err != nil {
 		return "", err
 	}
@@ -45,12 +45,12 @@ func (is *Store) Create(template InspectionTemplate) (string, error) {
 func (is *Store) Update(template InspectionTemplate) error {
 	ctx := context.Background()
 	query := `
-		UPDATE inspection_templates
-		SET area = $1
-		WHERE id = $2 AND organization_id = $3
-	`
+        UPDATE inspection_templates
+        SET organization_id = $1, name = $2
+        WHERE id = $3
+    `
 
-	_, err := is.pool.Exec(ctx, query, template.Area, template.ID, template.OrganizationID)
+	_, err := is.pool.Exec(ctx, query, template.OrganizationID, template.Name, template.ID)
 	if err != nil {
 		return err
 	}
@@ -60,14 +60,14 @@ func (is *Store) Update(template InspectionTemplate) error {
 func (is *Store) Get(id string) (*InspectionTemplate, error) {
 	ctx := context.Background()
 	query := `
-		SELECT id, area, created_at, organization_id
-		FROM inspection_templates
-		WHERE id = $1
-	`
+        SELECT id, created_at, organization_id, name
+        FROM inspection_templates
+        WHERE id = $1
+    `
 	row := is.pool.QueryRow(ctx, query, id)
 
 	var template InspectionTemplate
-	err := row.Scan(&template.ID, &template.Area, &template.CreatedAt, &template.OrganizationID)
+	err := row.Scan(&template.ID, &template.CreatedAt, &template.OrganizationID, &template.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -78,9 +78,9 @@ func (is *Store) Get(id string) (*InspectionTemplate, error) {
 func (is *Store) Delete(id string) error {
 	ctx := context.Background()
 	query := `
-		DELETE FROM inspection_templates
-		WHERE id = $1
-	`
+        DELETE FROM inspection_templates
+        WHERE id = $1
+    `
 
 	_, err := is.pool.Exec(ctx, query, id)
 	if err != nil {
@@ -94,10 +94,10 @@ func (is *Store) GetAll(organizationID string) ([]InspectionTemplate, error) {
 	ctx := context.Background()
 
 	query := `
-		SELECT id, area, created_at, organization_id
-		FROM inspection_templates
-		WHERE organization_id = $1
-	`
+        SELECT id, created_at, organization_id, name
+        FROM inspection_templates
+        WHERE organization_id = $1
+    `
 
 	rows, err := is.pool.Query(ctx, query, organizationID)
 	if err != nil {
@@ -108,7 +108,7 @@ func (is *Store) GetAll(organizationID string) ([]InspectionTemplate, error) {
 	templates := make([]InspectionTemplate, 0)
 	for rows.Next() {
 		var template InspectionTemplate
-		err := rows.Scan(&template.ID, &template.Area, &template.CreatedAt, &template.OrganizationID)
+		err := rows.Scan(&template.ID, &template.CreatedAt, &template.OrganizationID, &template.Name)
 		if err != nil {
 			return nil, err
 		}

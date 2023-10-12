@@ -99,8 +99,7 @@ func (h *adaptor) GetInspectionTemplateItem(r *http.Request, args *GetInspection
 }
 
 type DeleteInspectionTemplateItemRequest struct {
-	ID             string `json:"id"`
-	OrganizationID string `json:"organizationId"`
+	ID string `json:"id"`
 }
 
 type DeleteInspectionTemplateItemResponse struct {
