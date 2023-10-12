@@ -6,4 +6,5 @@ type User struct {
 	Email           string   `json:"email"`
 	PhotoURL        string   `json:"photoUrl"`
 	OrganizationIds []string `json:"organizationIds"`
+	RoleId          string   `json:"roleId"`
 }

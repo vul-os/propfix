@@ -32,6 +32,7 @@ import (
 	"github.com/exolutionza/propfix-backend-go/internal/jobs"
 	"github.com/exolutionza/propfix-backend-go/internal/labels"
 	"github.com/exolutionza/propfix-backend-go/internal/organizations"
+	"github.com/exolutionza/propfix-backend-go/internal/pendingMembers"
 	"github.com/exolutionza/propfix-backend-go/internal/permissions"
 	"github.com/exolutionza/propfix-backend-go/internal/roles"
 
@@ -97,6 +98,7 @@ func Server() {
 	inspectionTemplatesStore := inspectionTemplates.NewInspectionTemplatesStore(dbpool)
 	inspectionsStore := inspections.NewInspectionsStore(dbpool)
 	inspectionItemsStore := inspectionItems.NewInspectionItemsStore(dbpool)
+	pendingMembersStore := pendingMembers.NewPendingMemberStore(dbpool)
 
 	rpcServerConfigs := []jsonRpcServer.RPCServerConfig{
 		{
@@ -113,7 +115,7 @@ func Server() {
 			},
 			ServiceProviders: []jsonRpcProvider.Provider{
 				roles.New(roleStore, authorizer),
-				organizations.New(orgStore, authorizer, authClient, mgClient),
+				organizations.New(orgStore, pendingMembersStore, roleStore, authorizer, authClient, mgClient),
 				permissions.New(dbpool, authorizer),
 				buildings.New(buildingsStore, authorizer),
 				labels.New(labelStore, authorizer),
