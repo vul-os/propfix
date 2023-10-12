@@ -5,8 +5,8 @@ const API_BASE_URL = `${config.apiUrl}/api/authenticated`;
 
 export async function createInspectionTemplate(template, idToken) {
   try {
-    const params = [template];
-    return await jsonRpcRequest('InspectionTemplates.CreateTemplate', params, idToken);
+    const params = [{template}];
+    return await jsonRpcRequest('InspectionTemplates.CreateInspectionTemplate', params, idToken);
   } catch (error) {
     console.error('Error creating inspection template:', error);
     return null;
