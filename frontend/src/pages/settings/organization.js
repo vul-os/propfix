@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Table,
   TableBody,
@@ -25,6 +25,7 @@ import {
   removePendingMember,
   removeMember,
 } from '../../api/organizations';
+import { getAllRoles, removeMember as removeMemberOrg, addMember } from '../../api/roles';
 
 export default function Organization() {
   const theme = useTheme();
@@ -35,6 +36,7 @@ export default function Organization() {
   const [inviteEmailError, setInviteEmailError] = useState(null); // State for invite email error
   const [pendingMemberToDelete, setPendingMemberToDelete] = useState(null);
   const [memberToDelete, setMemberToDelete] = useState(null);
+  const [roles, setRoles] = useState([]);
 
   const { getIdToken, activeOrganization, organizations } = useAuthContext();
   const currentOrg = organizations.find((org) => org.id === activeOrganization);
@@ -49,6 +51,16 @@ export default function Organization() {
       console.error('Error fetching members:', error);
     }
   };
+
+  const fetchRoles = useCallback(async () => {
+    try {
+      const token = await getIdToken();
+      const response = await getAllRoles(activeOrganization, token);
+      setRoles(response?.roles || []);
+    } catch (error) {
+      console.error('Error fetching roles:', error);
+    }
+  }, [activeOrganization, getIdToken]);
 
   useEffect(() => {
     if (activeOrganization) {
