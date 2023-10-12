@@ -8,10 +8,9 @@ import (
 )
 
 type Organization struct {
-	ID             string   `json:"id"`
-	Name           string   `json:"name"`
-	Members        []string `json:"members"`
-	PendingMembers []string `json:"pending_members"`
+	ID      string   `json:"id"`
+	Name    string   `json:"name"`
+	Members []string `json:"members"`
 }
 
 type OrganizationStore struct {
@@ -28,11 +27,11 @@ func (s *OrganizationStore) CreateOrganization(org *Organization) error {
 	ctx := context.Background()
 
 	query := `
-		INSERT INTO organizations (id, name, members, pending_members)
-		VALUES ($1, $2, $3, $4)
+		INSERT INTO organizations (id, name, members)
+		VALUES ($1, $2, $3)
 	`
 
-	_, err := s.pool.Exec(ctx, query, org.ID, org.Name, org.Members, org.PendingMembers)
+	_, err := s.pool.Exec(ctx, query, org.ID, org.Name, org.Members)
 	if err != nil {
 		fmt.Println("Error creating organization:", err)
 		return err
@@ -46,11 +45,11 @@ func (s *OrganizationStore) UpdateOrganization(org *Organization) error {
 
 	query := `
 		UPDATE organizations
-		SET name = $1, members = $2, pending_members = $3
-		WHERE id = $4
+		SET name = $1, members = $2
+		WHERE id = $3
 	`
 
-	_, err := s.pool.Exec(ctx, query, org.Name, org.Members, org.PendingMembers, org.ID)
+	_, err := s.pool.Exec(ctx, query, org.Name, org.Members, org.ID)
 	if err != nil {
 		fmt.Println("Error updating organization:", err)
 		return err
@@ -63,13 +62,13 @@ func (s *OrganizationStore) GetOrganizationByID(orgID string) (*Organization, er
 	ctx := context.Background()
 
 	query := `
-		SELECT id, name, members, pending_members
+		SELECT id, name, members
 		FROM organizations
 		WHERE id = $1
 	`
 
 	var org Organization
-	err := s.pool.QueryRow(ctx, query, orgID).Scan(&org.ID, &org.Name, &org.Members, &org.PendingMembers)
+	err := s.pool.QueryRow(ctx, query, orgID).Scan(&org.ID, &org.Name, &org.Members)
 	if err != nil {
 		fmt.Println("Error getting organization:", err)
 		return nil, err
@@ -161,109 +160,56 @@ func (s *OrganizationStore) RemoveMember(orgID, userID string) error {
 	return nil
 }
 
-func (s *OrganizationStore) AddPendingMember(orgID, userID string) error {
-	ctx := context.Background()
-
-	query := `
-		UPDATE organizations
-		SET pending_members = array_append(pending_members, $1)
-		WHERE id = $2
-	`
-
-	_, err := s.pool.Exec(ctx, query, userID, orgID)
-	if err != nil {
-		fmt.Println("Error adding pending member to organization:", err)
-		return err
-	}
-
-	return nil
-}
-
-func (s *OrganizationStore) RemovePendingMember(orgID, userID string) error {
-	ctx := context.Background()
-
-	query := `
-		UPDATE organizations
-		SET pending_members = array_remove(pending_members, $1)
-		WHERE id = $2
-	`
-
-	_, err := s.pool.Exec(ctx, query, userID, orgID)
-	if err != nil {
-		fmt.Println("Error removing pending member from organization:", err)
-		return err
-	}
-
-	return nil
-}
-
 func (s *OrganizationStore) GetAllOrganizations(userID string) ([]Organization, error) {
 	ctx := context.Background()
 
 	query := `
-		SELECT id, name, members, pending_members
+		SELECT id, name, members
 		FROM organizations
 		WHERE $1 = ANY(members)
 	`
 
 	rows, err := s.pool.Query(ctx, query, userID)
 	if err != nil {
-		fmt.Println("Error getting all organizations:", err)
+		fmt.Println("Error retrieving organizations for user:", err)
 		return nil, err
 	}
 	defer rows.Close()
 
-	var orgs []Organization
+	var organizations []Organization
 	for rows.Next() {
 		var org Organization
-		err := rows.Scan(&org.ID, &org.Name, &org.Members, &org.PendingMembers)
+		err := rows.Scan(&org.ID, &org.Name, &org.Members)
 		if err != nil {
-			fmt.Println("Error scanning organization data:", err)
+			fmt.Println("Error scanning organization:", err)
 			return nil, err
 		}
-		orgs = append(orgs, org)
+		organizations = append(organizations, org)
 	}
 
-	return orgs, nil
+	if err = rows.Err(); err != nil {
+		fmt.Println("Error processing rows:", err)
+		return nil, err
+	}
+
+	return organizations, nil
 }
 
-func (s *OrganizationStore) CheckPendingMember(orgID, email string) (bool, error) {
+func (s *OrganizationStore) GetAllMembers(orgID string) ([]string, error) {
 	ctx := context.Background()
 
 	query := `
-		SELECT EXISTS(
-			SELECT 1 
-			FROM organizations 
-			WHERE id = $1 AND $2 = ANY(pending_members)
-		)
-	`
-
-	var exists bool
-	err := s.pool.QueryRow(ctx, query, orgID, email).Scan(&exists)
-	if err != nil {
-		fmt.Println("Error checking pending member:", err)
-		return false, err
-	}
-
-	return exists, nil
-}
-
-func (s *OrganizationStore) GetAllMembers(orgID string) ([]string, []string, error) {
-	ctx := context.Background()
-
-	query := `
-        SELECT members, pending_members
+        SELECT members
         FROM organizations
         WHERE id = $1
     `
 
 	var members []string
-	var pendingMembers []string
-	err := s.pool.QueryRow(ctx, query, orgID).Scan(&members, &pendingMembers)
+	err := s.pool.QueryRow(ctx, query, orgID).Scan(&members)
 	if err != nil {
 		fmt.Println("Error getting members for organization:", err)
-		return nil, nil, err
+		return nil, err
 	}
 
-	return members, pendingMembers, nil
+	return members, nil
 }

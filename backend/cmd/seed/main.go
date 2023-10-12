@@ -260,6 +260,23 @@ func createInspectionsTable(dbpool *pgxpool.Pool) error {
 	return nil
 }
 
+func createPendingMembersTable(dbpool *pgxpool.Pool) error {
+	ctx := context.Background()
+
+	_, err := dbpool.Exec(ctx, `
+		CREATE TABLE IF NOT EXISTS pending_members (
+			id TEXT PRIMARY KEY,
+			email TEXT NOT NULL,
+			organization_id TEXT NOT NULL,
+			role_id TEXT
+		)
+	`)
+	if err != nil {
+		return fmt.Errorf("Error creating pending_members table: %v", err)
+	}
+	return nil
+}
+
 func main() {
 	// neon.tech
 	connStr := "user=exolutiontech password=***REMOVED-DB-PASSWORD*** dbname=neondb host=ep-autumn-math-44120355.us-east-2.aws.neon.tech sslmode=verify-full"
@@ -336,6 +353,11 @@ func main() {
 	err = createInspectionsTable(dbpool)
 	if err != nil {
 		log.Fatal("Error creating inspections table: ", err)
+	}
+
+	err = createPendingMembersTable(dbpool)
+	if err != nil {
+		log.Fatal("Error creating pending members table: ", err)
 	}
 
 	// Call other create table functions here
