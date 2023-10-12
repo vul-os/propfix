@@ -186,8 +186,81 @@ func createLabelsTable(dbpool *pgxpool.Pool) error {
 	return nil
 }
 
-func main() {
+func createInspectionItemsTable(dbpool *pgxpool.Pool) error {
+	ctx := context.Background()
 
+	_, err := dbpool.Exec(ctx, `
+        CREATE TABLE IF NOT EXISTS inspection_items (
+            id TEXT PRIMARY KEY,
+            inspection_id TEXT NOT NULL,
+            inspection_template_id TEXT NOT NULL,
+            organization_id TEXT NOT NULL,  
+            checked BOOLEAN,
+            checked_at TIMESTAMPTZ,
+            comments TEXT
+        )
+    `)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func createInspectionTemplateItemsTable(dbpool *pgxpool.Pool) error {
+	ctx := context.Background()
+
+	_, err := dbpool.Exec(ctx, `
+        CREATE TABLE IF NOT EXISTS inspection_template_items (
+            id TEXT PRIMARY KEY,
+            order_index INTEGER,
+            item TEXT NOT NULL,
+            inspection_template_id TEXT NOT NULL,
+            organization_id TEXT NOT NULL,  
+            created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+    `)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func createInspectionTemplatesTable(dbpool *pgxpool.Pool) error {
+	ctx := context.Background()
+
+	_, err := dbpool.Exec(ctx, `
+        CREATE TABLE IF NOT EXISTS inspection_templates (
+            id TEXT PRIMARY KEY,
+			name TEXT NOT NULL,
+            organization_id TEXT NOT NULL,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+    `)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func createInspectionsTable(dbpool *pgxpool.Pool) error {
+	ctx := context.Background()
+
+	_, err := dbpool.Exec(ctx, `
+        CREATE TABLE IF NOT EXISTS inspections (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            schedule_date TIMESTAMPTZ NOT NULL,
+            assignee_ids TEXT[],
+            organization_id TEXT NOT NULL
+        )
+    `)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func main() {
 	// neon.tech
 	connStr := "user=exolutiontech password=***REMOVED-DB-PASSWORD*** dbname=neondb host=ep-autumn-math-44120355.us-east-2.aws.neon.tech sslmode=verify-full"
 	dbpool, err := pgxpool.Connect(context.Background(), connStr)
@@ -240,8 +313,31 @@ func main() {
 	if err != nil {
 		log.Fatal("Error creating labels table: ", err)
 	}
+
+	// Create the InspectionItems table
+	err = createInspectionItemsTable(dbpool)
+	if err != nil {
+		log.Fatal("Error creating inspection_items table: ", err)
+	}
+
+	// Create the InspectionTemplateItems table
+	err = createInspectionTemplateItemsTable(dbpool)
+	if err != nil {
+		log.Fatal("Error creating inspection_template_items table: ", err)
+	}
+
+	// Create the InspectionTemplates table
+	err = createInspectionTemplatesTable(dbpool)
+	if err != nil {
+		log.Fatal("Error creating inspection_templates table: ", err)
+	}
+
+	// Create the Inspections table
+	err = createInspectionsTable(dbpool)
+	if err != nil {
+		log.Fatal("Error creating inspections table: ", err)
+	}
+
 	// Call other create table functions here
-
 	// ALTER TABLE ColumnJobLinks ADD CONSTRAINT unique_job_column UNIQUE(job_id, column_id);
-
 }
