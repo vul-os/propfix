@@ -214,7 +214,6 @@ func createInspectionTemplateItemsTable(dbpool *pgxpool.Pool) error {
             id TEXT PRIMARY KEY,
             order_index INTEGER,
             item TEXT NOT NULL,
-            area_id TEXT NOT NULL,
             inspection_template_id TEXT NOT NULL,
             organization_id TEXT NOT NULL,  
             created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -232,7 +231,7 @@ func createInspectionTemplatesTable(dbpool *pgxpool.Pool) error {
 	_, err := dbpool.Exec(ctx, `
         CREATE TABLE IF NOT EXISTS inspection_templates (
             id TEXT PRIMARY KEY,
-            area TEXT NOT NULL,
+			name TEXT NOT NULL,
             organization_id TEXT NOT NULL,
             created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
         )
@@ -252,22 +251,6 @@ func createInspectionsTable(dbpool *pgxpool.Pool) error {
             name TEXT NOT NULL,
             schedule_date TIMESTAMPTZ NOT NULL,
             assignee_ids TEXT[],
-            organization_id TEXT NOT NULL
-        )
-    `)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func createInspectionAreasTable(dbpool *pgxpool.Pool) error {
-	ctx := context.Background()
-
-	_, err := dbpool.Exec(ctx, `
-        CREATE TABLE IF NOT EXISTS inspection_areas (
-            id TEXT PRIMARY KEY,
-            area TEXT NOT NULL,
             organization_id TEXT NOT NULL
         )
     `)
@@ -329,12 +312,6 @@ func main() {
 	err = createColumnJobLinksTable(dbpool)
 	if err != nil {
 		log.Fatal("Error creating labels table: ", err)
-	}
-
-	// Create the InspectionAreas table
-	err = createInspectionAreasTable(dbpool)
-	if err != nil {
-		log.Fatal("Error creating inspection_areas table: ", err)
 	}
 
 	// Create the InspectionItems table
