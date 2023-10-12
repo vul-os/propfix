@@ -168,7 +168,7 @@
               </filter>
             </defs>
           </svg>
-          <span class="font-bold font-display">PropFix</span>
+          <span class="font-bold font-display" style="color: #5B4B49;">PropFix</span>
         </a>
         <button
           @click="open = !open"
@@ -195,33 +195,33 @@
           </svg>
         </button>
       </div>
-      <nav
+            <nav
         :class="{'flex': open, 'hidden': !open}"
-        class="flex-col items-center flex-grow hidden md:pb-0 md:flex md:justify-end md:flex-row">
+        class="flex-col items-center flex-grow hidden md:pb-0 md:flex md:justify-end md:flex-row"
+        style="background-color: #EBF2FA;">
         <a
-          class="px-2 lg:px-6 py-2 md:px-3 text-sm font-medium text-black hover:text-accent-400 lg:ml-auto"
-          href="/#features">Features</a
-        >
+          class="px-2 lg:px-6 py-2 md:px-3 text-sm font-medium hover:text-accent-400 lg:ml-auto"
+          href="/#features"
+          style="color: #5B4B49;">Features</a>
         <a
-          class="px-2 lg:px-6 py-2 md:px-3 text-sm font-medium text-black hover:text-accent-400"
-          href="/#pricing">Pricing</a
-        >
-
+          class="px-2 lg:px-6 py-2 md:px-3 text-sm font-medium hover:text-accent-400"
+          href="/#pricing"
+          style="color: #5B4B49;">Pricing</a>
         <a
-          class="px-2 lg:px-6 py-2 md:px-3 text-sm font-medium text-black hover:text-accent-400"
-          href="/faq">
-          Faq</a
-        >
-
+          class="px-2 lg:px-6 py-2 md:px-3 text-sm font-medium hover:text-accent-400"
+          href="/faq"
+          style="color: #5B4B49;">Faq</a>
         <div class="inline-flex items-center gap-2 list-none lg:ml-auto">
           <a
             href="/signup"
-            class="block px-4 py-2 mt-2 text-sm font-medium text-black md:mt-0 hover:text-accent-400 focus:outline-none focus:shadow-outline">
+            class="block px-4 py-2 mt-2 text-sm font-medium hover:text-accent-400 focus:outline-none focus:shadow-outline"
+            style="color: #5B4B49;">
             Sign up
           </a>
           <a
             href="/login"
-            class="inline-flex items-center h-8 justify-center px-4 py-2 text-sm font-medium text-black bg-gray-100 rounded-lg group focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 hover:bg-gray-50 active:bg-gray-200 active:text-accent-400 focus-visible:outline-black">
+            class="inline-flex items-center h-8 justify-center px-4 py-2 text-sm font-medium bg-gray-100 rounded-lg group focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 hover:bg-gray-50 active:bg-gray-200 active:text-accent-400 focus-visible:outline-black"
+            style="color: #5B4B49;">
             Log in
           </a>
         </div>
