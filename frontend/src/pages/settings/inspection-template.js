@@ -13,12 +13,13 @@ import {
   TextField,
 } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import AddIcon from '@mui/icons-material/Add'; // Import the Add icon
 import { DataGrid } from '@mui/x-data-grid';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { useAuthContext } from '../../contexts/auth';
 import { useBoardContext } from '../../contexts/board';
 import { getAllInspectionTemplateItems, createInspectionTemplateItem } from '../../api/inspectionTemplateItems';
-import { getAllInspectionTemplates } from '../../api/inspectionTemplates';
+import { getAllInspectionTemplates, createInspectionTemplate } from '../../api/inspectionTemplates';
 
 import InspectionTemplateItems from './inspection-template-items';
 
@@ -26,6 +27,7 @@ export default function InspectionTemplate() {
   const [templates, setTemplates] = useState([]);
   const [items, setItems] = useState([]);
   const [openDialog, setOpenDialog] = useState(false);
+  const [newTemplate, setNewTemplate] = useState({ name: '' }); // Provide an initial state
   const [newItem, setNewItem] = useState({});
   const [selectedTemplateId, setSelectedTemplateId] = useState(null);
 
@@ -36,7 +38,7 @@ export default function InspectionTemplate() {
     try {
       const token = await getIdToken();
       const response = await getAllInspectionTemplates(activeOrganization, token);
-      console.log(response)
+      console.log(response);
       setTemplates(response.templates || []);
     } catch (error) {
       console.error('Error fetching inspection templates:', error);
@@ -47,7 +49,7 @@ export default function InspectionTemplate() {
     try {
       const token = await getIdToken();
       const response = await getAllInspectionTemplateItems(activeOrganization, token);
-      console.log(response)
+      console.log(response);
       setItems(response.items || []);
     } catch (error) {
       console.error('Error fetching inspection template items:', error);
@@ -63,16 +65,15 @@ export default function InspectionTemplate() {
 
   const groupItemsByTemplate = () => {
     const groupedItems = {};
-  
+
     // Map the templates to their respective items
     templates.forEach((template) => {
       const templateId = template.id;
       groupedItems[templateId] = items.filter((item) => item.inspectionTemplateID === templateId);
     });
-  
+
     return groupedItems;
   };
-  
 
   const handleAddNewRow = (templateId) => {
     setNewItem({
@@ -122,6 +123,30 @@ export default function InspectionTemplate() {
     }
   };
 
+  const handleCreateTemplate = async () => {
+    try {
+      const templateToCreate = {
+        ...newTemplate,
+        organizationId: activeOrganization,
+      };
+           const itemToCreate = {
+        ...newItem,
+        organizationId: activeOrganization,
+      };
+      const token = await getIdToken();
+      await createInspectionTemplateItem(itemToCreate, token);
+      // You may call an API to create the new inspection template here
+      // After successfully creating the template, you can fetch the updated list of templates
+      // and handle any additional actions if needed
+      setOpenDialog(false);
+      fetchTemplates();
+      fetchItems();
+
+    } catch (error) {
+      console.error('Error creating a new inspection template:', error);
+    }
+  };
+
   const columns = [
     { field: 'id', headerName: 'ID', flex: 1 },
     { field: 'orderIndex', headerName: 'Order Index', flex: 1 },
@@ -138,52 +163,52 @@ export default function InspectionTemplate() {
         <IconButton onClick={fetchItems} aria-label="Refresh">
           <RefreshIcon />
         </IconButton>
-      </div>
-
-      {templates.map((template) => (
-        <Accordion key={template.id}>
-          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            <Typography variant="h6">{template.name}</Typography>
-          </AccordionSummary>
-          <AccordionDetails>
-            <Typography>Template ID: {template.id}</Typography>
-            <InspectionTemplateItems
-              templateId={template.id}
-              items={groupItemsByTemplate()[template.id] || []}
-              columns={columns}
-              removeItem={handleRemoveItem}
-              updateItem={handleUpdateItem}
+        {/* Add the "plus" button here for creating a new template */}
+        <IconButton
+            onClick={() => setOpenDialog(true)}
+            aria-label="Add"
+          >
+            <AddIcon />
+          </IconButton>
+        </div>
+  
+        {templates.map((template) => (
+          <Accordion key={template.id}>
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+              <Typography variant="h6">{template.name}</Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+              <Typography>Template ID: {template.id}</Typography>
+              <InspectionTemplateItems
+                templateId={template.id}
+                items={groupItemsByTemplate()[template.id] || []}
+                columns={columns}
+                removeItem={handleRemoveItem}
+                updateItem={handleUpdateItem}
+              />
+            </AccordionDetails>
+          </Accordion>
+        ))}
+  
+        <Dialog open={openDialog} onClose={handleCloseDialog}>
+          <DialogTitle>Add New Inspection Template</DialogTitle>
+          <DialogContent>
+            <TextField
+              label="Template Name"
+              value={newTemplate.name}
+              onChange={(e) => setNewTemplate({ ...newTemplate, name: e.target.value })}
             />
-          </AccordionDetails>
-        </Accordion>
-      ))}
-
-      <Dialog open={openDialog} onClose={handleCloseDialog}>
-        <DialogTitle>Add New Row</DialogTitle>
-        <DialogContent>
-          <TextField
-            label="Order Index"
-            type="number"
-            value={newItem.orderIndex}
-            onChange={(e) =>
-              setNewItem({ ...newItem, orderIndex: e.target.value })
-            }
-          />
-          <TextField
-            label="Item"
-            value={newItem.item}
-            onChange={(e) => setNewItem({ ...newItem, item: e.target.value })}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDialog} color="secondary">
-            Cancel
-          </Button>
-          <Button onClick={handleCreateNewItem} color="primary">
-            Save
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </>
-  );
-}
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseDialog} color="secondary">
+              Cancel
+            </Button>
+            <Button onClick={handleCreateTemplate} color="primary">
+              Save
+            </Button>
+          </DialogActions>
+        </Dialog>
+      </>
+    );
+  }
+  

@@ -10,6 +10,11 @@ export default function InspectionTemplateItems({
   removeItem,
   updateItem,
 }) {
+  const handleUpdateItem = (itemId) => {
+    // Call the updateItem function with the item ID and template ID
+    updateItem(itemId, templateId);
+  };
+
   return (
     <div>
       <DataGrid rows={items} columns={columns} autoHeight />
@@ -23,7 +28,7 @@ export default function InspectionTemplateItems({
       {items.map((item) => (
         <div key={item.id}>
           <IconButton
-            onClick={() => updateItem(item.id, templateId)}
+            onClick={() => handleUpdateItem(item.id)}
             aria-label="Update"
           >
             Update
