@@ -10,7 +10,7 @@ import Roles from './roles';
 import Labels from './labels'
 import Buildings from './building';
 import Organization from './organization';
-
+import InspectionTemplate from './inspection-template';
 
 function TabPanel(props) {
   const { children, value, index, ...other } = props;
@@ -59,6 +59,7 @@ export default function Settings() {
 
     { label: 'Buildings', content: <Buildings /> },
     { label: 'Labels', content: <Labels /> },
+    { label: 'Template', content: <InspectionTemplate /> },
     // { label: 'buildings', content: <Buildings /> },
 
   ];
