@@ -15,6 +15,7 @@ import {
   DialogActions,
   TextField,
   IconButton,
+  MenuItem, Select
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { useTheme } from '@mui/material/styles';
@@ -37,6 +38,10 @@ export default function Organization() {
   const [pendingMemberToDelete, setPendingMemberToDelete] = useState(null);
   const [memberToDelete, setMemberToDelete] = useState(null);
   const [roles, setRoles] = useState([]);
+  const [inviteRole, setInviteRole] = useState('');
+
+  const [roleMenuAnchorEl, setRoleMenuAnchorEl] = useState(null);
+  const [selectedRoleId, setSelectedRoleId] = useState('');
 
   const { getIdToken, activeOrganization, organizations } = useAuthContext();
   const currentOrg = organizations.find((org) => org.id === activeOrganization);
@@ -65,6 +70,7 @@ export default function Organization() {
   useEffect(() => {
     if (activeOrganization) {
       fetchMembers();
+      fetchRoles();
     }
   }, [activeOrganization]);
 
@@ -80,22 +86,30 @@ export default function Organization() {
 
   const handleInvite = async () => {
     try {
-      setInviteEmailError(null); // Reset invite email error
+        setInviteEmailError(null); // Reset invite email error
 
-      // Validate email format for invite
-      if (!isValidEmail(inviteEmail)) {
-        setInviteEmailError('Invalid email address');
-        return;
-      }
+        // Validate email format for invite
+        if (!isValidEmail(inviteEmail)) {
+            setInviteEmailError('Invalid email address');
+            return;
+        }
 
-      const token = await getIdToken();
-      await inviteMember(inviteEmail, activeOrganization, token);
-      console.log(`Successfully invited member with email: ${inviteEmail}`);
-      handleCloseDialog();
+        const token = await getIdToken();
+        await inviteMember(inviteEmail, activeOrganization, inviteRole, token);
+        console.log(`Successfully invited member with email: ${inviteEmail} and role: ${inviteRole}`);
+        handleCloseDialog();
     } catch (error) {
-      console.error(`Error inviting member: ${error}`);
-    }
+        console.error(`Error inviting member: ${error}`);
+    } 
   };
+
+
+  const handleRoleChange = (event, memberId) => {
+    console.log(`Changing role of member ${memberId} to ${event.target.value}`);
+    // Call your API or backend function to actually change the role here
+    // Example: updateRoleForMember(memberId, event.target.value);
+  };
+
 
   const iconButtonStyle = { color: '#637381' };
 
@@ -157,29 +171,40 @@ export default function Organization() {
       </Button>
 
       <Dialog open={openInviteDialog} onClose={handleCloseDialog}>
-        <DialogTitle>Invite Member</DialogTitle>
-        <DialogContent>
-          <TextField
-            autoFocus
-            margin="dense"
-            label="Member Email"
-            type="email"
-            fullWidth
-            value={inviteEmail}
-            onChange={(e) => setInviteEmail(e.target.value)}
-            error={!!inviteEmailError} // Highlight invite email field red if there's an error
-            helperText={inviteEmailError} // Display invite email error message
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDialog} color="primary">
-            Cancel
-          </Button>
-          <Button onClick={handleInvite} color="primary">
-            Invite
-          </Button>
-        </DialogActions>
+          <DialogTitle>Invite Member</DialogTitle>
+          <DialogContent>
+              <TextField
+                  autoFocus
+                  margin="dense"
+                  label="Member Email"
+                  type="email"
+                  fullWidth
+                  value={inviteEmail}
+                  onChange={(e) => setInviteEmail(e.target.value)}
+                  error={!!inviteEmailError} 
+                  helperText={inviteEmailError}
+              />
+              <Select
+                  value={inviteRole}
+                  onChange={(e) => setInviteRole(e.target.value)}
+                  fullWidth
+                  style={{ marginTop: '16px' }}
+              >
+                  {roles.map((role) => (
+                      <MenuItem key={role.id} value={role.id}>{role.name}</MenuItem>
+                  ))}
+              </Select>
+          </DialogContent>
+          <DialogActions>
+              <Button onClick={handleCloseDialog} color="primary">
+                  Cancel
+              </Button>
+              <Button onClick={handleInvite} color="primary">
+                  Invite
+              </Button>
+          </DialogActions>
       </Dialog>
+
       
       <div style={{ overflowX: 'auto' }}>
       <Table>
@@ -188,6 +213,7 @@ export default function Organization() {
             <TableCell style={{ whiteSpace: 'nowrap' }}>Avatar</TableCell>
             <TableCell style={{ whiteSpace: 'nowrap' }}>Name</TableCell>
             <TableCell style={{ whiteSpace: 'nowrap' }}>Email</TableCell>
+            <TableCell style={{ whiteSpace: 'nowrap' }}>Role</TableCell> 
             <TableCell style={{ whiteSpace: 'nowrap' }}>Actions</TableCell>
           </TableRow>
         </TableHead>
@@ -199,6 +225,17 @@ export default function Organization() {
               </TableCell>
               <TableCell>{member.displayName || 'N/A'}</TableCell>
               <TableCell>{member.email}</TableCell>
+              <TableCell>
+                  <Select
+                    value={member.roleId || ''}
+                    onChange={(e) => handleRoleChange(e, member.id)}
+                    displayEmpty
+                  >
+                    {roles.map((role) => (
+                      <MenuItem key={role.id} value={role.id}>{role.name}</MenuItem>
+                    ))}
+                  </Select>
+                </TableCell>
               <TableCell>
                 <IconButton
                   color="secondary"
