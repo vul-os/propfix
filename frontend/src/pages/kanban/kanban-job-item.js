@@ -112,7 +112,7 @@ export default function KanbanJobItem({ job, members, index, openPopUp, setOpenP
     if (labels) { // Use the 'labels' prop
       return (
         <Stack direction="row" alignItems="center" spacing={1}>
-          {job.labelIds.map((label) => {
+          {job.labelIds?.map((label) => {
             console.log('RenderLabels called'); // Add this line
             console.log('Label ID:', label);
             console.log('Label:', labels[label]);
@@ -120,9 +120,9 @@ export default function KanbanJobItem({ job, members, index, openPopUp, setOpenP
 
             return (
               <Chip
-                key={labels[label].id}
-                label={labels[label].name}
-                style={{ backgroundColor: labels[label].color, color: '#fff' }}
+                key={labels[label]?.id}
+                label={labels[label]?.name}
+                style={{ backgroundColor: labels[label]?.color, color: '#fff' }}
               />
             );
           })}
@@ -174,7 +174,7 @@ export default function KanbanJobItem({ job, members, index, openPopUp, setOpenP
               <Typography sx={{marginTop: '0px !important'}} variant="subtitle2">{job.name}</Typography>
 
               {renderInfo}
-              {renderLabels} {}
+              {renderLabels()} 
             </Stack>
             {/* <Stack spacing={2} sx={{ px: 2, py: 2.5, position: 'relative' }}>
               <Typography variant="subtitle2">{job.name}</Typography>
