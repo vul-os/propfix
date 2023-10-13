@@ -15,19 +15,6 @@ import EventIcon from '@mui/icons-material/Event';
 import HomeIcon from '@mui/icons-material/Home'; 
 import Button from '@mui/material/Button'; // Import the Button component from Material-UI
 import { Icon } from '@iconify/react';
-import Drawer from '@mui/material/Drawer';
-import TextField from '@mui/material/TextField'; // Import TextField for form control
-import FormControl from '@mui/material/FormControl';
-import { DemoContainer } from '@mui/x-date-pickers/internals/demo';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { DateField } from '@mui/x-date-pickers/DateField';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import Box from '@mui/material/Box';
-import InputLabel from '@mui/material/InputLabel'; // Add this import
-import Select from '@mui/material/Select'; // Add this import
-import MenuItem from '@mui/material/MenuItem'; // Add this import
-import Slider from '@mui/material/Slider'; // Import the Slider component from Material-UI
 import Iconify from '../../../components/iconify';
 import PopOver from '../pop-over';
 import { useBoardContext } from '../../../contexts/board'; // Import the BoardProvider context
@@ -51,7 +38,7 @@ const StyledDataGrid = styled(DataGrid)(() => ({
 }));
 
 function JobDataGrid() {
-  const { board, jobs, boardLoading } = useBoardContext(); // Use the BoardProvider context
+  const { board, jobs, boardLoading, toFilter, filters } = useBoardContext(); // Use the BoardProvider context
   const [open, setOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState(null);
 
@@ -330,12 +317,13 @@ function JobDataGrid() {
           <Icon
             icon="file-icons:microsoft-excel"
             style={{ fontSize:'20px', marginRight: '1.5px', }} // Adjust the fontSize here
-/>
+          />
           </Button>
           <Filter
-  sidebarOpen={sidebarOpen} // Ensure this is correctly connected to the filterOpen state
-  toggleSidebar={toggleSidebar}
-/>
+            sidebarOpen={sidebarOpen} // Ensure this is correctly connected to the filterOpen state
+            toggleSidebar={toggleSidebar}
+            toFilter={toFilter}
+          />
         </Stack>
       </Typography>
 
@@ -356,7 +344,7 @@ function JobDataGrid() {
             display: 'flex',
             alignItems: 'center',
             '&:hover': {
-              backgroundColor: 'white', // Change background color on hover
+              backgroundColor: 'white', // Change background color on hoEnd Datever
               color: 'black', // Change text color on hover
             },
           }}
