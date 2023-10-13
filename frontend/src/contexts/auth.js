@@ -122,6 +122,8 @@ export const AuthProvider = (props) => {
   const [organizations, setOrganizations] = useState([]);
   const [haveFetchedOrganizations, setHaveFetchedOrganizations] = useState(false);
   const [role, setRole] = useState(null)
+  const [roles, setRoles] = useState([]);
+  const [members, setMembers] = useState([]);
 
   const initialize = async () => {
     if (initialized.current) {
@@ -296,7 +298,11 @@ export const AuthProvider = (props) => {
         setActiveOrganization,
         haveFetchedOrganizations,
         organizations,
-        role
+        role,
+        roles,
+        setRoles,
+        members,
+        setMembers
       }}
     >
       {children}
