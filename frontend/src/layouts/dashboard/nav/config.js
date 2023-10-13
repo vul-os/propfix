@@ -1,13 +1,13 @@
 import HomeIcon from '@mui/icons-material/Home';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import StoreIcon from '@mui/icons-material/Store';
-import { StyledNavItemIcon } from '../../../components/nav-section/styles';
+import { Icon } from '@iconify/react';
 import SvgColor from '../../../components/svg-color';
+import { StyledNavItemIcon } from '../../../components/nav-section/styles';
 
 
 const icon = (name) =>
 <StyledNavItemIcon><SvgColor src={`/assets/icons/navbar/${name}.svg`} sx={{ width: 1, height: 1 }} /> </StyledNavItemIcon> 
-
 
 const urlIcon = (url) => 
 <ListItemIcon>
@@ -21,19 +21,20 @@ const navConfig = (role) => {
         title: 'Dashboard',
         path: '/',
         breadcrumbsIcon: <HomeIcon />,
-        icon: icon('ic_analytics'),
+        icon: <Icon icon="carbon:dashboard" style={{ marginRight: '18px', fontSize: '22px' }} />
       },
       {
         title: 'Board',
         path: '/board',
         breadcrumbsIcon:  <StoreIcon />,
-        icon: icon('ic_cart'),
+        icon: <Icon icon="system-uicons:clipboard" style={{ marginRight: '18px', fontSize: '22px' }} />
+
       },
       {
         title: 'Jobs',
         path: '/jobs',
         breadcrumbsIcon:  <StoreIcon />,
-        icon: icon('ic_cart'),
+        icon: <Icon icon="ph:briefcase-thin" style={{ marginRight: '18px', fontSize: '22px' }} />
       },
     ]
   }
@@ -43,13 +44,13 @@ const navConfig = (role) => {
       title: 'Board',
       path: '/',
       breadcrumbsIcon:  <StoreIcon />,
-      icon: icon('ic_cart'),
+      icon: <Icon icon="system-uicons:clipboard" style={{ marginRight: '18px', fontSize: '22px' }} />
     },
     {
       title: 'Jobs',
       path: '/jobs',
       breadcrumbsIcon:  <StoreIcon />,
-      icon: icon('ic_cart'),
+      icon: <Icon icon="ph:briefcase-thin" style={{ marginRight: '18px', fontSize: '22px' }} />
     },
   ]
   }
@@ -58,7 +59,7 @@ const navConfig = (role) => {
       title: 'Jobs',
       path: '/',
       breadcrumbsIcon:  <StoreIcon />,
-      icon: icon('ic_cart'),
+      icon: <Icon icon="ph:briefcase-thin" style={{ marginRight: '18px', fontSize: '22px' }} />
     },
   ]
 } 

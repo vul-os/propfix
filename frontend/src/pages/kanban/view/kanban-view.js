@@ -206,6 +206,8 @@ export default function KanbanView() {
                       setJob={setJob}
                       members={board?.members ? board.members : {}}
                       onJobAdd={onJobAdd}
+                      labels={board?.labels}
+                      
                     />
                   );
                 })

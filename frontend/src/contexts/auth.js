@@ -229,7 +229,7 @@ export const AuthProvider = (props) => {
 
   const signOut = () => {
     firebaseSignOut(auth);
-
+    setRole(null)
     dispatch({
       type: HANDLERS.SIGN_OUT
     });

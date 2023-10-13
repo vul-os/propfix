@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Table,
   TableBody,
@@ -15,6 +15,7 @@ import {
   DialogActions,
   TextField,
   IconButton,
+  MenuItem, Select
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { useTheme } from '@mui/material/styles';
@@ -25,6 +26,7 @@ import {
   removePendingMember,
   removeMember,
 } from '../../api/organizations';
+import { getAllRoles, removeMember as removeMemberOrg, addMember } from '../../api/roles';
 
 export default function Organization() {
   const theme = useTheme();
@@ -35,6 +37,11 @@ export default function Organization() {
   const [inviteEmailError, setInviteEmailError] = useState(null); // State for invite email error
   const [pendingMemberToDelete, setPendingMemberToDelete] = useState(null);
   const [memberToDelete, setMemberToDelete] = useState(null);
+  const [roles, setRoles] = useState([]);
+  const [inviteRole, setInviteRole] = useState('');
+
+  const [roleMenuAnchorEl, setRoleMenuAnchorEl] = useState(null);
+  const [selectedRoleId, setSelectedRoleId] = useState('');
 
   const { getIdToken, activeOrganization, organizations } = useAuthContext();
   const currentOrg = organizations.find((org) => org.id === activeOrganization);
@@ -50,9 +57,20 @@ export default function Organization() {
     }
   };
 
+  const fetchRoles = useCallback(async () => {
+    try {
+      const token = await getIdToken();
+      const response = await getAllRoles(activeOrganization, token);
+      setRoles(response?.roles || []);
+    } catch (error) {
+      console.error('Error fetching roles:', error);
+    }
+  }, [activeOrganization, getIdToken]);
+
   useEffect(() => {
     if (activeOrganization) {
       fetchMembers();
+      fetchRoles();
     }
   }, [activeOrganization]);
 
@@ -68,22 +86,30 @@ export default function Organization() {
 
   const handleInvite = async () => {
     try {
-      setInviteEmailError(null); // Reset invite email error
+        setInviteEmailError(null); // Reset invite email error
 
-      // Validate email format for invite
-      if (!isValidEmail(inviteEmail)) {
-        setInviteEmailError('Invalid email address');
-        return;
-      }
+        // Validate email format for invite
+        if (!isValidEmail(inviteEmail)) {
+            setInviteEmailError('Invalid email address');
+            return;
+        }
 
-      const token = await getIdToken();
-      await inviteMember(inviteEmail, activeOrganization, token);
-      console.log(`Successfully invited member with email: ${inviteEmail}`);
-      handleCloseDialog();
+        const token = await getIdToken();
+        await inviteMember(inviteEmail, activeOrganization, inviteRole, token);
+        console.log(`Successfully invited member with email: ${inviteEmail} and role: ${inviteRole}`);
+        handleCloseDialog();
     } catch (error) {
-      console.error(`Error inviting member: ${error}`);
-    }
+        console.error(`Error inviting member: ${error}`);
+    } 
   };
+
+
+  const handleRoleChange = (event, memberId) => {
+    console.log(`Changing role of member ${memberId} to ${event.target.value}`);
+    // Call your API or backend function to actually change the role here
+    // Example: updateRoleForMember(memberId, event.target.value);
+  };
+
 
   const iconButtonStyle = { color: '#637381' };
 
@@ -132,7 +158,7 @@ export default function Organization() {
     <>
       <Box mb={3}>
         <Typography variant="h6">{currentOrg?.name || 'N/A'}</Typography>
-        <Typography variant="subtitle1">{activeOrganization || 'N/A'}</Typography>
+        <Typography variant="subtitle1" style={{ fontSize: '14px', color: 'grey' }}>{activeOrganization || 'N/A'}</Typography>
       </Box>
 
       <Button
@@ -145,51 +171,75 @@ export default function Organization() {
       </Button>
 
       <Dialog open={openInviteDialog} onClose={handleCloseDialog}>
-        <DialogTitle>Invite Member</DialogTitle>
-        <DialogContent>
-          <TextField
-            autoFocus
-            margin="dense"
-            label="Member Email"
-            type="email"
-            fullWidth
-            value={inviteEmail}
-            onChange={(e) => setInviteEmail(e.target.value)}
-            error={!!inviteEmailError} // Highlight invite email field red if there's an error
-            helperText={inviteEmailError} // Display invite email error message
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDialog} color="primary">
-            Cancel
-          </Button>
-          <Button onClick={handleInvite} color="primary">
-            Invite
-          </Button>
-        </DialogActions>
+          <DialogTitle>Invite Member</DialogTitle>
+          <DialogContent>
+              <TextField
+                  autoFocus
+                  margin="dense"
+                  label="Member Email"
+                  type="email"
+                  fullWidth
+                  value={inviteEmail}
+                  onChange={(e) => setInviteEmail(e.target.value)}
+                  error={!!inviteEmailError} 
+                  helperText={inviteEmailError}
+              />
+              <Select
+                  value={inviteRole}
+                  onChange={(e) => setInviteRole(e.target.value)}
+                  fullWidth
+                  style={{ marginTop: '16px' }}
+              >
+                  {roles.map((role) => (
+                      <MenuItem key={role.id} value={role.id}>{role.name}</MenuItem>
+                  ))}
+              </Select>
+          </DialogContent>
+          <DialogActions>
+              <Button onClick={handleCloseDialog} color="primary">
+                  Cancel
+              </Button>
+              <Button onClick={handleInvite} color="primary">
+                  Invite
+              </Button>
+          </DialogActions>
       </Dialog>
 
+      
+      <div style={{ overflowX: 'auto' }}>
       <Table>
         <TableHead>
           <TableRow>
-            <TableCell>Avatar</TableCell>
-            <TableCell>Name</TableCell>
-            <TableCell>Email</TableCell>
-            <TableCell>Actions</TableCell>
+            <TableCell style={{ whiteSpace: 'nowrap' }}>Avatar</TableCell>
+            <TableCell style={{ whiteSpace: 'nowrap' }}>Name</TableCell>
+            <TableCell style={{ whiteSpace: 'nowrap' }}>Email</TableCell>
+            <TableCell style={{ whiteSpace: 'nowrap' }}>Role</TableCell> 
+            <TableCell style={{ whiteSpace: 'nowrap' }}>Actions</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
           {members.map((member) => (
-            <TableRow key={member.id}>
+            <TableRow key={member?.id}>
               <TableCell>
-                <Avatar src={member.photoUrl} alt={member.displayName || member.email} />
+                <Avatar src={member?.photoUrl} alt={member?.displayName || member?.email} />
               </TableCell>
-              <TableCell>{member.displayName || 'N/A'}</TableCell>
-              <TableCell>{member.email}</TableCell>
+              <TableCell>{member?.displayName || 'N/A'}</TableCell>
+              <TableCell>{member?.email}</TableCell>
+              <TableCell>
+                  <Select
+                    value={member?.roleId || ''}
+                    onChange={(e) => handleRoleChange(e, member.id)}
+                    displayEmpty
+                  >
+                    {roles?.map((role) => (
+                      <MenuItem key={role?.id} value={role?.id}>{role?.name}</MenuItem>
+                    ))}
+                  </Select>
+                </TableCell>
               <TableCell>
                 <IconButton
                   color="secondary"
-                  onClick={() => setMemberToDelete(member.id)}
+                  onClick={() => setMemberToDelete(member?.id)}
                   style={iconButtonStyle}
                 >
                   <DeleteIcon />
@@ -199,26 +249,28 @@ export default function Organization() {
           ))}
         </TableBody>
       </Table>
+    </div>
 
       <Box mt={5}>
         <Typography variant="h6">Pending Members</Typography>
 
         {pendingMembers.length ? (
+          <div style={{ overflowX: 'auto' }}>
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell>Email</TableCell>
-                <TableCell>Actions</TableCell>
+                <TableCell style={{ whiteSpace: 'nowrap' }}>Email</TableCell>
+                <TableCell style={{ whiteSpace: 'nowrap' }}>Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {pendingMembers.map((email, index) => (
+              {pendingMembers.map((pm, index) => (
                 <TableRow key={index}>
-                  <TableCell>{email}</TableCell>
+                  <TableCell>{pm.email}</TableCell>
                   <TableCell>
                     <IconButton
                       color="secondary"
-                      onClick={() => setPendingMemberToDelete(email)}
+                      onClick={() => setPendingMemberToDelete(pm.email)}
                       style={iconButtonStyle}
                     >
                       <DeleteIcon />
@@ -228,6 +280,7 @@ export default function Organization() {
               ))}
             </TableBody>
           </Table>
+         </div>
         ) : (
           <Typography variant="body1" color="textSecondary">
             No pending members.
