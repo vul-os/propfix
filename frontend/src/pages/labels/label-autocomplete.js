@@ -32,7 +32,7 @@ export default function LabelAutocomplete({ labels, selectedLabels, setSelectedL
         renderTags={(value, getTagProps) =>
           value.map((option, index) => (
             <Chip
-              key={option.name} // Add a unique "key" prop
+              key={option?.name || index.toString()} // Add a unique "key" prop
               label={option?.name}
               style={{ backgroundColor: option?.color, color: '#fff' }}
               {...getTagProps({ index })}
