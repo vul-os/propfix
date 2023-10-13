@@ -3,7 +3,6 @@ package organizations
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log"
 	"net/http"
 
@@ -231,8 +230,6 @@ func (a *adaptor) RemoveMember(r *http.Request, args *RemoveMemberRequest, resul
 		return err
 	}
 
-	fmt.Printf("Removed member with ID: %s\n", args.UserId)
-
 	result.Status = "Member removed from the organization"
 	return nil
 }
@@ -252,9 +249,7 @@ func (a *adaptor) RemovePendingMember(r *http.Request, args *RemovePendingMember
 		return errors.New("not permitted")
 	}
 
-	fmt.Println("Removed pending member:", args.OrganizationId, args.Email) // Log the removed pending member
-
-	err = a.store.RemovePendingMember(args.OrganizationId, args.Email)
+	err = a.pendingMembersStore.DeletePendingMember(args.OrganizationId, args.Email)
 	if err != nil {
 		return err
 	}
