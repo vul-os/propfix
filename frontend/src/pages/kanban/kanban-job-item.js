@@ -1,3 +1,4 @@
+import React, { useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { Draggable } from '@hello-pangea/dnd';
 import { useTheme } from '@mui/material/styles';
@@ -7,13 +8,16 @@ import Avatar from '@mui/material/Avatar';
 import Typography from '@mui/material/Typography';
 import Paper from '@mui/material/Paper';
 import AvatarGroup, { avatarGroupClasses } from '@mui/material/AvatarGroup'; // Import AvatarGroup and avatarGroupClasses from MUI
+import Chip from '@mui/material/Chip';
+import LabelAutocomplete from '../labels/label-autocomplete'; // Import your LabelAutocomplete component
 import Iconify from '../../components/iconify/iconify';
 import { useBoolean } from '../../hooks/use-boolean';
 import { bgBlur } from '../../theme/css';
 
 
-export default function KanbanJobItem({ job, members, index, openPopUp, setOpenPopUp, setJob, sx, ...other }) {
+export default function KanbanJobItem({ job, members, index, openPopUp, setOpenPopUp, setJob, sx, labels, selectedLabels, ...other }) {
   const theme = useTheme();
+  console.log('Labels prop:', labels);
 
   const priority = job && job.priority && job?.priority?.toLowerCase()
   const renderPriority = (
@@ -102,6 +106,35 @@ export default function KanbanJobItem({ job, members, index, openPopUp, setOpenP
     </Stack>
   );
 
+
+  const renderLabels = useCallback(() => {
+    console.log('Labels prop:', labels); // Log the labels prop to the console
+    if (labels) { // Use the 'labels' prop
+      return (
+        <Stack direction="row" alignItems="center" spacing={1}>
+          {job.labelIds.map((label) => {
+            console.log('RenderLabels called'); // Add this line
+            console.log('Label ID:', label);
+            console.log('Label:', labels[label]);
+            
+
+            return (
+              <Chip
+                key={labels[label].id}
+                label={labels[label].name}
+                style={{ backgroundColor: labels[label].color, color: '#fff' }}
+              />
+            );
+          })}
+        </Stack>
+      );
+    }
+    return null;
+  }, [job, labels]); // Include 'job' and 'labels' in the dependencies array
+
+ 
+
+
   return (
     <>
       <Draggable draggableId={job.id} index={index}>
@@ -141,6 +174,7 @@ export default function KanbanJobItem({ job, members, index, openPopUp, setOpenP
               <Typography sx={{marginTop: '0px !important'}} variant="subtitle2">{job.name}</Typography>
 
               {renderInfo}
+              {renderLabels} {}
             </Stack>
             {/* <Stack spacing={2} sx={{ px: 2, py: 2.5, position: 'relative' }}>
               <Typography variant="subtitle2">{job.name}</Typography>
@@ -154,7 +188,13 @@ export default function KanbanJobItem({ job, members, index, openPopUp, setOpenP
 }
 
 KanbanJobItem.propTypes = {
-  index: PropTypes.number,
-  sx: PropTypes.object,
   job: PropTypes.object,
+  members: PropTypes.object.isRequired,
+  index: PropTypes.number,
+  openPopUp: PropTypes.bool, // Update the prop type to func or make it optional
+  setOpenPopUp: PropTypes.func,
+  setJob: PropTypes.func,
+  sx: PropTypes.func, // Make sx prop optional
+  labels: PropTypes.oneOfType([PropTypes.array, PropTypes.object]), // Update the prop type to accept array or object
+  selectedLabels: PropTypes.array,
 };

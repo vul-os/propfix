@@ -12,8 +12,9 @@ import { useSnackbar } from '../../components/snackbar';
 import KanbanJobItem from './kanban-job-item';
 import { useAuthContext } from '../../contexts/auth';
 import KanbanJobAdd from './kanban-job-add';
+import Labels from '../settings/labels';
 
-export default function KanbanColumn({ column, jobs, setJob, onJobAdd, members, openPopUp, setOpenPopUp, index }) {
+export default function KanbanColumn({ column, jobs, setJob, onJobAdd, members, openPopUp, setOpenPopUp, index, labels }) {
   const openAddJob = useBoolean();
 
   const renderAddJob = (
@@ -118,6 +119,7 @@ export default function KanbanColumn({ column, jobs, setJob, onJobAdd, members, 
                             setOpenPopUp={setOpenPopUp}
                             setJob={setJob}
                             members={members}
+                            labels={labels}
                           />
                         );
                       }
@@ -136,8 +138,16 @@ export default function KanbanColumn({ column, jobs, setJob, onJobAdd, members, 
   );
 }
 
+
 KanbanColumn.propTypes = {
   column: PropTypes.object,
   index: PropTypes.number,
   jobs: PropTypes.array,
+  labels: PropTypes.array,
+  setJob: PropTypes.func,      // Add setJob prop
+  onJobAdd: PropTypes.func,    // Add onJobAdd prop
+  members: PropTypes.object,  // Add members prop
+  openPopUp: PropTypes.bool,   // Add openPopUp prop
+  setOpenPopUp: PropTypes.func, // Add setOpenPopUp prop
 };
+
