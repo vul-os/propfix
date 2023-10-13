@@ -219,27 +219,27 @@ export default function Organization() {
         </TableHead>
         <TableBody>
           {members.map((member) => (
-            <TableRow key={member.id}>
+            <TableRow key={member?.id}>
               <TableCell>
-                <Avatar src={member.photoUrl} alt={member.displayName || member.email} />
+                <Avatar src={member?.photoUrl} alt={member?.displayName || member?.email} />
               </TableCell>
-              <TableCell>{member.displayName || 'N/A'}</TableCell>
-              <TableCell>{member.email}</TableCell>
+              <TableCell>{member?.displayName || 'N/A'}</TableCell>
+              <TableCell>{member?.email}</TableCell>
               <TableCell>
                   <Select
-                    value={member.roleId || ''}
+                    value={member?.roleId || ''}
                     onChange={(e) => handleRoleChange(e, member.id)}
                     displayEmpty
                   >
-                    {roles.map((role) => (
-                      <MenuItem key={role.id} value={role.id}>{role.name}</MenuItem>
+                    {roles?.map((role) => (
+                      <MenuItem key={role?.id} value={role?.id}>{role?.name}</MenuItem>
                     ))}
                   </Select>
                 </TableCell>
               <TableCell>
                 <IconButton
                   color="secondary"
-                  onClick={() => setMemberToDelete(member.id)}
+                  onClick={() => setMemberToDelete(member?.id)}
                   style={iconButtonStyle}
                 >
                   <DeleteIcon />
@@ -264,13 +264,13 @@ export default function Organization() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {pendingMembers.map((email, index) => (
+              {pendingMembers.map((pm, index) => (
                 <TableRow key={index}>
-                  <TableCell>{email}</TableCell>
+                  <TableCell>{pm.email}</TableCell>
                   <TableCell>
                     <IconButton
                       color="secondary"
-                      onClick={() => setPendingMemberToDelete(email)}
+                      onClick={() => setPendingMemberToDelete(pm.email)}
                       style={iconButtonStyle}
                     >
                       <DeleteIcon />

@@ -50,7 +50,7 @@ export async function getAllMembers(organizationId, idToken) {
 // Function to invite a member to an organization
 export async function inviteMember(email, organizationId, roleId, idToken) {
   try {
-    const params = { email, organizationId };
+    const params = { email, roleId, organizationId };
     return await jsonRpcRequest('Organizations.InviteMember', params, idToken);
   } catch (error) {
     console.error('Error inviting a member:', error);

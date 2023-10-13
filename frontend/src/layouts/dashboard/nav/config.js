@@ -44,13 +44,13 @@ const navConfig = (role) => {
       title: 'Board',
       path: '/',
       breadcrumbsIcon:  <StoreIcon />,
-      icon: icon('ic_cart'),
+      icon: <Icon icon="system-uicons:clipboard" style={{ marginRight: '18px', fontSize: '22px' }} />
     },
     {
       title: 'Jobs',
       path: '/jobs',
       breadcrumbsIcon:  <StoreIcon />,
-      icon: icon('ic_cart'),
+      icon: <Icon icon="ph:briefcase-thin" style={{ marginRight: '18px', fontSize: '22px' }} />
     },
   ]
   }
@@ -59,7 +59,7 @@ const navConfig = (role) => {
       title: 'Jobs',
       path: '/',
       breadcrumbsIcon:  <StoreIcon />,
-      icon: icon('ic_cart'),
+      icon: <Icon icon="ph:briefcase-thin" style={{ marginRight: '18px', fontSize: '22px' }} />
     },
   ]
 } 
