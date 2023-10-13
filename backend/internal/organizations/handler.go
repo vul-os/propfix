@@ -187,7 +187,7 @@ func (a *adaptor) AcceptMemberInvite(r *http.Request, args *AcceptMemberInviteRe
 		return err
 	}
 
-	if mem != nil {
+	if mem == nil {
 		return errors.New("user is not invited")
 	}
 
