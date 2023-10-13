@@ -139,6 +139,31 @@ func (s *Store) AddMember(roleID, userID string) error {
 	return nil
 }
 
+func (s *Store) ChangeRole(desiredRoleID, userID, organizationID string) error {
+	// Step 1: Get current role of the user
+	currentRole, err := s.GetFirstRoleByUserID(userID, organizationID)
+	if err != nil {
+		return fmt.Errorf("error getting current role of user: %w", err)
+	}
+
+	// If the user has a current role and it's different from the desired role
+	if currentRole != nil && currentRole.ID != desiredRoleID {
+		// Step 2: Remove the user from the current role
+		err := s.RemoveMember(currentRole.ID, userID)
+		if err != nil {
+			return fmt.Errorf("error removing user from current role: %w", err)
+		}
+	}
+
+	// Step 3: Add the user to the new desired role
+	err = s.AddMember(desiredRoleID, userID)
+	if err != nil {
+		return fmt.Errorf("error adding user to desired role: %w", err)
+	}
+
+	return nil
+}
+
 func (s *Store) RemoveMember(roleID, userID string) error {
 	ctx := context.Background()
 	query := `
