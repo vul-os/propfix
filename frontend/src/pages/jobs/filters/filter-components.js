@@ -1,7 +1,9 @@
 import React from 'react';
+import dayjs, { Dayjs } from 'dayjs';
 import { TextField, Box, Slider, Autocomplete, Checkbox } from '@mui/material';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 
 export function SearchFilter({ value, onChange }) {
   return (

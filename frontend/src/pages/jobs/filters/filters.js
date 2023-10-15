@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
-import moment from 'moment';
+import dayjs, { Dayjs } from 'dayjs';
 import { Drawer, Box, LocalizationProvider } from '@mui/material';
 import { 
     SearchFilter, 
@@ -13,18 +13,20 @@ import {
 function Filter({ sidebarOpen, toggleSidebar, toFilter }) {
     const cost = toFilter?.cost ? [Math.min(...toFilter?.cost), Math.max(...toFilter?.cost)] : [0, 1000]
     const hours = toFilter?.hours ? [Math.min(...toFilter?.hours), Math.max(...toFilter?.hours)] : [0, 24]
+    // Utility function to check if a value is a valid dayjs date
     const isValidDate = (d) => {
-        return moment(d).isValid();
+      return dayjs(d).isValid();
     };
 
     const validDates = (toFilter?.createdAt || [])
-        .map(date => moment(date))
+        .map(date => dayjs(date))
         .filter(isValidDate);
 
     const minDate = validDates.length ? validDates.reduce((a, b) => a.isBefore(b) ? a : b) : null;
     const maxDate = validDates.length ? validDates.reduce((a, b) => a.isAfter(b) ? a : b) : null;
 
     const creationDate = [minDate, maxDate];
+
 
     const initialFilterState = {
       name: [],
