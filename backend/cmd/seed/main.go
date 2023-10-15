@@ -250,6 +250,7 @@ func createInspectionsTable(dbpool *pgxpool.Pool) error {
             id TEXT PRIMARY KEY,
             name TEXT NOT NULL,
             schedule_date TIMESTAMPTZ NOT NULL,
+			completed_date TIMESTAMPTZ NOT NULL,
             assignee_ids TEXT[],
             organization_id TEXT NOT NULL
         )
