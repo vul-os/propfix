@@ -13,10 +13,10 @@ export async function createInspectionTemplateItem(item, idToken) {
   }
 }
 
-export async function updateInspectionTemplateItem(itemId, itemData, idToken) {
+export async function updateInspectionTemplateItem(item, idToken) {
   try {
-    const params = [itemId, itemData];
-    return await jsonRpcRequest('InspectionTemplateItems.UpdateItem', params, idToken);
+    const params = [{item}];
+    return await jsonRpcRequest('InspectionTemplateItems.UpdateInspectionTemplateItem', params, idToken);
   } catch (error) {
     console.error('Error updating inspection template item:', error);
     return null;
