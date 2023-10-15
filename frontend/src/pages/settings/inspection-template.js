@@ -126,6 +126,8 @@ export default function InspectionTemplate() {
       console.log(updatedData)
       const token = await getIdToken();
       await updateInspectionTemplateItem(updatedData, token);
+      fetchTemplates();
+      fetchItems();
       // If the API call was successful, you can update the state or re-fetch data
       // Example: fetchItems();
     } catch (error) {
