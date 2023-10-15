@@ -45,18 +45,7 @@ export function SliderFilter({ value, min, max, onChange, labelFormat }) {
   );
 }
 
-export function DropdownFilter({ options, value, onChange, label }) {
-  return (
-    <Autocomplete
-      options={options === null ? options : []}
-      value={value}
-      onChange={onChange}
-      renderInput={(params) => (
-        <TextField {...params} label={label} variant="outlined" fullWidth />
-      )}
-    />
-  );
-}
+
 
 export function CheckboxFilter({ checked, onChange, label }) {
     return (

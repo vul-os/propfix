@@ -18,6 +18,7 @@ import { Icon } from '@iconify/react';
 import Iconify from '../../../components/iconify';
 import PopOver from '../pop-over';
 import { useBoardContext } from '../../../contexts/board'; // Import the BoardProvider context
+
 import CreateJobDialog from '../../job-wizzard/dialog';
 import { exportToCSV, exportToExcel } from './utils';
 import Filter from '../filters';
@@ -39,6 +40,7 @@ const StyledDataGrid = styled(DataGrid)(() => ({
 
 function JobDataGrid() {
   const { board, jobs, boardLoading, toFilter, filters } = useBoardContext(); // Use the BoardProvider context
+
   const [open, setOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState(null);
 
@@ -323,6 +325,9 @@ function JobDataGrid() {
             sidebarOpen={sidebarOpen} // Ensure this is correctly connected to the filterOpen state
             toggleSidebar={toggleSidebar}
             toFilter={toFilter}
+            labels={board?.labels}
+            buildings={board?.buildings}
+            members={board?.members}
           />
         </Stack>
       </Typography>
