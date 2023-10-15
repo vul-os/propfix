@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
+import moment from 'moment';
 import { Drawer, Box, LocalizationProvider } from '@mui/material';
 import { 
     SearchFilter, 
@@ -12,13 +13,18 @@ import {
 function Filter({ sidebarOpen, toggleSidebar, toFilter }) {
     const cost = toFilter?.cost ? [Math.min(...toFilter?.cost), Math.max(...toFilter?.cost)] : [0, 1000]
     const hours = toFilter?.hours ? [Math.min(...toFilter?.hours), Math.max(...toFilter?.hours)] : [0, 24]
-    const creationDate = toFilter?.createdAt 
-    ? [
-        new Date(Math.min(...toFilter.createdAt.map(date => new Date(date).getTime()))),
-        new Date(Math.max(...toFilter.createdAt.map(date => new Date(date).getTime())))
-      ] 
-    : [null, null];
+    const isValidDate = (d) => {
+        return moment(d).isValid();
+    };
 
+    const validDates = (toFilter?.createdAt || [])
+        .map(date => moment(date))
+        .filter(isValidDate);
+
+    const minDate = validDates.length ? validDates.reduce((a, b) => a.isBefore(b) ? a : b) : null;
+    const maxDate = validDates.length ? validDates.reduce((a, b) => a.isAfter(b) ? a : b) : null;
+
+    const creationDate = [minDate, maxDate];
 
     const initialFilterState = {
       name: [],
