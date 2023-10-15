@@ -37,7 +37,7 @@ const navConfig = (role) => {
         icon: <Icon icon="ph:briefcase-thin" style={{ marginRight: '18px', fontSize: '22px' }} />
       },
       {
-        title: 'Inspections',
+        title: 'Inspections (Beta)',
         path: '/inspections',
         breadcrumbsIcon:  <StoreIcon />,
         icon: <Icon icon="fa-solid:search" style={{ marginRight: '18px', fontSize: '22px' }} />
