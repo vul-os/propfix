@@ -33,6 +33,7 @@ import Root from './pages/root';
 // Import the Stepper component
 import Stepper from './pages/job-wizzard/stepper'; // Make sure this path is correct
 import AcceptInvite from './pages/auth/accept-invite';
+import PDFEditor from './pages/pdf-editor';
 
 function App() {
   return (
@@ -148,6 +149,20 @@ function App() {
                       </AuthGuard>
                     }
                   />
+                  {/* <Route
+                    path="/pdf-editor/*"
+                    element={
+                      <AuthGuard>
+                        <BoardProvider>
+                          <DashboardLayout>
+                            <Routes>
+                              <Route path="/" element={<PDFEditor />} />
+                            </Routes>
+                          </DashboardLayout>
+                        </BoardProvider>
+                      </AuthGuard>
+                    }
+                  /> */}
                 </Routes>
               </AuthProvider>
             </ThemeProvider>
