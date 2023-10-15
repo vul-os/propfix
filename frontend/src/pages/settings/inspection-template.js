@@ -114,6 +114,22 @@ export default function InspectionTemplate() {
     try {
       const token = await getIdToken();
       await deleteInspectionTemplateItem(itemId, token);
+      fetchTemplates();
+      fetchItems();
+      // If the API call was successful, you can update the state or re-fetch data
+      // Example: fetchItems();
+    } catch (error) {
+      console.error('Error removing an inspection template item:', error);
+    }
+  };
+
+  const handleAddItem = async (item) => {
+    try {
+      const token = await getIdToken();
+      console.log("heree", item)
+      await createInspectionTemplateItem(item, token);
+      fetchTemplates();
+      fetchItems();
       // If the API call was successful, you can update the state or re-fetch data
       // Example: fetchItems();
     } catch (error) {
@@ -176,6 +192,7 @@ export default function InspectionTemplate() {
               items={groupItemsByTemplate()[template.id] || []}
               removeItem={handleRemoveItem}
               updateItem={handleUpdateItem}
+              addItem={handleAddItem}
             />
           </AccordionDetails>
         </Accordion>

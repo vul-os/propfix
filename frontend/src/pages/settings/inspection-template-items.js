@@ -10,18 +10,38 @@ import {
   TableHead,
   TableRow,
   Paper,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from '@mui/material';
 
-export default function InspectionTemplateItems({ activeOrganization, items, addItem, removeItem, updateItem }) {
+export default function InspectionTemplateItems({
+  templateId,
+  activeOrganization,
+  items,
+  addItem,
+  removeItem,
+  updateItem,
+}) {
   const [editItemId, setEditItemId] = useState(null);
   const [editedItem, setEditedItem] = useState({
     id: '',
     itemName: '',
-    orderIndex: '',
-    createdAt: '',
+    orderIndex: 0, // Treat as an integer
     organizationId: activeOrganization,
-    inspectionTemplateID: '',
+    inspectionTemplateID: templateId,
   });
+
+  const [newItemData, setNewItemData] = useState({
+    id: '', // Assign a unique ID, e.g., generated on the server
+    item: '', // Set the default item name
+    orderIndex: 0, // Treat as an integer
+    organizationId: activeOrganization,
+    inspectionTemplateID: templateId,
+  });
+
+  const [openAddDialog, setOpenAddDialog] = useState(false);
 
   const handleEditClick = (itemId, item, orderIndex, createdAt, inspectionTemplateID) => {
     setEditItemId(itemId);
@@ -29,9 +49,8 @@ export default function InspectionTemplateItems({ activeOrganization, items, add
       id: itemId,
       item,
       orderIndex,
-      createdAt,
       organizationId: activeOrganization,
-      inspectionTemplateID, // Set this field as needed
+      inspectionTemplateID,
     });
   };
 
@@ -53,9 +72,9 @@ export default function InspectionTemplateItems({ activeOrganization, items, add
       });
   };
 
-  const handleDeleteItem = () => {
+  const handleDeleteItem = (id) => {
     // Send a request to delete the item using the removeItem function
-    removeItem(editItemId)
+    removeItem(id)
       .then(() => {
         // Handle success: You can perform additional actions if needed
         console.log('Item deleted successfully');
@@ -67,21 +86,20 @@ export default function InspectionTemplateItems({ activeOrganization, items, add
   };
 
   const handleAddItem = () => {
-    // Create a new item object with default values
-    const newItemData = {
-      id: '', // Assign a unique ID, e.g., generated on the server
-      item: '', // Set the default item name
-      orderIndex: '', // Set the default order index
-      createdAt: '', // Set the default created date
-      inspectionTemplateID: '',
-      organizationId: activeOrganization,
-    };
+    setOpenAddDialog(true);
+  };
 
+  const handleAddDialogClose = () => {
+    setOpenAddDialog(false);
+  };
+
+  const handleAddDialogSave = (newItemData) => {
     // Send a request to add the new item using the addItem function
     addItem(newItemData)
       .then((response) => {
         // Handle success: You can perform additional actions if needed
         console.log('Item added successfully:', response);
+        setOpenAddDialog(false); // Close the dialog
       })
       .catch((error) => {
         // Handle errors
@@ -122,17 +140,16 @@ export default function InspectionTemplateItems({ activeOrganization, items, add
                     <TextField
                       value={editedItem.orderIndex}
                       variant="outlined"
-                      onChange={(e) =>
-                        setEditedItem({ ...editedItem, orderIndex: e.target.value })
-                      }
+                      onChange={(e) => {
+                        const orderIndex = parseInt(e.target.value, 10);
+                        setEditedItem({ ...editedItem, orderIndex });
+                      }}
                     />
                   ) : (
                     item.orderIndex
                   )}
                 </TableCell>
-                <TableCell>
-                    {item.createdAt}
-                </TableCell>
+                <TableCell>{item.createdAt}</TableCell>
                 <TableCell>
                   {editItemId === item.id ? (
                     <>
@@ -147,13 +164,22 @@ export default function InspectionTemplateItems({ activeOrganization, items, add
                     <>
                       <IconButton
                         onClick={() =>
-                          handleEditClick(item?.id, item?.item, item?.orderIndex, item?.createdAt, item?.inspectionTemplateID)
+                          handleEditClick(
+                            item?.id,
+                            item?.item,
+                            item?.orderIndex,
+                            item?.createdAt,
+                            item?.inspectionTemplateID
+                          )
                         }
                         aria-label="Edit"
                       >
                         Edit
                       </IconButton>
-                      <IconButton onClick={handleDeleteItem} aria-label="Delete">
+                      <IconButton
+                        onClick={() => handleDeleteItem(item.id, item.organizationId)}
+                        aria-label="Remove"
+                      >
                         Delete
                       </IconButton>
                     </>
@@ -167,6 +193,44 @@ export default function InspectionTemplateItems({ activeOrganization, items, add
       <Button variant="contained" color="primary" onClick={handleAddItem}>
         Add New Row
       </Button>
+
+      {/* Add Item Dialog */}
+      <Dialog open={openAddDialog} onClose={handleAddDialogClose}>
+        <DialogTitle>Add New Item</DialogTitle>
+        <DialogContent>
+          {/* Form fields for new item data */}
+          <TextField
+            label="Item Name"
+            variant="outlined"
+            fullWidth
+            value={newItemData.item}
+            onChange={(e) => setNewItemData({ ...newItemData, item: e.target.value })}
+          />
+          <TextField
+            label="Order Index"
+            variant="outlined"
+            fullWidth
+            value={newItemData.orderIndex}
+            onChange={(e) => {
+              const orderIndex = parseInt(e.target.value, 10);
+              setNewItemData({ ...newItemData, orderIndex });
+            }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleAddDialogClose} color="primary">
+            Cancel
+          </Button>
+          <Button
+            onClick={() => {
+              handleAddDialogSave(newItemData);
+            }}
+            color="primary"
+          >
+            Save
+          </Button>
+        </DialogActions>
+      </Dialog>
     </div>
   );
 }

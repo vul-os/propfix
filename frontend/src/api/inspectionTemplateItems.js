@@ -23,10 +23,10 @@ export async function updateInspectionTemplateItem(item, idToken) {
   }
 }
 
-export async function deleteInspectionTemplateItem(itemId, idToken) {
+export async function deleteInspectionTemplateItem(id, idToken) {
   try {
-    const params = [itemId];
-    await jsonRpcRequest('InspectionTemplateItems.DeleteItem', params, idToken);
+    const params = [{id}];
+    await jsonRpcRequest('InspectionTemplateItems.DeleteInspectionTemplateItem', params, idToken);
   } catch (error) {
     console.error('Error deleting inspection template item:', error);
   }
