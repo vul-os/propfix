@@ -11,8 +11,6 @@ import {
     CheckboxFilter 
 } from './filter-components';
 
-import LabelAutocomplete from '../../labels/label-autocomplete'
-
 function Filter({ sidebarOpen, toggleSidebar, toFilter, labels, buildings, members, priorities }) {
     const cost = toFilter?.cost ? [Math.min(...toFilter?.cost), Math.max(...toFilter?.cost)] : [0, 1000]
     const hours = toFilter?.hours ? [Math.min(...toFilter?.hours), Math.max(...toFilter?.hours)] : [0, 24]
@@ -83,11 +81,16 @@ function Filter({ sidebarOpen, toggleSidebar, toFilter, labels, buildings, membe
       
         <Drawer anchor="right" open={sidebarOpen} onClose={toggleSidebar}>
             <Box sx={{ /* ... styling ... */ }}>
-                <LabelAutocomplete
-                  labels={labels ? Object.values(labels).map(label => label.name) : []}
-                  selectedLabels={filter?.labels ? filter?.labels : []}
-                  setSelectedLabels={setSelectedLabels}
-                />
+
+                <Autocomplete
+                    multiple
+                    options={labels ? Object.values(labels).map(label => label.name) : []}
+                    value={filter?.labelIDs? filter?.labelIDs : []}
+                    onChange={(event, newValue) => handleChange('labelIDs', newValue)} // Corrected onChange
+                    renderInput={(params) => (
+                    <TextField {...params} label="Labels" variant="outlined" fullWidth />
+                    )}
+                  />
                 <Autocomplete
                     multiple
                     options={toFilter?.name || []} // Ensure this is an array or fallback to empty array
