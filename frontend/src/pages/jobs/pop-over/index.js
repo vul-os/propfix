@@ -22,7 +22,7 @@ import Scrollbar from '../../../components/scrollbar';
 import { useBoolean } from '../../../hooks/use-boolean';
 // components
 import EventsList from '../events/events-list';
-import MessageInput from '../events/message-input';
+import MessageInput from './message-input';
 
 import Toolbar from './toolbar';
 import JobDetails from '../job';
@@ -177,24 +177,34 @@ export default function PopOver({
   );
 
   const handleDrop = async (acceptedFiles) => {
-    try {
-      const idToken = await getIdToken();
-      const uploadedFile = await uploadFile(
-        job.id,
-        acceptedFiles[0],
-        idToken
-      );
-      const updatedFiles = [...files, ...acceptedFiles];
-      const updatedAttachments = [...newJob.attachments, uploadedFile.objectName]
-      setFiles(updatedFiles);
-      setNewJob(prevJob => ({
-        ...prevJob,
-        attachments: updatedAttachments,
-      }));
-    } catch (error) {
-      console.error('Error adding file:', error);
-    }
+      try {
+        const idToken = await getIdToken();
+        console.log(acceptedFiles)
+        // Use Promise.all to upload all files concurrently
+        const uploadedFiles = await Promise.all(acceptedFiles.map(file => uploadFile(job.id, file, idToken)));
+        console.log(uploadedFiles)
+        const updatedFiles = [...files, ...acceptedFiles];
+        
+        // Extract objectNames from all uploaded files
+        const uploadedObjectNames = uploadedFiles.map(file => file.objectName);
+        
+        const updatedAttachments = [...newJob.attachments, ...uploadedObjectNames];
+        
+        setFiles(updatedFiles);
+        setNewJob(prevJob => ({
+          ...prevJob,
+          attachments: updatedAttachments,
+        }));
+
+        // Return the object names of all uploaded files
+        return uploadedObjectNames;
+
+      } catch (error) {
+        console.error('Error adding file:', error);
+        throw error;  // if you want to propagate the error outside
+      }
   };
+
 
   const handleRemoveFile = useCallback(
     async (inputFile) => {
@@ -367,20 +377,28 @@ export default function PopOver({
     }
   };
 
-  const createMessage = async (message, visibility) => {
+  const createMessage = async (message, visibility, attachments) => {
       try {
-          if (message !== "" ) {
-              const newEvent = {
+          if (message !== "" || attachments?.length > 0) {
+            const newEvent = {
                 "type": "MESSAGE",
                 "jobId": job.id,
                 "visibility": visibility ? "public" : "private",
                 "data": { "message": message }
             };
+            if (attachments?.length > 0) {
+              console.log(attachments)
+              newEvent.data = {
+                "message": message,
+                "attachments": attachments
+              }
+            }
             const idToken = await getIdToken();
             const rEvent = await createEvent(newEvent, idToken);
             if (!!rEvent?.event) {
               let oldEvents = []
               if (events) oldEvents = [...events]
+              console.log(rEvent)
               setEvents([...oldEvents, rEvent.event]);
             }
           }
@@ -437,10 +455,10 @@ export default function PopOver({
           }}
         >
           <JobDetails job={newJob} setJob={setNewJob} buildings={board?.buildings} members={board?.members} labels={board?.labels} files={files} handleDrop={handleDrop} handleRemoveFile={handleRemoveFile} />
-          <EventsList events={events} members={board?.members}/>
+          <EventsList events={events} members={board?.members} attachments={files} />
         </Stack>
       </Scrollbar>
-      <MessageInput user={user} createMessage={createMessage} activeOrganization={activeOrganization} />
+      <MessageInput user={user} handleDrop={handleDrop} createMessage={createMessage} activeOrganization={activeOrganization} />
 
     </Drawer>
   );

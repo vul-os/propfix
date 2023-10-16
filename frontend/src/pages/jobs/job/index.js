@@ -15,11 +15,12 @@ import Tooltip from '@mui/material/Tooltip';
 import IconButton from '@mui/material/IconButton';
 import InputName from '../../../components/input-name';
 import Priority from './priority';
-import Attachments from './attachments';
+import Attachments from '../../../components/attachments';
 import Iconify from '../../../components/iconify';
 import MembersDialog from './members-dialog';
 import LabelAutocomplete from '../../labels/label-autocomplete';
 import { useBoolean } from '../../../hooks/use-boolean';
+import { UploadBox } from '../../../components/upload';
 
 dayjs.extend(utc);
 
@@ -244,7 +245,8 @@ export default function JobDetails({
   const renderAttachments = useMemo(() => (
     <Stack direction="row">
       <StyledLabel>Attachments</StyledLabel>
-      <Attachments files={files} handleDrop={handleDrop} handleRemoveFile={handleRemoveFile} />
+      <Attachments files={files} handleRemoveFile={handleRemoveFile} />
+      <UploadBox onDrop={handleDrop} />
     </Stack>
   ), [job.id, files]);
 

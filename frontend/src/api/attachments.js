@@ -46,10 +46,17 @@ export async function getFile(jobIdFilename, idToken) {
   }
 }
 
-// Function to delete a file
 export async function deleteFile(jobId, filename, idToken) {
+  let endpoint;
+
+  if (filename.includes(jobId)) {
+    endpoint = `${API_BASE_URL}/delete/${filename}`;
+  } else {
+    endpoint = `${API_BASE_URL}/delete/${jobId}/${filename}`;
+  }
+
   try {
-    await axios.delete(`${API_BASE_URL}/delete/${jobId}/${filename}`, {
+    await axios.delete(endpoint, {
       headers: {
         Authorization: idToken,
       },

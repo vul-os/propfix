@@ -6,14 +6,15 @@ import { useMediaQuery, useTheme } from '@mui/material';
 import MessageStep from './message-step';
 import CrudStep from './crud-step';
 
-export default function EventsList({ events, members }) {
+export default function EventsList({ events, members, attachments }) {
   const theme = useTheme();
   const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
   const isMediumScreen = useMediaQuery(theme.breakpoints.only('md'));
 
   useEffect(() => {
+    console.log(attachments)
     // Your useEffect logic here
-  }, [events]);
+  }, [events, attachments]);
 
   const containerStyle = {
     display: 'flex',
@@ -46,9 +47,9 @@ export default function EventsList({ events, members }) {
 
   };
 
-  const RenderEvent = ({ event, index }) => {
+  const RenderEvent = ({ event, index, files}) => {
     const member = members && event && event.memberId && members[event.memberId];
-    return member && (
+    return member && files && (
       <React.Fragment key={event.id}>
         <div style={messageBoxContainerStyle}>
           {index !== 0 && <div style={verticalLineStyle} />}
@@ -58,7 +59,7 @@ export default function EventsList({ events, members }) {
             style={{width: "100%"}}
           >
             {event.type === 'MESSAGE' ? (
-              <MessageStep event={event} member={member} />
+              <MessageStep event={event} member={member} attachments={files} />
             ) : (
               <CrudStep event={event} member={member} />
             )}
@@ -71,9 +72,9 @@ export default function EventsList({ events, members }) {
   return (
     <div style={containerStyle}>
       <h2 style={eventsHeadingStyle}>Events</h2>
-      {events &&
+      {events && attachments &&
         events.map((event, index) => (
-          <RenderEvent key={index} event={event} index={index} />
+          <RenderEvent key={index} event={event} index={index} files={attachments} />
         ))}
     </div>
   );
