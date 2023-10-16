@@ -152,18 +152,19 @@ func (s *Store) GetAllEvents(jobID string, visibility string, usr user.User, fil
 		SELECT id, type, job_id, member_id, data, created_at, visibility
 		FROM events
 		WHERE job_id = $1
+		ORDER BY created_at DESC 
 	`
 
-	if StringInSlice("visibility-public", filters) {
-		query += " AND visibility = 'public'"
-	}
-	if StringInSlice("priority", filters) {
-		// Add conditions for priority filter
-		// Example: query += " AND priority = true"
-	}
-	if StringInSlice("latest-event", filters) {
-		query += " ORDER BY created_at DESC LIMIT 1"
-	}
+	// if StringInSlice("visibility-public", filters) {
+	// 	query += " AND visibility = 'public'"
+	// }
+	// if StringInSlice("priority", filters) {
+	// 	// Add conditions for priority filter
+	// 	// Example: query += " AND priority = true"
+	// }
+	// if StringInSlice("latest-event", filters) {
+	// 	query += " ORDER BY created_at DESC LIMIT 1"
+	// }
 
 	rows, err := s.pool.Query(ctx, query, jobID)
 	if err != nil {
