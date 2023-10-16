@@ -49,7 +49,7 @@ export default function PopOver({
   openPopOver,
   onClosePopOver,
 }) {
-  const { getIdToken, user, activeOrganization } = useAuthContext(); 
+  const { getIdToken, user, activeOrganization, settings } = useAuthContext(); 
   const { board, setBoard, boardLoading, jobs, setJobs } = useBoardContext(); // Use the BoardProvider context
   const [selectedColumnMap, setSelectedColumnMap] = useState({});
   const [newJob, setNewJob] = useState({...job});
@@ -57,7 +57,7 @@ export default function PopOver({
   const [events, setEvents] = useState([]); // State for the switch
   const [files, setFiles] = useState([]);
 
-  
+  console.log("YOOOOOO!", settings)
   useEffect(() => {
     const initialSelectedColumnMap = board && board.jobs && board.columns
     ? Object.fromEntries(
@@ -265,15 +265,44 @@ export default function PopOver({
         if (!objectsHaveSameValues(newJob, job)) {
           const token = await getIdToken(); // Get the JWT token from the auth context
           const res = await updateJob(newJob, token); // Pass the token to the deleteJob function
-          if (!!res.success) enqueueSnackbar('Job updated!', {
-            anchorOrigin: { vertical: 'top', horizontal: 'center' },
-          });
+        
+          if (res.success) {
+            enqueueSnackbar('Job updated!', {
+              anchorOrigin: { vertical: 'top', horizontal: 'center' },
+            });
+            const newBoard = {
+              ...board,
+              jobs: {
+                ...board.jobs,
+                [newJob.id]: newJob,
+              },
+            }
+            setBoard(newBoard)
+            const isMoveOnAssignTrue = settings.some(setting => {
+              return setting.type === "moveonassign" && setting.data === "true";
+            });
+            // If moveonassign is true, then check if assigneeIds have gone from empty to more than one item
+            if (isMoveOnAssignTrue && 
+                job.assigneeIds && job.assigneeIds.length === 0 && 
+                newJob.assigneeIds && newJob.assigneeIds.length > 0) {
+                  console.log("HALFWAY")
+                  const inProgressColumn = Object.values(newBoard?.columns)?.find(column => {
+                    return column.name.toLowerCase().includes("in progress");
+                  });
+                  const selectedColumn = job && selectedColumnMap[job.id]
+                  
+                  if (inProgressColumn && selectedColumn && inProgressColumn.id !== selectedColumn.id) {
+                    const changedCols = onChangeColumn(job.id, inProgressColumn, selectedColumn, newBoard)
+                  }
+                  
+            }
+          }
         }
       } catch (error) {
         console.error(error);
       }
     },
-    [getIdToken, enqueueSnackbar, job]
+    [getIdToken, enqueueSnackbar, job, settings, board?.columns, settings]
   );
 
   const handleDeleteJob = useCallback(
@@ -305,16 +334,18 @@ export default function PopOver({
     [getIdToken, enqueueSnackbar, board, job]
   );
 
-  const onChangeColumn = async (jobId, newSelectedColumn, selectedColumn) => {  
+  
+  const onChangeColumn = useCallback(
+    async (jobId, newSelectedColumn, selectedColumn, brd=board) => {
       if (newSelectedColumn && newSelectedColumn.jobIds) {
         // Get a copy of job ids from source column
         const newStartJobIds = Array.from(selectedColumn && selectedColumn.jobIds || []).filter(id => id !== jobId);
         // Get a copy of job ids from destination column
         const newEndJobIds = [...Array.from(newSelectedColumn.jobIds || []), jobId];
         let newBoardState = {
-          ...board,
+          ...brd,
           columns: {
-            ...board.columns,
+            ...brd.columns,
             [newSelectedColumn.id]: {
               ...newSelectedColumn,
               jobIds: newEndJobIds,
@@ -324,9 +355,9 @@ export default function PopOver({
         if (selectedColumn?.id && newSelectedColumn?.id) {
           // Create new board state
           newBoardState = {
-            ...board,
+            ...brd,
             columns: {
-              ...board.columns,
+              ...brd.columns,
               [selectedColumn.id]: {
                 ...selectedColumn,
                 jobIds: newStartJobIds,
@@ -352,19 +383,14 @@ export default function PopOver({
           token 
         );
       }
-
-  }
-
+    }, 
+    [board, setBoard, setSelectedColumnMap, getIdToken, moveJob]  // dependencies
+  );
+  
+  
   const onClose = () => {
     onClosePopOver()
     handleUpdateJob(newJob)
-    setBoard({
-      ...board,
-      jobs: {
-        ...board.jobs,
-        [newJob.id]: newJob,
-      },
-    })
   }
 
   const fetchEvents = async () => {

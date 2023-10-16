@@ -17,7 +17,7 @@ import { bgBlur } from '../../theme/css';
 
 export default function KanbanJobItem({ job, members, index, openPopUp, setOpenPopUp, setJob, sx, labels, selectedLabels, ...other }) {
   const theme = useTheme();
-  console.log('Labels prop:', labels);
+  console.log('Jib Item Assignees', job?.name, job?.assigneeIds);
 
   const priority = job && job.priority && job?.priority?.toLowerCase()
   const renderPriority = (
@@ -43,8 +43,7 @@ export default function KanbanJobItem({ job, members, index, openPopUp, setOpenP
       }}
     />
   );
-
-  const RenderAvatarGroup = () => {
+  const RenderAvatarGroup = useCallback(() => {
     const assignees = job?.assigneeIds?.map((jobId) => members && members[jobId])
     return assignees && <AvatarGroup
       sx={{
@@ -58,9 +57,9 @@ export default function KanbanJobItem({ job, members, index, openPopUp, setOpenP
         console.log(user)
         return <Avatar key={user?.id} alt={ user?.displayName} src={user?.photoUrl} />
       })}
-    </AvatarGroup>
-  }
-  
+    </AvatarGroup>   
+  }, [job?.assigneeIds, members]);
+ 
 
   // const renderImg = (
   //   <Box
