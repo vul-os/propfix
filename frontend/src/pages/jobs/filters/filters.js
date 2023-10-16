@@ -80,8 +80,14 @@ function Filter({ sidebarOpen, toggleSidebar, toFilter, labels, buildings, membe
     return (
       
         <Drawer anchor="right" open={sidebarOpen} onClose={toggleSidebar}>
-            <Box sx={{ /* ... styling ... */ }}>
-
+            <Box sx={{ width: 350, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: '16px', gap: '25px', marginTop: '20px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <h2 style={{ margin: '0', padding: '0' }}>Filter</h2>
+                    <div style={{ display: 'flex', gap: '30px' }}>
+                    <Icon icon="material-symbols:refresh" style={{ fontSize: '22px' }} />
+                    <Icon icon="ph:x" style={{ fontSize: '22px' }} />
+                    </div>
+                </div>              
                 <Autocomplete
                     multiple
                     options={labels ? Object.values(labels).map(label => label.name) : []}
@@ -146,11 +152,14 @@ function Filter({ sidebarOpen, toggleSidebar, toFilter, labels, buildings, membe
                     <TextField {...params} label="Assignees" variant="outlined" fullWidth />
                   )}
                 />
-                <DateRangeFilter
-                    value={filter?.creationDate}
-                    onChange={(value) => handleChange('creationDate', value)}
-                    label="Creation Date Range"
-                />
+              <div style={{ width: '100%' }}>
+              <DateRangeFilter
+                  value={filter?.creationDate}
+                  onChange={(value) => handleChange('creationDate', value)}
+                  label="Creation Date Range"
+                  style={{ margin: '30px 0' }}
+              />
+              </div>
                 <SliderFilter 
                     value={filter?.cost} 
                     onChange={(value) => handleChange('costRange', value)} 
@@ -165,12 +174,12 @@ function Filter({ sidebarOpen, toggleSidebar, toFilter, labels, buildings, membe
                     min={hours[0]}
                     max={hours[1]}
                 />
-                  <CheckboxFilter 
+                  {/* <CheckboxFilter 
                     value={filter?.rentPaid}
                     onChange={(value) => handleChange('rentPaid', value)}
                     options={["Rent Paid"]}
                     label="Rent Paid"
-                />
+                /> */}
             </Box>
         </Drawer>
     );
