@@ -67,6 +67,7 @@ export default function JobCreateStep({
         labels={labels}
         selectedLabels={selectedLabels}
         setSelectedLabels={setSelectedLabels}
+        placeholder={"Labels, what type of job is it? Plumbing, Electrical..."}
       />
 
       <Stack direction="row" flexWrap="wrap">
