@@ -176,7 +176,7 @@ export default function JobDetails({
   const renderPendingTennants = useMemo(() => {
       return (
         <Stack direction="row">
-          <StyledLabel sx={{ height: 40, lineHeight: '40px' }}>Tennants</StyledLabel>
+          <StyledLabel sx={{ height: 40, lineHeight: '40px' }}>Pending Tennants</StyledLabel>
           <Stack direction="row" flexWrap="wrap" alignItems="center" sx={{ flexGrow: 1 }}>
             <EmailAutocomplete 
               values={job?.pendingTennantEmails ? job?.pendingTennantEmails : []} 
