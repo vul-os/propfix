@@ -21,6 +21,7 @@ function EmailAutocomplete({ values, setValues }) {
       options={[]}
       onChange={(event, newValue) => setValues(newValue)}
       freeSolo
+      sx={{width: '100%'}}
       renderInput={(params) => (
         <TextField
             {...params}
