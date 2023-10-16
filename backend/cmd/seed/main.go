@@ -280,6 +280,25 @@ func createPendingMembersTable(dbpool *pgxpool.Pool) error {
 	return nil
 }
 
+func createSettingsTable(dbpool *pgxpool.Pool) error {
+	ctx := context.Background()
+
+	_, err := dbpool.Exec(ctx, `
+		CREATE TABLE IF NOT EXISTS settings (
+			id TEXT PRIMARY KEY,
+			key TEXT NOT NULL,
+			value TEXT NOT NULL,
+			description TEXT,
+			organization_id TEXT NOT NULL,
+			created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+		)
+	`)
+	if err != nil {
+		return fmt.Errorf("Error creating settings table: %v", err)
+	}
+	return nil
+}
+
 func main() {
 	// neon.tech
 	connStr := "user=exolutiontech password=***REMOVED-DB-PASSWORD*** dbname=neondb host=ep-autumn-math-44120355.us-east-2.aws.neon.tech sslmode=verify-full"
@@ -363,6 +382,10 @@ func main() {
 		log.Fatal("Error creating pending members table: ", err)
 	}
 
+	err = createSettingsTable(dbpool)
+	if err != nil {
+		log.Fatal("Error creating settings table: ", err)
+	}
 	// Call other create table functions here
 	// ALTER TABLE ColumnJobLinks ADD CONSTRAINT unique_job_column UNIQUE(job_id, column_id);
 }

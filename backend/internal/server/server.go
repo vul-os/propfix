@@ -14,6 +14,7 @@ import (
 	jsonRpcProvider "github.com/exolutionza/propfix-backend-go/internal/api/jsonRpc/service/provider"
 	"github.com/exolutionza/propfix-backend-go/internal/board"
 	"github.com/exolutionza/propfix-backend-go/internal/columnJobLinks"
+	"github.com/exolutionza/propfix-backend-go/internal/settings"
 
 	"github.com/exolutionza/propfix-backend-go/internal/attachments"
 	"github.com/go-chi/chi"
@@ -99,6 +100,7 @@ func Server() {
 	inspectionsStore := inspections.NewInspectionsStore(dbpool)
 	inspectionItemsStore := inspectionItems.NewInspectionItemsStore(dbpool)
 	pendingMembersStore := pendingMembers.NewPendingMemberStore(dbpool)
+	settingsStore := settings.NewSettingsStore(dbpool)
 
 	rpcServerConfigs := []jsonRpcServer.RPCServerConfig{
 		{
@@ -129,6 +131,7 @@ func Server() {
 				inspectionTemplates.New(inspectionTemplatesStore, authorizer),
 				inspections.New(inspectionsStore, authorizer),
 				inspectionItems.New(inspectionItemsStore, authorizer),
+				settings.New(settingsStore, authorizer),
 			},
 		},
 		// Add more RPC server configurations for other services here
