@@ -282,9 +282,7 @@ export default function PopOver({
               return setting.type === "moveonassign" && setting.data === "true";
             });
             // If moveonassign is true, then check if assigneeIds have gone from empty to more than one item
-            if (isMoveOnAssignTrue && 
-                job.assigneeIds && job.assigneeIds.length === 0 && 
-                newJob.assigneeIds && newJob.assigneeIds.length > 0) {
+            if (isMoveOnAssignTrue && !job?.assigneeIds?.length && !!newJob?.assigneeIds?.length) {
                   console.log("HALFWAY")
                   const inProgressColumn = Object.values(newBoard?.columns)?.find(column => {
                     return column.name.toLowerCase().includes("in progress");
