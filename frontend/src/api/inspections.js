@@ -32,9 +32,9 @@ export async function deleteInspection(inspectionId, idToken) {
   }
 }
 
-export async function getAllInspections(idToken) {
+export async function getAllInspections(organizationId, idToken) {
   try {
-    const params = [];
+    const params = [{organizationId}];
     return await jsonRpcRequest('Inspections.GetAllInspections', params, idToken);
   } catch (error) {
     console.error('Error fetching inspections:', error);

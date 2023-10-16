@@ -30,6 +30,7 @@ export default function ExoStepper({ handleClose }) {
   const [selectedLabels, setSelectedLabels] = useState([]);
   const [attachments, setAttachments] = useState([]);
   const [files, setFiles] = useState([]);
+  const [usingLocation, setUsingLocation] = useState(true);  // default to true if you want to start with user location
 
   const { getIdToken } = useAuthContext();
   const navigate = useNavigate(); // Import useNavigate hook
@@ -49,12 +50,17 @@ export default function ExoStepper({ handleClose }) {
   const fetchBuildings = async () => {
     try {
       const idToken = await getIdToken();
-      const fetchedBuildings = await getAllBuildings(
-        userLocation?.latitude,
-        userLocation?.longitude,
-        searchValue,
-        idToken
-      );
+      let fetchedBuildings;
+      if (userLocation) {
+        fetchedBuildings = await getAllBuildings(
+          userLocation?.latitude,
+          userLocation?.longitude,
+          searchValue,
+          idToken
+        );
+      } else {
+        fetchedBuildings = await getAllBuildings(null, null, searchValue, idToken);
+      }
       setBuildings(fetchedBuildings.buildings);
     } catch (error) {
       console.error('Error fetching buildings:', error);
@@ -120,22 +126,29 @@ export default function ExoStepper({ handleClose }) {
   };
 
   const getUserLocation = () => {
-    if ('geolocation' in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const userLatitude = position.coords.latitude;
-          const userLongitude = position.coords.longitude;
-          setUserLocation({ latitude: userLatitude, longitude: userLongitude });
-        },
-        (error) => {
-          console.error('Error getting user location:', error);
-        }
-      );
+    if (usingLocation) {
+      if ('geolocation' in navigator) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const userLatitude = position.coords.latitude;
+            const userLongitude = position.coords.longitude;
+            setUserLocation({ latitude: userLatitude, longitude: userLongitude });
+          },
+          (error) => {
+            console.error('Error getting user location:', error);
+          }
+        );
+      } else {
+        console.error('Geolocation is not supported in this browser.');
+      }
     } else {
-      console.error('Geolocation is not supported in this browser.');
+      setUserLocation(null);  // reset userLocation when not using location
     }
+  
+    // Toggle the usingLocation state
+    setUsingLocation(prevState => !prevState);
   };
-
+  
   const handleDrop = async (acceptedFiles) => {
     try {
       const idToken = await getIdToken();

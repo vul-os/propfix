@@ -18,7 +18,12 @@ import { DataGrid } from '@mui/x-data-grid';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { useAuthContext } from '../../contexts/auth';
 import { useBoardContext } from '../../contexts/board';
-import { getAllInspectionTemplateItems, createInspectionTemplateItem } from '../../api/inspectionTemplateItems';
+import {
+  getAllInspectionTemplateItems,
+  createInspectionTemplateItem,
+  updateInspectionTemplateItem,
+  deleteInspectionTemplateItem,
+} from '../../api/inspectionTemplateItems';
 import { getAllInspectionTemplates, createInspectionTemplate } from '../../api/inspectionTemplates';
 
 import InspectionTemplateItems from './inspection-template-items';
@@ -105,19 +110,42 @@ export default function InspectionTemplate() {
     }
   };
 
-  const handleRemoveItem = (itemId) => {
+  const handleRemoveItem = async (itemId) => {
     try {
-      // Implement item removal logic here
-      // You may call an API or update the state directly
+      const token = await getIdToken();
+      await deleteInspectionTemplateItem(itemId, token);
+      fetchTemplates();
+      fetchItems();
+      // If the API call was successful, you can update the state or re-fetch data
+      // Example: fetchItems();
     } catch (error) {
       console.error('Error removing an inspection template item:', error);
     }
   };
 
-  const handleUpdateItem = (itemId, templateId) => {
+  const handleAddItem = async (item) => {
     try {
-      // Implement item update logic here
-      // You may call an API or update the state directly
+      const token = await getIdToken();
+      console.log("heree", item)
+      await createInspectionTemplateItem(item, token);
+      fetchTemplates();
+      fetchItems();
+      // If the API call was successful, you can update the state or re-fetch data
+      // Example: fetchItems();
+    } catch (error) {
+      console.error('Error removing an inspection template item:', error);
+    }
+  };
+
+  const handleUpdateItem = async (updatedData) => {
+    try {
+      console.log(updatedData)
+      const token = await getIdToken();
+      await updateInspectionTemplateItem(updatedData, token);
+      fetchTemplates();
+      fetchItems();
+      // If the API call was successful, you can update the state or re-fetch data
+      // Example: fetchItems();
     } catch (error) {
       console.error('Error updating an inspection template item:', error);
     }
@@ -129,32 +157,15 @@ export default function InspectionTemplate() {
         ...newTemplate,
         organizationId: activeOrganization,
       };
-           const itemToCreate = {
-        ...newItem,
-        organizationId: activeOrganization,
-      };
       const token = await getIdToken();
-      await createInspectionTemplateItem(itemToCreate, token);
-      // You may call an API to create the new inspection template here
-      // After successfully creating the template, you can fetch the updated list of templates
-      // and handle any additional actions if needed
+      await createInspectionTemplate(templateToCreate, token);
       setOpenDialog(false);
       fetchTemplates();
       fetchItems();
-
     } catch (error) {
       console.error('Error creating a new inspection template:', error);
     }
   };
-
-  const columns = [
-    { field: 'id', headerName: 'ID', flex: 1 },
-    { field: 'orderIndex', headerName: 'Order Index', flex: 1 },
-    { field: 'item', headerName: 'Item', flex: 1 },
-    { field: 'areaID', headerName: 'Area ID', flex: 1 },
-    { field: 'inspectionTemplateID', headerName: 'Template ID', flex: 1 },
-    { field: 'createdAt', headerName: 'Created At', flex: 1 },
-  ];
 
   return (
     <>
@@ -163,52 +174,48 @@ export default function InspectionTemplate() {
         <IconButton onClick={fetchItems} aria-label="Refresh">
           <RefreshIcon />
         </IconButton>
-        {/* Add the "plus" button here for creating a new template */}
-        <IconButton
-            onClick={() => setOpenDialog(true)}
-            aria-label="Add"
-          >
-            <AddIcon />
-          </IconButton>
-        </div>
-  
-        {templates.map((template) => (
-          <Accordion key={template.id}>
-            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-              <Typography variant="h6">{template.name}</Typography>
-            </AccordionSummary>
-            <AccordionDetails>
-              <Typography>Template ID: {template.id}</Typography>
-              <InspectionTemplateItems
-                templateId={template.id}
-                items={groupItemsByTemplate()[template.id] || []}
-                columns={columns}
-                removeItem={handleRemoveItem}
-                updateItem={handleUpdateItem}
-              />
-            </AccordionDetails>
-          </Accordion>
-        ))}
-  
-        <Dialog open={openDialog} onClose={handleCloseDialog}>
-          <DialogTitle>Add New Inspection Template</DialogTitle>
-          <DialogContent>
-            <TextField
-              label="Template Name"
-              value={newTemplate.name}
-              onChange={(e) => setNewTemplate({ ...newTemplate, name: e.target.value })}
+        <IconButton onClick={() => setOpenDialog(true)} aria-label="Add">
+          <AddIcon />
+        </IconButton>
+      </div>
+
+      {templates.map((template) => (
+        <Accordion key={template.id}>
+          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+            <Typography variant="h6">{template.name}</Typography>
+          </AccordionSummary>
+          <AccordionDetails>
+            <Typography>Template ID: {template.id}</Typography>
+            <InspectionTemplateItems
+              activeOrganization={activeOrganization}
+              templateId={template.id}
+              items={groupItemsByTemplate()[template.id] || []}
+              removeItem={handleRemoveItem}
+              updateItem={handleUpdateItem}
+              addItem={handleAddItem}
             />
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={handleCloseDialog} color="secondary">
-              Cancel
-            </Button>
-            <Button onClick={handleCreateTemplate} color="primary">
-              Save
-            </Button>
-          </DialogActions>
-        </Dialog>
-      </>
-    );
-  }
-  
+          </AccordionDetails>
+        </Accordion>
+      ))}
+
+      <Dialog open={openDialog} onClose={handleCloseDialog}>
+        <DialogTitle>Add New Inspection Template</DialogTitle>
+        <DialogContent>
+          <TextField
+            label="Template Name"
+            value={newTemplate.name}
+            onChange={(e) => setNewTemplate({ ...newTemplate, name: e.target.value })}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDialog} color="secondary">
+            Cancel
+          </Button>
+          <Button onClick={handleCreateTemplate} color="primary">
+            Save
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </>
+  );
+}

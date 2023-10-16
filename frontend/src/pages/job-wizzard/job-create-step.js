@@ -47,8 +47,8 @@ export default function JobCreateStep({
   return (
     <div>
       <TextField
-        label="Unit Name"
-        placeholder="Enter the unit name, e.g., 'E601'"
+        label="Unit Number"
+        placeholder="Enter the unit number, e.g., 'E601'"
         value={job.unitIdentifier}
         onChange={(e) => setJob({ ...job, unitIdentifier: e.target.value })}
         fullWidth
@@ -67,6 +67,7 @@ export default function JobCreateStep({
         labels={labels}
         selectedLabels={selectedLabels}
         setSelectedLabels={setSelectedLabels}
+        placeholder={"Labels, what type of job is it? Plumbing, Electrical..."}
       />
 
       <Stack direction="row" flexWrap="wrap">
