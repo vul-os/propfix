@@ -16,7 +16,6 @@ function EmailAutocomplete({ values, setValues }) {
 
   return (
     <Autocomplete
-      sx={{ width: '100%' }}
       multiple
       value={values}
       options={[]}
@@ -24,11 +23,16 @@ function EmailAutocomplete({ values, setValues }) {
       freeSolo
       renderInput={(params) => (
         <TextField
-          {...params}
-          variant="outlined"
-          label="Emails"
-          placeholder="Type and press Enter"
-          onKeyDown={handleKeyDown}
+            {...params}
+            fullWidth
+            size="small"
+            InputProps={{
+                sx: { typography: 'body2' },
+            }}
+            variant="outlined"
+            label="Emails"
+            placeholder="Type and press Enter"
+            onKeyDown={handleKeyDown}
         />
       )}
     />
