@@ -152,7 +152,7 @@ func (s *Store) GetAllEvents(jobID string, visibility string, usr user.User, fil
 		SELECT id, type, job_id, member_id, data, created_at, visibility
 		FROM events
 		WHERE job_id = $1
-		ORDER BY created_at DESC 
+		ORDER BY created_at ASC 
 	`
 
 	// if StringInSlice("visibility-public", filters) {
