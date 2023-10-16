@@ -88,70 +88,80 @@ function Filter({ sidebarOpen, toggleSidebar, toFilter, labels, buildings, membe
                     <Icon icon="ph:x" style={{ fontSize: '22px' }} />
                     </div>
                 </div>              
-                <Autocomplete
-                    multiple
-                    options={labels ? Object.values(labels).map(label => label.name) : []}
-                    value={filter?.labelIDs? filter?.labelIDs : []}
-                    onChange={(event, newValue) => handleChange('labelIDs', newValue)} // Corrected onChange
-                    renderInput={(params) => (
-                    <TextField {...params} label="Labels" variant="outlined" fullWidth />
-                    )}
-                  />
-                <Autocomplete
-                    multiple
-                    options={toFilter?.name || []} // Ensure this is an array or fallback to empty array
-                    value={filter?.name || []}    // Ensure this is an array or fallback to empty array
-                    onChange={(event, newValue) => handleChange('name', newValue)} // Corrected onChange
-                    renderInput={(params) => (
-                    <TextField {...params} label={"Job Names"} variant="outlined" fullWidth />
-                    )}
-                />
-                <Autocomplete
-                    multiple
-                    options={toFilter?.name || []} // Ensure this is an array or fallback to empty array
-                    value={filter?.name || []}    // Ensure this is an array or fallback to empty array
-                    onChange={(event, newValue) => handleChange('name', newValue)} // Corrected onChange
-                    renderInput={(params) => (
-                    <TextField {...params} label={"Job Names"} variant="outlined" fullWidth />
-                    )}
-                />
-                <Autocomplete
-                    multiple
-                    options={toFilter?.priority || []} // Ensure this is an array or fallback to empty array
-                    value={filter?.priority || []}    // Ensure this is an array or fallback to empty array
-                    onChange={(event, newValue) => handleChange('priority', newValue)} // Corrected onChange
-                    renderInput={(params) => (
-                    <TextField {...params} label={"Priority"} variant="outlined" fullWidth />
-                    )}
-                />
-                <Autocomplete
-                    multiple
-                    options={toFilter?.unitIdentifier || []} // Ensure this is an array or fallback to empty array
-                    value={filter?.unitIdentifier || []}    // Ensure this is an array or fallback to empty array
-                    onChange={(event, newValue) => handleChange('unitIdentifer', newValue)} // Corrected onChange
-                    renderInput={(params) => (
-                    <TextField {...params} label={"Unit Number"} variant="outlined" fullWidth />
-                    )}
-                />
-                <Autocomplete
-                    multiple
-                    options={buildings ? Object.values(buildings).map(building => building.buildingName) : []}
-                    value={filter?.buildingID ? filter?.buildingID : []}
-                    onChange={(event, newValue) => handleChange('buildingID', newValue)} // Corrected onChange
-                    renderInput={(params) => (
-                    <TextField {...params} label="Buildings" variant="outlined" fullWidth />
-                    )}
-                  />
-                <Autocomplete
-                    multiple
-                    options={members ? Object.values(members) : []}
-                    value={filter?.assigneeIDs || []}    // Ensure this is an array or fallback to empty array
-                    getOptionLabel={(option) => option?.displayName} // Modify this to match the structure of your 'members' data
-                    onChange={(event, newValue) => handleChange('assigneeIDs', newValue)} // Corrected onChange
-                    renderInput={(params) => (
-                    <TextField {...params} label="Assignees" variant="outlined" fullWidth />
-                  )}
-                />
+                <div>
+    <h4 style={{ fontWeight: 'lighter' }}>Labels</h4>
+    <Autocomplete
+        multiple
+        options={labels ? Object.values(labels).map(label => label.name) : []}
+        value={filter?.labelIDs? filter?.labelIDs : []}
+        onChange={(event, newValue) => handleChange('labelIDs', newValue)}
+        renderInput={(params) => (
+            <TextField {...params} label="Labels" variant="outlined" fullWidth />
+        )}
+    />
+</div>
+<div>
+    <h4 style={{ fontWeight: 'lighter' }}>Priority</h4>
+    <Autocomplete
+        multiple
+        options={toFilter?.priority || []}
+        value={filter?.priority || []}
+        onChange={(event, newValue) => handleChange('priority', newValue)}
+        renderInput={(params) => (
+            <TextField {...params} label="Priority" variant="outlined" fullWidth />
+        )}
+    />
+</div>
+<div>
+    <h4 style={{ fontWeight: 'lighter' }}>Job Names</h4>
+    <Autocomplete
+        multiple
+        options={toFilter?.name || []}
+        value={filter?.name || []}
+        onChange={(event, newValue) => handleChange('name', newValue)}
+        renderInput={(params) => (
+            <TextField {...params} label="Job Names" variant="outlined" fullWidth />
+        )}
+    />
+</div>
+<div>
+    <h4 style={{ fontWeight: 'lighter' }}>Unit Number</h4>
+    <Autocomplete
+        multiple
+        options={toFilter?.unitIdentifier || []}
+        value={filter?.unitIdentifier || []}
+        onChange={(event, newValue) => handleChange('unitIdentifer', newValue)}
+        renderInput={(params) => (
+            <TextField {...params} label="Unit Number" variant="outlined" fullWidth />
+        )}
+    />
+</div>
+<div>
+    <h4 style={{ fontWeight: 'lighter' }}>Buildings</h4>
+    <Autocomplete
+        multiple
+        options={buildings ? Object.values(buildings).map(building => building.buildingName) : []}
+        value={filter?.buildingID ? filter?.buildingID : []}
+        onChange={(event, newValue) => handleChange('buildingID', newValue)}
+        renderInput={(params) => (
+            <TextField {...params} label="Buildings" variant="outlined" fullWidth />
+        )}
+    />
+</div>
+<div>
+    <h4 style={{ fontWeight: 'lighter' }}>Assignees</h4>
+    <Autocomplete
+        multiple
+        options={members ? Object.values(members) : []}
+        value={filter?.assigneeIDs || []}
+        getOptionLabel={(option) => option?.displayName}
+        onChange={(event, newValue) => handleChange('assigneeIDs', newValue)}
+        renderInput={(params) => (
+            <TextField {...params} label="Assignees" variant="outlined" fullWidth />
+        )}
+    />
+</div>
+
               <div style={{ width: '100%' }}>
               <DateRangeFilter
                   value={filter?.creationDate}
