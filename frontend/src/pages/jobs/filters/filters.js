@@ -36,8 +36,8 @@ function Filter({ sidebarOpen, toggleSidebar, toFilter, labels, buildings, membe
           buildingID: [], 
           labels: [],
           attachments: [],
-          cost,
-          hours,
+          costRange: [0, 10],
+          hoursRange: [0, 10],
           rentPaid: false,
           creationDate,
         };
@@ -62,8 +62,8 @@ function Filter({ sidebarOpen, toggleSidebar, toFilter, labels, buildings, membe
             buildingID: [],
             labelIDs: [],
             attachments: [],
-            cost,
-            hours,
+            costRange: [0, 10],
+            hoursRange: [0, 10],
             rentPaid: false,
             dueDate: [null, null],
             creationDate,
@@ -80,8 +80,14 @@ function Filter({ sidebarOpen, toggleSidebar, toFilter, labels, buildings, membe
     return (
       
         <Drawer anchor="right" open={sidebarOpen} onClose={toggleSidebar}>
-            <Box sx={{ /* ... styling ... */ }}>
-
+            <Box sx={{ width: 350, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: '16px', gap: '25px', marginTop: '20px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <h2 style={{ margin: '0', padding: '0'}}>Filters</h2>
+                    <div style={{ display: 'flex', gap: '30px' }}>
+                    <Icon icon="material-symbols:refresh" style={{ fontSize: '22px' }} />
+                    <Icon icon="ph:x" style={{ fontSize: '22px' }} />
+                    </div>
+                </div>              
                 <Autocomplete
                     multiple
                     options={labels ? Object.values(labels).map(label => label.name) : []}
@@ -146,31 +152,40 @@ function Filter({ sidebarOpen, toggleSidebar, toFilter, labels, buildings, membe
                     <TextField {...params} label="Assignees" variant="outlined" fullWidth />
                   )}
                 />
-                <DateRangeFilter
-                    value={filter?.creationDate}
-                    onChange={(value) => handleChange('creationDate', value)}
-                    label="Creation Date Range"
-                />
+              <div style={{ width: '100%' }}>
+              <DateRangeFilter
+                  value={filter?.creationDate}
+                  onChange={(value) => handleChange('creationDate', value)}
+                  label="Creation Date Range"
+                  style={{ margin: '30px 0' }}
+              />
+              </div>
+              <div>
+              <h4 style={{ fontWeight: 'lighter' }}>Cost</h4>
                 <SliderFilter 
-                    value={filter?.cost} 
+                    value={filter?.costRange} 
                     onChange={(value) => handleChange('costRange', value)} 
                     label="Cost Range"
                     min={cost[0]}
                     max={cost[1]}
                 />
+            </div>
+            <div>
+            <h4 style={{ fontWeight: 'lighter' }}>Hours</h4>
                 <SliderFilter 
-                    value={filter?.hours} 
+                    value={filter?.hoursRange} 
                     onChange={(value) => handleChange('hoursRange', value)} 
                     label="Hours Range"
                     min={hours[0]}
                     max={hours[1]}
                 />
-                  <CheckboxFilter 
+            </div>
+                  {/* <CheckboxFilter 
                     value={filter?.rentPaid}
                     onChange={(value) => handleChange('rentPaid', value)}
                     options={["Rent Paid"]}
                     label="Rent Paid"
-                />
+                /> */}
             </Box>
         </Drawer>
     );
