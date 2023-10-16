@@ -13,7 +13,8 @@ import {
   TextField,
 } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import AddIcon from '@mui/icons-material/Add'; // Import the Add icon
+import AddIcon from '@mui/icons-material/Add';
+import DeleteIcon from '@mui/icons-material/Delete'; // Import the Delete icon
 import { DataGrid } from '@mui/x-data-grid';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { useAuthContext } from '../../contexts/auth';
@@ -24,7 +25,7 @@ import {
   updateInspectionTemplateItem,
   deleteInspectionTemplateItem,
 } from '../../api/inspectionTemplateItems';
-import { getAllInspectionTemplates, createInspectionTemplate } from '../../api/inspectionTemplates';
+import { getAllInspectionTemplates, createInspectionTemplate, deleteInspectionTemplate,updateInspectionTemplate } from '../../api/inspectionTemplates';
 
 import InspectionTemplateItems from './inspection-template-items';
 
@@ -32,9 +33,12 @@ export default function InspectionTemplate() {
   const [templates, setTemplates] = useState([]);
   const [items, setItems] = useState([]);
   const [openDialog, setOpenDialog] = useState(false);
-  const [newTemplate, setNewTemplate] = useState({ name: '' }); // Provide an initial state
+  const [newTemplate, setNewTemplate] = useState({ name: '' });
   const [newItem, setNewItem] = useState({});
   const [selectedTemplateId, setSelectedTemplateId] = useState(null);
+  const [editingTemplateId, setEditingTemplateId] = useState(null); // Add a state for editing template
+  const [editedTemplate, setEditedTemplate] = useState({});
+  const [deleteTemplateId, setDeleteTemplateId] = useState(null);
 
   const { getIdToken, activeOrganization } = useAuthContext();
   const { board } = useBoardContext();
@@ -70,13 +74,10 @@ export default function InspectionTemplate() {
 
   const groupItemsByTemplate = () => {
     const groupedItems = {};
-
-    // Map the templates to their respective items
     templates.forEach((template) => {
       const templateId = template.id;
       groupedItems[templateId] = items.filter((item) => item.inspectionTemplateID === templateId);
     });
-
     return groupedItems;
   };
 
@@ -93,6 +94,9 @@ export default function InspectionTemplate() {
 
   const handleCloseDialog = () => {
     setOpenDialog(false);
+    setDeleteTemplateId(null); // Reset deleteTemplateId
+    setEditedTemplate({});
+    setEditingTemplateId(null);
   };
 
   const handleCreateNewItem = async () => {
@@ -116,8 +120,6 @@ export default function InspectionTemplate() {
       await deleteInspectionTemplateItem(itemId, token);
       fetchTemplates();
       fetchItems();
-      // If the API call was successful, you can update the state or re-fetch data
-      // Example: fetchItems();
     } catch (error) {
       console.error('Error removing an inspection template item:', error);
     }
@@ -126,26 +128,20 @@ export default function InspectionTemplate() {
   const handleAddItem = async (item) => {
     try {
       const token = await getIdToken();
-      console.log("heree", item)
       await createInspectionTemplateItem(item, token);
       fetchTemplates();
       fetchItems();
-      // If the API call was successful, you can update the state or re-fetch data
-      // Example: fetchItems();
     } catch (error) {
-      console.error('Error removing an inspection template item:', error);
+      console.error('Error adding an inspection template item:', error);
     }
   };
 
   const handleUpdateItem = async (updatedData) => {
     try {
-      console.log(updatedData)
       const token = await getIdToken();
       await updateInspectionTemplateItem(updatedData, token);
       fetchTemplates();
       fetchItems();
-      // If the API call was successful, you can update the state or re-fetch data
-      // Example: fetchItems();
     } catch (error) {
       console.error('Error updating an inspection template item:', error);
     }
@@ -167,6 +163,34 @@ export default function InspectionTemplate() {
     }
   };
 
+  const handleDeleteTemplate = async (template) => {
+    try {
+      console.log(template)
+      const token = await getIdToken()
+      await deleteInspectionTemplate(template, token);
+      setTemplates((prevTemplates) => prevTemplates.filter((t) => t.id !== template));
+      fetchTemplates();
+      fetchItems();
+    } catch (error) {
+      console.error('Error deleting an inspection template:', error);
+    }
+  };
+  
+
+  const handleSaveEdit = async () => {
+    try {
+      const token = await getIdToken();
+      await updateInspectionTemplate(editedTemplate, token);
+      setEditingTemplateId(null);
+      setEditedTemplate({});
+      setOpenDialog(false);
+      fetchTemplates();
+      fetchItems();
+    } catch (error) {
+      console.error('Error saving edited inspection template:', error);
+    }
+  };
+
   return (
     <>
       <div style={{ display: 'flex', alignItems: 'center' }}>
@@ -174,7 +198,14 @@ export default function InspectionTemplate() {
         <IconButton onClick={fetchItems} aria-label="Refresh">
           <RefreshIcon />
         </IconButton>
-        <IconButton onClick={() => setOpenDialog(true)} aria-label="Add">
+        <IconButton
+          onClick={() => {
+            setNewTemplate({ name: '' });
+            setEditingTemplateId(null);
+            setOpenDialog(true);
+          }}
+          aria-label="Add"
+        >
           <AddIcon />
         </IconButton>
       </div>
@@ -182,7 +213,30 @@ export default function InspectionTemplate() {
       {templates.map((template) => (
         <Accordion key={template.id}>
           <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            <Typography variant="h6">{template.name}</Typography>
+            <Typography variant="h6">
+              {editingTemplateId === template.id ? (
+                <TextField
+                  label="Template Name"
+                  value={editedTemplate.name}
+                  onChange={(e) =>
+                    setEditedTemplate({ ...editedTemplate, name: e.target.value })
+                  }
+                  fullWidth
+                  margin="dense"
+                />
+              ) : (
+                template.name
+              )}
+            </Typography>
+            <IconButton
+              onClick={() => {
+                setDeleteTemplateId(template.id);
+                setOpenDialog(true);
+              }}
+              aria-label="Delete"
+            >
+              <DeleteIcon />
+            </IconButton>
           </AccordionSummary>
           <AccordionDetails>
             <Typography>Template ID: {template.id}</Typography>
@@ -199,21 +253,51 @@ export default function InspectionTemplate() {
       ))}
 
       <Dialog open={openDialog} onClose={handleCloseDialog}>
-        <DialogTitle>Add New Inspection Template</DialogTitle>
+        <DialogTitle>
+          {deleteTemplateId
+            ? 'Delete Inspection Template'
+            : editingTemplateId
+            ? 'Edit Inspection Template'
+            : 'Add New Inspection Template'}
+        </DialogTitle>
         <DialogContent>
-          <TextField
-            label="Template Name"
-            value={newTemplate.name}
-            onChange={(e) => setNewTemplate({ ...newTemplate, name: e.target.value })}
-          />
+          {deleteTemplateId ? (
+            <Typography>
+              Are you sure you want to delete this template?
+            </Typography>
+          ) : (
+            <TextField
+              label="Template Name"
+              value={editedTemplate.name}
+              onChange={(e) =>
+                setEditedTemplate({ ...editedTemplate, name: e.target.value })
+              }
+              fullWidth
+              margin="dense"
+            />
+          )}
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseDialog} color="secondary">
             Cancel
           </Button>
-          <Button onClick={handleCreateTemplate} color="primary">
-            Save
-          </Button>
+          {deleteTemplateId ? (
+            <Button onClick={() => handleDeleteTemplate(deleteTemplateId)} color="primary">
+              Delete
+            </Button>
+          ) : (
+            <>
+              {editingTemplateId ? (
+                <Button onClick={handleSaveEdit} color="primary">
+                  Save
+                </Button>
+              ) : (
+                <Button onClick={handleCreateTemplate} color="primary">
+                  Save
+                </Button>
+              )}
+            </>
+          )}
         </DialogActions>
       </Dialog>
     </>
