@@ -26,9 +26,6 @@ function EmailAutocomplete({ values, setValues }) {
             {...params}
             fullWidth
             size="small"
-            InputProps={{
-                sx: { typography: 'body2' },
-            }}
             variant="outlined"
             label="Emails"
             placeholder="Type and press Enter"
