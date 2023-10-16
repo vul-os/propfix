@@ -5,7 +5,7 @@ import Typography from '@mui/material/Typography';
 import Chip from '@mui/material/Chip'; // Import Chip component
 import FaceIcon from '@mui/icons-material/Face';
 import { fToNow } from '../../../utils/format-time';
-import Attachments from '../../../components/attachments';
+import Attachments from '../../../components/attachments.';
 
 const styles = {
   container: {
