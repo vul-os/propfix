@@ -8,29 +8,30 @@ import (
 
 	"firebase.google.com/go/v4/auth"
 	"github.com/exolutionza/propfix-backend-go/internal/user"
-	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/teris-io/shortid"
 )
 
 type Job struct {
-	ID             string    `json:"id"`
-	Name           string    `json:"name"`
-	OrganizationID string    `json:"organizationId"`
-	Priority       string    `json:"priority"`
-	Description    string    `json:"description"`
-	ReporterID     string    `json:"reporterId"`
-	AssigneeIDs    []string  `json:"assigneeIds"`
-	UnitIdentifier string    `json:"unitIdentifier"`
-	BuildingID     string    `json:"buildingId"`
-	LabelIDs       []string  `json:"labelIds"`
-	Attachments    []string  `json:"attachments"`
-	Cost           float64   `json:"cost"`
-	Hours          int       `json:"hours"`
-	RentPaid       bool      `json:"rentPaid"`
-	DueDate        time.Time `json:"dueDate"`
-	CreatedAt      time.Time `json:"createdAt"`
-	ClosedAt       time.Time `json:"closedAt"`
+	ID                   string    `json:"id"`
+	Name                 string    `json:"name"`
+	OrganizationID       string    `json:"organizationId"`
+	UnitIdentifier       string    `json:"unitIdentifier"`
+	BuildingID           string    `json:"buildingId"`
+	ReporterID           string    `json:"reporterId"`
+	AssigneeIDs          []string  `json:"assigneeIds"`
+	TennantIds           []string  `json:"tennantIds"`
+	PendingTennantEmails []string  `json:"pendingTennantEmails"`
+	Priority             string    `json:"priority"`
+	Description          string    `json:"description"`
+	LabelIDs             []string  `json:"labelIds"`
+	Attachments          []string  `json:"attachments"`
+	Cost                 float64   `json:"cost"`
+	Hours                int       `json:"hours"`
+	RentPaid             bool      `json:"rentPaid"`
+	DueDate              time.Time `json:"dueDate"`
+	CreatedAt            time.Time `json:"createdAt"`
+	ClosedAt             time.Time `json:"closedAt"`
 }
 
 type Store struct {
@@ -56,8 +57,8 @@ func (s *Store) CreateJob(job *Job) error {
 	sqlQuery := `
 		INSERT INTO jobs (id, name, organization_id, priority, description, reporter_id,
 		assignee_ids, unit_identifier, building_id, label_ids, attachments, cost, hours,
-		rent_paid, due_date, created_at, closed_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+		rent_paid, due_date, created_at, closed_at, tennant_ids, pending_tennant_emails)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
 	`
 
 	_, err = s.dbpool.Exec(ctx, sqlQuery,
@@ -65,13 +66,9 @@ func (s *Store) CreateJob(job *Job) error {
 		job.Description, job.ReporterID, job.AssigneeIDs,
 		job.UnitIdentifier, job.BuildingID, job.LabelIDs,
 		job.Attachments, job.Cost, job.Hours, job.RentPaid,
-		job.DueDate, job.CreatedAt, job.ClosedAt)
+		job.DueDate, job.CreatedAt, job.ClosedAt, job.TennantIds, job.PendingTennantEmails)
 
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
 func (s *Store) UpdateJob(job *Job) error {
@@ -80,35 +77,20 @@ func (s *Store) UpdateJob(job *Job) error {
 	sqlQuery := `
         UPDATE jobs
         SET name = $1, organization_id = $2, priority = $3, description = $4,
-        assignee_ids = $5, unit_identifier = $6,
-        building_id = $7, label_ids = $8, attachments = $9, cost = $10, hours = $11,
-		rent_paid = $12, due_date = $13, closed_at = $14
-        WHERE id = $15
+        assignee_ids = $5, unit_identifier = $6, building_id = $7, 
+        label_ids = $8, attachments = $9, cost = $10, hours = $11,
+		rent_paid = $12, due_date = $13, closed_at = $14, 
+		tennant_ids = $15, pending_tennant_emails = $16
+        WHERE id = $17
     `
 
 	_, err := s.dbpool.Exec(ctx, sqlQuery,
 		job.Name, job.OrganizationID, job.Priority, job.Description,
-		job.AssigneeIDs, job.UnitIdentifier, job.BuildingID, job.LabelIDs, job.Attachments,
-		job.Cost, job.Hours, job.RentPaid, job.DueDate, job.ClosedAt, job.ID)
+		job.AssigneeIDs, job.UnitIdentifier, job.BuildingID, job.LabelIDs,
+		job.Attachments, job.Cost, job.Hours, job.RentPaid, job.DueDate,
+		job.ClosedAt, job.TennantIds, job.PendingTennantEmails, job.ID)
 
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (s *Store) DeleteJob(jobID string) error {
-	ctx := context.Background()
-
-	sqlQuery := `DELETE FROM jobs WHERE id = $1`
-
-	_, err := s.dbpool.Exec(ctx, sqlQuery, jobID)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
 func (s *Store) GetJobByID(jobID string) (*Job, error) {
@@ -116,8 +98,9 @@ func (s *Store) GetJobByID(jobID string) (*Job, error) {
 
 	sqlQuery := `
         SELECT id, name, organization_id, priority, description, reporter_id,
-        assignee_ids, unit_identifier, building_id, label_ids, attachments, cost, hours,
-		rent_paid, due_date, created_at, closed_at
+        assignee_ids, unit_identifier, building_id, label_ids, attachments, 
+        cost, hours, rent_paid, due_date, created_at, closed_at, 
+        tennant_ids, pending_tennant_emails
         FROM jobs
         WHERE id = $1
     `
@@ -127,18 +110,27 @@ func (s *Store) GetJobByID(jobID string) (*Job, error) {
 	var job Job
 	err := row.Scan(
 		&job.ID, &job.Name, &job.OrganizationID, &job.Priority, &job.Description,
-		&job.ReporterID, &job.AssigneeIDs, &job.UnitIdentifier,
-		&job.BuildingID, &job.LabelIDs, &job.Attachments, &job.Cost, &job.Hours,
-		&job.RentPaid, &job.DueDate, &job.CreatedAt, &job.ClosedAt,
+		&job.ReporterID, &job.AssigneeIDs, &job.UnitIdentifier, &job.BuildingID,
+		&job.LabelIDs, &job.Attachments, &job.Cost, &job.Hours, &job.RentPaid,
+		&job.DueDate, &job.CreatedAt, &job.ClosedAt, &job.TennantIds, &job.PendingTennantEmails,
 	)
 	if err != nil {
-		if err == pgx.ErrNoRows {
-			return nil, fmt.Errorf("job not found")
-		}
 		return nil, err
 	}
 
 	return &job, nil
+}
+
+func (s *Store) DeleteJob(jobID string) error {
+	ctx := context.Background()
+
+	sqlQuery := `
+        DELETE FROM jobs
+        WHERE id = $1
+    `
+
+	_, err := s.dbpool.Exec(ctx, sqlQuery, jobID)
+	return err
 }
 
 // closeJob sets the ClosedAt time to the current timestamp for a given job ID.
@@ -183,14 +175,19 @@ func (s *Store) ReOpenJob(jobID string) error {
 func (a *Store) GetJobsByOrganization(identifier string, permitted bool) ([]Job, error) {
 	ctx := context.Background()
 	fmt.Println(identifier, permitted)
+
+	// Base fields
+	fields := "id, name, organization_id, rent_paid, priority, description, reporter_id, assignee_ids, unit_identifier, building_id, label_ids, attachments, cost, hours, due_date, created_at, closed_at, tennant_ids, pending_tennant_emails"
+
 	// Initialize query based on permissions
-	query := ""
+	var query string
 	if permitted {
-		query = fmt.Sprintf(`SELECT id, name, organization_id, rent_paid, priority, description, reporter_id, assignee_ids, unit_identifier, building_id, label_ids, attachments, cost, hours, due_date, created_at, closed_at FROM jobs WHERE organization_id = '%s'`, identifier)
+		query = `SELECT ` + fields + ` FROM jobs WHERE organization_id = $1`
 	} else {
-		query = fmt.Sprintf(`SELECT id, name, organization_id, rent_paid, priority, description, reporter_id, assignee_ids, unit_identifier, building_id, label_ids, attachments, cost, hours, due_date, created_at, closed_at FROM jobs WHERE reporter_id = '%s'`, identifier)
+		query = `SELECT ` + fields + ` FROM jobs WHERE reporter_id = $1`
 	}
-	rows, err := a.dbpool.Query(ctx, query)
+
+	rows, err := a.dbpool.Query(ctx, query, identifier)
 	if err != nil {
 		fmt.Println(err)
 		return nil, err
@@ -204,13 +201,13 @@ func (a *Store) GetJobsByOrganization(identifier string, permitted bool) ([]Job,
 			&job.ID, &job.Name, &job.OrganizationID, &job.RentPaid, &job.Priority, &job.Description,
 			&job.ReporterID, &job.AssigneeIDs, &job.UnitIdentifier,
 			&job.BuildingID, &job.LabelIDs, &job.Attachments, &job.Cost, &job.Hours,
-			&job.DueDate, &job.CreatedAt, &job.ClosedAt,
+			&job.DueDate, &job.CreatedAt, &job.ClosedAt, &job.TennantIds, &job.PendingTennantEmails,
 		)
 		if err != nil {
 			return nil, err
 		}
 
-		// Clear cost and hours if hasPermissions is false
+		// Clear cost, hours, and priority if permitted is false
 		if !permitted {
 			job.Cost = 0
 			job.Hours = 0
@@ -227,36 +224,67 @@ func (a *Store) GetJobsByOrganization(identifier string, permitted bool) ([]Job,
 	return jobs, nil
 }
 
-// TODO: Move somewhere else
 func (s *Store) GetAllMemberIDs(organizationID string, authClient *auth.Client) (map[string]user.User, error) {
 	ctx := context.Background()
-	query := `
+
+	// Query from organizations table
+	orgQuery := `
 		SELECT DISTINCT unnest(members) AS unique_member_id
 		FROM organizations
 		WHERE id = $1
 	`
-	rows, err := s.dbpool.Query(ctx, query, organizationID)
+	orgRows, err := s.dbpool.Query(ctx, orgQuery, organizationID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to execute query: %v", err)
+		return nil, fmt.Errorf("failed to execute orgQuery: %v", err)
 	}
-	defer rows.Close()
+	defer orgRows.Close()
 
 	var memberIDs []string
-	for rows.Next() {
+	for orgRows.Next() {
 		var memberID string
-		if err := rows.Scan(&memberID); err != nil {
-			return nil, fmt.Errorf("failed to scan row: %v", err)
+		if err := orgRows.Scan(&memberID); err != nil {
+			return nil, fmt.Errorf("failed to scan org row: %v", err)
 		}
 		memberIDs = append(memberIDs, memberID)
 	}
-	fmt.Println(memberIDs)
+
+	// Query from jobs table
+	jobQuery := `
+		WITH expanded AS (
+			SELECT unnest(assignee_ids || ARRAY[reporter_id] || tennant_ids) AS job_member_id
+			FROM jobs
+			WHERE organization_id = $1
+		)
+		SELECT DISTINCT job_member_id
+		FROM expanded
+		WHERE job_member_id IS NOT NULL AND job_member_id <> ''
+	`
+	jobRows, err := s.dbpool.Query(ctx, jobQuery, organizationID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute jobQuery: %v", err)
+	}
+	defer jobRows.Close()
+
+	for jobRows.Next() {
+		var jobMemberID string
+		if err := jobRows.Scan(&jobMemberID); err != nil {
+			return nil, fmt.Errorf("failed to scan job row: %v", err)
+		}
+		memberIDs = append(memberIDs, jobMemberID)
+	}
+
+	// Get unique member IDs
+	uniqueMemberIDs := make(map[string]struct{})
+	for _, id := range memberIDs {
+		uniqueMemberIDs[id] = struct{}{}
+	}
 
 	users := make(map[string]user.User) // Initialize the map
-	for _, userID := range memberIDs {
+	for userID := range uniqueMemberIDs {
 		u, err := authClient.GetUser(ctx, userID)
 		if err != nil {
 			fmt.Println(err)
-			return nil, err
+			continue
 		}
 		name := u.DisplayName
 		if name == "" {
@@ -272,6 +300,100 @@ func (s *Store) GetAllMemberIDs(organizationID string, authClient *auth.Client) 
 	}
 
 	return users, nil
+}
+
+func (s *Store) AddTenant(jobID, tenantID string) error {
+	ctx := context.Background()
+
+	sqlQuery := `
+		UPDATE jobs
+		SET tennant_ids = array_append(tennant_ids, $1)
+		WHERE id = $2
+	`
+
+	_, err := s.dbpool.Exec(ctx, sqlQuery, tenantID, jobID)
+	return err
+}
+
+func (s *Store) RemoveTenant(jobID, tenantID string) error {
+	ctx := context.Background()
+
+	sqlQuery := `
+		UPDATE jobs
+		SET tennant_ids = array_remove(tennant_ids, $1)
+		WHERE id = $2
+	`
+
+	_, err := s.dbpool.Exec(ctx, sqlQuery, tenantID, jobID)
+	return err
+}
+
+func (s *Store) AddPendingTenantEmail(jobID, email string) error {
+	ctx := context.Background()
+
+	sqlQuery := `
+		UPDATE jobs
+		SET pending_tennant_emails = array_append(pending_tennant_emails, $1)
+		WHERE id = $2
+	`
+
+	_, err := s.dbpool.Exec(ctx, sqlQuery, email, jobID)
+	return err
+}
+
+func (s *Store) RemovePendingTenantEmail(jobID, email string) error {
+	ctx := context.Background()
+
+	sqlQuery := `
+		UPDATE jobs
+		SET pending_tennant_emails = array_remove(pending_tennant_emails, $1)
+		WHERE id = $2
+	`
+
+	_, err := s.dbpool.Exec(ctx, sqlQuery, email, jobID)
+	return err
+}
+
+func (s *Store) CheckAndAccept(email, userID string) error {
+	ctx := context.Background()
+
+	// Step 1: Search for jobs that have the provided email in `pending_tennant_emails`
+	sqlQuery := `
+		SELECT id
+		FROM jobs
+		WHERE $1 = ANY(pending_tennant_emails)
+	`
+	rows, err := s.dbpool.Query(ctx, sqlQuery, email)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	var jobIDs []string
+	for rows.Next() {
+		var jobID string
+		if err := rows.Scan(&jobID); err != nil {
+			return err
+		}
+		jobIDs = append(jobIDs, jobID)
+	}
+
+	// Step 2: For each job found, update `tennant_ids` and `pending_tennant_emails`
+	for _, jobID := range jobIDs {
+		// a. Add the user ID to `tennant_ids`
+		addTenantErr := s.AddTenant(jobID, userID)
+		if addTenantErr != nil {
+			return addTenantErr
+		}
+
+		// b. Remove the email from `pending_tennant_emails`
+		removeEmailErr := s.RemovePendingTenantEmail(jobID, email)
+		if removeEmailErr != nil {
+			return removeEmailErr
+		}
+	}
+
+	return nil
 }
 
 // ExtractEmailUsername extracts the username from an email address

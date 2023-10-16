@@ -160,7 +160,9 @@ func createJobsTable(dbpool *pgxpool.Pool) error {
 			rent_paid BOOLEAN,
 			due_date TIMESTAMP,
 			created_at TIMESTAMP,
-			closed_at TIMESTAMP
+			closed_at TIMESTAMP,
+			tennant_ids TEXT[] DEFAULT '{}',
+			pending_tennant_emails TEXT[] DEFAULT '{}'
 		)
 	`)
 	if err != nil {
