@@ -17,6 +17,7 @@ import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete'; // Import the Delete icon
 import { DataGrid } from '@mui/x-data-grid';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import InputName from '../../components/input-name';
 import { useAuthContext } from '../../contexts/auth';
 import { useBoardContext } from '../../contexts/board';
 import {
@@ -39,6 +40,8 @@ export default function InspectionTemplate() {
   const [editingTemplateId, setEditingTemplateId] = useState(null); // Add a state for editing template
   const [editedTemplate, setEditedTemplate] = useState({});
   const [deleteTemplateId, setDeleteTemplateId] = useState(null);
+  const [editedTemplateName, setEditedTemplateName] = useState(''); // New state for edited template name
+
 
   const { getIdToken, activeOrganization } = useAuthContext();
   const { board } = useBoardContext();
@@ -162,6 +165,10 @@ export default function InspectionTemplate() {
       console.error('Error creating a new inspection template:', error);
     }
   };
+  const handleEditTemplateName = (templateId, currentName) => {
+    setEditingTemplateId(templateId);
+    setEditedTemplateName(currentName);
+  };
 
   const handleDeleteTemplate = async (template) => {
     try {
@@ -211,24 +218,23 @@ export default function InspectionTemplate() {
       </div>
 
       {templates.map((template) => (
-        <Accordion key={template.id}>
-          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            <Typography variant="h6">
-              {editingTemplateId === template.id ? (
-                <TextField
-                  label="Template Name"
-                  value={editedTemplate.name}
-                  onChange={(e) =>
-                    setEditedTemplate({ ...editedTemplate, name: e.target.value })
-                  }
-                  fullWidth
-                  margin="dense"
-                />
-              ) : (
-                // Display the template name if not in editing mode
-                template.name
-              )}
-            </Typography>
+  <Accordion key={template.id}>
+    <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+      <Typography variant="h6">
+        {editingTemplateId === template.id ? (
+          <InputName
+            value={editedTemplateName}
+            onChange={(newName) => setEditedTemplateName(newName)}
+            onSave={() => handleSaveEdit()}
+          />
+        ) : (
+          <span
+            onDoubleClick={() => handleEditTemplateName(template.id, template.name)}
+          >
+            {template.name}
+          </span>
+        )}
+      </Typography>
             <IconButton
               onClick={() => {
                 setDeleteTemplateId(template.id);
