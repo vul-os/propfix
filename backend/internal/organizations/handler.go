@@ -8,6 +8,7 @@ import (
 
 	"firebase.google.com/go/v4/auth"
 	jsonRpcProvider "github.com/exolutionza/propfix-backend-go/internal/api/jsonRpc/service/provider"
+	"github.com/exolutionza/propfix-backend-go/internal/jobs"
 	"github.com/exolutionza/propfix-backend-go/internal/mail"
 	"github.com/exolutionza/propfix-backend-go/internal/roles"
 
@@ -22,6 +23,7 @@ type adaptor struct {
 	authz               *authz.Authz
 	store               *OrganizationStore
 	pendingMembersStore *pendingMembers.Store
+	jobsStore           *jobs.Store
 	rolesStore          *roles.Store
 	mailClient          *mail.MailgunClient
 	authClient          *auth.Client
@@ -37,6 +39,7 @@ func New(
 	st *OrganizationStore,
 	pms *pendingMembers.Store,
 	rs *roles.Store,
+	js *jobs.Store,
 	authz *authz.Authz,
 	authn *auth.Client,
 	m *mail.MailgunClient,
@@ -45,6 +48,7 @@ func New(
 		authz:               authz,
 		authClient:          authn,
 		store:               st,
+		jobsStore:           js,
 		pendingMembersStore: pms,
 		rolesStore:          rs,
 		mailClient:          m,
@@ -116,17 +120,20 @@ func (a *adaptor) GetAllOrganizations(r *http.Request, args *GetAllOrganizations
 	if !ok {
 		return errors.New("not permitted")
 	}
-	ok, err := a.authz.CheckPermission(r, "organizations", "getall")
-	if err != nil || !ok {
-		return errors.New("not permitted")
-	}
 
 	orgs, err := a.store.GetAllOrganizations(user.ID)
 	if err != nil {
 		return err
 	}
-
 	result.Organizations = orgs
+
+	if len(orgs) == 0 {
+		err = a.jobsStore.CheckAndAccept(user.Email, user.ID)
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -187,7 +194,7 @@ func (a *adaptor) AcceptMemberInvite(r *http.Request, args *AcceptMemberInviteRe
 		return err
 	}
 
-	if mem != nil {
+	if mem == nil {
 		return errors.New("user is not invited")
 	}
 

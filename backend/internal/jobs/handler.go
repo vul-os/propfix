@@ -264,3 +264,51 @@ func (a *adaptor) ReOpenJob(r *http.Request, args *ReOpenJobRequest, result *ReO
 	result.Success = true
 	return nil
 }
+
+type RemovePendingTenantEmailRequest struct {
+	JobID string `json:"jobId"`
+	Email string `json:"email"`
+}
+
+type RemovePendingTenantEmailResponse struct {
+	Status string `json:"status"`
+}
+
+func (a *adaptor) RemovePendingTenantEmail(r *http.Request, args *RemovePendingTenantEmailRequest, result *RemovePendingTenantEmailResponse) error {
+	ok, err := a.authz.CheckPermission(r, "jobs", "deletependingtennant")
+	if err != nil || !ok {
+		return errors.New("not permitted")
+	}
+
+	err = a.store.RemovePendingTenantEmail(args.JobID, args.Email)
+	if err != nil {
+		return err
+	}
+
+	result.Status = "Member removed from the organization"
+	return nil
+}
+
+type RemoveTenantRequest struct {
+	JobID     string `json:"jobId"`
+	TennantId string `json:"tennatId"`
+}
+
+type RemoveTenantResponse struct {
+	Status string `json:"status"`
+}
+
+func (a *adaptor) RemoveTenant(r *http.Request, args *RemoveTenantRequest, result *RemoveTenantResponse) error {
+	ok, err := a.authz.CheckPermission(r, "jobs", "deletetennant")
+	if err != nil || !ok {
+		return errors.New("not permitted")
+	}
+
+	err = a.store.RemoveTenant(args.JobID, args.TennantId)
+	if err != nil {
+		return err
+	}
+
+	result.Status = "Member removed from the organization"
+	return nil
+}

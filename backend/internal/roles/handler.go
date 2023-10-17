@@ -223,3 +223,34 @@ func (a *adaptor) GetFirstRole(r *http.Request, args *GetFirstRoleRequest, resul
 	result.Role = role
 	return nil
 }
+
+// Define the ChangeRole request and response types
+type ChangeRoleRequest struct {
+	RoleID         string `json:"roleId"`
+	UserID         string `json:"userId"`
+	OrganizationID string `json:"organizationId"`
+}
+
+type ChangeRoleResponse struct {
+	Message string `json:"message"`
+}
+
+// Add the ChangeRole handler method
+func (a *adaptor) ChangeRole(r *http.Request, args *ChangeRoleRequest, result *ChangeRoleResponse) error {
+	// Check for permission to change roles
+	ok, err := a.authz.CheckPermission(r, "roles", "change_role")
+	if err != nil || !ok {
+		return errors.New("not permitted")
+	}
+
+	// Call the ChangeRole function from the store
+	err = a.store.ChangeRole(args.RoleID, args.UserID, args.OrganizationID)
+	if err != nil {
+		result.Message = "Failed to change role"
+		return err
+	}
+
+	// Set the successful message
+	result.Message = "Role changed successfully"
+	return nil
+}
