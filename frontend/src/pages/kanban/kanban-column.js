@@ -52,6 +52,11 @@ export default function KanbanColumn({ column, jobs, setJob, onJobAdd, members, 
     </Stack>
   );
 
+  useEffect(() => {
+    // This effect will run every time `jobs` changes, effectively causing a re-render
+    // You don't necessarily need to do anything here if you just want a re-render
+  }, [jobs]);
+
   return (
     <Draggable draggableId={column.id} index={index}>
       {(provided, snapshot) => (

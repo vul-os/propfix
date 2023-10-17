@@ -14,6 +14,8 @@ import {
 
 import { jsonRpcRequest } from '../api/jsonrpc/client'; // Adjust the path based on your project's structure
 import { getFirstRole } from '../api/roles'; // Adjust the path based on your project's structure
+import { getAllOrganizations } from '../api/organizations'; // Adjust the path based on your project's structure
+import { getAllSettings } from '../api/settings'; // Adjust the path based on your project's structure
 
 // Initialize Firebase with your configuration
 const firebaseConfig = {
@@ -122,6 +124,9 @@ export const AuthProvider = (props) => {
   const [organizations, setOrganizations] = useState([]);
   const [haveFetchedOrganizations, setHaveFetchedOrganizations] = useState(false);
   const [role, setRole] = useState(null)
+  const [roles, setRoles] = useState([]);
+  const [members, setMembers] = useState([]);
+  const [settings, setSettings] = useState([])
 
   const initialize = async () => {
     if (initialized.current) {
@@ -140,7 +145,7 @@ export const AuthProvider = (props) => {
         setHaveFetchedOrganizations(false)
         // Fetch organizations using JSON-RPC
         try {
-          const fetchedOrganizations = await jsonRpcRequest('Organizations.GetAllOrganizations', [{}], idToken);
+          const fetchedOrganizations = await getAllOrganizations(idToken);
           setOrganizations(fetchedOrganizations?.organizations); // Set the organizations
           if (fetchedOrganizations && fetchedOrganizations.organizations) {
             setActiveOrganization(fetchedOrganizations.organizations[0].id)
@@ -150,6 +155,7 @@ export const AuthProvider = (props) => {
           console.log('Error fetching organizations:', error);
         }
         setHaveFetchedOrganizations(true)
+
       } else {
         dispatch({
           type: HANDLERS.INITIALIZE
@@ -176,8 +182,8 @@ export const AuthProvider = (props) => {
     // Fetch the first role whenever activeOrganization changes
     if (activeOrganization) {
       const fetchRole = async () => {
+        const idToken = await getIdToken();  // Use the existing getIdToken function
         try {
-          const idToken = await getIdToken();  // Use the existing getIdToken function
           const roleData = await getFirstRole(activeOrganization, idToken);
           if (roleData?.role) {
             setRole(roleData.role?.name?.toLowerCase());  // Assume the response has a property called "role"
@@ -186,7 +192,17 @@ export const AuthProvider = (props) => {
           console.error("Error fetching role:", error);
         }
       };
-  
+      const fetchSettings = async () => {
+          const idToken = await getIdToken();  // Use the existing getIdToken function
+          // Fetch settings using JSON-RPC
+          try {
+            const fs = await getAllSettings(activeOrganization, idToken);
+            setSettings(fs?.settings); 
+          } catch (error) {
+            console.log('Error fetching settings:', error);
+          }
+      };
+      fetchSettings()
       fetchRole();
     }
   }, [activeOrganization]);
@@ -296,7 +312,12 @@ export const AuthProvider = (props) => {
         setActiveOrganization,
         haveFetchedOrganizations,
         organizations,
-        role
+        role,
+        roles,
+        setRoles,
+        members,
+        setMembers,
+        settings
       }}
     >
       {children}

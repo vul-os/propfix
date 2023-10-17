@@ -2,7 +2,7 @@ import PropTypes from 'prop-types';
 import { useState, useCallback } from 'react';
 import Stack from '@mui/material/Stack';
 import CloseIcon from '@mui/icons-material/Close';
-import Iconify from '../../../components/iconify';
+import Iconify from '../iconify';
 import 'regenerator-runtime/runtime';
 
 export default function Attachments({ files, handleRemoveFile }) {
@@ -37,7 +37,7 @@ export default function Attachments({ files, handleRemoveFile }) {
                 }}
               />
             )}
-            
+            { !!handleRemoveFile &&
             <div
               className="close-icon-background"
               style={{
@@ -64,8 +64,8 @@ export default function Attachments({ files, handleRemoveFile }) {
                   fontSize: '12px',
                   textTransform: 'none',
                 }}
-              />
-            </div>
+              /> 
+            </div>}
           </div>
         </div>
       ))}
@@ -73,3 +73,4 @@ export default function Attachments({ files, handleRemoveFile }) {
     </Stack>
   );
 }
+

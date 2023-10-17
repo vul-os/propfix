@@ -25,6 +25,16 @@ export async function updateRole(role, idToken) {
   }
 }
 
+export async function changeRole(roleId, userId, organizationId, idToken) {
+  try {
+    const params = [{ roleId, userId, organizationId }];
+    return await jsonRpcRequest('Roles.ChangeRole', params, idToken);
+  } catch (error) {
+    console.error('Error updating role:', error);
+    return null;
+  }
+}
+
 export async function deleteRole(roleId, idToken) {
   try {
     const params = [{ roleId }];

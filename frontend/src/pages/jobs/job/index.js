@@ -15,11 +15,13 @@ import Tooltip from '@mui/material/Tooltip';
 import IconButton from '@mui/material/IconButton';
 import InputName from '../../../components/input-name';
 import Priority from './priority';
-import Attachments from './attachments';
+import Attachments from '../../../components/attachments.';
 import Iconify from '../../../components/iconify';
 import MembersDialog from './members-dialog';
 import LabelAutocomplete from '../../labels/label-autocomplete';
 import { useBoolean } from '../../../hooks/use-boolean';
+import { UploadBox } from '../../../components/upload';
+import EmailAutocomplete from './email-autocomplete';
 
 dayjs.extend(utc);
 
@@ -51,6 +53,12 @@ export default function JobDetails({
     () => members && job?.reporterId && members[job?.reporterId],
     [job?.reporterId, members]
   );
+
+  const tennants = useMemo(
+    () => job?.tennantIds?.map((jobId) => members && members[jobId]),
+    [job?.tennantIds, members]
+  );
+  console.log("yooo: ", tennants, job?.tennantIds, members)
 
   const handleUpdateField = useCallback((field, type = 'string') => {
     return (event) => {
@@ -165,6 +173,35 @@ export default function JobDetails({
     </Stack>
   ), [assignees]);
 
+  const renderPendingTennants = useMemo(() => {
+      return (
+        <Stack direction="row">
+          <StyledLabel> Pending Tennants</StyledLabel>
+          <Stack direction="row" flexWrap="wrap" alignItems="center" sx={{ flexGrow: 1 }}>
+            <EmailAutocomplete 
+              values={job?.pendingTennantEmails ? job?.pendingTennantEmails : []} 
+              setValues={(newValues) => setJob((prevJob) => ({
+                  ...prevJob,
+                  pendingTennantEmails: newValues,
+              }))}
+            />
+          </Stack>
+        </Stack>
+      );
+  }, [job?.pendingTennantEmails]);
+
+  const renderTennants = useMemo(() => (
+    <Stack direction="row">
+      <StyledLabel sx={{ height: 40, lineHeight: '40px' }}>Tennants</StyledLabel>
+      <Stack direction="row" flexWrap="wrap" alignItems="center" spacing={1}>
+        {tennants && tennants.map((reporter) => 
+          <Avatar key={reporter?.id} alt={reporter?.displayName} src={reporter?.photoUrl} />
+          )
+        }
+      </Stack>
+    </Stack>
+  ), [tennants]);
+
   const renderAssignee = useMemo(() => (
     <Stack direction="row">
       <StyledLabel sx={{ height: 40, lineHeight: '40px' }}>Assignee</StyledLabel>
@@ -244,7 +281,8 @@ export default function JobDetails({
   const renderAttachments = useMemo(() => (
     <Stack direction="row">
       <StyledLabel>Attachments</StyledLabel>
-      <Attachments files={files} handleDrop={handleDrop} handleRemoveFile={handleRemoveFile} />
+      <Attachments files={files} handleRemoveFile={handleRemoveFile} />
+      <UploadBox onDrop={handleDrop} />
     </Stack>
   ), [job.id, files]);
 
@@ -298,6 +336,8 @@ export default function JobDetails({
     >
       {renderName}
       {renderReporter}
+      {renderTennants}
+      {renderPendingTennants}
       {renderUnitIdentifier}
       {renderRentPaid}
       {renderPriority}

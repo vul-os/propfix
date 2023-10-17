@@ -26,24 +26,22 @@ import {
   removePendingMember,
   removeMember,
 } from '../../api/organizations';
-import { getAllRoles, removeMember as removeMemberOrg, addMember } from '../../api/roles';
+import { getAllRoles, removeMember as removeMemberOrg, addMember, changeRole } from '../../api/roles';
 
 export default function Organization() {
   const theme = useTheme();
-  const [members, setMembers] = useState([]);
   const [pendingMembers, setPendingMembers] = useState([]);
   const [openInviteDialog, setOpenInviteDialog] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteEmailError, setInviteEmailError] = useState(null); // State for invite email error
   const [pendingMemberToDelete, setPendingMemberToDelete] = useState(null);
   const [memberToDelete, setMemberToDelete] = useState(null);
-  const [roles, setRoles] = useState([]);
   const [inviteRole, setInviteRole] = useState('');
 
   const [roleMenuAnchorEl, setRoleMenuAnchorEl] = useState(null);
   const [selectedRoleId, setSelectedRoleId] = useState('');
 
-  const { getIdToken, activeOrganization, organizations } = useAuthContext();
+  const { getIdToken, activeOrganization, organizations, roles, setRoles, members, setMembers } = useAuthContext();
   const currentOrg = organizations.find((org) => org.id === activeOrganization);
 
   const fetchMembers = async () => {
@@ -104,11 +102,22 @@ export default function Organization() {
   };
 
 
-  const handleRoleChange = (event, memberId) => {
+  const handleRoleChange = async (event, memberId) => {
     console.log(`Changing role of member ${memberId} to ${event.target.value}`);
-    // Call your API or backend function to actually change the role here
-    // Example: updateRoleForMember(memberId, event.target.value);
+
+    try {
+        const token = await getIdToken();
+        const response = await changeRole(event.target.value, memberId, activeOrganization, token);
+        if (response) {
+          fetchRoles()
+          fetchMembers()
+        }
+      } catch (error) {
+        console.error("Failed to change role:", error);
+    }
   };
+
+
 
 
   const iconButtonStyle = { color: '#637381' };

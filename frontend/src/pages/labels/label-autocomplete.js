@@ -6,7 +6,7 @@ import Chip from '@mui/material/Chip';
 import PropTypes from 'prop-types'; // Import PropTypes for prop validation
 
 
-export default function LabelAutocomplete({ labels, selectedLabels, setSelectedLabels, textFieldProps }) {
+export default function LabelAutocomplete({ labels = [], selectedLabels, setSelectedLabels, textFieldProps, placeholder="Labels" }) {
   console.log('Labels received:', labels); // Debug log
   console.log('Selected labels:', selectedLabels); // Debug log
 
@@ -25,7 +25,7 @@ export default function LabelAutocomplete({ labels, selectedLabels, setSelectedL
           <TextField
             {...params}
             variant="outlined"
-            placeholder="Labels"
+            placeholder={placeholder}
             {...textFieldProps}
           />
         )}

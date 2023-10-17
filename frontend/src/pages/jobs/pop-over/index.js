@@ -22,7 +22,7 @@ import Scrollbar from '../../../components/scrollbar';
 import { useBoolean } from '../../../hooks/use-boolean';
 // components
 import EventsList from '../events/events-list';
-import MessageInput from '../events/message-input';
+import MessageInput from './message-input';
 
 import Toolbar from './toolbar';
 import JobDetails from '../job';
@@ -49,7 +49,7 @@ export default function PopOver({
   openPopOver,
   onClosePopOver,
 }) {
-  const { getIdToken, user, activeOrganization } = useAuthContext(); 
+  const { getIdToken, user, activeOrganization, settings } = useAuthContext(); 
   const { board, setBoard, boardLoading, jobs, setJobs } = useBoardContext(); // Use the BoardProvider context
   const [selectedColumnMap, setSelectedColumnMap] = useState({});
   const [newJob, setNewJob] = useState({...job});
@@ -57,7 +57,7 @@ export default function PopOver({
   const [events, setEvents] = useState([]); // State for the switch
   const [files, setFiles] = useState([]);
 
-  
+  console.log("YOOOOOO!", settings)
   useEffect(() => {
     const initialSelectedColumnMap = board && board.jobs && board.columns
     ? Object.fromEntries(
@@ -177,24 +177,34 @@ export default function PopOver({
   );
 
   const handleDrop = async (acceptedFiles) => {
-    try {
-      const idToken = await getIdToken();
-      const uploadedFile = await uploadFile(
-        job.id,
-        acceptedFiles[0],
-        idToken
-      );
-      const updatedFiles = [...files, ...acceptedFiles];
-      const updatedAttachments = [...newJob.attachments, uploadedFile.objectName]
-      setFiles(updatedFiles);
-      setNewJob(prevJob => ({
-        ...prevJob,
-        attachments: updatedAttachments,
-      }));
-    } catch (error) {
-      console.error('Error adding file:', error);
-    }
+      try {
+        const idToken = await getIdToken();
+        console.log(acceptedFiles)
+        // Use Promise.all to upload all files concurrently
+        const uploadedFiles = await Promise.all(acceptedFiles.map(file => uploadFile(job.id, file, idToken)));
+        console.log(uploadedFiles)
+        const updatedFiles = [...files, ...acceptedFiles];
+        
+        // Extract objectNames from all uploaded files
+        const uploadedObjectNames = uploadedFiles.map(file => file.objectName);
+        
+        const updatedAttachments = [...newJob.attachments, ...uploadedObjectNames];
+        
+        setFiles(updatedFiles);
+        setNewJob(prevJob => ({
+          ...prevJob,
+          attachments: updatedAttachments,
+        }));
+
+        // Return the object names of all uploaded files
+        return uploadedObjectNames;
+
+      } catch (error) {
+        console.error('Error adding file:', error);
+        throw error;  // if you want to propagate the error outside
+      }
   };
+
 
   const handleRemoveFile = useCallback(
     async (inputFile) => {
@@ -255,15 +265,42 @@ export default function PopOver({
         if (!objectsHaveSameValues(newJob, job)) {
           const token = await getIdToken(); // Get the JWT token from the auth context
           const res = await updateJob(newJob, token); // Pass the token to the deleteJob function
-          if (!!res.success) enqueueSnackbar('Job updated!', {
-            anchorOrigin: { vertical: 'top', horizontal: 'center' },
-          });
+        
+          if (res.success) {
+            enqueueSnackbar('Job updated!', {
+              anchorOrigin: { vertical: 'top', horizontal: 'center' },
+            });
+            const newBoard = {
+              ...board,
+              jobs: {
+                ...board.jobs,
+                [newJob.id]: newJob,
+              },
+            }
+            setBoard(newBoard)
+            const isMoveOnAssignTrue = settings.some(setting => {
+              return setting.type === "moveonassign" && setting.data === "true";
+            });
+            // If moveonassign is true, then check if assigneeIds have gone from empty to more than one item
+            if (isMoveOnAssignTrue && !job?.assigneeIds?.length && !!newJob?.assigneeIds?.length) {
+                  console.log("HALFWAY")
+                  const inProgressColumn = Object.values(newBoard?.columns)?.find(column => {
+                    return column.name.toLowerCase().includes("in progress");
+                  });
+                  const selectedColumn = job && selectedColumnMap[job.id]
+                  
+                  if (inProgressColumn && selectedColumn && inProgressColumn.id !== selectedColumn.id) {
+                    const changedCols = onChangeColumn(job.id, inProgressColumn, selectedColumn, newBoard)
+                  }
+                  
+            }
+          }
         }
       } catch (error) {
         console.error(error);
       }
     },
-    [getIdToken, enqueueSnackbar, job]
+    [getIdToken, enqueueSnackbar, job, settings, board?.columns, settings]
   );
 
   const handleDeleteJob = useCallback(
@@ -295,16 +332,18 @@ export default function PopOver({
     [getIdToken, enqueueSnackbar, board, job]
   );
 
-  const onChangeColumn = async (jobId, newSelectedColumn, selectedColumn) => {  
+  
+  const onChangeColumn = useCallback(
+    async (jobId, newSelectedColumn, selectedColumn, brd=board) => {
       if (newSelectedColumn && newSelectedColumn.jobIds) {
         // Get a copy of job ids from source column
         const newStartJobIds = Array.from(selectedColumn && selectedColumn.jobIds || []).filter(id => id !== jobId);
         // Get a copy of job ids from destination column
         const newEndJobIds = [...Array.from(newSelectedColumn.jobIds || []), jobId];
         let newBoardState = {
-          ...board,
+          ...brd,
           columns: {
-            ...board.columns,
+            ...brd.columns,
             [newSelectedColumn.id]: {
               ...newSelectedColumn,
               jobIds: newEndJobIds,
@@ -314,9 +353,9 @@ export default function PopOver({
         if (selectedColumn?.id && newSelectedColumn?.id) {
           // Create new board state
           newBoardState = {
-            ...board,
+            ...brd,
             columns: {
-              ...board.columns,
+              ...brd.columns,
               [selectedColumn.id]: {
                 ...selectedColumn,
                 jobIds: newStartJobIds,
@@ -342,19 +381,14 @@ export default function PopOver({
           token 
         );
       }
-
-  }
-
+    }, 
+    [board, setBoard, setSelectedColumnMap, getIdToken, moveJob]  // dependencies
+  );
+  
+  
   const onClose = () => {
     onClosePopOver()
     handleUpdateJob(newJob)
-    setBoard({
-      ...board,
-      jobs: {
-        ...board.jobs,
-        [newJob.id]: newJob,
-      },
-    })
   }
 
   const fetchEvents = async () => {
@@ -367,20 +401,28 @@ export default function PopOver({
     }
   };
 
-  const createMessage = async (message, visibility) => {
+  const createMessage = async (message, visibility, attachments) => {
       try {
-          if (message !== "" ) {
-              const newEvent = {
+          if (message !== "" || attachments?.length > 0) {
+            const newEvent = {
                 "type": "MESSAGE",
                 "jobId": job.id,
                 "visibility": visibility ? "public" : "private",
                 "data": { "message": message }
             };
+            if (attachments?.length > 0) {
+              console.log(attachments)
+              newEvent.data = {
+                "message": message,
+                "attachments": attachments
+              }
+            }
             const idToken = await getIdToken();
             const rEvent = await createEvent(newEvent, idToken);
             if (!!rEvent?.event) {
               let oldEvents = []
               if (events) oldEvents = [...events]
+              console.log(rEvent)
               setEvents([...oldEvents, rEvent.event]);
             }
           }
@@ -437,10 +479,10 @@ export default function PopOver({
           }}
         >
           <JobDetails job={newJob} setJob={setNewJob} buildings={board?.buildings} members={board?.members} labels={board?.labels} files={files} handleDrop={handleDrop} handleRemoveFile={handleRemoveFile} />
-          <EventsList events={events} members={board?.members}/>
+          <EventsList events={events} members={board?.members} attachments={files} />
         </Stack>
       </Scrollbar>
-      <MessageInput user={user} createMessage={createMessage} activeOrganization={activeOrganization} />
+      <MessageInput user={user} handleDrop={handleDrop} createMessage={createMessage} activeOrganization={activeOrganization} />
 
     </Drawer>
   );
