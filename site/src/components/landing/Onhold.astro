@@ -107,3 +107,18 @@
     </div>
   </section>
 </section>
+
+<script>
+  const fadeInSection = document.querySelector('.fade-in-section');
+
+  function fadeInOnScroll() {
+    const rect = fadeInSection.getBoundingClientRect();
+    const windowHeight = window.innerHeight;
+    if (rect.top < windowHeight && rect.bottom >= 0) {
+      fadeInSection.classList.add('animate');
+    }
+  }
+
+  window.addEventListener('scroll', fadeInOnScroll);
+  fadeInOnScroll(); // Check initial state on page load
+</script>
