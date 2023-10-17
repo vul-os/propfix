@@ -25,7 +25,7 @@ import {
   updateInspectionTemplateItem,
   deleteInspectionTemplateItem,
 } from '../../api/inspectionTemplateItems';
-import { getAllInspectionTemplates, createInspectionTemplate, deleteInspectionTemplate,updateInspectionTemplate } from '../../api/inspectionTemplates';
+import { getAllInspectionTemplates, createInspectionTemplate, deleteInspectionTemplate, updateInspectionTemplate } from '../../api/inspectionTemplates';
 
 import InspectionTemplateItems from './inspection-template-items';
 
@@ -165,8 +165,8 @@ export default function InspectionTemplate() {
 
   const handleDeleteTemplate = async (template) => {
     try {
-      console.log(template)
-      const token = await getIdToken()
+      console.log(template);
+      const token = await getIdToken();
       await deleteInspectionTemplate(template, token);
       setTemplates((prevTemplates) => prevTemplates.filter((t) => t.id !== template));
       fetchTemplates();
@@ -175,7 +175,6 @@ export default function InspectionTemplate() {
       console.error('Error deleting an inspection template:', error);
     }
   };
-  
 
   const handleSaveEdit = async () => {
     try {
@@ -200,6 +199,7 @@ export default function InspectionTemplate() {
         </IconButton>
         <IconButton
           onClick={() => {
+            // Set the name of the new template as empty string initially
             setNewTemplate({ name: '' });
             setEditingTemplateId(null);
             setOpenDialog(true);
@@ -225,6 +225,7 @@ export default function InspectionTemplate() {
                   margin="dense"
                 />
               ) : (
+                // Display the template name if not in editing mode
                 template.name
               )}
             </Typography>
@@ -268,9 +269,9 @@ export default function InspectionTemplate() {
           ) : (
             <TextField
               label="Template Name"
-              value={editedTemplate.name}
+              value={newTemplate.name}
               onChange={(e) =>
-                setEditedTemplate({ ...editedTemplate, name: e.target.value })
+                setNewTemplate({ ...newTemplate, name: e.target.value })
               }
               fullWidth
               margin="dense"
