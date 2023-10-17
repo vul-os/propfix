@@ -160,7 +160,9 @@ func createJobsTable(dbpool *pgxpool.Pool) error {
 			rent_paid BOOLEAN,
 			due_date TIMESTAMP,
 			created_at TIMESTAMP,
-			closed_at TIMESTAMP
+			closed_at TIMESTAMP,
+			tennant_ids TEXT[] DEFAULT '{}',
+			pending_tennant_emails TEXT[] DEFAULT '{}'
 		)
 	`)
 	if err != nil {
@@ -250,6 +252,7 @@ func createInspectionsTable(dbpool *pgxpool.Pool) error {
             id TEXT PRIMARY KEY,
             name TEXT NOT NULL,
             schedule_date TIMESTAMPTZ NOT NULL,
+			completed_date TIMESTAMPTZ NOT NULL,
             assignee_ids TEXT[],
             organization_id TEXT NOT NULL
         )
@@ -273,6 +276,25 @@ func createPendingMembersTable(dbpool *pgxpool.Pool) error {
 	`)
 	if err != nil {
 		return fmt.Errorf("Error creating pending_members table: %v", err)
+	}
+	return nil
+}
+
+func createSettingsTable(dbpool *pgxpool.Pool) error {
+	ctx := context.Background()
+
+	_, err := dbpool.Exec(ctx, `
+		CREATE TABLE IF NOT EXISTS settings (
+			id TEXT PRIMARY KEY,
+			key TEXT NOT NULL,
+			value TEXT NOT NULL,
+			description TEXT,
+			organization_id TEXT NOT NULL,
+			created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+		)
+	`)
+	if err != nil {
+		return fmt.Errorf("Error creating settings table: %v", err)
 	}
 	return nil
 }
@@ -360,6 +382,10 @@ func main() {
 		log.Fatal("Error creating pending members table: ", err)
 	}
 
+	err = createSettingsTable(dbpool)
+	if err != nil {
+		log.Fatal("Error creating settings table: ", err)
+	}
 	// Call other create table functions here
 	// ALTER TABLE ColumnJobLinks ADD CONSTRAINT unique_job_column UNIQUE(job_id, column_id);
 }
