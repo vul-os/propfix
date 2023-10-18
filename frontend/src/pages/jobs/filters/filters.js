@@ -30,7 +30,7 @@ function Filter({ sidebarOpen, toggleSidebar, toFilter, labels, buildings, membe
     assigneeIDs: [],
     unitIdentifier: [],
     buildingID: [],
-    labels: [],
+    labelIDs: [],
     attachments: [],
     costRange: [0, 10],
     hoursRange: [0, 10],
@@ -46,21 +46,7 @@ function Filter({ sidebarOpen, toggleSidebar, toFilter, labels, buildings, membe
 
   useEffect(() => {
     // Reset the filter state when toFilter changes
-    setFilter({
-    name: [],
-    priority: [],
-    reporterID: [],
-    assigneeIDs: [],
-    unitIdentifier: [],
-    buildingID: [],
-    labelIDs: [],
-    attachments: [],
-    costRange: [0, 10],
-    hoursRange: [0, 10],
-    rentPaid: false,
-    dueDate: [null, null],
-    creationDate,
-  });
+    setFilter(initialFilterState);
   }, [toFilter]);
 
   const setSelectedLabels = (selectedLabel) => {
@@ -74,11 +60,28 @@ function Filter({ sidebarOpen, toggleSidebar, toFilter, labels, buildings, membe
   return (
     <Drawer anchor="right" open={sidebarOpen} onClose={toggleSidebar}>
       <Box sx={{ width: '274px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: '16px', gap: '15px', marginTop: '20px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ display: 'flex', justifyContent: 'space between', alignItems: 'center' }}>
           <h2 style={{ margin: '0', padding: '0' }}>Filters</h2>
           <div style={{ display: 'flex', gap: '30px' }}>
-            <Icon icon="material-symbols:refresh" style={{ fontSize: '22px' }} />
-            <Icon icon="ph:x" style={{ fontSize: '22px' }} />
+            <Icon
+              icon="material-symbols:refresh"
+              style={{ fontSize: '22px', cursor: 'pointer', marginLeft: '90px', marginTop: '4px' }}
+              onClick={() => {
+                // Call a function to refresh the filters
+                // You can also reset the filter state to its initial state
+                setFilter(initialFilterState);
+              }}
+            />
+            <Icon
+              icon="ph:x"
+              style={{ fontSize: '22px', cursor: 'pointer', marginTop: '4px'  }}
+              onClick={() => {
+                // Reset the filter state to its initial state
+                setFilter(initialFilterState);
+                // Close the filter sidebar
+                toggleSidebar();
+              }}
+            />
           </div>
         </div>
         <div>
@@ -93,7 +96,6 @@ function Filter({ sidebarOpen, toggleSidebar, toFilter, labels, buildings, membe
             )}
           />
         </div>
-        
         <div>
           <h4 style={{ fontWeight: '700', fontSize: '15px', cursor: 'pointer', marginLeft: '5px' }}>Priority</h4>
           <Autocomplete
@@ -155,12 +157,14 @@ function Filter({ sidebarOpen, toggleSidebar, toFilter, labels, buildings, membe
             )}
           />
         </div>
+        <div>
           <h4 style={{ fontWeight: '700', fontSize: '15px', cursor: 'pointer', marginLeft: '5px', marginBottom: '12px' }}>Created At</h4>
           <DateRangeFilter
             value={filter?.creationDate}
             onChange={(value) => handleChange('creationDate', value)}
             label="Creation Date Range"
           />
+        </div>
         <div>
           <h4 style={{ fontWeight: '700', fontSize: '15px', cursor: 'pointer', marginTop: '15px' }}>Cost</h4>
           <SliderFilter
