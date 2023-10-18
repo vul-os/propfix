@@ -36,6 +36,7 @@ import Root from './pages/root';
 // Import the Stepper component
 import Stepper from './pages/job-wizzard/stepper'; // Make sure this path is correct
 import AcceptInvite from './pages/auth/accept-invite';
+import PDFAreaEditor from './pages/leases/pdf-editor';
 
 function App() {
   return (
@@ -165,7 +166,22 @@ function App() {
                       </AuthGuard>
                     }
                   />
+                   <Route
+                    path="/pdf/*"
+                    element={
+                      <AuthGuard>
+                        <BoardProvider>
+                          <DashboardLayout>
+                            <Routes>
+                              <Route path="/" element={<PDFAreaEditor />} />
+                            </Routes>
+                          </DashboardLayout>
+                        </BoardProvider>
+                      </AuthGuard>
+                    }
+                  />
                 </Routes>
+                
               </AuthProvider>
             </ThemeProvider>
           </SettingsProvider>
