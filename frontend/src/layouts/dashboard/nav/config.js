@@ -18,13 +18,13 @@ const navConfig = (role) => {
 
   if (role === 'admin') {
     return  [{
-        title: 'Dashboard',
+        title: 'Analytics',
         path: '/',
         breadcrumbsIcon: <HomeIcon />,
         icon: <Icon icon="carbon:dashboard" style={{ marginRight: '18px', fontSize: '22px' }} />
       },
       {
-        title: 'Board',
+        title: 'Jobs Board',
         path: '/board',
         breadcrumbsIcon:  <StoreIcon />,
         icon: <Icon icon="system-uicons:clipboard" style={{ marginRight: '18px', fontSize: '22px' }} />

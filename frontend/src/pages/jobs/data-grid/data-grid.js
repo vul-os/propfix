@@ -218,7 +218,7 @@ function JobDataGrid() {
       width: 200,
       renderCell: renderBuilding,
     },
-    { field: 'name', headerName: 'Name', width: 200 },
+    { field: 'Issue', headerName: 'Name', width: 200 },
     {
       field: 'labels',
       headerName: 'Labels',

@@ -94,7 +94,7 @@ export default function JobDetails({
 
   const renderName = useMemo(() => (
     <InputName
-      placeholder="Task name"
+      placeholder="Issue"
       value={job.name}
       onChange={handleUpdateField('name')}
     />
