@@ -6,10 +6,12 @@ import Tab from '@mui/material/Tab';
 import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
 import Profile from './profile';
-import Labels from './labels'
+import Labels from './labels';
 import Buildings from './building';
 import Organization from './organization';
 import InspectionTemplate from './inspection-template';
+import OtherSettings from './other'; // Import the OtherSettings component
+
 
 function TabPanel(props) {
   const { children, value, index, ...other } = props;
@@ -57,6 +59,7 @@ export default function Settings() {
     { label: 'Buildings', content: <Buildings /> },
     { label: 'Labels', content: <Labels /> },
     { label: 'Template', content: <InspectionTemplate /> },
+    { label: 'Other Settings', content: <OtherSettings /> },
   ];
 
   return (
