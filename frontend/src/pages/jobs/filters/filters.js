@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
-import dayjs from 'dayjs';
 import { Drawer, Box, Autocomplete, TextField } from '@mui/material';
 
 import {
@@ -10,44 +9,20 @@ import {
   CheckboxFilter
 } from './filter-components';
 
-function Filter({ sidebarOpen, toggleSidebar, toFilter, labels, buildings, members, priorities }) {
+function Filter({ sidebarOpen, toggleSidebar, toFilter, setFilter, filter, labels, buildings, members, priorities }) {
   const cost = toFilter?.cost ? [Math.min(...toFilter?.cost), Math.max(...toFilter?.cost)] : [0, 1000];
   const hours = toFilter?.hours ? [Math.min(...toFilter?.hours), Math.max(...toFilter?.hours)] : [0, 24];
-
-  const isValidDate = (d) => {
-    return dayjs(d).isValid();
-  };
-
-  const validDates = (toFilter?.createdAt || []).map(date => dayjs(date)).filter(isValidDate);
-  const minDate = validDates.length ? validDates.reduce((a, b) => a.isBefore(b) ? a : b) : null;
-  const maxDate = validDates.length ? validDates.reduce((a, b) => a.isAfter(b) ? a : b) : null;
-  const creationDate = [minDate, maxDate];
-
-  const initialFilterState = {
-    name: [],
-    priority: [],
-    reporterID: [],
-    assigneeIDs: [],
-    unitIdentifier: [],
-    buildingID: [],
-    labelIDs: [],
-    attachments: [],
-    costRange: [0, 10],
-    hoursRange: [0, 10],
-    rentPaid: false,
-    creationDate,
-  };
-
-  const [filter, setFilter] = useState(initialFilterState);
 
   const handleChange = (field, value) => {
     setFilter(prev => ({ ...prev, [field]: value }));
   };
 
-  useEffect(() => {
-    // Reset the filter state when toFilter changes
-    setFilter(initialFilterState);
-  }, [toFilter]);
+  
+
+  // useEffect(() => {
+  //   // Reset the filter state when toFilter changes
+  //   setFilter(initialFilterState);
+  // }, [toFilter]);
 
   const setSelectedLabels = (selectedLabel) => {
     setFilter(prev => ({ ...prev, 'labels': selectedLabel }));
@@ -69,7 +44,7 @@ function Filter({ sidebarOpen, toggleSidebar, toFilter, labels, buildings, membe
               onClick={() => {
                 // Call a function to refresh the filters
                 // You can also reset the filter state to its initial state
-                setFilter(initialFilterState);
+                // setFilter(initialFilterState);
               }}
             />
             <Icon
@@ -77,7 +52,7 @@ function Filter({ sidebarOpen, toggleSidebar, toFilter, labels, buildings, membe
               style={{ fontSize: '22px', cursor: 'pointer', marginTop: '4px'  }}
               onClick={() => {
                 // Reset the filter state to its initial state
-                setFilter(initialFilterState);
+                // setFilter(initialFilterState);
                 // Close the filter sidebar
                 toggleSidebar();
               }}
@@ -136,8 +111,9 @@ function Filter({ sidebarOpen, toggleSidebar, toFilter, labels, buildings, membe
           <h4 style={{ fontWeight: '700', fontSize: '15px', cursor: 'pointer', marginLeft: '5px' }}>Buildings</h4>
           <Autocomplete
             multiple
-            options={buildings ? Object.values(buildings).map(building => building.buildingName) : []}
+            options={buildings ? Object.values(buildings) : []}
             value={filter?.buildingID ? filter?.buildingID : []}
+            getOptionLabel={(option) => option?.buildingName}
             onChange={(event, newValue) => handleChange('buildingID', newValue)}
             renderInput={(params) => (
               <TextField {...params} label="Buildings" variant="outlined" fullWidth />
