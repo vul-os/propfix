@@ -7,7 +7,41 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PropFix</title>
   <style>
-    @keyframes fadeInH2 {
+    body, a, .hero-buttons a {
+      color: #7A0008 !important;
+    }
+
+    html, body {
+      height: 100%;
+      margin: 0;
+    }
+    
+    
+        h2 {
+      opacity: 1; /* Start with 0 opacity */
+      margin-top: 8px;
+      color: black;
+      transition: opacity 3s ease; /* Transition for opacity */
+    }
+
+
+    body {
+      background: linear-gradient(to bottom, #F9FAFB);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .custom-bg {
+      background: none;
+      background-color: #EBF2FA;
+    }
+
+    .fade-in {
+      opacity: 0;
+      animation: fadeIn 2.6s ease forwards;
+    }
+
+    @keyframes fadeIn {
       0% {
         opacity: 0;
       }
@@ -16,34 +50,12 @@
       }
     }
 
-    /* Apply the animation to the h2 element */
-    h2 {
-      animation: fadeInH2 3s ease forwards; /* Adjusted animation duration */
-      margin-top: 8px;
-      color: black;
-    }
-
-    body, a,.hero-buttons a {
-      color: #7A0008 !important; /* Adjusted font color */
-    }
-
-    html, body {
-      height: 100%;
-      margin: 0;
-    }
-
-    body {
-      background: linear-gradient(to bottom, #EBF2FA);
-      display: flex;
-      flex-direction: column;
-    }
-
-    .custom-bg {
-      background: none; /* Override the linear gradient */
-      background-color: #EBF2FA; /* Use the specific background color */
+    .highlight {
+      color: #7A0008;
     }
   </style>
 </head>
+
 <body>
   <section class="custom-bg">
     <div class="mx-auto w-full lg:px-24 max-w-7xl md:px-12 items-center px-8 py-24">
@@ -53,55 +65,64 @@
             <div class="relative rounded-full py-1 px-3 text-sm leading-6 text-gray-600 ring-1 ring-gray-900/10 hover:ring-gray-900/20">
               <a href="https://propfix.com" class="font-semibold text-indigo-600">
                 <span class="absolute inset-0" aria-hidden="true"></span>
-                <!-- <span class="block lg:inline">
-                  Access PropFix Here <span aria-hidden="true">&rarr;</span>
-                </span> -->
               </a>
             </div>
           </div>
           <div>
             <h2 style="margin-top: 8px; color: black;">
-            <p class="text-black font-extrabold lg:text-5xl text-4xl tracking-tighter">
-              <span style="margin-right: 1rem;">Log -</span>
-              <span style="margin-right: 1rem; color: #7A0008;">Look -</span>
-              <span style="margin-right: 1rem;">List -</span>
-              <span style="color: #7A0008;">Mend</span>
-              </h2>
-            </p>
-            <p class="mt-4 text-lg max-w-xl mx-auto tracking-tight; text-color: #7A0008 ">
+              <p class="text-black font-extrabold lg:text-5xl text-4xl tracking-tighter">
+                <span style="margin-right: 1rem;">Log -</span>
+                <span style="margin-right: 1rem; color: #7A0008;">Look -</span>
+                <span style="margin-right: 1rem;">List -</span>
+                <span style="color: #7A0008;">Mend</span>
+              </p>
+            </h2>
+            <p class="mt-4 text-lg max-w-xl mx-auto tracking-tight" style="color: #000000;">
               Streamline your property management with PropFix. Say goodbye to disorganized workflows, missing information, and repetitive tasks. Say hello to efficiency and seamless management with PropFix.
-            </p>
-             <div class="flex justify-center gap-3 mt-10 flex-col sm:flex-row hero-buttons">
-              <a class="items-center justify-center h-12 font-medium rounded-xl focus-visible:outline-black focus:outline-none inline-flex duration-200 text-white lg:w-auto px-6 py-3 text-center" href="https://propfix.com" style="background-color: #EBF2FA; color: #7A0008;">
+            </p>            
+            <div class="flex justify-center gap-3 mt-10 flex-col sm:flex-row hero-buttons">
+              <a class="items-center justify-center h-12 font-medium rounded-xl focus-visible:outline-black focus:outline-none inline-flex duration-200 text-white lg:w-auto px-6 py-3 text-center" href="https://propfix.com" style="background-color: #F9FAFB; color: #7A0008;">
                 Visit PropFix &nbsp; &rarr;
-              </a>              
-        </div>
-        <dl class="lg:gap-x-8 lg:grid-cols-3 max-w-4xl mt-8 mx-auto sm:gap-x-6 sm:gap-y-12 sm:grid sm:grid-cols-2 sm:space-y-0 space-y-6 text-center text-sm items-start">
-          <div class="text-gray-500">
-            <strong class="text-gray-700">Modern Technologies</strong> ━ PropFix utilizes Astro, Tailwind CSS, and Alpine.js for efficient and flexible development.
+              </a>
+            </div>
+            <!-- <dl class="lg:gap-x-8 lg:grid-cols-3 max-w-4xl mt-8 mx-auto sm:gap-x-6 sm:gap-y-12 sm:grid sm:grid-cols-2 sm:space-y-0 space-y-6 text-center text-sm items-start">
+              <div class="text-gray-500">
+                <strong class="text-gray-700">Modern Technologies</strong> ━ PropFix utilizes Astro, Tailwind CSS, and Alpine.js for efficient and flexible development.
+              </div>
+            </dl> -->
           </div>
-          <div class="text-gray-500">
-            <strong class="text-gray-700">Comprehensive Pages</strong> ━ Explore a range of pages including landing, FAQ, terms, privacy, sign up, and sign in pages.
+          <div class="relative w-full mx-auto max-w-7xl items-center py-12 pb-12">
+            <div class="bg-gray-100 p-8 rounded-3xl" style="background-color: #7A0008;">
+              <!-- Replace the existing img with your desired illustration -->
+              <img src="public/propfixpic.png" alt="Illustration" class="relative w-full border lg:rounded-2xl object-cover rounded shadow-2xl" />
+            </div>
           </div>
-          <div class="text-gray-500">
-            <strong class="text-gray-700">Diverse Sections</strong> ━ Discover various feature sections, a pricing table, testimonials, CTAs, full forms, and more in PropFix.
+          <div class="grid grid-cols-2 gap-0.5 lg:mt-8 md:grid-cols-6 mt-6">
+            <div class="flex justify-center col-span-1">
+              <!-- <img alt="Figma logo" class="h-8" src="/Figma.svg" /> -->
+            </div>
           </div>
-        </dl>
-      </div>
-      <div class="relative w-full mx-auto max-w-7xl items-center py-12 pb-12">
-        <div class="bg-gray-100 p-8 rounded-3xl" style="background-color: #7A0008;">
-          <!-- Replace the existing img with your desired illustration -->
-          <img src="public/propfixpic.png" alt="Illustration" class="relative w-full border lg:rounded-2xl object-cover rounded shadow-2xl" />
         </div>
       </div>
-      <div class="grid grid-cols-2 gap-0.5 lg:mt-8 md:grid-cols-6 mt-6">
-        <div class="flex justify-center col-span-1 ">
-          <img alt="Figma logo" class="h-8" src="/Figma.svg" />
-        </div>
-        <!-- Add similar blocks for other logos (Canva, Stripe, Gitlab, Linear, Gumroad) -->
-      </div>
-    </div>
-  </section>
-</body>
+    </section>
+  </body>
+  <script>
+    const elements = document.querySelectorAll('.fade-in');
 
+    function checkElementsInView() {
+      elements.forEach((element) => {
+        const rect = element.getBoundingClientRect();
+        const isInView = (rect.top >= 0 && rect.bottom <= window.innerHeight);
+
+        if (isInView) {
+          element.style.opacity = 1;
+        }
+      });
+    }
+
+    window.addEventListener('scroll', checkElementsInView);
+    window.addEventListener('load', checkElementsInView);
+    window.addEventListener('resize', checkElementsInView);
+    checkElementsInView(); // Initial check
+  </script>
 </html>
