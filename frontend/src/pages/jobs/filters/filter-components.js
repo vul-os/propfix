@@ -1,6 +1,6 @@
 import React from 'react';
 import dayjs, { Dayjs } from 'dayjs';
-import { TextField, Box, Slider, Autocomplete, Checkbox } from '@mui/material';
+import { TextField, Box, Slider, Autocomplete, Checkbox, Typography  } from '@mui/material';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
@@ -20,29 +20,51 @@ export function SearchFilter({ value, onChange }) {
 }
 
 export function DateRangeFilter({ value, onChange }) {
-    console.log(value)
+  console.log(value);
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
-      <Box sx={{ marginTop: 3, width: '100%' }}>
-        <DatePicker label="From" value={value[0]} onChange={(newDate) => onChange([newDate, value[1]])} />
+      <Box sx={{ marginTop: 1, width: '100%', maxWidth: '100%' }}>
+        <DatePicker
+          label="From"
+          value={value[0]}
+          onChange={(newDate) => onChange(newDate, value[1])}
+          style={{ width: '100%' }}
+          placeholder="" 
+        />
       </Box>
-      <Box sx={{ marginTop: 3, width: '100%' }}>
-        <DatePicker label="To" value={value[1]} onChange={(newDate) => onChange([value[0], newDate])} />
+      <Box sx={{ marginTop: 2, width: '100%', maxWidth: '100%' }}>
+        <DatePicker
+          label="To"
+          value={value[1]}
+          onChange={(newDate) => onChange([value[0], newDate])}
+          style={{ width: '100%' }}
+          placeholder="" 
+        />
       </Box>
     </LocalizationProvider>
   );
 }
 
-export function SliderFilter({ value, min, max, onChange, labelFormat }) {
+
+
+
+
+
+export function SliderFilter({ value, min, max, onChange, label }) {
   return (
-    <Slider
-      value={value}
-      onChange={onChange}
-      valueLabelDisplay="auto"
-      valueLabelFormat={labelFormat}
-      min={min}
-      max={max}
-    />
+    <div>
+      <Typography id={`${label}-slider`} gutterBottom>
+        {label}
+      </Typography>
+      <Slider
+        value={value}
+        onChange={onChange}
+        valueLabelDisplay="auto"
+        aria-labelledby={`${label}-slider`}
+        min={min}
+        max={max}
+      />
+    </div>
   );
 }
 

@@ -39,7 +39,7 @@ const StyledDataGrid = styled(DataGrid)(() => ({
 }));
 
 function JobDataGrid() {
-  const { board, jobs, boardLoading, toFilter, filters } = useBoardContext(); // Use the BoardProvider context
+  const { board, jobs, boardLoading, toFilter, filter, setFilter } = useBoardContext(); // Use the BoardProvider context
 
   const [open, setOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState(null);
@@ -322,6 +322,8 @@ function JobDataGrid() {
           />
           </Button>
           <Filter
+            filter={filter}
+            setFilter={setFilter}
             sidebarOpen={sidebarOpen} // Ensure this is correctly connected to the filterOpen state
             toggleSidebar={toggleSidebar}
             toFilter={toFilter}
