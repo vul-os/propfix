@@ -32,9 +32,9 @@ export async function deleteInspectionTemplate(id, idToken) {
   }
 }
 
-export async function getAllInspectionTemplates(organizationId, idToken) {
+export async function getAllInspectionTemplates(inspectionTemplateGroupId, idToken) {
   try {
-    const params = [{organizationId}];
+    const params = [{inspectionTemplateGroupId}];
     return await jsonRpcRequest('InspectionTemplates.GetAllInspectionTemplates', params, idToken);
   } catch (error) {
     console.error('Error fetching inspection templates:', error);

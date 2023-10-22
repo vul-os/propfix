@@ -9,7 +9,8 @@ import Profile from './profile';
 import Labels from './labels';
 import Buildings from './building';
 import Organization from './organization';
-import InspectionTemplate from './inspection-template';
+import InspectionTemplate from './inspections/inspection-template';
+import InspectionTemplateGroups from './inspections'
 import OtherSettings from './other'; // Import the OtherSettings component
 
 
@@ -58,8 +59,8 @@ export default function Settings() {
     { label: 'Organization', content: <Organization /> },
     { label: 'Buildings', content: <Buildings /> },
     { label: 'Labels', content: <Labels /> },
-    { label: 'Template', content: <InspectionTemplate /> },
-    { label: 'Other Settings', content: <OtherSettings /> },
+    { label: 'Inspection Templates', content: <InspectionTemplateGroups /> },
+    { label: 'Other', content: <OtherSettings /> },
   ];
 
   return (

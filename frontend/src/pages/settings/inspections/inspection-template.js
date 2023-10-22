@@ -17,20 +17,20 @@ import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete'; // Import the Delete icon
 import { DataGrid } from '@mui/x-data-grid';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import InputName from '../../components/input-name';
-import { useAuthContext } from '../../contexts/auth';
-import { useBoardContext } from '../../contexts/board';
+import InputName from '../../../components/input-name';
+import { useAuthContext } from '../../../contexts/auth';
+import { useBoardContext } from '../../../contexts/board';
 import {
   getAllInspectionTemplateItems,
   createInspectionTemplateItem,
   updateInspectionTemplateItem,
   deleteInspectionTemplateItem,
-} from '../../api/inspectionTemplateItems';
-import { getAllInspectionTemplates, createInspectionTemplate, deleteInspectionTemplate, updateInspectionTemplate } from '../../api/inspectionTemplates';
+} from '../../../api/inspectionTemplateItems';
+import { getAllInspectionTemplates, createInspectionTemplate, deleteInspectionTemplate, updateInspectionTemplate } from '../../../api/inspectionTemplates';
 
 import InspectionTemplateItems from './inspection-template-items';
 
-export default function InspectionTemplate() {
+export default function InspectionTemplate({viewingId}) {
   const [templates, setTemplates] = useState([]);
   const [items, setItems] = useState([]);
   const [openDialog, setOpenDialog] = useState(false);
@@ -44,36 +44,39 @@ export default function InspectionTemplate() {
 
 
   const { getIdToken, activeOrganization } = useAuthContext();
-  const { board } = useBoardContext();
 
   const fetchTemplates = useCallback(async () => {
     try {
-      const token = await getIdToken();
-      const response = await getAllInspectionTemplates(activeOrganization, token);
-      console.log(response);
-      setTemplates(response.templates || []);
+      if (viewingId) {
+        const token = await getIdToken();
+        const response = await getAllInspectionTemplates(viewingId, token);
+        console.log(response);
+        setTemplates(response.templates || []);
+      }
     } catch (error) {
       console.error('Error fetching inspection templates:', error);
     }
-  }, [getIdToken, activeOrganization]);
+  }, [getIdToken, viewingId]);
 
   const fetchItems = useCallback(async () => {
     try {
-      const token = await getIdToken();
-      const response = await getAllInspectionTemplateItems(activeOrganization, token);
-      console.log(response);
-      setItems(response.items || []);
+      if (viewingId) {
+        const token = await getIdToken();
+        const response = await getAllInspectionTemplateItems(viewingId, token);
+        console.log(response);
+        setItems(response.items || []);
+      }
     } catch (error) {
       console.error('Error fetching inspection template items:', error);
     }
-  }, [getIdToken, activeOrganization]);
+  }, [getIdToken, viewingId]);
 
   useEffect(() => {
-    if (activeOrganization) {
+    if (viewingId) {
       fetchTemplates();
       fetchItems();
     }
-  }, [activeOrganization, fetchTemplates, fetchItems]);
+  }, [viewingId, fetchTemplates, fetchItems]);
 
   const groupItemsByTemplate = () => {
     const groupedItems = {};
