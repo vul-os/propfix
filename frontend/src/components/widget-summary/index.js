@@ -4,9 +4,9 @@ import PropTypes from 'prop-types';
 import { alpha, styled } from '@mui/material/styles';
 import { Card, Typography } from '@mui/material';
 // utils
-import { fShortenNumber, fCurrency } from '../../../utils/format-number';
+import { fShortenNumber, fCurrency } from '../../utils/format-number';
 // components
-import Iconify from '../../../components/iconify';
+import Iconify from '../iconify';
 
 const StyledIcon = styled('div')(({ theme }) => ({
   margin: 'auto',

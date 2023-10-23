@@ -97,7 +97,7 @@ export const BoardProvider = ({ children }) => {
       }
     }
     fetchData();
-  }, [getIdToken, haveFetchedOrganizations]);
+  }, [getIdToken, haveFetchedOrganizations, activeOrganization]);
 
   useEffect(() => {
     console.log(filter, jobs);

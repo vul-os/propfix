@@ -4,7 +4,7 @@ import PropTypes from 'prop-types';
 
 import { useAuthContext } from '../../../contexts/auth'; 
 import { executeQuery } from '../../../api/dashboard'; 
-import WidgetSummaryComponent from "./widget-summary-component"
+import WidgetSummaryComponent from "../../../components/widget-summary"
 
 
 

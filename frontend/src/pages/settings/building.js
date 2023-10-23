@@ -56,7 +56,7 @@ export default function Buildings() {
   const fetchBuildings = async () => {
     try {
       const token = await getIdToken();
-      const response = await getAllBuildings(0, 0, '', token);
+      const response = await getAllBuildings(0, 0, '', activeOrganization, token);
       setBuildings(response.buildings || []);
     } catch (error) {
       console.error('Error fetching buildings:', error);
