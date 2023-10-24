@@ -44,30 +44,9 @@ function JobDataGrid() {
   const [open, setOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState(null);
 
-  const [filterOpen, setFilterOpen] = useState(false); // Add filter state
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const [minCost, setMinCost] = useState(0); // Define minCost state
-  const [maxCost, setMaxCost] = useState(1000); // Define maxCost state
-
-  const [searchText, setSearchText] = useState('');
-  const [filteredJobs, setFilteredJobs] = useState([]);
-
-  
-  
-  
-
-  useEffect(() => {
-    if (searchText.trim() === '') {
-      setFilteredJobs(jobs);
-    } else {
-      const filtered = jobs.filter((job) =>
-        job.name.toLowerCase().includes(searchText.toLowerCase())
-      );
-      setFilteredJobs(filtered);
-    }
-  }, [jobs, searchText]);
-
+ 
 
 
   const toggleSidebar = () => {
@@ -218,7 +197,7 @@ function JobDataGrid() {
       width: 200,
       renderCell: renderBuilding,
     },
-    { field: 'Issue', headerName: 'Name', width: 200 },
+    { field: 'name', headerName: 'Name', width: 200 },
     {
       field: 'labels',
       headerName: 'Labels',

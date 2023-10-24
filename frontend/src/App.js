@@ -28,8 +28,6 @@ import JobDataGrid from './pages/jobs/data-grid/data-grid';
 import EventsList from './pages/jobs/events/events-list';
 
 
-import InspectionList from './pages/inspections/inspections-list';
-
 import Dashboard from './pages/dashboard';
 import Root from './pages/root';
 
@@ -152,7 +150,7 @@ function App() {
                       </AuthGuard>
                     }
                   />
-                  <Route
+                  {/* <Route
                     path="/inspections/*"
                     element={
                       <AuthGuard>
@@ -165,7 +163,7 @@ function App() {
                         </BoardProvider>
                       </AuthGuard>
                     }
-                  />
+                  /> */}
                    <Route
                     path="/pdf/*"
                     element={

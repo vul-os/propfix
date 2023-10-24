@@ -1,12 +1,14 @@
 function getConfig() {
   const defaultConfig = {
     apiUrl: 'https://propfix-backend-go-mm4ahu6lbq-uc.a.run.app',
+    supabaseUrl: 'https://tcgmonunzroeujvmqcir.supabase.co',
+    supabaseKey: '***REMOVED-SUPABASE-ANON-KEY***'
   };
 
   const location = window.location.href;
   
   if (location.includes('localhost')) {
-    return { apiUrl: 'http://localhost:8080' };
+    return defaultConfig;
   } 
   return defaultConfig;
 

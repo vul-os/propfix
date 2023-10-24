@@ -17,12 +17,13 @@ const urlIcon = (url) =>
 const navConfig = (role) => {
 
   if (role === 'admin') {
-    return  [{
-        title: 'Analytics',
-        path: '/',
-        breadcrumbsIcon: <HomeIcon />,
-        icon: <Icon icon="carbon:dashboard" style={{ marginRight: '18px', fontSize: '22px' }} />
-      },
+    return  [
+      // {
+      //   title: 'Analytics',
+      //   path: '/',
+      //   breadcrumbsIcon: <HomeIcon />,
+      //   icon: <Icon icon="carbon:dashboard" style={{ marginRight: '18px', fontSize: '22px' }} />
+      // },
       {
         title: 'Jobs Board',
         path: '/board',
@@ -36,12 +37,12 @@ const navConfig = (role) => {
         breadcrumbsIcon:  <StoreIcon />,
         icon: <Icon icon="ph:briefcase-thin" style={{ marginRight: '18px', fontSize: '22px' }} />
       },
-      {
-        title: 'Inspections (Beta)',
-        path: '/inspections',
-        breadcrumbsIcon:  <StoreIcon />,
-        icon: <Icon icon="fa-solid:search" style={{ marginRight: '18px', fontSize: '22px' }} />
-      },
+      // {
+      //   title: 'Inspections (Beta)',
+      //   path: '/inspections',
+      //   breadcrumbsIcon:  <StoreIcon />,
+      //   icon: <Icon icon="fa-solid:search" style={{ marginRight: '18px', fontSize: '22px' }} />
+      // },
     ]
   }
   if (role === 'basic') {

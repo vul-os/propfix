@@ -13,8 +13,8 @@ import { useAuthContext } from '../../../contexts/auth';
 import { useBoardContext } from '../../../contexts/board'; 
 import { getAllEvents, createEvent } from '../../../api/events';
 import { updateJob, deleteJob, closeJob, reOpenJob } from '../../../api/jobs';
-import { moveJob } from '../../../api/columnJobLinks';
-import { uploadFile, getFile, deleteFile } from '../../../api/attachments';
+import { moveJob } from '../../../api/columnJobs';
+import { uploadFile, getFile, deleteFile } from '../../../api/files';
 
 import Scrollbar from '../../../components/scrollbar';
 
@@ -49,7 +49,7 @@ export default function PopOver({
   openPopOver,
   onClosePopOver,
 }) {
-  const { getIdToken, user, activeOrganization, settings } = useAuthContext(); 
+  const { user, activeOrganization, settings } = useAuthContext(); 
   const { board, setBoard, boardLoading, jobs, setJobs } = useBoardContext(); // Use the BoardProvider context
   const [selectedColumnMap, setSelectedColumnMap] = useState({});
   const [newJob, setNewJob] = useState({...job});
@@ -104,8 +104,7 @@ export default function PopOver({
   const handleCloseJob = useCallback(
     async () => {
       try {
-        const token = await getIdToken(); // Get the JWT token from the auth context
-        const res = await closeJob(job.id, token); // Pass the token to the deleteJob function
+        const res = await closeJob(job.id); // Pass the token to the deleteJob function
         onClosePopOver()
         console.log(res)
         if (res?.success) {
@@ -135,7 +134,7 @@ export default function PopOver({
         console.error(error);
       }
     },
-    [getIdToken, enqueueSnackbar, board, job]
+    [enqueueSnackbar, board, job]
   );
 
 
@@ -144,8 +143,7 @@ export default function PopOver({
     async () => {
       try {
 
-        const token = await getIdToken(); // Get the JWT token from the auth context
-        const res = await reOpenJob(job.id, token); // Pass the token to the deleteJob function
+        const res = await reOpenJob(job.id); 
         onClosePopOver()
         console.log(res)
         if (res?.success) {
@@ -173,15 +171,14 @@ export default function PopOver({
         console.error(error);
       }
     },
-    [getIdToken, enqueueSnackbar, board]
+    [enqueueSnackbar, board]
   );
 
   const handleDrop = async (acceptedFiles) => {
       try {
-        const idToken = await getIdToken();
         console.log(acceptedFiles)
         // Use Promise.all to upload all files concurrently
-        const uploadedFiles = await Promise.all(acceptedFiles.map(file => uploadFile(job.id, file, idToken)));
+        const uploadedFiles = await Promise.all(acceptedFiles.map(file => uploadFile(job.id, file)));
         console.log(uploadedFiles)
         const updatedFiles = [...files, ...acceptedFiles];
         
@@ -209,9 +206,7 @@ export default function PopOver({
   const handleRemoveFile = useCallback(
     async (inputFile) => {
       try {
-        const token = await getIdToken(); 
-
-        await deleteFile(job.id, inputFile.name, token);
+        await deleteFile(job.id, inputFile.name);
 
         // Filter the files and update the state
         setFiles((prevFiles) => prevFiles.filter((file) => file !== inputFile));
@@ -224,10 +219,8 @@ export default function PopOver({
 
   const fetchFiles = async () => {
     try {
-        const token = await getIdToken(); // Get the token once for all requests
-
         // Start all the getFile requests concurrently
-        const filePromises = job.attachments.map(attachment => getFile(attachment, token));
+        const filePromises = job.attachments.map(attachment => getFile(attachment));
 
         // Wait for all promises to resolve
         const newFiles = await Promise.all(filePromises);
@@ -263,8 +256,7 @@ export default function PopOver({
     async (newJob) => {
       try {
         if (!objectsHaveSameValues(newJob, job)) {
-          const token = await getIdToken(); // Get the JWT token from the auth context
-          const res = await updateJob(newJob, token); // Pass the token to the deleteJob function
+          const res = await updateJob(newJob); // Pass the token to the deleteJob function
         
           if (res.success) {
             enqueueSnackbar('Job updated!', {
@@ -283,7 +275,6 @@ export default function PopOver({
             });
             // If moveonassign is true, then check if assigneeIds have gone from empty to more than one item
             if (isMoveOnAssignTrue && !job?.assigneeIds?.length && !!newJob?.assigneeIds?.length) {
-                  console.log("HALFWAY")
                   const inProgressColumn = Object.values(newBoard?.columns)?.find(column => {
                     return column.name.toLowerCase().includes("in progress");
                   });
@@ -300,14 +291,13 @@ export default function PopOver({
         console.error(error);
       }
     },
-    [getIdToken, enqueueSnackbar, job, settings, board?.columns, settings]
+    [enqueueSnackbar, job, settings, board?.columns, settings]
   );
 
   const handleDeleteJob = useCallback(
     async () => {
       try {
-        const token = await getIdToken(); // Get the JWT token from the auth context
-        const res = await deleteJob(job.id, token); // Pass the token to the deleteJob function
+        const res = await deleteJob(job.id); // Pass the token to the deleteJob function
         onClosePopOver()
         console.log(res)
         if (res?.success) {
@@ -329,7 +319,7 @@ export default function PopOver({
         console.error(error);
       }
     },
-    [getIdToken, enqueueSnackbar, board, job]
+    [enqueueSnackbar, board, job]
   );
 
   
@@ -372,17 +362,15 @@ export default function PopOver({
           ...prevMap,
           [job.id]: newSelectedColumn
         }));
-        const token = await getIdToken(); // Get the JWT token from the auth context
         await moveJob(
           selectedColumn?.id,
           newSelectedColumn?.id,
           job.id,
           0,
-          token 
         );
       }
     }, 
-    [board, setBoard, setSelectedColumnMap, getIdToken, moveJob]  // dependencies
+    [board, setBoard, setSelectedColumnMap, moveJob]  // dependencies
   );
   
   
@@ -393,9 +381,8 @@ export default function PopOver({
 
   const fetchEvents = async () => {
     try {
-      const idToken = await getIdToken();
-      const allEvents = await getAllEvents(job.id, idToken);
-      setEvents(allEvents.events);
+      const allEvents = await getAllEvents(job.id);
+      setEvents(allEvents);
     } catch (error) {
       console.error('Error fetching events:', error);
     }
@@ -417,8 +404,7 @@ export default function PopOver({
                 "attachments": attachments
               }
             }
-            const idToken = await getIdToken();
-            const rEvent = await createEvent(newEvent, idToken);
+            const rEvent = await createEvent(newEvent);
             if (!!rEvent?.event) {
               let oldEvents = []
               if (events) oldEvents = [...events]

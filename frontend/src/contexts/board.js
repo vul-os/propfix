@@ -42,51 +42,21 @@ const getUniqueValuesForJobs = (jobs) => {
 export const BoardContext = createContext(undefined);
 
 export const BoardProvider = ({ children }) => {
-  const { getIdToken, activeOrganization, haveFetchedOrganizations } = useAuthContext();
+  const { activeOrganization, haveFetchedOrganizations } = useAuthContext();
   const [board, setBoard] = useState(null);
   const [boardLoading, setBoardLoading] = useState(true);
   const [jobs, setJobs] = useState([]);
-  const [toFilter, setTwoFilter] = useState({});
-
-  const isValidDate = (d) => {
-    return dayjs(d).isValid();
-  };
-
-  const validDates = (toFilter?.createdAt || []).map((date) => dayjs(date)).filter(isValidDate);
-  const minDate = validDates.length ? validDates.reduce((a, b) => a.isBefore(b) ? a : b) : null;
-  const maxDate = validDates.length ? validDates.reduce((a, b) => a.isAfter(b) ? a : b) : null;
-  const creationDate = [minDate, maxDate];
-
-  const initialFilterState = {
-    name: [],
-    priority: [],
-    reporterID: [],
-    assigneeIDs: [],
-    unitIdentifier: [],
-    buildingID: [],
-    labelIDs: [],
-    attachments: [],
-    costRange: [0, 10],
-    hoursRange: [0, 10],
-    rentPaid: false,
-    creationDate,
-  };
-
-  const [filter, setFilter] = useState(initialFilterState);
 
   useEffect(() => {
     async function fetchData() {
       try {
         if (haveFetchedOrganizations) {
-          const token = await getIdToken();
-          const boardData = await getBoard(token, activeOrganization);
-          setBoard(boardData.board);
+          const boardData = await getBoard(activeOrganization);
+          setBoard(boardData);
 
-          if (boardData.board && boardData.board.jobs) {
-            setJobs(Object.values(boardData.board.jobs));
+          if (boardData?.jobs) {
+            setJobs(Object.values(boardData.jobs));
             // Get unique values for each key and set it to the toFilter state
-            const uniqueValues = getUniqueValuesForJobs(Object.values(boardData.board.jobs));
-            setTwoFilter(uniqueValues);
           }
         }
         setBoardLoading(false);
@@ -97,14 +67,10 @@ export const BoardProvider = ({ children }) => {
       }
     }
     fetchData();
-  }, [getIdToken, haveFetchedOrganizations, activeOrganization]);
-
-  useEffect(() => {
-    console.log(filter, jobs);
-  }, [filter]);
+  }, [haveFetchedOrganizations, activeOrganization]);
 
   return (
-    <BoardContext.Provider value={{ board, setBoard, boardLoading, jobs, setJobs, filter, setFilter, toFilter }}>
+    <BoardContext.Provider value={{ board, setBoard, boardLoading, jobs, setJobs}}>
       {children}
     </BoardContext.Provider>
   );

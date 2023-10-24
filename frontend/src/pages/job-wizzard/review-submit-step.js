@@ -78,7 +78,7 @@ export default function ReviewSubmitStep({ building, job, files }) {
       )}
       <div style={{ display: 'flex', justifyContent: 'center' }}>
         <Typography variant="body1" sx={{ fontSize: '25px', fontWeight: 'bold', color: '#333' }}>
-          {job.unitIdentifier}
+          {job.unit_identifier}
         </Typography>
       </div>
       <div

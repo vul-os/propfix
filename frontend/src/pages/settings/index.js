@@ -59,7 +59,6 @@ export default function Settings() {
     { label: 'Organization', content: <Organization /> },
     { label: 'Buildings', content: <Buildings /> },
     { label: 'Labels', content: <Labels /> },
-    { label: 'Inspection Templates', content: <InspectionTemplateGroups /> },
     { label: 'Other', content: <OtherSettings /> },
   ];
 

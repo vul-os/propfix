@@ -32,7 +32,7 @@ export default function OtherSettings() {
   const [editedSetting, setEditedSetting] = useState({});
   const [openDialog, setOpenDialog] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const { getIdToken, activeOrganization } = useAuthContext();
+  const { activeOrganization } = useAuthContext();
 
   useEffect(() => {
     if (activeOrganization) {
@@ -42,16 +42,15 @@ export default function OtherSettings() {
 
   const fetchSettings = async () => {
     try {
-      const token = await getIdToken();
-      const response = await getAllSettings(activeOrganization, token);
-      setSettings(response?.settings || []);
+      const response = await getAllSettings(activeOrganization);
+      setSettings(response || []);
     } catch (error) {
       console.error('Error fetching settings:', error);
     }
   }
 
   const startEditing = (setting) => {
-    setEditedSetting({ organizationId: activeOrganization, ...setting });
+    setEditedSetting({ organization_id: activeOrganization, ...setting });
     setIsEditing(true);
     setEditing(setting.id);
   }
@@ -66,12 +65,11 @@ export default function OtherSettings() {
 
   const saveEditing = async () => {
     try {
-      const token = await getIdToken();
       if (isEditing) {
-        await updateSetting(editedSetting, token);
+        await updateSetting(editedSetting);
         updateSettingInState(editedSetting);
       } else {
-        await createNewSetting(editedSetting, token);
+        await createNewSetting(editedSetting);
       }
       setIsEditing(false);
       setEditing(null);
@@ -90,8 +88,7 @@ export default function OtherSettings() {
 
   const handleDeleteSetting = async (setting) => {
     try {
-      const token = await getIdToken();
-      await deleteSetting(setting.id, token);
+      await deleteSetting(setting.id);
       setSettings((prevSettings) => prevSettings.filter((s) => s.id !== setting.id));
     } catch (error) {
       console.error('Error deleting setting:', error);
@@ -101,13 +98,13 @@ export default function OtherSettings() {
   const createNewSetting = async (newSetting, token) => {
     try {
       const defaultSetting = {
-        organizationId: activeOrganization,
+        organization_id: activeOrganization,
         type: '',
         data: '',
       };
   
       const createdSetting = await createSetting(newSetting, token);
-      if (createdSetting.id) {
+      if (createdSetting) {
         const updatedSettings = [...settings, { ...defaultSetting, ...createdSetting }];
         setSettings(updatedSettings);
       }
@@ -127,7 +124,7 @@ export default function OtherSettings() {
           color=""
           aria-label="Add Setting"
           onClick={() => {
-            setEditedSetting({ organizationId: activeOrganization, type: '', data: '' });
+            setEditedSetting({ organization_id: activeOrganization, type: '', data: '' });
             setIsEditing(false);
             setOpenDialog(true);
           }}

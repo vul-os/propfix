@@ -1,16 +1,18 @@
-import config from '../config/config';
-import { jsonRpcRequest } from './jsonrpc/client';
+import { supabase } from './supabase'; // Make sure the path is correct
 
-const API_BASE_URL = `${config.apiUrl}/api/authenticated`;
-
-
-export async function getBoard(idToken, organizationId) {
+export async function getBoard(organizationId) {
   try {
-    const params = [{organizationId}];
+    console.log(organizationId)
+    const { data, error } = await supabase.rpc('get_board', { org_id: organizationId });
 
-    return await jsonRpcRequest('Board.GetKanbanBoard', params, idToken);
+    if (error) {
+      console.error('Error fetching board:', error);
+      return null;
+    }
+
+    return data || null;
   } catch (error) {
-    console.error('Error fetching all jobs:', error);
-    return [];
+    console.error('Unexpected error fetching board:', error);
+    return null;
   }
 }

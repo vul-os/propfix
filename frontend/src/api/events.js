@@ -1,51 +1,96 @@
-import config from '../config/config';
-import { jsonRpcRequest } from './jsonrpc/client';
+import { supabase } from './supabase'; // Update the path as needed
 
-const API_BASE_URL = `${config.apiUrl}/api/authenticated`;
-
-export async function createEvent(event, idToken) {
+// Function to create a new event
+export async function createEvent(event) {
   try {
-    const params = [{event}];
-    return await jsonRpcRequest('Events.CreateEvent', params, idToken);
+    const { data, error } = await supabase
+      .from('events')
+      .upsert([event])
+      .single();
+
+    if (error) {
+      console.error('Error creating event:', error);
+      return null;
+    }
+
+    return data || null;
   } catch (error) {
     console.error('Error creating event:', error);
     return null;
   }
 }
 
-export async function updateEvent(eventId, eventData, idToken) {
+// Function to update an existing event by ID
+export async function updateEvent(eventId, eventData) {
   try {
-    const params = [eventId, eventData, idToken];
-    return await jsonRpcRequest('Events.UpdateEvent', params, idToken);
+    const { data, error } = await supabase
+      .from('events')
+      .upsert([eventData], { onConflict: ['id'] })
+      .eq('id', eventId)
+      .single();
+
+    if (error) {
+      console.error('Error updating event:', error);
+      return null;
+    }
+
+    return data || null;
   } catch (error) {
     console.error('Error updating event:', error);
     return null;
   }
 }
 
-export async function deleteEvent(eventId, idToken) {
+// Function to delete an event by ID
+export async function deleteEvent(eventId) {
   try {
-    const params = [eventId, idToken];
-    await jsonRpcRequest('Events.DeleteEvent', params, idToken);
+    const { error } = await supabase
+      .from('events')
+      .delete()
+      .eq('id', eventId);
+
+    if (error) {
+      console.error('Error deleting event:', error);
+    }
   } catch (error) {
     console.error('Error deleting event:', error);
   }
 }
 
-export async function getAllEvents(jobId, idToken) {
+// Function to fetch all events for a job
+export async function getAllEvents(jobId) {
   try {
-    const params = [{ jobId }];
-    return await jsonRpcRequest('Events.GetAllEvents', params, idToken);
+    const { data, error } = await supabase
+      .from('events')
+      .select('*')
+      .eq('jobId', jobId);
+
+    if (error) {
+      console.error('Error fetching events for job:', error);
+      return [];
+    }
+
+    return data || [];
   } catch (error) {
     console.error('Error fetching events for job:', error);
     return [];
   }
 }
 
-export async function getEvent(eventId, idToken) {
+// Function to fetch an event by ID
+export async function getEvent(eventId) {
   try {
-    const params = [{ id: eventId }];
-    return await jsonRpcRequest('Events.GetEvent', params, idToken);
+    const { data, error } = await supabase
+      .from('events')
+      .select('*')
+      .eq('id', eventId);
+
+    if (error) {
+      console.error('Error fetching event:', error);
+      return null;
+    }
+
+    return data[0] || null;
   } catch (error) {
     console.error('Error fetching event:', error);
     return null;

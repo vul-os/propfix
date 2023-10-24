@@ -1,95 +1,161 @@
-// roles.js
+import { supabase } from './supabase'; // Update the path as needed
 
-import config from '../config/config';
-import { jsonRpcRequest } from './jsonrpc/client';
-
-const API_BASE_URL = `${config.apiUrl}/api/authenticated`;
-
-export async function createRole(roleName, idToken) {
+export async function createRole(roleName) {
   try {
-    const params = [{ roleName }];
-    return await jsonRpcRequest('Roles.CreateRole', params, idToken);
+    const { data, error } = await supabase.from('roles').upsert([{ roleName }]);
+
+    if (error) {
+      console.error('Error creating role:', error);
+      return null;
+    }
+
+    return data[0];
   } catch (error) {
     console.error('Error creating role:', error);
     return null;
   }
 }
 
-export async function updateRole(role, idToken) {
+export async function updateRole(role) {
   try {
-    const params = [{ role }];
-    return await jsonRpcRequest('Roles.UpdateRole', params, idToken);
+    const { data, error } = await supabase
+      .from('roles')
+      .upsert([role], { onConflict: ['id'] });
+
+    if (error) {
+      console.error('Error updating role:', error);
+      return null;
+    }
+
+    return data[0];
   } catch (error) {
     console.error('Error updating role:', error);
     return null;
   }
 }
 
-export async function changeRole(roleId, userId, organizationId, idToken) {
+export async function changeRole(roleId, userId, organizationId) {
   try {
-    const params = [{ roleId, userId, organizationId }];
-    return await jsonRpcRequest('Roles.ChangeRole', params, idToken);
+    const { data, error } = await supabase
+      .from('roles')
+      .update({ user_id: userId })
+      .eq('id', roleId)
+      .eq('organization_id', organizationId);
+
+    if (error) {
+      console.error('Error updating role:', error);
+      return null;
+    }
+
+    return data[0];
   } catch (error) {
     console.error('Error updating role:', error);
     return null;
   }
 }
 
-export async function deleteRole(roleId, idToken) {
+export async function deleteRole(roleId) {
   try {
-    const params = [{ roleId }];
-    await jsonRpcRequest('Roles.DeleteRole', params, idToken);
+    const { error } = await supabase.from('roles').delete().eq('id', roleId);
+
+    if (error) {
+      console.error('Error deleting role:', error);
+    }
   } catch (error) {
     console.error('Error deleting role:', error);
   }
 }
 
-export async function getAllRoles(organizationId, idToken) {
+export async function getAllRoles(organizationId) {
   try {
-    const params = [{ organizationId }];
-    return await jsonRpcRequest('Roles.GetAllRoles', params, idToken);
+    const { data, error } = await supabase
+      .from('roles')
+      .select('*')
+      .eq('organization_id', organizationId);
+
+    if (error) {
+      console.error('Error fetching roles:', error);
+      return [];
+    }
+
+    return data || [];
   } catch (error) {
     console.error('Error fetching roles:', error);
     return [];
   }
 }
 
-export async function getRole(roleId, organizationId, idToken) {
+export async function getRole(roleId, organizationId) {
   try {
-    const params = [{ roleId, organizationId }, idToken];
-    return await jsonRpcRequest('Roles.GetRole', params, idToken);
+    const { data, error } = await supabase
+      .from('roles')
+      .select('*')
+      .eq('id', roleId)
+      .eq('organization_id', organizationId);
+
+    if (error) {
+      console.error('Error fetching role:', error);
+      return null;
+    }
+
+    return data[0] || null;
   } catch (error) {
     console.error('Error fetching role:', error);
     return null;
   }
 }
 
-export async function addMember(roleId, userId, idToken) {
-    try {
-      const params = [{ roleId, userId }];
-      return await jsonRpcRequest('Roles.AddMember', params, idToken);
-    } catch (error) {
+export async function addMember(roleId, userId) {
+  try {
+    const { data, error } = await supabase
+      .from('role_members')
+      .upsert([{ role_id: roleId, user_id: userId }]);
+
+    if (error) {
       console.error('Error adding member to role:', error);
       return null;
     }
-  }
-  
-  export async function removeMember(roleId, userId, idToken) {
-    try {
-      const params = [{ roleId, userId }];
-      return await jsonRpcRequest('Roles.RemoveMember', params, idToken);
-    } catch (error) {
-      console.error('Error removing member from role:', error);
-      return null;
-    }
-  }
 
-  export async function getFirstRole(organizationId, idToken) {
-    try {
-      const params = [{ organizationId }];
-      return await jsonRpcRequest('Roles.GetFirstRole', params, idToken);
-    } catch (error) {
+    return data[0];
+  } catch (error) {
+    console.error('Error adding member to role:', error);
+    return null;
+  }
+}
+
+export async function removeMember(roleId, userId) {
+  try {
+    const { error } = await supabase
+      .from('role_members')
+      .delete()
+      .eq('role_id', roleId)
+      .eq('user_id', userId);
+
+    if (error) {
       console.error('Error removing member from role:', error);
+    }
+  } catch (error) {
+    console.error('Error removing member from role:', error);
+  }
+}
+
+export async function getFirstRole(organizationId) {
+  try {
+    const { data, error } = await supabase
+      .from('roles')
+      .select('*')
+      .eq('organization_id', organizationId)
+      .limit(1)
+      .order('id', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching first role:', error);
       return null;
     }
+
+    return data[0] || null;
+  } catch (error) {
+    console.error('Error fetching first role:', error);
+    return null;
   }
+}

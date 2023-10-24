@@ -105,7 +105,7 @@ export default function MembersDialog({ members = [], assignees = [], handleAssi
                       sx: { mb: 0.25 },
                     }}
                     secondaryTypographyProps={{ typography: 'caption' }}
-                    primary={contact.displayName}
+                    primary={contact.username}
                     secondary={contact.email}
                   />
                 </ListItem>
@@ -124,7 +124,7 @@ function applyFilter({ inputData, query }) {
   if (query) {
     inputData = inputData.filter(
       (member) =>
-        member.displayName.toLowerCase().indexOf(query.toLowerCase()) !== -1 ||
+        member.username.toLowerCase().indexOf(query.toLowerCase()) !== -1 ||
         member.email.toLowerCase().indexOf(query.toLowerCase()) !== -1
     );
   }

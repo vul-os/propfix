@@ -9,13 +9,12 @@ import Typography from '@mui/material/Typography';
 import InputBase from '@mui/material/InputBase';
 import { styled } from '@mui/material/styles';
 import { createJob } from '../../api/jobs';
-import { useAuthContext } from '../../contexts/auth';
 import BuildingSelectorStep from './building-selector-step';
 import JobCreateStep from './job-create-step';
 import ReviewSubmitStep from './review-submit-step';
 import { getAllBuildings } from '../../api/buildings';
 import { getAllLabels } from '../../api/labels';
-import { uploadFile, deleteFile } from '../../api/attachments';
+import { uploadFile, deleteFile } from '../../api/files';
 
 const steps = ['Building Selection', 'Job Creation', 'Review & Submit'];
 
@@ -32,7 +31,6 @@ export default function ExoStepper({ handleClose }) {
   const [files, setFiles] = useState([]);
   const [usingLocation, setUsingLocation] = useState(true);  // default to true if you want to start with user location
 
-  const { getIdToken } = useAuthContext();
   const navigate = useNavigate(); // Import useNavigate hook
 
   useEffect(() => {
@@ -49,19 +47,17 @@ export default function ExoStepper({ handleClose }) {
 
   const fetchBuildings = async () => {
     try {
-      const idToken = await getIdToken();
       let fetchedBuildings;
       if (userLocation) {
         fetchedBuildings = await getAllBuildings(
           userLocation?.latitude,
           userLocation?.longitude,
           searchValue,
-          idToken
         );
       } else {
-        fetchedBuildings = await getAllBuildings(null, null, searchValue, idToken);
+        fetchedBuildings = await getAllBuildings(null, null, searchValue);
       }
-      setBuildings(fetchedBuildings.buildings);
+      setBuildings(fetchedBuildings);
     } catch (error) {
       console.error('Error fetching buildings:', error);
     }
@@ -69,13 +65,11 @@ export default function ExoStepper({ handleClose }) {
 
   const fetchLabels = async () => {
     try {
-      if (selectedBuilding && selectedBuilding.organizationId) {
-        const idToken = await getIdToken();
+      if (selectedBuilding?.organizationId) {
         const fetchedLabels = await getAllLabels(
-          selectedBuilding.organizationId,
-          idToken
+          selectedBuilding?.organizationId,
         );
-        setLabels(fetchedLabels.labels);
+        setLabels(fetchedLabels);
       }
     } catch (error) {
       console.error('Error fetching buildings:', error);
@@ -105,7 +99,6 @@ export default function ExoStepper({ handleClose }) {
 
   const removeFile = async (file) => {
     try {
-      const idToken = await getIdToken();
       const res = containsFilename(file.name);
       const resId = extractStringBeforeSlash(res);
       const resFilename = extractStringAfterLastSlash(res);
@@ -113,7 +106,6 @@ export default function ExoStepper({ handleClose }) {
         const deletedFile = await deleteFile(
           resId,
           file.name,
-          idToken
         );
         const updatedAttachments = attachments.filter((attachment) => attachment !== res);
         setAttachments(updatedAttachments);
@@ -151,11 +143,9 @@ export default function ExoStepper({ handleClose }) {
   
   const handleDrop = async (acceptedFiles) => {
     try {
-      const idToken = await getIdToken();
       const fetchedLabels = await uploadFile(
         "tennant",
         acceptedFiles[0],
-        idToken
       );
       const updatedFiles = [...files, ...acceptedFiles];
       const updatedAttachments = [...attachments, fetchedLabels.objectName]
@@ -175,29 +165,24 @@ export default function ExoStepper({ handleClose }) {
   };
 
   const handleFinish = async () => {
-    const idToken = await getIdToken();
-
     // Calculate due date two weeks from now
     const twoWeeksFromNow = new Date();
     twoWeeksFromNow.setDate(twoWeeksFromNow.getDate() + 14);
 
     const jobData = {
       ...job,
-      labels: selectedLabels ? selectedLabels.map((l) => l.id) : [],
-      buildingId: selectedBuilding.id,
-      attachments,
-      organizationId: selectedBuilding.organizationId,
+      // labels: selectedLabels ? selectedLabels.map((l) => l.id) : [],
+      building_id: selectedBuilding.id,
+      organization_id: selectedBuilding.organization_id,
       priority: 'low',
-      dueDate: twoWeeksFromNow.toISOString(), // Convert to ISO string format
-      
+      due_date: twoWeeksFromNow.toISOString(), // Convert to ISO string format
     };
 
-    const createdJob = await createJob(jobData, idToken);
-
+    const createdJob = await createJob(jobData);
+    console.log(createdJob)
     if (createdJob) {
       console.log('Job created successfully:', createdJob);
       handleClose();
-      navigate('/jobs'); // Redirect to the jobs page
     } else {
       console.error('Job creation failed.');
     }

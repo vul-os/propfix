@@ -1,54 +1,110 @@
-import config from '../config/config';
-import { jsonRpcRequest } from './jsonrpc/client';
+import { supabase } from './supabase'; // Update the path as needed
 
-const API_BASE_URL = `${config.apiUrl}/api/authenticated`;
-
-export async function createBuilding(building, idToken) {
+// Function to create a new building
+export async function createBuilding(building) {
   try {
-    const params = [{building}];
-    return await jsonRpcRequest('Buildings.CreateBuilding', params, idToken);
+    const { data, error } = await supabase
+      .from('buildings')
+      .upsert([building])
+      .single();
+
+    if (error) {
+      console.error('Error creating building:', error);
+      return null;
+    }
+
+    return data || null;
   } catch (error) {
     console.error('Error creating building:', error);
     return null;
   }
 }
 
-export async function updateBuilding(building, idToken) {
+// Function to update an existing building by ID
+export async function updateBuilding(building) {
   try {
-    const params = [{building}];
-    return await jsonRpcRequest('Buildings.UpdateBuilding', params, idToken);
+    const { data, error } = await supabase
+      .from('buildings')
+      .upsert([building], { onConflict: ['id'] })
+      .eq('id', building.id)
+      .single();
+
+    if (error) {
+      console.error('Error updating building:', error);
+      return null;
+    }
+
+    return data || null;
   } catch (error) {
     console.error('Error updating building:', error);
     return null;
   }
 }
 
-export async function deleteBuilding(id, idToken) {
+// Function to delete a building by ID
+export async function deleteBuilding(id) {
   try {
-    const params = [{id}];
-    await jsonRpcRequest('Buildings.DeleteBuilding', params, idToken);
+    const { error } = await supabase
+      .from('buildings')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error deleting building:', error);
+    }
   } catch (error) {
     console.error('Error deleting building:', error);
   }
 }
 
-// In your 'getAllBuildings' function:
-export async function getAllBuildings(latitude, longitude, search, organizationId, idToken) {
+// Function to fetch all buildings based on parameters
+export async function getAllBuildings(latitude, longitude, search, organizationId) {
   try {
-    const params = { latitude, longitude, search, organizationId }; // Pass parameters as an object
-    return await jsonRpcRequest('Buildings.GetAllBuildings', params, idToken);
+    const query = supabase.from('buildings').select('*').like('name', `%${search}%`); // Assuming 'name' is the field to search
+
+    if (organizationId) {
+      query.eq('organization_id', organizationId);
+    }
+
+    if (latitude && longitude) {
+      query
+        .gte('latitude', latitude - 0.01) // Example range for latitude
+        .lte('latitude', latitude + 0.01)
+        .gte('longitude', longitude - 0.01) // Example range for longitude
+        .lte('longitude', longitude + 0.01);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('Error fetching buildings:', error);
+      return [];
+    }
+
+    return data || [];
   } catch (error) {
     console.error('Error fetching buildings:', error);
     return [];
   }
 }
 
-
-
-export async function getBuilding(buildingId, organizationId, idToken) {
+// Function to fetch a building by ID
+export async function getBuilding(buildingId, organizationId) {
   try {
-    const params = [{ id: buildingId, organizationId }, idToken];
-    return await jsonRpcRequest('Buildings.GetBuilding', params, idToken);
+    const query = supabase.from('buildings').select('*').eq('id', buildingId);
+
+    if (organizationId) {
+      query.eq('organizationId', organizationId);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('Error fetching building:', error);
+      return null;
+    }
+
+    return data[0] || null;
   } catch (error) {
     console.error('Error fetching building:', error);
     return null;

@@ -30,7 +30,7 @@ function BuildingCard({ building, onSelectBuilding }) {
       {/* Icon and Name Row */}
       <div style={{ display: 'flex', alignItems: 'center', marginBottom: '5px' }}>
         <AccountCircleIcon style={{ fontSize: '24px', marginRight: '10px' }} />
-        <h3 style={{ fontSize: '18px', margin: '0' }}>{building.buildingName}</h3>
+        <h3 style={{ fontSize: '18px', margin: '0' }}>{building.name}</h3>
       </div>
 
       {/* Location Icon and Address Row */}

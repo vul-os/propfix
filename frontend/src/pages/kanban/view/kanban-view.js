@@ -7,7 +7,7 @@ import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
 
 import EmptyContent from '../../../components/empty-content';
-import { moveJob } from '../../../api/columnJobLinks';
+import { moveJob } from '../../../api/columnJobs';
 import { getBoard, createJob } from '../../../api/jobs';
 import { hideScroll } from '../../../theme/css';
 
@@ -19,7 +19,7 @@ import PopOver from '../../jobs/pop-over';
 
 export default function KanbanView() {
   const { role, board, setBoard, boardLoading } = useBoardContext(); // Use the BoardProvider context
-  const { getIdToken, activeOrganization } = useAuthContext(); 
+  const { activeOrganization } = useAuthContext(); 
   const [openPopUp, setOpenPopUp] = useState(false);
   const [job, setJob] = useState({});
   const navigate = useNavigate()
@@ -27,20 +27,15 @@ export default function KanbanView() {
   const onJobAdd = useCallback(
     async (name, columnId) => {
       try {
-        const idToken = await getIdToken();
         const jobData = {
           name,
-          labels: [],
-          buildingId: "",
-          attachments: [],
-          organizationId: activeOrganization,
+          organization_id: activeOrganization,
           priority: 'low',
-          rentPaid: false,
         }
         const destinationColumn = board?.columns[columnId];
         
-        const createdJob = await createJob(jobData, idToken);
-        const jobId = createdJob.id
+        const createdJob = await createJob(jobData);
+        const jobId = createdJob
         
         if (jobId) {
           const newEndJobIds = [...Array.from(destinationColumn.jobIds || []), jobId];
@@ -63,12 +58,11 @@ export default function KanbanView() {
         console.error('Error removing file:', error);
       }
     },
-    [board, getIdToken]
+    [board]
   );
 
   const onDragEnd = useCallback(
     async ({ destination, source, draggableId, type }) => {
-      const token = await getIdToken();
       
       try {
         // If no destination or no change in position, return.
@@ -122,14 +116,13 @@ export default function KanbanView() {
             destinationColumn.id,
             draggableId,
             destination.index,
-            token
           );
         }
       } catch (error) {
         console.error(error);
       }
     },
-    [getIdToken, board] 
+    [board] 
   );
 
   const renderSkeleton = (
