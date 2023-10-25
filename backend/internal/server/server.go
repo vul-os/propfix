@@ -14,6 +14,7 @@ import (
 	jsonRpcProvider "github.com/exolutionza/propfix-backend-go/internal/api/jsonRpc/service/provider"
 	"github.com/exolutionza/propfix-backend-go/internal/board"
 	"github.com/exolutionza/propfix-backend-go/internal/columnJobLinks"
+	"github.com/exolutionza/propfix-backend-go/internal/settings"
 
 	"github.com/exolutionza/propfix-backend-go/internal/attachments"
 	"github.com/go-chi/chi"
@@ -25,9 +26,14 @@ import (
 	"github.com/exolutionza/propfix-backend-go/internal/columns"
 	"github.com/exolutionza/propfix-backend-go/internal/dashboard"
 	"github.com/exolutionza/propfix-backend-go/internal/events"
+	"github.com/exolutionza/propfix-backend-go/internal/inspectionItems"
+	"github.com/exolutionza/propfix-backend-go/internal/inspectionTemplateItems"
+	"github.com/exolutionza/propfix-backend-go/internal/inspectionTemplates"
+	"github.com/exolutionza/propfix-backend-go/internal/inspections"
 	"github.com/exolutionza/propfix-backend-go/internal/jobs"
 	"github.com/exolutionza/propfix-backend-go/internal/labels"
 	"github.com/exolutionza/propfix-backend-go/internal/organizations"
+	"github.com/exolutionza/propfix-backend-go/internal/pendingMembers"
 	"github.com/exolutionza/propfix-backend-go/internal/permissions"
 	"github.com/exolutionza/propfix-backend-go/internal/roles"
 
@@ -89,6 +95,12 @@ func Server() {
 	buildingsStore := buildings.NewBuildingsStore(dbpool)
 	jobsStore := jobs.NewJobStore(dbpool)
 	roleStore := roles.NewRoleStore(dbpool)
+	inspectionTemplateItemsStore := inspectionTemplateItems.NewInspectionTemplateItemsStore(dbpool)
+	inspectionTemplatesStore := inspectionTemplates.NewInspectionTemplatesStore(dbpool)
+	inspectionsStore := inspections.NewInspectionsStore(dbpool)
+	inspectionItemsStore := inspectionItems.NewInspectionItemsStore(dbpool)
+	pendingMembersStore := pendingMembers.NewPendingMemberStore(dbpool)
+	settingsStore := settings.NewSettingsStore(dbpool)
 
 	rpcServerConfigs := []jsonRpcServer.RPCServerConfig{
 		{
@@ -105,7 +117,7 @@ func Server() {
 			},
 			ServiceProviders: []jsonRpcProvider.Provider{
 				roles.New(roleStore, authorizer),
-				organizations.New(orgStore, authorizer, authClient, mgClient),
+				organizations.New(orgStore, pendingMembersStore, roleStore, jobsStore, authorizer, authClient, mgClient),
 				permissions.New(dbpool, authorizer),
 				buildings.New(buildingsStore, authorizer),
 				labels.New(labelStore, authorizer),
@@ -115,6 +127,11 @@ func Server() {
 				columnJobLinks.New(columnJobLinksStore, authorizer),
 				board.New(jobsStore, authorizer, authClient, columnJobLinksStore, labelStore, buildingsStore),
 				dashboard.New(dbpool, authorizer),
+				inspectionTemplateItems.New(inspectionTemplateItemsStore, authorizer),
+				inspectionTemplates.New(inspectionTemplatesStore, authorizer),
+				inspections.New(inspectionsStore, authorizer),
+				inspectionItems.New(inspectionItemsStore, authorizer),
+				settings.New(settingsStore, authorizer),
 			},
 		},
 		// Add more RPC server configurations for other services here

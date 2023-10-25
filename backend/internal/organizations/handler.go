@@ -8,19 +8,25 @@ import (
 
 	"firebase.google.com/go/v4/auth"
 	jsonRpcProvider "github.com/exolutionza/propfix-backend-go/internal/api/jsonRpc/service/provider"
+	"github.com/exolutionza/propfix-backend-go/internal/jobs"
 	"github.com/exolutionza/propfix-backend-go/internal/mail"
+	"github.com/exolutionza/propfix-backend-go/internal/roles"
 
 	"github.com/exolutionza/propfix-backend-go/internal/authz"
+	"github.com/exolutionza/propfix-backend-go/internal/pendingMembers"
 	"github.com/exolutionza/propfix-backend-go/internal/user"
 
 	"github.com/google/uuid"
 )
 
 type adaptor struct {
-	authz      *authz.Authz
-	store      *OrganizationStore
-	mailClient *mail.MailgunClient
-	authClient *auth.Client
+	authz               *authz.Authz
+	store               *OrganizationStore
+	pendingMembersStore *pendingMembers.Store
+	jobsStore           *jobs.Store
+	rolesStore          *roles.Store
+	mailClient          *mail.MailgunClient
+	authClient          *auth.Client
 }
 
 const Name = "Organizations"
@@ -31,15 +37,21 @@ func (a *adaptor) Name() jsonRpcProvider.Name {
 
 func New(
 	st *OrganizationStore,
+	pms *pendingMembers.Store,
+	rs *roles.Store,
+	js *jobs.Store,
 	authz *authz.Authz,
 	authn *auth.Client,
 	m *mail.MailgunClient,
 ) *adaptor {
 	return &adaptor{
-		authz:      authz,
-		authClient: authn,
-		store:      st,
-		mailClient: m,
+		authz:               authz,
+		authClient:          authn,
+		store:               st,
+		jobsStore:           js,
+		pendingMembersStore: pms,
+		rolesStore:          rs,
+		mailClient:          m,
 	}
 }
 
@@ -59,10 +71,9 @@ func (a *adaptor) CreateOrganization(r *http.Request, args *CreateOrganizationRe
 
 	orgID := uuid.New().String()
 	org := &Organization{
-		ID:             orgID,
-		Name:           args.Organization.Name,
-		Members:        args.Organization.Members,
-		PendingMembers: args.Organization.PendingMembers,
+		ID:      orgID,
+		Name:    args.Organization.Name,
+		Members: args.Organization.Members,
 	}
 
 	err = a.store.CreateOrganization(org)
@@ -109,23 +120,27 @@ func (a *adaptor) GetAllOrganizations(r *http.Request, args *GetAllOrganizations
 	if !ok {
 		return errors.New("not permitted")
 	}
-	ok, err := a.authz.CheckPermission(r, "organizations", "getall")
-	if err != nil || !ok {
-		return errors.New("not permitted")
-	}
 
 	orgs, err := a.store.GetAllOrganizations(user.ID)
 	if err != nil {
 		return err
 	}
-
 	result.Organizations = orgs
+
+	if len(orgs) == 0 {
+		err = a.jobsStore.CheckAndAccept(user.Email, user.ID)
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
 type InviteMemberRequest struct {
 	OrganizationId string `json:"organizationId"`
 	Email          string `json:"email"`
+	RoleId         string `json:"roleId"`
 }
 
 type InviteMemberResponse struct {
@@ -142,7 +157,11 @@ func (a *adaptor) InviteMember(r *http.Request, args *InviteMemberRequest, resul
 		return err
 	}
 
-	err = a.store.AddPendingMember(args.OrganizationId, args.Email)
+	_, err = a.pendingMembersStore.AddPendingMember(pendingMembers.PendingMember{
+		Email:          args.Email,
+		OrganizationID: args.OrganizationId,
+		RoleID:         args.RoleId,
+	})
 	if err != nil {
 		return err
 	}
@@ -170,16 +189,21 @@ func (a *adaptor) AcceptMemberInvite(r *http.Request, args *AcceptMemberInviteRe
 		return errors.New("not permitted")
 	}
 
-	isPending, err := a.store.CheckPendingMember(args.OrganizationId, user.Email)
+	mem, err := a.pendingMembersStore.GetPendingMember(args.OrganizationId, user.Email)
 	if err != nil {
 		return err
 	}
 
-	if !isPending {
+	if mem == nil {
 		return errors.New("user is not invited")
 	}
 
-	err = a.store.RemovePendingMember(args.OrganizationId, user.Email)
+	err = a.rolesStore.AddMember(mem.RoleID, user.ID)
+	if err != nil {
+		return err
+	}
+
+	err = a.pendingMembersStore.DeletePendingMember(args.OrganizationId, user.Email)
 	if err != nil {
 		return err
 	}
@@ -232,7 +256,7 @@ func (a *adaptor) RemovePendingMember(r *http.Request, args *RemovePendingMember
 		return errors.New("not permitted")
 	}
 
-	err = a.store.RemovePendingMember(args.OrganizationId, args.Email)
+	err = a.pendingMembersStore.DeletePendingMember(args.OrganizationId, args.Email)
 	if err != nil {
 		return err
 	}
@@ -241,7 +265,7 @@ func (a *adaptor) RemovePendingMember(r *http.Request, args *RemovePendingMember
 	return nil
 }
 
-func (a *adaptor) fetchUserData(userIDs []string) ([]user.User, error) {
+func (a *adaptor) fetchUserData(userIDs []string, orgId string) ([]user.User, error) {
 	ctx := context.Background()
 
 	// Assuming you have a UserStore or some other method to fetch user data
@@ -254,12 +278,18 @@ func (a *adaptor) fetchUserData(userIDs []string) ([]user.User, error) {
 			return nil, err
 		}
 
+		role, err := a.rolesStore.GetFirstRoleByUserID(userID, orgId)
+		if err != nil {
+			log.Printf("Error fetching user role by ID: %v\n", err)
+			return nil, err
+		}
 		// Convert Firebase Auth user data into your user.User struct
 		userRecord := user.User{
 			ID:          u.UID,
 			DisplayName: u.DisplayName,
 			Email:       u.Email,
 			PhotoURL:    u.PhotoURL,
+			RoleId:      role.ID,
 		}
 
 		userData = append(userData, userRecord)
@@ -273,8 +303,8 @@ type GetAllMembersRequest struct {
 }
 
 type GetAllMembersResponse struct {
-	Members        []user.User `json:"members"`
-	PendingMembers []string    `json:"pending_members"`
+	Members        []user.User                    `json:"members"`
+	PendingMembers []pendingMembers.PendingMember `json:"pending_members"`
 }
 
 func (a *adaptor) GetAllMembers(r *http.Request, args *GetAllMembersRequest, result *GetAllMembersResponse) error {
@@ -283,18 +313,23 @@ func (a *adaptor) GetAllMembers(r *http.Request, args *GetAllMembersRequest, res
 		return errors.New("not permitted")
 	}
 
-	mems, pMems, err := a.store.GetAllMembers(args.OrganizationId)
+	mems, err := a.store.GetAllMembers(args.OrganizationId)
 	if err != nil {
 		return err
 	}
 
-	membersData, err := a.fetchUserData(mems)
+	pmems, err := a.pendingMembersStore.GetAllPendingMembers(args.OrganizationId)
+	if err != nil {
+		return err
+	}
+
+	membersData, err := a.fetchUserData(mems, args.OrganizationId)
 	if err != nil {
 		return err
 	}
 
 	result.Members = membersData
-	result.PendingMembers = pMems
+	result.PendingMembers = pmems
 
 	return nil
 }
