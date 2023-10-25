@@ -15,7 +15,7 @@ import { useBoardContext } from '../../../contexts/board';
 import { getAllEvents, createEvent } from '../../../api/events';
 import { updateJob, deleteJob, closeJob, reOpenJob } from '../../../api/jobs';
 import { moveJob } from '../../../api/columnJobs';
-import { uploadFile, getFile, deleteFile } from '../../../api/files';
+import { uploadFile, getFiles, deleteFile } from '../../../api/files';
 
 import Scrollbar from '../../../components/scrollbar';
 
@@ -83,23 +83,6 @@ export default function PopOver({
       }
     }
   }, [job]);
-
-  async function urlToFile(url, filename, mimeType) {
-    // Fetch the file data as a blob
-    console.log(url)
-    const response = await fetch(url);
-    console.log("resp", response)
-    if (!response.ok) {
-        
-        throw new Error('Network response was not ok');
-    }
-    const blob = await response.blob();
-
-    // Create a file from the blob
-    const file = new File([blob], filename, { type: mimeType || blob.type });
-
-    return file;
-  } 
 
   const handleCloseJob = useCallback(
     async () => {
@@ -175,17 +158,11 @@ export default function PopOver({
 
   const handleDrop = async (acceptedFiles) => {
       try {
-        console.log(acceptedFiles)
-        // Use Promise.all to upload all files concurrently
-        const uploadedFiles = await Promise.all(acceptedFiles.map(file => uploadFile(job.id, file)));
-        console.log(uploadedFiles)
+        const fileNames = acceptedFiles.map(file => file.name);
+
         const updatedFiles = [...files, ...acceptedFiles];
-        
-        // Extract objectNames from all uploaded files
-        const uploadedObjectNames = uploadedFiles.map(file => file.objectName);
-        
-        const updatedAttachments = [...newJob.attachments, ...uploadedObjectNames];
-        
+        const updatedAttachments = [...newJob.attachments, ...fileNames]
+
         setFiles(updatedFiles);
         setNewJob(prevJob => ({
           ...prevJob,
@@ -193,7 +170,7 @@ export default function PopOver({
         }));
 
         // Return the object names of all uploaded files
-        return uploadedObjectNames;
+        return updatedFiles;
 
       } catch (error) {
         console.error('Error adding file:', error);
@@ -219,18 +196,14 @@ export default function PopOver({
   const fetchFiles = async () => {
     try {
         // Start all the getFile requests concurrently
-        const filePromises = job.attachments.map(attachment => getFile(attachment));
-
-        // Wait for all promises to resolve
-        const newFiles = await Promise.all(filePromises);
-        const filteredFiles = newFiles.filter(Boolean);
-
-        // Convert signedUrls to File objects
-        const fileObjPromises = filteredFiles.map(f => urlToFile(f.signedUrl, f.objectName)); // Modify filename accordingly
-        const fileObjects = await Promise.all(fileObjPromises);
-
-        // Update state with File objects
-        setFiles(fileObjects);
+        if (job) {
+          console.log("fe", job)
+          const fileObjects = await getFiles(job.id, job.attachments)
+          console.log("fo", fileObjects)
+          // Update state with File objects
+          setFiles(fileObjects);
+  
+        }
 
     } catch (error) {
         console.error('Error fetching files:', error);

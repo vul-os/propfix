@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { TextField, Button, Stack, Typography, Snackbar, Alert } from '@mui/material';
-import { supabase } from '../supabaseClient'; // Import your Supabase client instance
+import { supabase } from '../../api/supabase'; // Import your Supabase client instance
 
 export default function ForgotPasswordForm({ onSuccess }) {
   const [email, setEmail] = useState('');

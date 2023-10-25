@@ -18,61 +18,41 @@ export async function getJob(jobId) {
       console.error('Error fetching job:', error);
       return null;
     }
-  }
-  
-  // Function to create a new job
-  export async function createJob(job) {
-    try {
-      console.log(job);
-      const { data, error } = await supabase
-        .from('jobs')
-        .insert([job], { returning: 'representation' }) // returning the full row after insertion
-        .single()
-        .select()
-  
+}
+
+export async function getJobAttachments(jobId) {
+  try {
+    const { data, error } = await supabase
+      .from('job_attachments')
+      .select()
+      .eq('job_id', jobId);
+
       if (error) {
-        console.error('Error creating job:', error);
+        console.error('Error fetching job attachments:', error);
         return null;
       }
   
-      const jobId = data?.id;
-      console.log(data);
-  
-    if (jobId) {
-      // Get the ID of the "New Jobs" column
-      const { data: columnData, error: columnError } = await supabase
-        .from('columns')
-        .select('id')
-        .eq('name', 'New Jobs')
-        .eq('organization_id', job.organization_id)
-        .single()
-        .select()
-
-      if (columnError) {
-        console.error('Error fetching column:', columnError);
-        return jobId;  // We still return the jobId even if adding to column fails
-      }
-
-      const columnId = columnData?.id;
-
-      if (columnId) {
-        // Insert the job ID into the column_jobs table linking it to the "New Jobs" column
-        const { error: linkError } = await supabase
-          .from('column_jobs')
-          .insert([{ column_id: columnId, job_id: jobId, order_index: 0}])
-          .select()
-        if (linkError) {
-          console.error('Error linking job to column:', linkError);
-          return jobId;  // We still return the jobId even if adding to column fails
-        }
-      }
+      return data || null;
+    } catch (error) {
+      console.error('Error fetching job attachments:', error);
+      return null;
     }
-
-    return jobId;
-  } catch (error) {
-    console.error('Error creating job:', error);
-    return null;
-  }
+}
+// Function to create a new job
+export async function createJob(job) {
+    try {
+      const { data, error } = await supabase.rpc('create_job', { p_job: job });
+  
+      if (error) {
+        console.error('Error fetching board:', error);
+        return null;
+      }
+  
+      return data || null;
+    } catch (error) {
+      console.error('Unexpected error fetching board:', error);
+      return null;
+    }
 }
 
 
@@ -91,6 +71,7 @@ export async function updateJob(job) {
       labelIds,
       buildingId,
       assigneeIds,
+      attachments,
     } = job;
 
     const { data, error } = await supabase.rpc('update_job', { 
@@ -105,7 +86,8 @@ export async function updateJob(job) {
       unit_identifier: unitIdentifier,
       building_id: buildingId,
       label_ids: labelIds,
-      assignee_ids: assigneeIds
+      assignee_ids: assigneeIds,
+      attachments
     });
 
     if (error || !data) {

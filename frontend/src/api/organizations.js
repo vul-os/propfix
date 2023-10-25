@@ -40,10 +40,16 @@ export async function getAllOrganizations() {
 // Function to accept a member invite
 export async function acceptMemberInvite(organizationId) {
   try {
-    console.log()
-    return null
+    const { data, error } = await supabase.rpc('accept_invite', { org_id: organizationId });
+
+    if (error) {
+      console.error('Error fetching board:', error);
+      return null;
+    }
+
+    return data || null;
   } catch (error) {
-    console.error('Error accepting member invite:', error);
+    console.error('Unexpected error fetching board:', error);
     return null;
   }
 }

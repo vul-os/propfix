@@ -1,27 +1,19 @@
 import axios from 'axios';
-import config from '../config/config';
+import { supabase } from './supabase'; // Update the path as needed
 
-const API_BASE_URL = `${config.apiUrl}/attachments`;
 
 // Function to upload a file
-export async function uploadFile(jobId, file, token) {
+export async function uploadFile(jobId, file) {
   try {
-    const formData = new FormData();
-    formData.append('file', file);
+    const filePath = `jobs/${jobId}/${file.name}`;
 
-    const response = await axios.post(
-      `${API_BASE_URL}/upload/${jobId}`,
-      formData,
-      {
-        headers: {
-          'Authorization': token,
-          'Content-Type': 'multipart/form-data',
-        },
-      }
-    );
+    const { error } = await supabase.storage.from('attachments').upload(filePath, file);
     
-    console.log('File uploaded successfully!', response.data);
-    return response.data
+    if (error) {
+        console.error('Error uploading file:', error);
+        return false
+    } 
+    return true
   } catch (error) {
     console.error('Error uploading file:', error);
     return null;
@@ -29,13 +21,17 @@ export async function uploadFile(jobId, file, token) {
 }
 
 // Function to get a file
-export async function getFile(jobIdFilename, idToken) {
+export async function getFile(jobIdFilename) {
+  const filePath = `jobs/${jobIdFilename}`;
+
   try {
-    const response = await axios.get(`${API_BASE_URL}/download/${jobIdFilename}`, {
-      headers: {
-        Authorization: idToken,
-      },
-    });
+    const { publicURL, error } = supabase.storage.from('attachments').getPublicUrl(filePath);
+    if (error) {
+        console.error('Error uploading file:', error);
+        return false
+    } 
+
+    const response = await axios.get(publicURL);
 
     console.log('File fetched successfully!', response.data);
     // Here you can use the file data in the response as needed
@@ -46,24 +42,58 @@ export async function getFile(jobIdFilename, idToken) {
   }
 }
 
-export async function deleteFile(jobId, filename, idToken) {
-  let endpoint;
-
-  if (filename.includes(jobId)) {
-    endpoint = `${API_BASE_URL}/delete/${filename}`;
-  } else {
-    endpoint = `${API_BASE_URL}/delete/${jobId}/${filename}`;
+export async function getFiles(jobId, filenames) {
+  if (!Array.isArray(filenames)) {
+      console.error('Expected an array of filenames');
+      return null;
   }
 
-  try {
-    await axios.delete(endpoint, {
-      headers: {
-        Authorization: idToken,
-      },
-    });
+  const fetchFile = async (filename) => {
+      const filePath = `jobs/${jobId}/${filename}`;
+      console.log("Fetching:", filePath);
 
-    console.log('File deleted successfully!');
+      try {
+          const resp = await supabase.storage.from('attachments').download(filePath);
+
+          // Check if there's an error in the response
+          if (resp.error) {
+              console.error(`Error downloading file ${filename}:`, resp.error);
+              return null;
+          }
+
+          // Check if the data exists in the response
+          if (!resp.data) {
+              console.error(`No data found for file ${filename}`);
+              return null;
+          }
+
+          return resp.data;
+      } catch (error) {
+          console.error(`Error fetching file ${filename}:`, error);
+          return null;
+      }
+  };
+
+  const fileContents = await Promise.all(filenames.map(fetchFile));
+  console.log("Downloaded files:", fileContents);
+  return fileContents;
+}
+
+
+
+export async function deleteFile(jobId, filename) {
+  try {
+    const filePath = `jobs/${jobId}/${filename}`;
+
+    const { error } = await supabase.storage.from('attachments').remove([filePath]);
+    
+    if (error) {
+        console.error('Error uploading file:', error);
+        return false
+    } 
+    return true
   } catch (error) {
-    console.error('Error deleting file:', error);
+    console.error('Error uploading file:', error);
+    return null;
   }
 }

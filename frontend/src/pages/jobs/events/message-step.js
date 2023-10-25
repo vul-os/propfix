@@ -108,7 +108,7 @@ export default function MessageStep({ eventRaw, member, attachments }) {
         <div style={styles.titleSection}>
           {renderVisibility }
           <Typography variant="subtitle2" style={styles.titleText}>
-            {member?.displayName}
+            {member?.username}
           </Typography>
           <Typography variant="caption" sx={{ color: 'text.disabled' }}>
             Messaged {fToNow(event.createdAt)}

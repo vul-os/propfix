@@ -6,6 +6,7 @@ import Step from '@mui/material/Step';
 import StepLabel from '@mui/material/StepLabel';
 import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
+import { v4 as uuidv4 } from 'uuid';
 import InputBase from '@mui/material/InputBase';
 import { styled } from '@mui/material/styles';
 import { createJob } from '../../api/jobs';
@@ -30,11 +31,13 @@ export default function ExoStepper({ handleClose }) {
   const [attachments, setAttachments] = useState([]);
   const [files, setFiles] = useState([]);
   const [usingLocation, setUsingLocation] = useState(true);  // default to true if you want to start with user location
+  const [newJobId, setNewJobId] = useState(null);  // default to true if you want to start with user location
 
   const navigate = useNavigate(); // Import useNavigate hook
 
   useEffect(() => {
     getUserLocation();
+    setNewJobId(uuidv4())
   }, []);
 
   useEffect(() => {
@@ -143,14 +146,19 @@ export default function ExoStepper({ handleClose }) {
   
   const handleDrop = async (acceptedFiles) => {
     try {
-      const fetchedLabels = await uploadFile(
-        "tennant",
+      const uped = await uploadFile(
+        newJobId,
         acceptedFiles[0],
       );
-      const updatedFiles = [...files, ...acceptedFiles];
-      const updatedAttachments = [...attachments, fetchedLabels.objectName]
-      setFiles(updatedFiles);
-      setAttachments(updatedAttachments);
+      if (uped) {
+        const fileNames = acceptedFiles.map(file => file.name);
+
+        const updatedFiles = [...files, ...acceptedFiles];
+        const updatedAttachments = [...attachments, ...fileNames]
+        setFiles(updatedFiles);
+        setAttachments(updatedAttachments);
+      }
+
     } catch (error) {
       console.error('Error adding file:', error);
     }
@@ -171,12 +179,15 @@ export default function ExoStepper({ handleClose }) {
 
     const jobData = {
       ...job,
+      id: newJobId,
       // labels: selectedLabels ? selectedLabels.map((l) => l.id) : [],
+      attachments,
       building_id: selectedBuilding.id,
       organization_id: selectedBuilding.organization_id,
       priority: 'low',
       due_date: twoWeeksFromNow.toISOString(), // Convert to ISO string format
     };
+    console.log(jobData)
 
     const createdJob = await createJob(jobData);
     console.log(createdJob)

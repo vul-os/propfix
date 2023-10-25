@@ -1,4 +1,5 @@
 import React from 'react';
+import { camelKeys } from 'js-convert-case';
 import Avatar from '@mui/material/Avatar';
 import Typography from '@mui/material/Typography';
 import CreateIcon from '@mui/icons-material/Create';
@@ -74,11 +75,3 @@ export default function CrudStep({ eventRaw, member }) {
   );
 }
 
-// Define PropTypes for event and member props
-CrudStep.propTypes = {
-  event: PropTypes.shape({
-    type: PropTypes.string.isRequired,
-    createdAt: PropTypes.string.isRequired,
-  }).isRequired,
-  member: PropTypes.object, // You can define PropTypes for member as well if needed
-};

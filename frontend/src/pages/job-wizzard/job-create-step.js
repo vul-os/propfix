@@ -63,12 +63,12 @@ export default function JobCreateStep({
         style={{ marginBottom: '16px' }}
       />
       
-      <LabelAutocomplete
+      {/* <LabelAutocomplete
         labels={labels}
         selectedLabels={selectedLabels}
         setSelectedLabels={setSelectedLabels}
         placeholder={"Labels, what type of job is it? Plumbing, Electrical..."}
-      />
+      /> */}
 
       <Stack direction="row" flexWrap="wrap">
          {files && files.map((file, index) => (
