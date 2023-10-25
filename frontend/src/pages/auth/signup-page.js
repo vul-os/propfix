@@ -41,11 +41,11 @@ export default function SignUpPage() {
   const mdUp = useResponsive('up', 'md');
   const navigate = useNavigate();
   const location = useLocation();
-  const { signUpWithGoogle } = useAuthContext();
+  const { signInWithGoogle } = useAuthContext();
 
   const handleGoogleSignUp = async () => {
     try {
-      await signUpWithGoogle();
+      await signInWithGoogle();
       const { from } = location.state || { from: { pathname: '/' } };
       navigate(from);
     } catch (error) {

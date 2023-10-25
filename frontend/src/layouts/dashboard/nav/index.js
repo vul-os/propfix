@@ -54,7 +54,7 @@ export default function Nav({ openNav, onCloseNav, navConfig }) {
       <Box sx={{ mb: 5, mx: 2.5 }}>
         <Link component={RouterLink} to="/" underline="none">
           <StyledAccount>
-            <Avatar src={user.photoURL} alt="photoURL" />
+            <Avatar src={user?.user_metadata?.avatar_url} alt="photoURL" />
 
             <Box sx={{ ml: 2 }}>
               <Typography variant="subtitle2" sx={{ color: 'text.primary' }}>

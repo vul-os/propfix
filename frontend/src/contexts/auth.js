@@ -103,42 +103,94 @@ export const AuthProvider = (props) => {
   const [members, setMembers] = useState([]);
   const [settings, setSettings] = useState([]);
 
+  const refreshSession = async () => {
+    const { data, error } = await supabase.auth.refreshSession();
+    if (error) {
+      console.error("Error refreshing session:", error);
+      return null;
+    }
+    return data?.user;
+  };
+
   const initialize = async () => {
     if (initialized.current) {
       return;
     }
     initialized.current = true;
-
-    const { data: { user } } = await supabase.auth.getUser()
-
-
-    if (user) {
-      dispatch({
-        type: HANDLERS.INITIALIZE,
-        payload: user
-      });
-
-      setHaveFetchedOrganizations(false);
-
-      // Fetch organizations using JSON-RPC
-      try {
-        const fetchedOrganizations = await getAllOrganizations();
-        setOrganizations(fetchedOrganizations); // Set the organizations
-        if (fetchedOrganizations.length > 0) {
-          setActiveOrganization(fetchedOrganizations[0].id);
-        }
-        // ... (rest of the logic remains the same)
-      } catch (error) {
-        console.log('Error fetching organizations:', error);
-      }
-      setHaveFetchedOrganizations(true);
-    } else {
+  
+    let user = null;
+      
+    // Try to get user
+    const { data: userData, userError } = await supabase.auth.getUser();
+    if (userData?.user) {
+      user = userData.user;
+    } else if (userError) {
+      console.error("Error fetching user:", userError);
+      // Try refreshing session if fetching user failed
+      user = await refreshSession();
+    }
+  
+    if (!user) {
+      console.error("Unable to obtain user details after session refresh.");
       dispatch({
         type: HANDLERS.INITIALIZE
       });
+      return;
     }
+  
+    // Check if the user exists in the profiles table
+    const { data: existingProfile, error: profileError } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('id', user.id)
+  
+    if (profileError) {
+      console.error("Error checking profile:", profileError);
+      return;
+    }
+  
+    // If profile doesn't exist, create one
+    if (existingProfile?.length === 0) {
+      const { data: newProfile, error: insertError } = await supabase
+        .from('profiles')
+        .insert([{
+          id: user.id,
+          email: user.email,
+          username: user.user_metadata.name,
+          photo_url: user.user_metadata.avatar_url
+        }]);
+  
+      if (insertError) {
+        console.error("Error inserting new profile:", insertError);
+      } else {
+        console.log("New profile created:", newProfile);
+      }
+    } else {
+      console.log("User profile already exists.");
+    }
+  
+    dispatch({
+      type: HANDLERS.INITIALIZE,
+      payload: user
+    });
+  
+    setHaveFetchedOrganizations(false);
+
+    // Fetch organizations using JSON-RPC
+    try {
+      const fetchedOrganizations = await getAllOrganizations();
+      setOrganizations(fetchedOrganizations); // Set the organizations
+      if (fetchedOrganizations.length > 0) {
+        setActiveOrganization(fetchedOrganizations[0].id);
+      }
+      // ... (rest of the logic remains the same)
+    } catch (error) {
+      console.log('Error fetching organizations:', error);
+    }
+    setHaveFetchedOrganizations(true);
   };
 
+  
   useEffect(() => {
     initialize();
   }, []);
@@ -182,7 +234,7 @@ export const AuthProvider = (props) => {
       if (error) {
         throw new Error(error.message);
       }
-
+      
       dispatch({
         type: HANDLERS.SIGN_IN,
         payload: user

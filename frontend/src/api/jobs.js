@@ -76,20 +76,43 @@ export async function getJob(jobId) {
 }
 
 
-// Function to update an existing job
 export async function updateJob(job) {
   try {
-    const { data, error } = await supabase
-      .from('jobs')
-      .upsert([job], { onConflict: ['id'] })
-      .single();
+    const {
+      id,
+      name,
+      description,
+      rentPaid,
+      hours,
+      cost,
+      priority,
+      organizationId,
+      unitIdentifier,
+      labelIds,
+      buildingId,
+      assigneeIds,
+    } = job;
 
-    if (error) {
-      console.error('Error updating job:', error);
+    const { data, error } = await supabase.rpc('update_job', { 
+      j_id: id,
+      name,
+      description,
+      rent_paid: rentPaid,
+      hours,
+      cost,
+      priority,
+      organization_id: organizationId,
+      unit_identifier: unitIdentifier,
+      building_id: buildingId,
+      label_ids: labelIds,
+      assignee_ids: assigneeIds
+    });
+
+    if (error || !data) {
+      console.error('Error fetching board:', error);
       return null;
     }
-
-    return data || null;
+    return {"success": true} || null;
   } catch (error) {
     console.error('Error updating job:', error);
     return null;

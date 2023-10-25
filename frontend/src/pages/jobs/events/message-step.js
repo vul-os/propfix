@@ -1,5 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
+import { camelKeys } from 'js-convert-case';
 import Avatar from '@mui/material/Avatar';
 import Typography from '@mui/material/Typography';
 import Chip from '@mui/material/Chip'; // Import Chip component
@@ -81,7 +82,9 @@ const styles = {
   },
 };
 
-export default function MessageStep({ event, member, attachments }) {
+export default function MessageStep({ eventRaw, member, attachments }) {
+  const event = camelKeys(eventRaw)
+  console.log(event)
   const messageBoxStyle =
     event.visibility === 'public'
       ? styles.publicMessageBox

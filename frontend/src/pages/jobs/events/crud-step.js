@@ -8,7 +8,9 @@ import { useMediaQuery, useTheme } from '@mui/material';
 import PropTypes from 'prop-types'; // Import PropTypes
 import { fToNow } from '../../../utils/format-time';
 
-export default function CrudStep({ event, member }) {
+export default function CrudStep({ eventRaw, member }) {
+  const event = camelKeys(eventRaw)
+
   let icon;
   let action;
 

@@ -3,6 +3,7 @@ import { useState, useCallback, useEffect } from 'react';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import moment from 'moment';
+import { toCamelCase } from 'js-convert-case';
 // @mui
 import { styled, alpha } from '@mui/material/styles';
 import Drawer from '@mui/material/Drawer';
@@ -57,7 +58,6 @@ export default function PopOver({
   const [events, setEvents] = useState([]); // State for the switch
   const [files, setFiles] = useState([]);
 
-  console.log("YOOOOOO!", settings)
   useEffect(() => {
     const initialSelectedColumnMap = board && board.jobs && board.columns
     ? Object.fromEntries(
@@ -106,7 +106,6 @@ export default function PopOver({
       try {
         const res = await closeJob(job.id); // Pass the token to the deleteJob function
         onClosePopOver()
-        console.log(res)
         if (res?.success) {
           const newBoardJobs = { ...board.jobs };
           const currentDateTime = moment().utc().format('YYYY-MM-DDTHH:mm:ss[Z]'); 
@@ -256,6 +255,7 @@ export default function PopOver({
     async (newJob) => {
       try {
         if (!objectsHaveSameValues(newJob, job)) {
+          console.log(newJob)
           const res = await updateJob(newJob); // Pass the token to the deleteJob function
         
           if (res.success) {
@@ -405,11 +405,11 @@ export default function PopOver({
               }
             }
             const rEvent = await createEvent(newEvent);
-            if (!!rEvent?.event) {
+            console.log(rEvent)
+            if (!!rEvent) {
               let oldEvents = []
               if (events) oldEvents = [...events]
-              console.log(rEvent)
-              setEvents([...oldEvents, rEvent.event]);
+              setEvents([...oldEvents, rEvent]);
             }
           }
       } catch (error) {

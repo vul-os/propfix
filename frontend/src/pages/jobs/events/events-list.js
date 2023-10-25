@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { camelKeys } from 'js-convert-case';
 import PropTypes from 'prop-types';
 import { useParams } from 'react-router-dom';
 import Paper from '@mui/material/Paper';
@@ -12,7 +13,7 @@ export default function EventsList({ events, members, attachments }) {
   const isMediumScreen = useMediaQuery(theme.breakpoints.only('md'));
 
   useEffect(() => {
-    console.log(attachments)
+    console.log(attachments, events)
     // Your useEffect logic here
   }, [events, attachments]);
 
@@ -47,7 +48,8 @@ export default function EventsList({ events, members, attachments }) {
 
   };
 
-  const RenderEvent = ({ event, index, files}) => {
+  const RenderEvent = ({ eventRaw, index, files}) => {
+    const event = camelKeys(eventRaw)
     const member = members && event && event.memberId && members[event.memberId];
     return member && files && (
       <React.Fragment key={event.id}>
@@ -59,9 +61,9 @@ export default function EventsList({ events, members, attachments }) {
             style={{width: "100%"}}
           >
             {event.type === 'MESSAGE' ? (
-              <MessageStep event={event} member={member} attachments={files} />
+              <MessageStep eventRaw={event} member={member} attachments={files} />
             ) : (
-              <CrudStep event={event} member={member} />
+              <CrudStep eventRaw={event} member={member} />
             )}
           </div>
         </div>
@@ -74,7 +76,7 @@ export default function EventsList({ events, members, attachments }) {
       <h2 style={eventsHeadingStyle}>Events</h2>
       {events && attachments &&
         events.map((event, index) => (
-          <RenderEvent key={index} event={event} index={index} files={attachments} />
+          <RenderEvent key={index} eventRaw={event} index={index} files={attachments} />
         ))}
     </div>
   );

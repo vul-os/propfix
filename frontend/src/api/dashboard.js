@@ -1,14 +1,19 @@
-import config from '../config/config';
-import { jsonRpcRequest } from './jsonrpc/client';
+import { supabase } from './supabase'; // Make sure the path is correct
 
-const API_BASE_URL = `${config.apiUrl}/api/authenticated`;
-
-export async function executeQuery(name, templateDict, organizationId, idToken) {
+export async function executeQuery(name, templateDict, organizationId) {
   try {
-    const params = [{name, templateDict, organizationId}];
-    return await jsonRpcRequest('Dashboard.ExecuteQuery', params, idToken);
+    const { data, error } = await supabase.rpc('execute_query', {
+      p_name: name, p_template_dict: templateDict, p_organization_id: organizationId 
+    });
+
+    if (error) {
+      console.error('Error fetching board:', error);
+      return null;
+    }
+
+    return data || null;
   } catch (error) {
-    console.error('Error creating label:', error);
+    console.error('Unexpected error fetching board:', error);
     return null;
   }
 }
