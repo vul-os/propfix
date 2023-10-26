@@ -57,6 +57,7 @@ export async function createJob(job) {
 
 
 export async function updateJob(job) {
+  console.log(job)
   try {
     const {
       id,
@@ -72,6 +73,8 @@ export async function updateJob(job) {
       buildingId,
       assigneeIds,
       attachments,
+      pendingTennantEmails,
+      tenantIds
     } = job;
 
     const { data, error } = await supabase.rpc('update_job', { 
@@ -87,7 +90,9 @@ export async function updateJob(job) {
       building_id: buildingId,
       label_ids: labelIds,
       assignee_ids: assigneeIds,
-      attachments
+      tenant_emails: pendingTennantEmails,
+      tenant_ids: tenantIds,
+      attachments,
     });
 
     if (error || !data) {

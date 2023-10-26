@@ -227,6 +227,7 @@ export default function PopOver({
   const handleUpdateJob = useCallback(
     async (newJob) => {
       try {
+        console.log("yooooo!21212", newJob)
         if (!objectsHaveSameValues(newJob, job)) {
           console.log(newJob)
           const res = await updateJob(newJob); // Pass the token to the deleteJob function

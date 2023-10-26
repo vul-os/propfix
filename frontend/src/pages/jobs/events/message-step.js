@@ -84,7 +84,7 @@ const styles = {
 
 export default function MessageStep({ eventRaw, member, attachments }) {
   const event = camelKeys(eventRaw)
-  console.log(event)
+  console.log(":asdasdasdadsdsa:", member)
   const messageBoxStyle =
     event.visibility === 'public'
       ? styles.publicMessageBox
@@ -94,7 +94,7 @@ export default function MessageStep({ eventRaw, member, attachments }) {
       event.visibility === 'public'
       ? <Chip label="Public" sx={{backgroundColor:'rgb(255, 26, 91)', borderRadius:'8px', marginRight:'10px'}}  />
       : <Chip label="Private" sx={{backgroundColor: 'black', borderRadius:'8px', marginRight:'10px' }} />;
-
+  
   // Filter the actual file objects based on filenames in event.data.attachments
   const filesToDisplay = attachments.filter(file => 
     event.data?.attachments?.some(attachmentName => attachmentName.includes(file.name))
@@ -108,7 +108,7 @@ export default function MessageStep({ eventRaw, member, attachments }) {
         <div style={styles.titleSection}>
           {renderVisibility }
           <Typography variant="subtitle2" style={styles.titleText}>
-            {member?.username}
+            {member?.displayName}
           </Typography>
           <Typography variant="caption" sx={{ color: 'text.disabled' }}>
             Messaged {fToNow(event.createdAt)}

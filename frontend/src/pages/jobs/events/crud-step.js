@@ -11,6 +11,7 @@ import { fToNow } from '../../../utils/format-time';
 
 export default function CrudStep({ eventRaw, member }) {
   const event = camelKeys(eventRaw)
+  console.log(":asdasdasdadsdsa:", member)
 
   let icon;
   let action;

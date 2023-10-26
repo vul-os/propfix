@@ -129,7 +129,7 @@ export const AuthProvider = (props) => {
       // Try refreshing session if fetching user failed
       user = await refreshSession();
     }
-  
+    
     if (!user) {
       console.error("Unable to obtain user details after session refresh.");
       dispatch({
@@ -137,38 +137,10 @@ export const AuthProvider = (props) => {
       });
       return;
     }
-  
-    // Check if the user exists in the profiles table
-    const { data: existingProfile, error: profileError } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('id', user.id)
-  
-    if (profileError) {
-      console.error("Error checking profile:", profileError);
-      return;
-    }
-  
-    // If profile doesn't exist, create one
-    if (existingProfile?.length === 0) {
-      const { data: newProfile, error: insertError } = await supabase
-        .from('profiles')
-        .insert([{
-          id: user.id,
-          email: user.email,
-          username: user.user_metadata.name,
-          photo_url: user.user_metadata.avatar_url
-        }]);
-  
-      if (insertError) {
-        console.error("Error inserting new profile:", insertError);
-      } else {
-        console.log("New profile created:", newProfile);
-      }
-    } else {
-      console.log("User profile already exists.");
-    }
-  
+    console.log(user)
+
+    await supabase.rpc('update_user_ids_in_job_tennants', {});
+
     dispatch({
       type: HANDLERS.INITIALIZE,
       payload: user

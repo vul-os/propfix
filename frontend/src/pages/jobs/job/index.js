@@ -55,10 +55,9 @@ export default function JobDetails({
   );
 
   const tennants = useMemo(
-    () => job?.tennantIds?.map((jobId) => members && members[jobId]),
-    [job?.tennantIds, members]
+    () => job?.tenantIds?.map((jobId) => members && members[jobId]),
+    [job?.tenantIds, members]
   );
-  console.log("yooo: ", tennants, job?.tennantIds, members)
 
   const handleUpdateField = useCallback((field, type = 'string') => {
     return (event) => {
@@ -171,7 +170,7 @@ export default function JobDetails({
         }
       </Stack>
     </Stack>
-  ), [assignees]);
+  ), [reporter]);
 
   const renderPendingTennants = useMemo(() => {
       return (
@@ -190,9 +189,9 @@ export default function JobDetails({
       );
   }, [job?.pendingTennantEmails]);
 
-  const renderTennants = useMemo(() => (
-    <Stack direction="row">
-      <StyledLabel sx={{ height: 40, lineHeight: '40px' }}>Tennants</StyledLabel>
+  const renderTennants = useMemo(() => {
+    return (<Stack direction="row">
+      <StyledLabel sx={{ height: 40, lineHeight: '40px' }}>Tenants</StyledLabel>
       <Stack direction="row" flexWrap="wrap" alignItems="center" spacing={1}>
         {tennants && tennants.map((reporter) => 
           <Avatar key={reporter?.id} alt={reporter?.displayName} src={reporter?.photoUrl} />
@@ -200,7 +199,7 @@ export default function JobDetails({
         }
       </Stack>
     </Stack>
-  ), [tennants]);
+  )}, [tennants]);
 
   const renderAssignee = useMemo(() => (
     <Stack direction="row">
