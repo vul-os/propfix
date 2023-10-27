@@ -181,7 +181,7 @@ export const AuthProvider = (props) => {
       return;
     }
 
-    await supabase.rpc('update_user_ids_in_job_tenants', {});
+    await supabase.rpc('update_user_ids_in_job_tennants', {});
 
     dispatch({
       type: HANDLERS.INITIALIZE,

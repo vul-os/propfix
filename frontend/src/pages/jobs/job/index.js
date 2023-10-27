@@ -104,7 +104,7 @@ export default function JobDetails({
       <StyledLabel>Priority</StyledLabel>
       <Priority priority={job?.priority?.toLowerCase()} onChangePriority={handleUpdateField('priority')} />
     </Stack>
-  ), [job.priority, handleUpdateField]);
+  ), [job?.priority, handleUpdateField]);
 
 
   const renderBuildings = useMemo(() => {

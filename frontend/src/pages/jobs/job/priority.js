@@ -24,7 +24,7 @@ export default function Priority({ priority, onChangePriority }) {
             textTransform: 'capitalize',
             fontWeight: 'fontWeightBold',
             boxShadow: (theme) => `inset 0 0 0 1px ${alpha(theme.palette.grey[500], 0.24)}`,
-            ...(option === priority.toLowerCase() && {
+            ...(option === priority?.toLowerCase() && {
               boxShadow: (theme) => `inset 0 0 0 2px ${theme.palette.text.primary}`,
             }),
           }}

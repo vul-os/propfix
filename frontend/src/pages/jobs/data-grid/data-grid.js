@@ -144,7 +144,7 @@ function JobDataGrid() {
   
   const renderPriority = (params) => {
     let { value: priority } = params;
-    priority = priority.toLowerCase();
+    priority = priority?.toLowerCase();
   
     const getIcon = () => {
       if (priority === 'low') return 'solar:double-alt-arrow-down-bold-duotone';
@@ -169,7 +169,7 @@ function JobDataGrid() {
             color: getIconColor(),
           }}
         />
-        <strong>{priority.toUpperCase()}</strong>
+        <strong>{priority?.toUpperCase()}</strong>
       </Stack>
     );
   };
