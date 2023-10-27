@@ -20,7 +20,11 @@ const initialState = {
   isAuthenticated: false,
   isLoading: true,
   user: null,
-  passwordResetSent: false
+  passwordResetSent: false,
+  organizations: [], // Add organizations state
+  role: null,
+  settings: [],
+  members: []
 };
 
 const handlers = {
@@ -97,11 +101,13 @@ export const AuthProvider = (props) => {
 
   const [activeOrganization, setActiveOrganization] = useState('');
   const [haveFetchedOrganizations, setHaveFetchedOrganizations] = useState(false);
-  const [organizations, setOrganizations] = useState([]);
+
   const [role, setRole] = useState(null);
   const [roles, setRoles] = useState([]);
-  const [members, setMembers] = useState([]);
   const [settings, setSettings] = useState([]);
+  const [members, setMembers] = useState([]);
+
+  const [organizations, setOrganizations] = useState([]); // Add organizations state
 
   const refreshSession = async () => {
     const { data, error } = await supabase.auth.refreshSession();
@@ -112,14 +118,51 @@ export const AuthProvider = (props) => {
     return data?.user;
   };
 
+  const fetchOrganizationRoleSettings = async (user) => {
+    // Check if the user is authenticated
+    if (user) {
+      setHaveFetchedOrganizations(false);
+      try {
+        // Fetch organizations using JSON-RPC
+        const fetchedOrganizations = await getAllOrganizations();
+        setOrganizations(fetchedOrganizations);
+
+        if (fetchedOrganizations.length > 0) {
+          setActiveOrganization(fetchedOrganizations[0].id);
+          const fid = fetchedOrganizations[0]?.id
+          try {
+            // Fetch the first role whenever activeOrganization changes
+            const roleData = await getFirstRole(fid);
+            if (roleData) {
+              setRole(roleData?.name?.toLowerCase());
+            }
+          } catch (error) {
+            console.error('Error fetching role:', error);
+          }
+    
+          try {
+            // Fetch settings using JSON-RPC
+            const fetchedSettings = await getAllSettings(fid);
+            setSettings(fetchedSettings);
+          } catch (error) {
+            console.log('Error fetching settings:', error);
+          }``
+        }
+      } catch (error) {
+        console.log('Error fetching organizations:', error);
+      }
+      setHaveFetchedOrganizations(true);
+    }
+  };
+
   const initialize = async () => {
     if (initialized.current) {
       return;
     }
     initialized.current = true;
-  
+
     let user = null;
-      
+
     // Try to get user
     const { data: userData, userError } = await supabase.auth.getUser();
     if (userData?.user) {
@@ -129,7 +172,7 @@ export const AuthProvider = (props) => {
       // Try refreshing session if fetching user failed
       user = await refreshSession();
     }
-    
+
     if (!user) {
       console.error("Unable to obtain user details after session refresh.");
       dispatch({
@@ -137,68 +180,29 @@ export const AuthProvider = (props) => {
       });
       return;
     }
-    console.log(user)
 
-    await supabase.rpc('update_user_ids_in_job_tennants', {});
+    await supabase.rpc('update_user_ids_in_job_tenants', {});
 
     dispatch({
       type: HANDLERS.INITIALIZE,
       payload: user
     });
-  
-    setHaveFetchedOrganizations(false);
 
-    // Fetch organizations using JSON-RPC
-    try {
-      const fetchedOrganizations = await getAllOrganizations();
-      setOrganizations(fetchedOrganizations); // Set the organizations
-      if (fetchedOrganizations.length > 0) {
-        setActiveOrganization(fetchedOrganizations[0].id);
-      }
-      // ... (rest of the logic remains the same)
-    } catch (error) {
-      console.log('Error fetching organizations:', error);
-    }
-    setHaveFetchedOrganizations(true);
+    // Fetch organizations, roles, and settings after initializing
+    fetchOrganizationRoleSettings(user);
   };
 
-  
   useEffect(() => {
     initialize();
   }, []);
 
   useEffect(() => {
     initialize();
-
-    // Fetch the first role whenever activeOrganization changes
-    if (activeOrganization) {
-      const fetchRole = async () => {
-        try {
-          const roleData = await getFirstRole(activeOrganization);
-          if (roleData) {
-            setRole(roleData?.name?.toLowerCase()); // Assume the response has a property called "role"
-          }
-        } catch (error) {
-          console.error('Error fetching role:', error);
-        }
-      };
-      const fetchSettings = async () => {
-        // Fetch settings using JSON-RPC
-        try {
-          const fs = await getAllSettings(activeOrganization);
-          setSettings(fs);
-        } catch (error) {
-          console.log('Error fetching settings:', error);
-        }
-      };
-      fetchSettings();
-      fetchRole();
-    }
   }, [activeOrganization]);
 
   const signIn = async (email, password) => {
     try {
-      const { user, error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
       });
@@ -206,11 +210,14 @@ export const AuthProvider = (props) => {
       if (error) {
         throw new Error(error.message);
       }
-      
+
       dispatch({
         type: HANDLERS.SIGN_IN,
-        payload: user
+        payload: data?.user
       });
+
+      // Fetch organizations, roles, and settings after signing in
+      fetchOrganizationRoleSettings(data?.user);
     } catch (err) {
       console.error(err);
       throw new Error('Please check your email and password');
@@ -231,6 +238,9 @@ export const AuthProvider = (props) => {
         type: HANDLERS.SIGN_IN_WITH_GOOGLE,
         payload: user
       });
+
+      // Fetch organizations, roles, and settings after signing in with Google
+      fetchOrganizationRoleSettings(user);
     } catch (err) {
       console.error(err);
       throw new Error('There was an error signing in with Google');
@@ -247,7 +257,7 @@ export const AuthProvider = (props) => {
 
   const signUp = async (email, password) => {
     try {
-      const { user, error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password
       });
@@ -258,8 +268,11 @@ export const AuthProvider = (props) => {
 
       dispatch({
         type: HANDLERS.SIGN_UP,
-        payload: user
+        payload: data?.user
       });
+
+      // Fetch organizations, roles, and settings after signing up
+      fetchOrganizationRoleSettings(data?.user);
     } catch (err) {
       console.error(err);
       throw new Error('Error signing up. Please check your input.');
@@ -275,7 +288,7 @@ export const AuthProvider = (props) => {
       });
     } catch (err) {
       console.error(err);
-      throw new Error('Error sending password reset link. Please check your email.');
+      throw Error('Error sending password reset link. Please check your email.');
     }
   };
 

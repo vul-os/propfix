@@ -58,11 +58,11 @@ export default function Nav({ openNav, onCloseNav, navConfig }) {
 
             <Box sx={{ ml: 2 }}>
               <Typography variant="subtitle2" sx={{ color: 'text.primary' }}>
-                {user.displayName ? user.displayName : user.email}
+                {user?.displayName ? user.displayName : user?.email}
               </Typography>
 
               <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                {user.role}
+                {user?.role}
               </Typography>
             </Box>
           </StyledAccount>
