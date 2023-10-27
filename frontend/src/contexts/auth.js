@@ -146,7 +146,7 @@ export const AuthProvider = (props) => {
             setSettings(fetchedSettings);
           } catch (error) {
             console.log('Error fetching settings:', error);
-          }``
+          }
         }
       } catch (error) {
         console.log('Error fetching organizations:', error);
