@@ -31,7 +31,7 @@ export default function Labels() {
   const [editedLabel, setEditedLabel] = useState({});
   const [openDialog, setOpenDialog] = useState(false); // State for the dialog
   const [isEditing, setIsEditing] = useState(false); // Separate state for editing
-  const { getIdToken, activeOrganization } = useAuthContext();
+  const { activeOrganization } = useAuthContext();
 
   useEffect(() => {
     if (activeOrganization) {
@@ -41,16 +41,15 @@ export default function Labels() {
 
   const fetchLabels = async () => {
     try {
-      const token = await getIdToken();
-      const response = await getAllLabels(activeOrganization, token);
-      setLabels(response?.labels || []);
+      const response = await getAllLabels(activeOrganization);
+      setLabels(response || []);
     } catch (error) {
       console.error('Error fetching labels:', error);
     }
   };
 
   const startEditing = (label) => {
-    setEditedLabel({ organizationId: activeOrganization, ...label });
+    setEditedLabel({ organization_id: activeOrganization, ...label });
     setIsEditing(true); // Set the editing state
     setEditing(label.id);
   };
@@ -66,12 +65,11 @@ export default function Labels() {
   const saveEditing = async () => {
     console.log('Save changes for label:', editedLabel);
     try {
-      const token = await getIdToken();
       if (isEditing) {
-        await updateLabel(editedLabel, token);
+        await updateLabel(editedLabel);
         updateLabelInState(editedLabel);
       } else {
-        await createNewLabel(editedLabel, token);
+        await createNewLabel(editedLabel);
       }
       setIsEditing(false); // Reset the editing state
       setEditing(null);
@@ -89,8 +87,7 @@ export default function Labels() {
 
   const handleDeleteLabel = async (label) => {
     try {
-      const token = await getIdToken();
-      await deleteLabel(label.id, token);
+      await deleteLabel(label.id);
       setLabels((prevLabels) => prevLabels.filter((l) => l.id !== label.id));
     } catch (error) {
       console.error('Error deleting label:', error);
@@ -98,9 +95,9 @@ export default function Labels() {
   };
   
 
-  const createNewLabel = async (newLabel, token) => {
+  const createNewLabel = async (newLabel) => {
     try {
-      const createdLabel = await createLabel(newLabel, token);
+      const createdLabel = await createLabel(newLabel);
       if (createdLabel.id) {
         setLabels((prevLabels) => [...prevLabels, createdLabel]);
       }
@@ -194,7 +191,7 @@ export default function Labels() {
         color="primary"
         aria-label="Add Label"
         onClick={() => {
-          setEditedLabel({ organizationId: activeOrganization, name: '', color: '#000000' });
+          setEditedLabel({ organization_id: activeOrganization, name: '', color: '#000000' });
           setIsEditing(false); // Reset the editing state
           setOpenDialog(true);
         }}

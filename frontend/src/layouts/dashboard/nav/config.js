@@ -17,7 +17,8 @@ const urlIcon = (url) =>
 const navConfig = (role) => {
 
   if (role === 'admin') {
-    return  [{
+    return  [
+      {
         title: 'Analytics',
         path: '/',
         breadcrumbsIcon: <HomeIcon />,
@@ -36,12 +37,12 @@ const navConfig = (role) => {
         breadcrumbsIcon:  <StoreIcon />,
         icon: <Icon icon="ph:briefcase-thin" style={{ marginRight: '18px', fontSize: '22px' }} />
       },
-      {
-        title: 'Inspections (Beta)',
-        path: '/inspections',
-        breadcrumbsIcon:  <StoreIcon />,
-        icon: <Icon icon="fa-solid:search" style={{ marginRight: '18px', fontSize: '22px' }} />
-      },
+      // {
+      //   title: 'Inspections (Beta)',
+      //   path: '/inspections',
+      //   breadcrumbsIcon:  <StoreIcon />,
+      //   icon: <Icon icon="fa-solid:search" style={{ marginRight: '18px', fontSize: '22px' }} />
+      // },
     ]
   }
   if (role === 'basic') {

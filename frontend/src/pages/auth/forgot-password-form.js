@@ -1,20 +1,23 @@
 import React, { useState } from 'react';
 import { TextField, Button, Stack, Typography, Snackbar, Alert } from '@mui/material';
-import { getAuth, sendPasswordResetEmail } from 'firebase/auth';
+import { supabase } from '../../api/supabase'; // Import your Supabase client instance
 
 export default function ForgotPasswordForm({ onSuccess }) {
-  const auth = getAuth();
-
   const [email, setEmail] = useState('');
   const [resetSent, setResetSent] = useState(false);
   const [error, setError] = useState(null);
 
   const handleResetPassword = async () => {
     try {
-      await sendPasswordResetEmail(auth, email);
-      setResetSent(true);
-      setError(null);
-      onSuccess(); // Notify parent component of success
+      const { error } = await supabase.auth.api.resetPasswordForEmail(email);
+
+      if (error) {
+        setError(error.message);
+      } else {
+        setResetSent(true);
+        setError(null);
+        onSuccess(); // Notify parent component of success
+      }
     } catch (err) {
       setError(err.message);
     }

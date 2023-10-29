@@ -22,7 +22,7 @@ export default function AccountPopover() {
   const [open, setOpen] = useState(null);
   const navigate = useNavigate();
   const { signOut, user } = useAuthContext();
-
+  console.log("userrr: ", user)
   const handleOpen = (event) => {
     setOpen(event.currentTarget);
   };
@@ -55,7 +55,7 @@ export default function AccountPopover() {
           }),
         }}
       >
-        <Avatar src={user.photoURL} alt="photoURL" />
+        <Avatar src={user?.user_metadata?.avatar_url} alt="photoURL" />
       </IconButton>
 
       <Popover
@@ -79,10 +79,10 @@ export default function AccountPopover() {
       >
         <Box sx={{ my: 1.5, px: 2.5 }}>
           <Typography variant="subtitle2" noWrap>
-            {user.displayName}
+            {user?.name}
           </Typography>
           <Typography variant="body2" sx={{ color: 'text.secondary' }} noWrap>
-            {user.email}
+            {user?.email}
           </Typography>
         </Box>
 

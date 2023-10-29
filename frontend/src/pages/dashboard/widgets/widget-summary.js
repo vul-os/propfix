@@ -4,7 +4,7 @@ import PropTypes from 'prop-types';
 
 import { useAuthContext } from '../../../contexts/auth'; 
 import { executeQuery } from '../../../api/dashboard'; 
-import WidgetSummaryComponent from "./widget-summary-component"
+import WidgetSummaryComponent from "../../../components/widget-summary"
 
 
 
@@ -12,24 +12,35 @@ export default function WidgetSummary({ name, templates, ...other }) {
   const [data, setData] = useState(null);
 
 
-  const { getIdToken, user, activeOrganization } = useAuthContext(); 
+  const { activeOrganization } = useAuthContext(); 
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const token = await getIdToken(); // Get the JWT token from the auth context
-        const response = await executeQuery(name, templates, activeOrganization, token);
-
-        if (response.data) {
-          const jsonResponse = response
-          const firstElement = jsonResponse.data && Object.keys(jsonResponse.data)[0] && 
-            jsonResponse.data[Object.keys(jsonResponse.data)[0]][0];
-  
-          // Handle the successful response here
-          console.log('Request was successful');
-          
-          setData(firstElement); // Set the retrieved data in state
+        const response = await executeQuery(name, templates, activeOrganization);
+        console.log("yooowdigetdh", response)
+        if (response) {
+          try {
+            const jsonResponse = response
+        
+            if (jsonResponse.data && typeof jsonResponse.data === 'object') {
+              const firstElement = Object.values(jsonResponse.data)[0][0];
+              console.log("firsthtthursday: ", firstElement)
+              // Handle the successful response here
+              console.log('Request was successful');
+              
+              // Assuming setData is a function to set the state
+              setData(firstElement); // Set the retrieved data in state
+            } else {
+              console.error('Invalid data structure in the response');
+            }
+          } catch (error) {
+            console.error('Error parsing JSON response:', error);
+          }
+        } else {
+          console.error('No response received');
         }
+        
       } catch (error) {
         console.error('Error:', error);
       }
@@ -41,7 +52,7 @@ export default function WidgetSummary({ name, templates, ...other }) {
 
   return (
     <div>
-      { !data ? (
+      { data === null ? (
         <p>Loading...</p>
       ) : (
         <WidgetSummaryComponent total={data} {...other}/>

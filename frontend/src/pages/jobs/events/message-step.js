@@ -1,5 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
+import { camelKeys } from 'js-convert-case';
 import Avatar from '@mui/material/Avatar';
 import Typography from '@mui/material/Typography';
 import Chip from '@mui/material/Chip'; // Import Chip component
@@ -81,7 +82,9 @@ const styles = {
   },
 };
 
-export default function MessageStep({ event, member, attachments }) {
+export default function MessageStep({ eventRaw, member, attachments }) {
+  const event = camelKeys(eventRaw)
+  console.log(":asdasdasdadsdsa:", member)
   const messageBoxStyle =
     event.visibility === 'public'
       ? styles.publicMessageBox
@@ -91,7 +94,7 @@ export default function MessageStep({ event, member, attachments }) {
       event.visibility === 'public'
       ? <Chip label="Public" sx={{backgroundColor:'rgb(255, 26, 91)', borderRadius:'8px', marginRight:'10px'}}  />
       : <Chip label="Private" sx={{backgroundColor: 'black', borderRadius:'8px', marginRight:'10px' }} />;
-
+  
   // Filter the actual file objects based on filenames in event.data.attachments
   const filesToDisplay = attachments.filter(file => 
     event.data?.attachments?.some(attachmentName => attachmentName.includes(file.name))

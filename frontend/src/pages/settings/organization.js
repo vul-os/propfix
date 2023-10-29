@@ -41,13 +41,12 @@ export default function Organization() {
   const [roleMenuAnchorEl, setRoleMenuAnchorEl] = useState(null);
   const [selectedRoleId, setSelectedRoleId] = useState('');
 
-  const { getIdToken, activeOrganization, organizations, roles, setRoles, members, setMembers } = useAuthContext();
+  const { activeOrganization, organizations, roles, setRoles, members, setMembers } = useAuthContext();
   const currentOrg = organizations.find((org) => org.id === activeOrganization);
 
   const fetchMembers = async () => {
     try {
-      const token = await getIdToken();
-      const response = await getAllMembers(activeOrganization, token);
+      const response = await getAllMembers(activeOrganization);
       setMembers(response?.members || []);
       setPendingMembers(response?.pending_members || []);
     } catch (error) {
@@ -57,13 +56,12 @@ export default function Organization() {
 
   const fetchRoles = useCallback(async () => {
     try {
-      const token = await getIdToken();
-      const response = await getAllRoles(activeOrganization, token);
-      setRoles(response?.roles || []);
+      const response = await getAllRoles(activeOrganization);
+      setRoles(response || []);
     } catch (error) {
       console.error('Error fetching roles:', error);
     }
-  }, [activeOrganization, getIdToken]);
+  }, [activeOrganization]);
 
   useEffect(() => {
     if (activeOrganization) {
@@ -92,8 +90,7 @@ export default function Organization() {
             return;
         }
 
-        const token = await getIdToken();
-        await inviteMember(inviteEmail, activeOrganization, inviteRole, token);
+        await inviteMember(inviteEmail, activeOrganization, inviteRole);
         console.log(`Successfully invited member with email: ${inviteEmail} and role: ${inviteRole}`);
         handleCloseDialog();
     } catch (error) {
@@ -106,8 +103,7 @@ export default function Organization() {
     console.log(`Changing role of member ${memberId} to ${event.target.value}`);
 
     try {
-        const token = await getIdToken();
-        const response = await changeRole(event.target.value, memberId, activeOrganization, token);
+        const response = await changeRole(event.target.value, memberId, activeOrganization);
         if (response) {
           fetchRoles()
           fetchMembers()
@@ -117,16 +113,12 @@ export default function Organization() {
     }
   };
 
-
-
-
   const iconButtonStyle = { color: '#637381' };
 
   const handleRemovePendingMember = async () => {
     try {
       if (pendingMemberToDelete) {
-        const token = await getIdToken();
-        await removePendingMember(pendingMemberToDelete, activeOrganization, token);
+        await removePendingMember(pendingMemberToDelete, activeOrganization);
 
         // Log the removed pending member
         console.log(`Removed pending member: ${pendingMemberToDelete}`);
@@ -144,9 +136,8 @@ export default function Organization() {
   const handleRemoveMember = async () => {
     try {
       if (memberToDelete) {
-        const token = await getIdToken();
         console.log("Removing member with ID:", memberToDelete); // Debugging log
-        await removeMember(memberToDelete, activeOrganization, token);
+        await removeMember(memberToDelete, activeOrganization);
         setMembers((prevMembers) =>
           prevMembers.filter((user) => user.Id !== memberToDelete)
         );
@@ -230,13 +221,13 @@ export default function Organization() {
           {members.map((member) => (
             <TableRow key={member?.id}>
               <TableCell>
-                <Avatar src={member?.photoUrl} alt={member?.displayName || member?.email} />
+                <Avatar src={member?.photo_url} alt={member?.username || member?.email} />
               </TableCell>
-              <TableCell>{member?.displayName || 'N/A'}</TableCell>
+              <TableCell>{member?.username || 'N/A'}</TableCell>
               <TableCell>{member?.email}</TableCell>
               <TableCell>
                   <Select
-                    value={member?.roleId || ''}
+                    value={member?.role_id || ''}
                     onChange={(e) => handleRoleChange(e, member.id)}
                     displayEmpty
                   >

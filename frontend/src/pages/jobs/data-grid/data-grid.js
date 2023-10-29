@@ -39,35 +39,14 @@ const StyledDataGrid = styled(DataGrid)(() => ({
 }));
 
 function JobDataGrid() {
-  const { board, jobs, boardLoading, toFilter, filters } = useBoardContext(); // Use the BoardProvider context
+  const { board, jobs, boardLoading, toFilter, filter, setFilter } = useBoardContext(); // Use the BoardProvider context
 
   const [open, setOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState(null);
 
-  const [filterOpen, setFilterOpen] = useState(false); // Add filter state
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const [minCost, setMinCost] = useState(0); // Define minCost state
-  const [maxCost, setMaxCost] = useState(1000); // Define maxCost state
-
-  const [searchText, setSearchText] = useState('');
-  const [filteredJobs, setFilteredJobs] = useState([]);
-
-  
-  
-  
-
-  useEffect(() => {
-    if (searchText.trim() === '') {
-      setFilteredJobs(jobs);
-    } else {
-      const filtered = jobs.filter((job) =>
-        job.name.toLowerCase().includes(searchText.toLowerCase())
-      );
-      setFilteredJobs(filtered);
-    }
-  }, [jobs, searchText]);
-
+ 
 
 
   const toggleSidebar = () => {
@@ -165,7 +144,7 @@ function JobDataGrid() {
   
   const renderPriority = (params) => {
     let { value: priority } = params;
-    priority = priority.toLowerCase();
+    priority = priority?.toLowerCase();
   
     const getIcon = () => {
       if (priority === 'low') return 'solar:double-alt-arrow-down-bold-duotone';
@@ -190,7 +169,7 @@ function JobDataGrid() {
             color: getIconColor(),
           }}
         />
-        <strong>{priority.toUpperCase()}</strong>
+        <strong>{priority?.toUpperCase()}</strong>
       </Stack>
     );
   };
@@ -218,7 +197,7 @@ function JobDataGrid() {
       width: 200,
       renderCell: renderBuilding,
     },
-    { field: 'Issue', headerName: 'Name', width: 200 },
+    { field: 'name', headerName: 'Name', width: 200 },
     {
       field: 'labels',
       headerName: 'Labels',
@@ -322,6 +301,8 @@ function JobDataGrid() {
           />
           </Button>
           <Filter
+            filter={filter}
+            setFilter={setFilter}
             sidebarOpen={sidebarOpen} // Ensure this is correctly connected to the filterOpen state
             toggleSidebar={toggleSidebar}
             toFilter={toFilter}

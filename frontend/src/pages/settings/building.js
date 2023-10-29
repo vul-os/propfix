@@ -32,14 +32,12 @@ export default function Buildings() {
   const [openDialog, setOpenDialog] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const { getIdToken, activeOrganization } = useAuthContext();
+  const { activeOrganization } = useAuthContext();
 
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
-      const token = await getIdToken();
-      const response = await getAllBuildings(0, 0, '', token);
-      setBuildings(response.buildings || []);
+      const response = await fetchBuildings()
     } catch (error) {
       console.error('Error fetching buildings:', error);
     } finally {
@@ -55,9 +53,8 @@ export default function Buildings() {
 
   const fetchBuildings = async () => {
     try {
-      const token = await getIdToken();
-      const response = await getAllBuildings(0, 0, '', token);
-      setBuildings(response.buildings || []);
+      const response = await getAllBuildings(0, 0, '', activeOrganization);
+      setBuildings(response || []);
     } catch (error) {
       console.error('Error fetching buildings:', error);
     }
@@ -65,7 +62,7 @@ export default function Buildings() {
 
   const startEditing = (building) => {
     setEditedBuilding({
-      organizationId: activeOrganization,
+      organization_id: activeOrganization,
       ...building,
       latitude: parseFloat(building.latitude),
       longitude: parseFloat(building.longitude),
@@ -85,12 +82,11 @@ export default function Buildings() {
   const saveEditing = async () => {
     console.log('Save changes for building:', editedBuilding);
     try {
-      const token = await getIdToken();
       if (isEditing) {
-        await updateBuilding(editedBuilding, token);
+        await updateBuilding(editedBuilding);
         updateBuildingInState(editedBuilding);
       } else {
-        await createNewBuilding(editedBuilding, token);
+        await createNewBuilding(editedBuilding);
       }
       setIsEditing(false);
       setEditing(null);
@@ -108,17 +104,16 @@ export default function Buildings() {
 
   const handleDeleteBuilding = async (building) => {
     try {
-      const token = await getIdToken();
-      await deleteBuilding(building.id, token);
+      await deleteBuilding(building.id);
       setBuildings((prevBuildings) => prevBuildings.filter((b) => b.id !== building.id));
     } catch (error) {
       console.error('Error deleting building:', error);
     }
   };
 
-  const createNewBuilding = async (newBuilding, token) => {
+  const createNewBuilding = async (newBuilding) => {
     try {
-      const createdBuilding = await createBuilding(newBuilding, token);
+      const createdBuilding = await createBuilding(newBuilding);
       if (createdBuilding.id) {
         setBuildings((prevBuildings) => [...prevBuildings, createdBuilding]);
       }
@@ -166,15 +161,15 @@ export default function Buildings() {
                   {editing === building.id ? (
                     <TextField
                       label="Building Name"
-                      value={editedBuilding.buildingName || ''}
+                      value={editedBuilding.name || ''}
                       onChange={(e) =>
-                        setEditedBuilding({ ...editedBuilding, buildingName: e.target.value })
+                        setEditedBuilding({ ...editedBuilding, name: e.target.value })
                       }
                       fullWidth
                       margin="dense"
                     />
                   ) : (
-                    building.buildingName
+                    building.name
                   )}
                 </TableCell>
                 <TableCell>
@@ -259,7 +254,7 @@ export default function Buildings() {
         aria-label="Add Building"
         onClick={() => {
           setEditedBuilding({
-            organizationId: activeOrganization,
+            organization_id: activeOrganization,
             buildingName: '',
             address: '',
             latitude: 0,

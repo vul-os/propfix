@@ -90,7 +90,7 @@ const Profile = () => {
       <Grid item xs={12} sm={6}>
         <ProfileCard>
           <CardContent style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <Avatar alt="User Avatar" src={user?.photoURL} sx={{ width: 100, height: 100, marginBottom: theme.spacing(2) }} />
+            <Avatar alt="User Avatar" src={user?.user_metadata?.avatar_url} sx={{ width: 100, height: 100, marginBottom: theme.spacing(2) }} />
 
             <Typography variant="h5" component="h2" sx={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'primary.main', marginBottom: '1rem' }}>
               {user ? user.displayName : (
@@ -103,7 +103,7 @@ const Profile = () => {
 
             <Typography variant="subtitle1" gutterBottom display="flex" alignItems="center" sx={{ fontSize: '1rem', color: 'text.secondary' }}>
               {renderEmailIcon()}
-              {user ? user.email : 'Email: user@example.com'}
+              {user ? user.email : 'user@example.com'}
             </Typography>
           </CardContent>
         </ProfileCard>

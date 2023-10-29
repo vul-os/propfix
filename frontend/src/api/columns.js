@@ -1,23 +1,20 @@
-import config from '../config/config';
-import { jsonRpcRequest } from './jsonrpc/client';
-
-const API_BASE_URL = `${config.apiUrl}/api/authenticated`;
-
-// Existing functions
-// ...
+import { supabase } from './supabase'; // Update the path as needed
 
 // New function to move jobs between columns
-export async function moveJobs(sourceColumnId, destinationColumnId, jobIds, idToken) {
+export async function moveJobs(sourceColumnId, destinationColumnId, jobIds) {
   try {
-    const params = [
-      {
-        sourceColumnId,
-        destinationColumnId,
-        jobIds,
-      },
-      idToken
-    ];
-    return await jsonRpcRequest('Columns.MoveJobs', params, idToken);
+    const { data, error } = await supabase
+      .from('jobs')
+      .update({ columnId: destinationColumnId })
+      .in('id', jobIds)
+      .eq('columnId', sourceColumnId);
+
+    if (error) {
+      console.error('Error moving jobs:', error);
+      return null;
+    }
+
+    return data || null;
   } catch (error) {
     console.error('Error moving jobs:', error);
     return null;

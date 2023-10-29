@@ -49,8 +49,8 @@ export default function JobCreateStep({
       <TextField
         label="Unit Number"
         placeholder="Enter the unit number, e.g., 'E601'"
-        value={job.unitIdentifier}
-        onChange={(e) => setJob({ ...job, unitIdentifier: e.target.value })}
+        value={job.unit_identifier}
+        onChange={(e) => setJob({ ...job, unit_identifier: e.target.value })}
         fullWidth
         style={{ marginBottom: '16px' }}
       />
@@ -63,12 +63,12 @@ export default function JobCreateStep({
         style={{ marginBottom: '16px' }}
       />
       
-      <LabelAutocomplete
+      {/* <LabelAutocomplete
         labels={labels}
         selectedLabels={selectedLabels}
         setSelectedLabels={setSelectedLabels}
         placeholder={"Labels, what type of job is it? Plumbing, Electrical..."}
-      />
+      /> */}
 
       <Stack direction="row" flexWrap="wrap">
          {files && files.map((file, index) => (

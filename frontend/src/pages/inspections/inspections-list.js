@@ -1,18 +1,21 @@
 import React, { useState, useEffect } from 'react';
+import { Grid, Box, Container, IconButton, Typography, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
-import IconButton from '@mui/material/IconButton';
-import RefreshIcon from '@mui/icons-material/Refresh';
 import AddIcon from '@mui/icons-material/Add';
-import Typography from '@mui/material/Typography';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
 import { useTheme } from '@mui/material/styles';
 import { useAuthContext } from '../../contexts/auth';
 import { getAllInspections } from '../../api/inspections';
-import CreateInspectionDialog from './create-inspection'; // Assuming it's in the same folder
+import CreateInspectionDialog from './create-inspection';
+import WidgetSummaryComponent from "../../components/widget-summary"
 
 export default function Inspections() {
     const theme = useTheme();
     const [inspections, setInspections] = useState([]);
-    const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+    const [editingInspection, setEditingInspection] = useState(null);
     const { getIdToken, activeOrganization } = useAuthContext();
 
     useEffect(() => {
@@ -32,10 +35,25 @@ export default function Inspections() {
     };
 
     const handleSaveInspection = (newInspection) => {
-        // Handle saving the new inspection (e.g., API call)
-        // For now, just log it
         console.log(newInspection);
-        setIsDialogOpen(false);
+        setIsCreateDialogOpen(false);
+    };
+
+    const handleEdit = (id) => {
+        const inspection = inspections.find(i => i.id === id);
+        setEditingInspection(inspection);
+        setIsEditDialogOpen(true);
+    };
+
+    const handleDelete = (id) => {
+        console.log('Delete inspection with ID:', id);
+        // Handle delete logic here
+    };
+
+    const handleSaveEdit = () => {
+        console.log('Edited Inspection:', editingInspection);
+        // Logic to save edited inspection (e.g., API call)
+        setIsEditDialogOpen(false);
     };
 
     const columns = [
@@ -44,33 +62,69 @@ export default function Inspections() {
         { field: 'scheduleDate', headerName: 'Schedule Date', width: 250 },
         { field: 'completedDate', headerName: 'Completed Date', width: 250 },
         { field: 'assigneeIds', headerName: 'Assignee IDs', width: 250 },
+        {
+            field: 'actions',
+            headerName: 'Actions',
+            width: 150,
+            renderCell: (params) => (
+                <>
+                    <IconButton color="primary" onClick={() => handleEdit(params.id)}>
+                        <EditIcon />
+                    </IconButton>
+                    <IconButton color="secondary" onClick={() => handleDelete(params.id)}>
+                        <DeleteIcon />
+                    </IconButton>
+                </>
+            )
+        }
     ];
 
     return (
-        <div style={{ height: 500, width: '100%' }}>
-            <Typography variant="h4" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                Inspections ({inspections.length})
-                <div>
-                    <IconButton onClick={fetchInspections} aria-label="Refresh">
-                        <RefreshIcon />
-                    </IconButton>
-                    <IconButton onClick={() => setIsDialogOpen(true)} aria-label="Add Inspection">
-                        <AddIcon />
-                    </IconButton>
-                </div>
-            </Typography>
-            <DataGrid
-                rows={inspections}
-                columns={columns}
-                pageSize={5}
-                rowsPerPageOptions={[5]}
-                checkboxSelection
-            />
-            <CreateInspectionDialog
-                isOpen={isDialogOpen}
-                onClose={() => setIsDialogOpen(false)}
-                onSave={handleSaveInspection}
-            />
-        </div>
+        <Container maxWidth="xl">
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pb: "20px" }}>
+                <Typography variant="h3" sx={{ color: theme.palette.text.primary }}>Inspections</Typography>
+                <Button variant="contained" color="primary" startIcon={<AddIcon />} onClick={() => setIsCreateDialogOpen(true)}>Add Inspection</Button>
+            </Box>
+            
+            <CreateInspectionDialog isOpen={isCreateDialogOpen} onClose={() => setIsCreateDialogOpen(false)} onSave={handleSaveInspection} />
+
+            <Dialog open={isEditDialogOpen} onClose={() => setIsEditDialogOpen(false)}>
+                <DialogTitle>Edit Inspection</DialogTitle>
+                <DialogContent>
+                    <TextField label="Name" value={editingInspection?.name || ''} onChange={e => setEditingInspection({ ...editingInspection, name: e.target.value })} />
+                    {/* Add other fields for inspection properties here */}
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setIsEditDialogOpen(false)}>Cancel</Button>
+                    <Button onClick={handleSaveEdit}>Save</Button>
+                </DialogActions>
+            </Dialog>
+            <Grid container spacing={3}>
+                <Grid item xs={12} sm={6} md={4}>
+                    <WidgetSummaryComponent
+                        title="Total Inspections"
+                        icon={'ant-design:code-sandbox-outlined'}
+                        total={inspections.length}
+                    />
+                </Grid>
+                <Grid item xs={12} sm={6} md={4}>
+                    <WidgetSummaryComponent
+                        title="Completed Inspections"
+                        icon={'ant-design:code-sandbox-outlined'}
+                        total={inspections.filter(insp => insp.completedDate).length}
+                    />
+                </Grid>
+                <Grid item xs={12} sm={6} md={4}>
+                    <WidgetSummaryComponent
+                        title="Upcoming Inspections Today"
+                        icon={'ant-design:code-sandbox-outlined'}
+                        total={10}  // Placeholder - you might want to calculate this based on the current date and the `scheduleDate`
+                    />
+                </Grid>
+                <Grid item xs={12}>
+                    <DataGrid rows={inspections} columns={columns} pageSize={5} rowsPerPageOptions={[5]} checkboxSelection />
+                </Grid>
+            </Grid>
+        </Container>
     );
 }

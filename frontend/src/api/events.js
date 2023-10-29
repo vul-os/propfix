@@ -1,53 +1,45 @@
-import config from '../config/config';
-import { jsonRpcRequest } from './jsonrpc/client';
+import { snakeKeys } from 'js-convert-case';
+import { supabase } from './supabase'; // Update the path as needed
 
-const API_BASE_URL = `${config.apiUrl}/api/authenticated`;
-
-export async function createEvent(event, idToken) {
+// Function to create a new event
+export async function createEvent(event) {
+  console.log(snakeKeys(event))
   try {
-    const params = [{event}];
-    return await jsonRpcRequest('Events.CreateEvent', params, idToken);
+    const { data, error } = await supabase
+      .from('events')
+      .upsert([snakeKeys(event)])
+      .single()
+      .select()
+
+    if (error) {
+      console.error('Error creating event:', error);
+      return null;
+    }
+
+    return data || null;
   } catch (error) {
     console.error('Error creating event:', error);
     return null;
   }
 }
 
-export async function updateEvent(eventId, eventData, idToken) {
+// Function to fetch all events for a job
+export async function getAllEvents(jobId) {
   try {
-    const params = [eventId, eventData, idToken];
-    return await jsonRpcRequest('Events.UpdateEvent', params, idToken);
-  } catch (error) {
-    console.error('Error updating event:', error);
-    return null;
-  }
-}
+    const { data, error } = await supabase
+      .from('events')
+      .select('*')
+      .eq('job_id', jobId)
 
-export async function deleteEvent(eventId, idToken) {
-  try {
-    const params = [eventId, idToken];
-    await jsonRpcRequest('Events.DeleteEvent', params, idToken);
-  } catch (error) {
-    console.error('Error deleting event:', error);
-  }
-}
+    if (error) {
+      console.error('Error fetching events for job:', error);
+      return [];
+    }
 
-export async function getAllEvents(jobId, idToken) {
-  try {
-    const params = [{ jobId }];
-    return await jsonRpcRequest('Events.GetAllEvents', params, idToken);
+    return data || [];
   } catch (error) {
     console.error('Error fetching events for job:', error);
     return [];
   }
 }
 
-export async function getEvent(eventId, idToken) {
-  try {
-    const params = [{ id: eventId }];
-    return await jsonRpcRequest('Events.GetEvent', params, idToken);
-  } catch (error) {
-    console.error('Error fetching event:', error);
-    return null;
-  }
-}

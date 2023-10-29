@@ -32,10 +32,10 @@ export async function deleteInspectionItem(itemId, idToken) {
   }
 }
 
-export async function getAllInspectionItems(idToken) {
+export async function getAllInspectionItems(inspectionId, idToken) {
   try {
-    const params = [];
-    return await jsonRpcRequest('InspectionItems.GetAllItems', params, idToken);
+    const params = [{inspectionId}];
+    return await jsonRpcRequest('InspectionItems.GetAllInspectionItems', params, idToken);
   } catch (error) {
     console.error('Error fetching inspection items:', error);
     return [];

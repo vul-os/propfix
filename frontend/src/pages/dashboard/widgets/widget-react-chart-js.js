@@ -60,15 +60,15 @@ export default function WidgetChart({
   const [chart, setChart] = useState(null);
   const theme = useTheme();
   const chartRef = useRef()
-  const { getIdToken, user, activeOrganization } = useAuthContext(); 
+  const { activeOrganization } = useAuthContext(); 
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const token = await getIdToken(); // Get the JWT token from the auth context
-        const response = await executeQuery(name, templates, activeOrganization, token);
+        const response = await executeQuery(name, templates, activeOrganization);
 
-        if (response.data) {
+        if (response) {
+          console.log(response)
           const { data, options, onEvent, eventType } = generateChartConfig(response.data, theme, navigate);
           const handleEvent = generateEventHandler(chartRef, eventType, onEvent);
           setChart({ [eventType]: handleEvent, ref: chartRef, data, options });
