@@ -6,7 +6,7 @@ import Typography from '@mui/material/Typography';
 import Chip from '@mui/material/Chip'; // Import Chip component
 import FaceIcon from '@mui/icons-material/Face';
 import { fToNow } from '../../../utils/format-time';
-import Attachments from '../../../components/attachments.';
+import Attachments from '../../../components/attachments';
 
 const styles = {
   container: {
@@ -84,7 +84,7 @@ const styles = {
 
 export default function MessageStep({ eventRaw, member, attachments }) {
   const event = camelKeys(eventRaw)
-  console.log(":asdasdasdadsdsa:", member)
+  console.log(":asdasdasdadsdsa:", event)
   const messageBoxStyle =
     event.visibility === 'public'
       ? styles.publicMessageBox
@@ -97,9 +97,9 @@ export default function MessageStep({ eventRaw, member, attachments }) {
   
   // Filter the actual file objects based on filenames in event.data.attachments
   const filesToDisplay = attachments.filter(file => 
-    event.data?.attachments?.some(attachmentName => attachmentName.includes(file.name))
+    event.data?.attachments?.some(attachmentName => attachmentName?.includes(file.name))
   );
-    console.log(filesToDisplay, attachments,  event.data.attachments)
+  const ftd = filesToDisplay.map(f => f.data)
   return (
     <div style={styles.container}>
       <Avatar src={member?.photoUrl} style={styles.userAvatar} />
@@ -115,8 +115,8 @@ export default function MessageStep({ eventRaw, member, attachments }) {
           </Typography>
         </div>
         <Typography variant="body2">{event.data.message}</Typography>
-        {filesToDisplay.length > 0 && (
-          <Attachments files={filesToDisplay} />
+        {ftd.length > 0 && (
+          <Attachments files={ftd} />
         )}
       </div>
 

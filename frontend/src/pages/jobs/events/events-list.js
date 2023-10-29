@@ -13,7 +13,7 @@ export default function EventsList({ events, members, attachments }) {
   const isMediumScreen = useMediaQuery(theme.breakpoints.only('md'));
 
   useEffect(() => {
-    console.log(attachments, events)
+    console.log("attcheys: ", attachments, events)
     // Your useEffect logic here
   }, [events, attachments]);
 

@@ -157,27 +157,37 @@ export default function PopOver({
   );
 
   const handleDrop = async (acceptedFiles) => {
-      try {
-        const fileNames = acceptedFiles.map(file => file.name);
-
-        const updatedFiles = [...files, ...acceptedFiles];
-        const updatedAttachments = [...newJob.attachments, ...fileNames]
-
+    try {
+      const fileUploadPromises = acceptedFiles.map(file => uploadFile(job.id, file));
+      
+      // Wait for all files to upload
+      const uploadResults = await Promise.all(fileUploadPromises);
+  
+      // Filter successful uploads and transform them into the desired format
+      const successfulUploads = acceptedFiles
+        .filter((file, index) => uploadResults[index])
+        .map(file => ({ name: file.name, data: file }));
+  
+      if (successfulUploads.length > 0) {
+        const updatedFiles = [...files, ...successfulUploads];
+        const updatedAttachments = [...(newJob?.attachments || []), ...successfulUploads.map(file => file.name)];
+  
         setFiles(updatedFiles);
         setNewJob(prevJob => ({
           ...prevJob,
           attachments: updatedAttachments,
         }));
-
-        // Return the object names of all uploaded files
-        return updatedFiles;
-
-      } catch (error) {
-        console.error('Error adding file:', error);
-        throw error;  // if you want to propagate the error outside
       }
+  
+      return successfulUploads.map(file => file.name);
+  
+    } catch (error) {
+      console.error('Error adding file:', error);
+      throw error;  // if you want to propagate the error outside
+    }
   };
-
+  
+  
 
   const handleRemoveFile = useCallback(
     async (inputFile) => {

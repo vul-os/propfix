@@ -25,18 +25,19 @@ export default function Attachments({ files, handleRemoveFile }) {
               display: 'inline-block',
             }}
           >
-            {file.type === 'application/pdf' ? (
+            {/* {file.type === 'application/pdf' ? (
               <Iconify icon="prime:file-pdf" style={{ width: 64, height: 64 }}/>
             ) : (
+           
+            )} */}
               <img
-                src={URL.createObjectURL(file)}
-                alt={`Uploaded File ${index}`}
-                style={{
-                  width: 64,
-                  height: 64,
-                }}
-              />
-            )}
+              src={URL.createObjectURL(file)}
+              alt={`Uploaded File ${index}`}
+              style={{
+                width: 64,
+                height: 64,
+              }}
+            />
             { !!handleRemoveFile &&
             <div
               className="close-icon-background"

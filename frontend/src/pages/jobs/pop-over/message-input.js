@@ -7,7 +7,7 @@ import InputBase from '@mui/material/InputBase';
 import Switch from '@mui/material/Switch';
 import IconButton from '@mui/material/IconButton';
 import Iconify from '../../../components/iconify';
-import Attachments from '../../../components/attachments.';
+import Attachments from '../../../components/attachments';
 
 export default function MessageInput({ user, handleDrop, createMessage, activeOrganization }) {
   const [isPublic, setIsPublic] = useState(activeOrganization === "");

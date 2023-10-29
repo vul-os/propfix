@@ -4,6 +4,7 @@ import { supabase } from './supabase'; // Update the path as needed
 
 // Function to upload a file
 export async function uploadFile(jobId, file) {
+  console.log(file)
   try {
     const filePath = `jobs/${jobId}/${file.name}`;
 
@@ -32,7 +33,7 @@ export async function getFile(jobIdFilename) {
     } 
 
     const response = await axios.get(publicURL);
-
+    console.log("IMPORTANT: ", response)
     console.log('File fetched successfully!', response.data);
     // Here you can use the file data in the response as needed
     return response.data;
@@ -67,7 +68,7 @@ export async function getFiles(jobId, filenames) {
               return null;
           }
 
-          return resp.data;
+          return {"name": filename, "data": resp.data}
       } catch (error) {
           console.error(`Error fetching file ${filename}:`, error);
           return null;
