@@ -43,7 +43,7 @@ export async function acceptMemberInvite(organizationId) {
     const { data, error } = await supabase.rpc('accept_invite', { org_id: organizationId });
 
     if (error) {
-      console.error('Error fetching board:', error);
+      console.error('Error accepting invite:', error);
       return null;
     }
 

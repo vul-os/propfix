@@ -76,15 +76,14 @@ export async function updateJob(job) {
       pendingTennantEmails,
       tenantIds
     } = job;
-
-    const { data, error } = await supabase.rpc('update_job', { 
+    const updateObj = { 
       j_id: id,
-      name,
-      description,
+      'name': name,
+      'description': description,
       rent_paid: rentPaid,
-      hours,
-      cost,
-      priority,
+      'hours': hours,
+      'cost': cost,
+      'priority': priority,
       organization_id: organizationId,
       unit_identifier: unitIdentifier,
       building_id: buildingId,
@@ -92,8 +91,15 @@ export async function updateJob(job) {
       assignee_ids: assigneeIds,
       tenant_emails: pendingTennantEmails,
       tenant_ids: tenantIds,
-      attachments,
-    });
+      'attachments': attachments,
+    }
+    // Use map to convert undefined values to null
+    const updatedObj = Object.fromEntries(
+      Object.keys(updateObj).map((key) => [key, updateObj[key] === undefined ? null : updateObj[key]])
+    );
+
+    console.log("updateObj: ", updatedObj)
+    const { data, error } = await supabase.rpc('update_job', updatedObj);
 
     if (error || !data) {
       console.error('Error fetching board:', error);

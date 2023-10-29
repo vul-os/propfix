@@ -12,14 +12,12 @@ import { acceptMemberInvite } from '../../api/organizations';
 export default function AcceptInvite() {
   const navigate = useNavigate(); 
   const { organizationId } = useParams();
-  const { getIdToken } = useAuthContext();
 
   const [error, setError] = useState(null);
 
   const handleAccept = async () => {
     try {
-      const token = await getIdToken();
-      const resp = await acceptMemberInvite(organizationId, token);
+      const resp = await acceptMemberInvite(organizationId);
       setError(null);
       // Navigate to dashboard or appropriate page after accepting the invite
       navigate('/');
