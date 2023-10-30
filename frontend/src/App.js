@@ -35,6 +35,7 @@ import Root from './pages/root';
 import Stepper from './pages/job-wizzard/stepper'; // Make sure this path is correct
 import AcceptInvite from './pages/auth/accept-invite';
 import PDFAreaEditor from './pages/leases/pdf-editor';
+import Inspections from './pages/inspections/inspections-list';
 
 function App() {
   return (
@@ -150,20 +151,20 @@ function App() {
                       </AuthGuard>
                     }
                   />
-                  {/* <Route
+                  <Route
                     path="/inspections/*"
                     element={
                       <AuthGuard>
                         <BoardProvider>
                           <DashboardLayout>
                             <Routes>
-                              <Route path="/" element={<InspectionList />} />
+                              <Route path="/" element={<Inspections />} />
                             </Routes>
                           </DashboardLayout>
                         </BoardProvider>
                       </AuthGuard>
                     }
-                  /> */}
+                  />
                    <Route
                     path="/pdf/*"
                     element={

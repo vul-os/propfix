@@ -6,7 +6,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { useTheme } from '@mui/material/styles';
 import { useAuthContext } from '../../contexts/auth';
-import { getAllInspections } from '../../api/inspections';
+import { getAllInspections } from '../../api/inspections/inspections';
 import CreateInspectionDialog from './create-inspection';
 import WidgetSummaryComponent from "../../components/widget-summary"
 
@@ -16,7 +16,7 @@ export default function Inspections() {
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [editingInspection, setEditingInspection] = useState(null);
-    const { getIdToken, activeOrganization } = useAuthContext();
+    const { activeOrganization } = useAuthContext();
 
     useEffect(() => {
         if (activeOrganization) {
@@ -26,9 +26,8 @@ export default function Inspections() {
 
     const fetchInspections = async () => {
         try {
-            const token = await getIdToken();
-            const response = await getAllInspections(activeOrganization, token);
-            setInspections(response?.inspections || []);
+            const response = await getAllInspections(activeOrganization);
+            setInspections(response || []);
         } catch (error) {
             console.error('Error fetching inspections:', error);
         }
@@ -58,10 +57,8 @@ export default function Inspections() {
 
     const columns = [
         { field: 'id', headerName: 'ID', width: 150 },
-        { field: 'name', headerName: 'Name', width: 200 },
-        { field: 'scheduleDate', headerName: 'Schedule Date', width: 250 },
-        { field: 'completedDate', headerName: 'Completed Date', width: 250 },
-        { field: 'assigneeIds', headerName: 'Assignee IDs', width: 250 },
+        { field: 'unit_identifier', headerName: 'Unit Number', width: 200 },
+   
         {
             field: 'actions',
             headerName: 'Actions',
