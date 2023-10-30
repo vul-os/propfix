@@ -118,7 +118,7 @@ export const AuthProvider = (props) => {
     return data?.user;
   };
 
-  const fetchOrganizationRoleSettings = async (user) => {
+  const fetchOrganizations = async (user) => {
     // Check if the user is authenticated
     if (user) {
       setHaveFetchedOrganizations(false);
@@ -129,24 +129,6 @@ export const AuthProvider = (props) => {
 
         if (fetchedOrganizations.length > 0) {
           setActiveOrganization(fetchedOrganizations[0].id);
-          const fid = fetchedOrganizations[0]?.id
-          try {
-            // Fetch the first role whenever activeOrganization changes
-            const roleData = await getFirstRole(fid);
-            if (roleData) {
-              setRole(roleData?.name?.toLowerCase());
-            }
-          } catch (error) {
-            console.error('Error fetching role:', error);
-          }
-    
-          try {
-            // Fetch settings using JSON-RPC
-            const fetchedSettings = await getAllSettings(fid);
-            setSettings(fetchedSettings);
-          } catch (error) {
-            console.log('Error fetching settings:', error);
-          }
         }
       } catch (error) {
         console.log('Error fetching organizations:', error);
@@ -154,6 +136,25 @@ export const AuthProvider = (props) => {
       setHaveFetchedOrganizations(true);
     }
   };
+
+  const getRoleAndSettings = async () => {
+    try {
+      // Fetch the first role whenever activeOrganization changes
+      const roleData = await getFirstRole(activeOrganization);
+      console.log("roledtaa", roleData)
+      setRole(roleData);
+    } catch (error) {
+      console.error('Error fetching role:', error);
+    }
+
+    try {
+      // Fetch settings using JSON-RPC
+      const fetchedSettings = await getAllSettings(activeOrganization);
+      setSettings(fetchedSettings);
+    } catch (error) {
+      console.log('Error fetching settings:', error);
+    }
+  }
 
   const initialize = async () => {
     if (initialized.current) {
@@ -181,7 +182,7 @@ export const AuthProvider = (props) => {
       return;
     }
 
-    await supabase.rpc('update_user_ids_in_job_tennants', {});
+    await supabase.rpc('update_user_ids_in_job_users', {});
 
     dispatch({
       type: HANDLERS.INITIALIZE,
@@ -189,15 +190,17 @@ export const AuthProvider = (props) => {
     });
 
     // Fetch organizations, roles, and settings after initializing
-    fetchOrganizationRoleSettings(user);
+    fetchOrganizations(user);
   };
 
   useEffect(() => {
     initialize();
+    getRoleAndSettings();
   }, []);
 
   useEffect(() => {
     initialize();
+    getRoleAndSettings()
   }, [activeOrganization]);
 
   const signIn = async (email, password) => {
@@ -217,7 +220,7 @@ export const AuthProvider = (props) => {
       });
 
       // Fetch organizations, roles, and settings after signing in
-      fetchOrganizationRoleSettings(data?.user);
+      fetchOrganizations(data?.user);
     } catch (err) {
       console.error(err);
       throw new Error('Please check your email and password');
@@ -240,7 +243,7 @@ export const AuthProvider = (props) => {
       });
 
       // Fetch organizations, roles, and settings after signing in with Google
-      fetchOrganizationRoleSettings(user);
+      fetchOrganizations(user);
     } catch (err) {
       console.error(err);
       throw new Error('There was an error signing in with Google');
@@ -272,7 +275,7 @@ export const AuthProvider = (props) => {
       });
 
       // Fetch organizations, roles, and settings after signing up
-      fetchOrganizationRoleSettings(data?.user);
+      fetchOrganizations(data?.user);
     } catch (err) {
       console.error(err);
       throw new Error('Error signing up. Please check your input.');

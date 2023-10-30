@@ -15,7 +15,7 @@ const urlIcon = (url) =>
 </ListItemIcon>
 
 const navConfig = (role) => {
-
+  console.log(role)
   if (role === 'admin') {
     return  [
       {
