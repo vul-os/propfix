@@ -25,8 +25,8 @@ import {
   createInspectionTemplateItem,
   updateInspectionTemplateItem,
   deleteInspectionTemplateItem,
-} from '../../../api/inspectionTemplateItems';
-import { getAllInspectionTemplates, createInspectionTemplate, deleteInspectionTemplate, updateInspectionTemplate } from '../../../api/inspectionTemplates';
+} from '../../../api/inspections/inspectionTemplateItems';
+import { getAllInspectionTemplates, createInspectionTemplate, deleteInspectionTemplate, updateInspectionTemplate } from '../../../api/inspections/inspectionTemplates';
 
 import InspectionTemplateItems from './inspection-template-items';
 
@@ -43,33 +43,31 @@ export default function InspectionTemplate({viewingId}) {
   const [editedTemplateName, setEditedTemplateName] = useState(''); // New state for edited template name
 
 
-  const { getIdToken, activeOrganization } = useAuthContext();
+  const { activeOrganization } = useAuthContext();
 
   const fetchTemplates = useCallback(async () => {
     try {
       if (viewingId) {
-        const token = await getIdToken();
-        const response = await getAllInspectionTemplates(viewingId, token);
+        const response = await getAllInspectionTemplates(viewingId);
         console.log(response);
-        setTemplates(response.templates || []);
+        setTemplates(response || []);
       }
     } catch (error) {
       console.error('Error fetching inspection templates:', error);
     }
-  }, [getIdToken, viewingId]);
+  }, [viewingId]);
 
   const fetchItems = useCallback(async () => {
     try {
       if (viewingId) {
-        const token = await getIdToken();
-        const response = await getAllInspectionTemplateItems(viewingId, token);
+        const response = await getAllInspectionTemplateItems(viewingId);
         console.log(response);
-        setItems(response.items || []);
+        setItems(response || []);
       }
     } catch (error) {
       console.error('Error fetching inspection template items:', error);
     }
-  }, [getIdToken, viewingId]);
+  }, [viewingId]);
 
   useEffect(() => {
     if (viewingId) {
@@ -82,17 +80,16 @@ export default function InspectionTemplate({viewingId}) {
     const groupedItems = {};
     templates.forEach((template) => {
       const templateId = template.id;
-      groupedItems[templateId] = items.filter((item) => item.inspectionTemplateID === templateId);
+      groupedItems[templateId] = items?.filter((item) => item.inspection_template_id === templateId);
     });
     return groupedItems;
   };
 
   const handleAddNewRow = (templateId) => {
     setNewItem({
-      orderIndex: 0,
+      order_index: 0,
       item: '',
-      inspectionTemplateID: templateId,
-      createdAt: new Date().toISOString(),
+      inspection_template_id: templateId,
     });
     setSelectedTemplateId(templateId);
     setOpenDialog(true);
@@ -109,10 +106,9 @@ export default function InspectionTemplate({viewingId}) {
     try {
       const itemToCreate = {
         ...newItem,
-        organizationId: activeOrganization,
+        organization_id: activeOrganization,
       };
-      const token = await getIdToken();
-      await createInspectionTemplateItem(itemToCreate, token);
+      await createInspectionTemplateItem(itemToCreate);
       fetchItems();
       setOpenDialog(false);
     } catch (error) {
@@ -122,8 +118,7 @@ export default function InspectionTemplate({viewingId}) {
 
   const handleRemoveItem = async (itemId) => {
     try {
-      const token = await getIdToken();
-      await deleteInspectionTemplateItem(itemId, token);
+      await deleteInspectionTemplateItem(itemId);
       fetchTemplates();
       fetchItems();
     } catch (error) {
@@ -133,8 +128,7 @@ export default function InspectionTemplate({viewingId}) {
 
   const handleAddItem = async (item) => {
     try {
-      const token = await getIdToken();
-      await createInspectionTemplateItem(item, token);
+      await createInspectionTemplateItem(item);
       fetchTemplates();
       fetchItems();
     } catch (error) {
@@ -144,8 +138,7 @@ export default function InspectionTemplate({viewingId}) {
 
   const handleUpdateItem = async (updatedData) => {
     try {
-      const token = await getIdToken();
-      await updateInspectionTemplateItem(updatedData, token);
+      await updateInspectionTemplateItem(updatedData);
       fetchTemplates();
       fetchItems();
     } catch (error) {
@@ -157,10 +150,9 @@ export default function InspectionTemplate({viewingId}) {
     try {
       const templateToCreate = {
         ...newTemplate,
-        organizationId: activeOrganization,
+        organization_id: activeOrganization,
       };
-      const token = await getIdToken();
-      await createInspectionTemplate(templateToCreate, token);
+      await createInspectionTemplate(templateToCreate);
       setOpenDialog(false);
       fetchTemplates();
       fetchItems();
@@ -176,8 +168,7 @@ export default function InspectionTemplate({viewingId}) {
   const handleDeleteTemplate = async (template) => {
     try {
       console.log(template);
-      const token = await getIdToken();
-      await deleteInspectionTemplate(template, token);
+      await deleteInspectionTemplate(template);
       setTemplates((prevTemplates) => prevTemplates.filter((t) => t.id !== template));
       fetchTemplates();
       fetchItems();
@@ -188,8 +179,7 @@ export default function InspectionTemplate({viewingId}) {
 
   const handleSaveEdit = async () => {
     try {
-      const token = await getIdToken();
-      await updateInspectionTemplate(editedTemplate, token);
+      await updateInspectionTemplate(editedTemplate);
       setEditingTemplateId(null);
       setEditedTemplate({});
       setOpenDialog(false);

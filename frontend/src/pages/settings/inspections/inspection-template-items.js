@@ -27,30 +27,26 @@ export default function InspectionTemplateItems({
   const [editItemId, setEditItemId] = useState(null);
   const [editedItem, setEditedItem] = useState({
     id: '',
-    itemName: '',
-    orderIndex: 0, // Treat as an integer
-    organizationId: activeOrganization,
-    inspectionTemplateID: templateId,
+    item: '',
+    order_index: 0,
+    inspection_template_id: templateId,
   });
 
   const [newItemData, setNewItemData] = useState({
-    id: '', // Assign a unique ID, e.g., generated on the server
-    item: '', // Set the default item name
-    orderIndex: 0, // Treat as an integer
-    organizationId: activeOrganization,
-    inspectionTemplateID: templateId,
+    item: '',
+    order_index: 0,
+    inspection_template_id: templateId,
   });
 
   const [openAddDialog, setOpenAddDialog] = useState(false);
 
-  const handleEditClick = (itemId, item, orderIndex, createdAt, inspectionTemplateID) => {
+  const handleEditClick = (itemId, item, orderIndex, inspectionTemplateID) => {
     setEditItemId(itemId);
     setEditedItem({
       id: itemId,
       item,
-      orderIndex,
-      organizationId: activeOrganization,
-      inspectionTemplateID,
+      order_index: orderIndex,
+      inspection_template_id: inspectionTemplateID,
     });
   };
 
@@ -59,28 +55,22 @@ export default function InspectionTemplateItems({
   };
 
   const handleSaveEdit = () => {
-    // Send a request to update the item using the updateItem function
     updateItem(editedItem)
       .then((response) => {
-        // Handle success: You can perform additional actions if needed
         console.log('Item updated successfully:', response);
-        setEditItemId(null); // Exit edit mode
+        setEditItemId(null);
       })
       .catch((error) => {
-        // Handle errors
         console.error('Error updating inspection template item:', error);
       });
   };
 
   const handleDeleteItem = (id) => {
-    // Send a request to delete the item using the removeItem function
     removeItem(id)
       .then(() => {
-        // Handle success: You can perform additional actions if needed
         console.log('Item deleted successfully');
       })
       .catch((error) => {
-        // Handle errors
         console.error('Error deleting inspection template item:', error);
       });
   };
@@ -94,15 +84,12 @@ export default function InspectionTemplateItems({
   };
 
   const handleAddDialogSave = (newItemData) => {
-    // Send a request to add the new item using the addItem function
     addItem(newItemData)
       .then((response) => {
-        // Handle success: You can perform additional actions if needed
         console.log('Item added successfully:', response);
-        setOpenAddDialog(false); // Close the dialog
+        setOpenAddDialog(false);
       })
       .catch((error) => {
-        // Handle errors
         console.error('Error adding inspection template item:', error);
       });
   };
@@ -127,9 +114,7 @@ export default function InspectionTemplateItems({
                     <TextField
                       value={editedItem.item}
                       variant="outlined"
-                      onChange={(e) =>
-                        setEditedItem({ ...editedItem, item: e.target.value })
-                      }
+                      onChange={(e) => setEditedItem({ ...editedItem, item: e.target.value })}
                     />
                   ) : (
                     item.item
@@ -138,50 +123,31 @@ export default function InspectionTemplateItems({
                 <TableCell>
                   {editItemId === item.id ? (
                     <TextField
-                      value={editedItem.orderIndex}
+                      value={editedItem.order_index}
                       variant="outlined"
                       onChange={(e) => {
                         const orderIndex = parseInt(e.target.value, 10);
-                        setEditedItem({ ...editedItem, orderIndex });
+                        setEditedItem({ ...editedItem, order_index: orderIndex  });
                       }}
                     />
                   ) : (
-                    item.orderIndex
+                    item.order_index
                   )}
                 </TableCell>
-                <TableCell>{item.createdAt}</TableCell>
+                <TableCell>{item.created_at}</TableCell>
                 <TableCell>
                   {editItemId === item.id ? (
                     <>
-                      <IconButton onClick={handleSaveEdit} aria-label="Save">
-                        Save
-                      </IconButton>
-                      <IconButton onClick={handleCancelEdit} aria-label="Cancel">
-                        Cancel
-                      </IconButton>
+                      <IconButton onClick={handleSaveEdit} aria-label="Save">Save</IconButton>
+                      <IconButton onClick={handleCancelEdit} aria-label="Cancel">Cancel</IconButton>
                     </>
                   ) : (
                     <>
                       <IconButton
-                        onClick={() =>
-                          handleEditClick(
-                            item?.id,
-                            item?.item,
-                            item?.orderIndex,
-                            item?.createdAt,
-                            item?.inspectionTemplateID
-                          )
-                        }
+                        onClick={() => handleEditClick(item.id, item.item, item.order_index, item.inspection_template_id)}
                         aria-label="Edit"
-                      >
-                        Edit
-                      </IconButton>
-                      <IconButton
-                        onClick={() => handleDeleteItem(item.id, item.organizationId)}
-                        aria-label="Remove"
-                      >
-                        Delete
-                      </IconButton>
+                      >Edit</IconButton>
+                      <IconButton onClick={() => handleDeleteItem(item.id)} aria-label="Remove">Delete</IconButton>
                     </>
                   )}
                 </TableCell>
@@ -193,12 +159,9 @@ export default function InspectionTemplateItems({
       <Button variant="contained" color="primary" onClick={handleAddItem}>
         Add New Row
       </Button>
-
-      {/* Add Item Dialog */}
       <Dialog open={openAddDialog} onClose={handleAddDialogClose}>
         <DialogTitle>Add New Item</DialogTitle>
         <DialogContent>
-          {/* Form fields for new item data */}
           <TextField
             label="Item Name"
             variant="outlined"
@@ -213,22 +176,13 @@ export default function InspectionTemplateItems({
             value={newItemData.orderIndex}
             onChange={(e) => {
               const orderIndex = parseInt(e.target.value, 10);
-              setNewItemData({ ...newItemData, orderIndex });
+              setNewItemData({ ...newItemData, order_index: orderIndex });
             }}
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleAddDialogClose} color="primary">
-            Cancel
-          </Button>
-          <Button
-            onClick={() => {
-              handleAddDialogSave(newItemData);
-            }}
-            color="primary"
-          >
-            Save
-          </Button>
+          <Button onClick={handleAddDialogClose} color="primary">Cancel</Button>
+          <Button onClick={() => handleAddDialogSave(newItemData)} color="primary">Save</Button>
         </DialogActions>
       </Dialog>
     </div>

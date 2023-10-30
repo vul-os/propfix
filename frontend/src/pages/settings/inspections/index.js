@@ -17,7 +17,7 @@ import { useAuthContext } from '../../../contexts/auth';
 import { 
   getAllInspectionTemplateGroups, deleteInspectionTemplateGroup, 
   updateInspectionTemplateGroup, createInspectionTemplateGroup 
-} from '../../../api/inspectionTemplateGroups';
+} from '../../../api/inspections/inspectionTemplateGroups';
 import InspectionTemplate from './inspection-template';
 
 
@@ -40,9 +40,8 @@ export default function InspectionTemplateGroups() {
 
   const fetchInspectionTemplateGroups = async () => {
     try {
-      const token = await getIdToken();
-      const response = await getAllInspectionTemplateGroups(activeOrganization, token);
-      setGroups(response.groups || []);
+      const response = await getAllInspectionTemplateGroups(activeOrganization);
+      setGroups(response || []);
     } catch (error) {
       console.error('Error fetching inspection template groups:', error);
     }

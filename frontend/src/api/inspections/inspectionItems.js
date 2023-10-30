@@ -1,5 +1,5 @@
-import config from '../config/config';
-import { jsonRpcRequest } from './jsonrpc/client';
+import config from '../../config/config';
+import { jsonRpcRequest } from '../jsonrpc/client';
 
 const API_BASE_URL = `${config.apiUrl}/api/authenticated`;
 

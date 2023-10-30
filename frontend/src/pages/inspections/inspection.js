@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Container, Checkbox, TextField, List, ListItem, ListItemText, ListItemSecondaryAction, Button, Typography, Box } from '@mui/material';
 import ScheduleIcon from '@mui/icons-material/Schedule';
 import EventAvailableIcon from '@mui/icons-material/EventAvailable';
-import { getAllInspectionItems } from '../../api/inspectionItems';
+import { getAllInspectionItems } from '../../api/inspections/inspectionItems';
 
 function InspectionPage({ inspection }) {
     const [inspectionItems, setInspectionItems] = useState([]);
