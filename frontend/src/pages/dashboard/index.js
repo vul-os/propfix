@@ -25,6 +25,10 @@ const Dashboard = () => {
     navigate(url);
   };
 
+  const { activeOrganization } = useAuthContext(); 
+  useEffect(() => {
+  }, [activeOrganization])
+
   if (role && !['admin'].includes(role)) {
     return navigate('/')
   }

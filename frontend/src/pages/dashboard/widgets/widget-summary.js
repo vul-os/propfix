@@ -18,14 +18,12 @@ export default function WidgetSummary({ name, templates, ...other }) {
     const fetchData = async () => {
       try {
         const response = await executeQuery(name, templates, activeOrganization);
-        console.log("yooowdigetdh", response)
         if (response) {
           try {
             const jsonResponse = response
         
             if (jsonResponse.data && typeof jsonResponse.data === 'object') {
               const firstElement = Object.values(jsonResponse.data)[0][0];
-              console.log("firsthtthursday: ", firstElement)
               // Handle the successful response here
               console.log('Request was successful');
               
@@ -38,6 +36,7 @@ export default function WidgetSummary({ name, templates, ...other }) {
             console.error('Error parsing JSON response:', error);
           }
         } else {
+          setData(null); // Set the retrieved data in state
           console.error('No response received');
         }
         

@@ -12,6 +12,7 @@ import Organization from './organization';
 import InspectionTemplate from './inspections/inspection-template';
 import InspectionTemplateGroups from './inspections'
 import OtherSettings from './other'; // Import the OtherSettings component
+import { useAuthContext } from '../../contexts/auth';
 
 
 function TabPanel(props) {
@@ -42,25 +43,24 @@ TabPanel.propTypes = {
 
 export default function Settings() {
   const [value, setValue] = useState(0);
-  const { accountVar } = useParams();
-
-  useEffect(() => {
-    if (accountVar === 'plans') {
-      setValue(1)
-    }
-  }, [accountVar])
+  const { role } = useAuthContext();
+  const isAdmin = role === 'admin'
 
   const handleChange = (event, newValue) => {
     setValue(newValue);
   };
 
-  const tabs = [
+  let tabs = [
     { label: 'Profile', content: <Profile /> },
-    { label: 'Organization', content: <Organization /> },
-    { label: 'Buildings', content: <Buildings /> },
-    { label: 'Labels', content: <Labels /> },
-    { label: 'Other', content: <OtherSettings /> },
   ];
+  if (isAdmin) {
+    tabs = [...tabs,
+      { label: 'Organization', content: <Organization /> },
+      { label: 'Buildings', content: <Buildings /> },
+      { label: 'Labels', content: <Labels /> },
+      { label: 'Other', content: <OtherSettings /> },
+    ];
+  }
 
   return (
     <Box sx={{ width: '100%' }}>

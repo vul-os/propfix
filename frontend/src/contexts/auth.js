@@ -182,7 +182,7 @@ export const AuthProvider = (props) => {
       return;
     }
 
-    await supabase.rpc('update_user_ids_in_job_users', {});
+    // await supabase.rpc('update_user_ids_in_job_users', {});
 
     dispatch({
       type: HANDLERS.INITIALIZE,
@@ -241,7 +241,7 @@ export const AuthProvider = (props) => {
         type: HANDLERS.SIGN_IN_WITH_GOOGLE,
         payload: user
       });
-
+      console.log(user, "hereeeeeee")
       // Fetch organizations, roles, and settings after signing in with Google
       fetchOrganizations(user);
     } catch (err) {

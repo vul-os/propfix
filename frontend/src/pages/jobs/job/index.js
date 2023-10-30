@@ -38,6 +38,7 @@ export default function JobDetails({
   job,
   setJob,
   members,
+  orgMembers,
   buildings,
   labels,
   files,
@@ -220,7 +221,7 @@ export default function JobDetails({
           </IconButton>
         </Tooltip>
         <MembersDialog
-          members={Object.values(members)}
+          members={Object.values(orgMembers)}
           assignees={assignees}
           handleAssignToggle={handleToggleAssignee}
           open={contacts.value}
@@ -288,9 +289,16 @@ export default function JobDetails({
   const renderRentPaid = useMemo(() => (
     <Stack direction="row" alignItems="center">
       <StyledLabel>Rent Paid</StyledLabel>
-      <Switch />
+      <Switch 
+          checked={!!job?.rentPaid} 
+          onClick={() => setJob((prevJob) => ({
+            ...prevJob,
+            rentPaid: !job?.rentPaid,
+          }))} 
+      />
     </Stack>
-  ), [job.id]);
+  ), [job?.rentPaid, handleUpdateField]);
+
 
   const renderCost = useMemo(() => (
     <Stack direction="row">

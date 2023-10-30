@@ -68,12 +68,14 @@ export default function WidgetChart({
         const response = await executeQuery(name, templates, activeOrganization);
 
         if (response) {
-          console.log(response)
           const { data, options, onEvent, eventType } = generateChartConfig(response.data, theme, navigate);
           const handleEvent = generateEventHandler(chartRef, eventType, onEvent);
           setChart({ [eventType]: handleEvent, ref: chartRef, data, options });
+        } else {
+          setChart(null)
         }
       } catch (error) {
+        setChart(null)
         console.error('Error:', error);
       }
     };

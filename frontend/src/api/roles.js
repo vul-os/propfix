@@ -132,10 +132,10 @@ export async function removeMember(roleId, userId) {
       .eq('user_id', userId);
 
     if (error) {
-      console.error('Error removing member from role:', error);
+      console.log('Error removing member from role:', error);
     }
   } catch (error) {
-    console.error('Error removing member from role:', error);
+    console.log('Error removing member from role:', error);
   }
 }
 
@@ -145,13 +145,13 @@ export async function getFirstRole(organizationId) {
       .rpc('get_first_user_role_for_org', { org_id: organizationId });
 
     if (error) {
-      console.error('Error fetching first role:', error);
+      console.log('Error fetching first role:', error);
       return null;
     }
 
     return data?.first_role_name || null;
   } catch (error) {
-    console.error('Error fetching first role:', error);
+    console.log('Error fetching first role:', error);
     return null;
   }
 }

@@ -30,6 +30,7 @@ export async function getAllEvents(jobId) {
       .from('events')
       .select('*')
       .eq('job_id', jobId)
+      .order('created_at', { ascending: true });
 
     if (error) {
       console.error('Error fetching events for job:', error);

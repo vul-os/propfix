@@ -16,6 +16,7 @@ import ReviewSubmitStep from './review-submit-step';
 import { getAllBuildings } from '../../api/buildings';
 import { getAllLabels } from '../../api/labels';
 import { uploadFile, deleteFile } from '../../api/files';
+import { useAuthContext } from '../../contexts/auth'; 
 
 const steps = ['Building Selection', 'Job Creation', 'Review & Submit'];
 
@@ -32,6 +33,7 @@ export default function ExoStepper({ handleClose }) {
   const [files, setFiles] = useState([]);
   const [usingLocation, setUsingLocation] = useState(true);  // default to true if you want to start with user location
   const [newJobId, setNewJobId] = useState(null);  // default to true if you want to start with user location
+  const { activeOrganization } = useAuthContext(); 
 
   const navigate = useNavigate(); // Import useNavigate hook
 
@@ -56,9 +58,10 @@ export default function ExoStepper({ handleClose }) {
           userLocation?.latitude,
           userLocation?.longitude,
           searchValue,
+          activeOrganization
         );
       } else {
-        fetchedBuildings = await getAllBuildings(null, null, searchValue);
+        fetchedBuildings = await getAllBuildings(null, null, searchValue, activeOrganization);
       }
       setBuildings(fetchedBuildings);
     } catch (error) {
