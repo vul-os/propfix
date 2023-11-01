@@ -138,21 +138,23 @@ export const AuthProvider = (props) => {
   };
 
   const getRoleAndSettings = async () => {
-    try {
-      // Fetch the first role whenever activeOrganization changes
-      const roleData = await getFirstRole(activeOrganization);
-      console.log("roledtaa", roleData)
-      setRole(roleData);
-    } catch (error) {
-      console.error('Error fetching role:', error);
-    }
+    if (activeOrganization) {
+      try {
+        // Fetch the first role whenever activeOrganization changes
+        const roleData = await getFirstRole(activeOrganization);
+        console.log("roledtaa", roleData)
+        setRole(roleData);
+      } catch (error) {
+        console.error('Error fetching role:', error);
+      }
 
-    try {
-      // Fetch settings using JSON-RPC
-      const fetchedSettings = await getAllSettings(activeOrganization);
-      setSettings(fetchedSettings);
-    } catch (error) {
-      console.log('Error fetching settings:', error);
+      try {
+        // Fetch settings using JSON-RPC
+        const fetchedSettings = await getAllSettings(activeOrganization);
+        setSettings(fetchedSettings);
+      } catch (error) {
+        console.log('Error fetching settings:', error);
+      }
     }
   }
 
@@ -182,7 +184,7 @@ export const AuthProvider = (props) => {
       return;
     }
 
-    // await supabase.rpc('update_user_ids_in_job_users', {});
+    await supabase.rpc('update_user_ids_in_job_users', {});
 
     dispatch({
       type: HANDLERS.INITIALIZE,
@@ -230,7 +232,10 @@ export const AuthProvider = (props) => {
   const signInWithGoogle = async () => {
     try {
       const { user, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google'
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin
+        }
       })
 
       if (error) {

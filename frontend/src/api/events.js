@@ -3,22 +3,17 @@ import { supabase } from './supabase'; // Update the path as needed
 
 // Function to create a new event
 export async function createEvent(event) {
-  console.log(snakeKeys(event))
   try {
-    const { data, error } = await supabase
-      .from('events')
-      .upsert([snakeKeys(event)])
-      .single()
-      .select()
+    const { data, error } = await supabase.rpc('create_event', { p_event: snakeKeys(event) });
 
     if (error) {
-      console.error('Error creating event:', error);
+      console.error('Error fetching events:', error);
       return null;
     }
 
     return data || null;
   } catch (error) {
-    console.error('Error creating event:', error);
+    console.error('Unexpected error fetching events:', error);
     return null;
   }
 }
@@ -26,21 +21,17 @@ export async function createEvent(event) {
 // Function to fetch all events for a job
 export async function getAllEvents(jobId) {
   try {
-    const { data, error } = await supabase
-      .from('events')
-      .select('*')
-      .eq('job_id', jobId)
-      .order('created_at', { ascending: true });
+    const { data, error } = await supabase.rpc('get_events', { j_id: jobId });
 
     if (error) {
-      console.error('Error fetching events for job:', error);
-      return [];
+      console.error('Error fetching events:', error);
+      return null;
     }
 
-    return data || [];
+    return data || null;
   } catch (error) {
-    console.error('Error fetching events for job:', error);
-    return [];
+    console.error('Unexpected error fetching events:', error);
+    return null;
   }
 }
 

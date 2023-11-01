@@ -114,6 +114,7 @@ export default function Buildings() {
   const createNewBuilding = async (newBuilding) => {
     try {
       const createdBuilding = await createBuilding(newBuilding);
+      console.log(createdBuilding)
       if (createdBuilding.id) {
         setBuildings((prevBuildings) => [...prevBuildings, createdBuilding]);
       }
@@ -255,7 +256,7 @@ export default function Buildings() {
         onClick={() => {
           setEditedBuilding({
             organization_id: activeOrganization,
-            buildingName: '',
+            name: '',
             address: '',
             latitude: 0,
             longitude: 0,
@@ -279,9 +280,9 @@ export default function Buildings() {
         <DialogContent>
           <TextField
             label="Building Name"
-            value={editedBuilding.buildingName || ''}
+            value={editedBuilding.name || ''}
             onChange={(e) =>
-              setEditedBuilding({ ...editedBuilding, buildingName: e.target.value })
+              setEditedBuilding({ ...editedBuilding, name: e.target.value })
             }
             fullWidth
             margin="dense"

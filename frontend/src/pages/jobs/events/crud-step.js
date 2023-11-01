@@ -67,7 +67,7 @@ export default function CrudStep({ eventRaw, member }) {
         {fToNow(event.createdAt)}
       </Typography>
       <Typography variant="subtitle2" style={{ fontSize: '12px', color: '#a8a8a8', paddingLeft: '20px' }}>
-        {member && member?.displayName}
+        {member && member?.username}
       </Typography>
       <Typography variant="subtitle2" style={{ fontSize: '12px', color: '#a8a8a8', paddingLeft: '20px' }}>
         {`${action} the event`}

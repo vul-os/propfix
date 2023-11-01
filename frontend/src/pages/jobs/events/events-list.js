@@ -51,7 +51,8 @@ export default function EventsList({ events, members, attachments }) {
   const RenderEvent = ({ eventRaw, index, files}) => {
     const event = camelKeys(eventRaw)
     const member = members && event && event.memberId && members[event.memberId];
-    return member && files && (
+
+    return (
       <React.Fragment key={event.id}>
         <div style={messageBoxContainerStyle}>
           {index !== 0 && <div style={verticalLineStyle} />}
@@ -74,7 +75,7 @@ export default function EventsList({ events, members, attachments }) {
   return (
     <div style={containerStyle}>
       <h2 style={eventsHeadingStyle}>Events</h2>
-      {events && attachments &&
+      {events &&
         events.map((event, index) => (
           <RenderEvent key={index} eventRaw={event} index={index} files={attachments} />
         ))}

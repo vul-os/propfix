@@ -54,7 +54,7 @@ export default function JobDetails({
     () => members && job?.reporterId && members[job?.reporterId],
     [job?.reporterId, members]
   );
-
+  console.log("rep", reporter, members, job)
   const tennants = useMemo(
     () => job?.tenantIds?.map((jobId) => members && members[jobId]),
     [job?.tenantIds, members]
@@ -167,7 +167,7 @@ export default function JobDetails({
       <StyledLabel sx={{ height: 40, lineHeight: '40px' }}>Reporter</StyledLabel>
       <Stack direction="row" flexWrap="wrap" alignItems="center" spacing={1}>
         {reporter &&
-          <Avatar key={reporter?.id} alt={reporter?.displayName} src={reporter?.photoUrl} />
+          <Avatar key={reporter?.id} alt={reporter?.username} src={reporter?.photoUrl} />
         }
       </Stack>
     </Stack>
