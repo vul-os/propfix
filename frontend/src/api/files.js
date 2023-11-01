@@ -3,10 +3,10 @@ import { supabase } from './supabase'; // Update the path as needed
 
 
 // Function to upload a file
-export async function uploadFile(jobId, file) {
+export async function uploadFile(orgId, jobId, file) {
   console.log(file)
   try {
-    const filePath = `jobs/${jobId}/${file.name}`;
+    const filePath = `${orgId}/jobs/${jobId}/${file.name} `;
 
     const { error } = await supabase.storage.from('attachments').upload(filePath, file);
     
@@ -22,8 +22,8 @@ export async function uploadFile(jobId, file) {
 }
 
 // Function to get a file
-export async function getFile(jobIdFilename) {
-  const filePath = `jobs/${jobIdFilename}`;
+export async function getFile(orgId, jobIdFilename) {
+  const filePath = `${orgId}/jobs/${jobIdFilename}`;
 
   try {
     const { publicURL, error } = supabase.storage.from('attachments').getPublicUrl(filePath);
@@ -43,14 +43,14 @@ export async function getFile(jobIdFilename) {
   }
 }
 
-export async function getFiles(jobId, filenames) {
+export async function getFiles(orgId, jobId, filenames) {
   if (!Array.isArray(filenames)) {
       console.error('Expected an array of filenames');
       return null;
   }
-
+  console.log(filenames)
   const fetchFile = async (filename) => {
-      const filePath = `jobs/${jobId}/${filename}`;
+      const filePath = `${orgId}/jobs/${jobId}/${filename}`;
       console.log("Fetching:", filePath);
 
       try {
@@ -82,9 +82,9 @@ export async function getFiles(jobId, filenames) {
 
 
 
-export async function deleteFile(jobId, filename) {
+export async function deleteFile(orgId, jobId, filename) {
   try {
-    const filePath = `jobs/${jobId}/${filename}`;
+    const filePath = `${orgId}/jobs/${jobId}/${filename}`;
 
     const { error } = await supabase.storage.from('attachments').remove([filePath]);
     

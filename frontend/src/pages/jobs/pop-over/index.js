@@ -158,7 +158,7 @@ export default function PopOver({
 
   const handleDrop = async (acceptedFiles) => {
     try {
-      const fileUploadPromises = acceptedFiles.map(file => uploadFile(job.id, file));
+      const fileUploadPromises = acceptedFiles.map(file => uploadFile(activeOrganization, job.id, file));
       
       // Wait for all files to upload
       const uploadResults = await Promise.all(fileUploadPromises);
@@ -208,7 +208,7 @@ export default function PopOver({
         // Start all the getFile requests concurrently
         if (job) {
           console.log("fe", job)
-          const fileObjects = await getFiles(job.id, job.attachments)
+          const fileObjects = await getFiles(activeOrganization, job.id, job.attachments)
           console.log("fo", fileObjects)
           // Update state with File objects
           setFiles(fileObjects);

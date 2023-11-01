@@ -63,6 +63,7 @@ export default function ExoStepper({ handleClose }) {
       } else {
         fetchedBuildings = await getAllBuildings(null, null, searchValue, activeOrganization);
       }
+      console.log(fetchedBuildings)
       setBuildings(fetchedBuildings);
     } catch (error) {
       console.error('Error fetching buildings:', error);
@@ -71,9 +72,9 @@ export default function ExoStepper({ handleClose }) {
 
   const fetchLabels = async () => {
     try {
-      if (selectedBuilding?.organizationId) {
+      if (selectedBuilding?.organization_id) {
         const fetchedLabels = await getAllLabels(
-          selectedBuilding?.organizationId,
+          selectedBuilding?.organization_id,
         );
         setLabels(fetchedLabels);
       }
@@ -149,19 +150,21 @@ export default function ExoStepper({ handleClose }) {
   
   const handleDrop = async (acceptedFiles) => {
     try {
-      const uped = await uploadFile(
-        newJobId,
-        acceptedFiles[0],
-      );
-      if (uped) {
-        const fileNames = acceptedFiles.map(file => file.name);
-
-        const updatedFiles = [...files, ...acceptedFiles];
-        const updatedAttachments = [...attachments, ...fileNames]
-        setFiles(updatedFiles);
-        setAttachments(updatedAttachments);
+      if (selectedBuilding?.organization_id) {
+        const uped = await uploadFile(
+          selectedBuilding?.organization_id,
+          newJobId,
+          acceptedFiles[0],
+        );
+        if (uped) {
+          const fileNames = acceptedFiles.map(file => file.name);
+  
+          const updatedFiles = [...files, ...acceptedFiles];
+          const updatedAttachments = [...attachments, ...fileNames]
+          setFiles(updatedFiles);
+          setAttachments(updatedAttachments);
+        }
       }
-
     } catch (error) {
       console.error('Error adding file:', error);
     }
@@ -205,7 +208,7 @@ export default function ExoStepper({ handleClose }) {
   const isStepValid = () => {
     switch (activeStep) {
       case 0:
-        return selectedBuilding.buildingId !== '';
+        return selectedBuilding.id !== '';
       case 1:
         return job.title !== '' && job.description !== '';
       default:
