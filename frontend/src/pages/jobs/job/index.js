@@ -281,10 +281,10 @@ export default function JobDetails({
   const renderAttachments = useMemo(() => (
     <Stack direction="row">
       <StyledLabel>Attachments</StyledLabel>
-      <Attachments files={files?.map(f => f.data)} handleRemoveFile={handleRemoveFile} />
+      <Attachments files={files?.map(f => f?.data)} handleRemoveFile={handleRemoveFile} />
       <UploadBox onDrop={handleDrop} />
     </Stack>
-  ), [job.id, files]);
+  ), [job?.id, files]);
 
   const renderRentPaid = useMemo(() => (
     <Stack direction="row" alignItems="center">

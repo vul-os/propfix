@@ -29,7 +29,7 @@ export default function InspectionTemplateGroups() {
   const [openDialog, setOpenDialog] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const { getIdToken, activeOrganization } = useAuthContext();
+  const { activeOrganization } = useAuthContext();
   const [viewingId, setViewingId] = useState(null);
 
   useEffect(() => {
@@ -49,12 +49,11 @@ export default function InspectionTemplateGroups() {
 
   const handleSave = async () => {
     try {
-      const token = await getIdToken();
       if (isEditing) {
-        await updateInspectionTemplateGroup(editedGroup, token);
+        await updateInspectionTemplateGroup(editedGroup);
       } else {
-        const eg = {...editedGroup, organizationId: activeOrganization}
-        await createInspectionTemplateGroup(eg, token);
+        const eg = {...editedGroup, organization_id: activeOrganization}
+        await createInspectionTemplateGroup(eg);
       }
       fetchInspectionTemplateGroups();
       handleClose();

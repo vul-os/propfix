@@ -99,7 +99,7 @@ export default function MessageStep({ eventRaw, member, attachments }) {
   const filesToDisplay = attachments.filter(file => 
     event.data?.attachments?.some(attachmentName => attachmentName?.includes(file.name))
   );
-  const ftd = filesToDisplay.map(f => f.data)
+  const ftd = filesToDisplay.map(f => f?.data)
   return (
     <div style={styles.container}>
       <Avatar src={member?.photoUrl} style={styles.userAvatar} />

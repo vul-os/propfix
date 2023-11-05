@@ -31,7 +31,7 @@ export default function Attachments({ files, handleRemoveFile }) {
            
             )} */}
               <img
-              src={URL.createObjectURL(file)}
+              src={file && URL.createObjectURL(file)}
               alt={`Uploaded File ${index}`}
               style={{
                 width: 64,
