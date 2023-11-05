@@ -118,14 +118,15 @@ export async function deleteJob(jobId) {
     const { error } = await supabase
       .from('jobs')
       .delete()
-      .eq('id', jobId);
-
+      .eq('id', jobId)
     if (error) {
       console.error('Error deleting job:', error);
     }
+    return true
   } catch (error) {
     console.error('Error deleting job:', error);
   }
+  return false
 }
 
 // Function to close a job by ID
@@ -133,16 +134,18 @@ export async function closeJob(jobId) {
   try {
     const { data, error } = await supabase
       .from('jobs')
-      .update({ status: 'closed' })
+      .update({ 
+        closed_at: new Date().toISOString()  // Set current time
+      })
       .eq('id', jobId)
-      .single();
+      .select();
 
     if (error) {
       console.error('Error closing job:', error);
       return null;
     }
 
-    return data || null;
+    return true || null;
   } catch (error) {
     console.error('Error closing job:', error);
     return null;
@@ -154,7 +157,9 @@ export async function reOpenJob(jobId) {
   try {
     const { data, error } = await supabase
       .from('jobs')
-      .update({ status: 'open' })
+      .update({ 
+        closed_at: null  // Set to null
+      })
       .eq('id', jobId)
       .single();
 
@@ -163,7 +168,7 @@ export async function reOpenJob(jobId) {
       return null;
     }
 
-    return data || null;
+    return true || null;
   } catch (error) {
     console.error('Error reopening job:', error);
     return null;

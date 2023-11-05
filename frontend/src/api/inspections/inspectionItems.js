@@ -1,53 +1,18 @@
-import config from '../../config/config';
-import { jsonRpcRequest } from '../jsonrpc/client';
+import { supabase } from '../supabase';  // Update the path to your Supabase client as necessary
 
-const API_BASE_URL = `${config.apiUrl}/api/authenticated`;
 
-export async function createInspectionItem(item, idToken) {
+export async function getAllInspection(inspectionId) {
   try {
-    const params = [item];
-    return await jsonRpcRequest('InspectionItems.CreateItem', params, idToken);
-  } catch (error) {
-    console.error('Error creating inspection item:', error);
-    return null;
-  }
-}
+    const { data, error } = await supabase.rpc('get_inspection_group_details', { p_inspection_id: inspectionId });
 
-export async function updateInspectionItem(itemId, itemData, idToken) {
-  try {
-    const params = [itemId, itemData];
-    return await jsonRpcRequest('InspectionItems.UpdateItem', params, idToken);
-  } catch (error) {
-    console.error('Error updating inspection item:', error);
-    return null;
-  }
-}
+    if (error) {
+      console.error('Error fetching board:', error);
+      return null;
+    }
 
-export async function deleteInspectionItem(itemId, idToken) {
-  try {
-    const params = [itemId];
-    await jsonRpcRequest('InspectionItems.DeleteItem', params, idToken);
+    return data || null;
   } catch (error) {
-    console.error('Error deleting inspection item:', error);
-  }
-}
-
-export async function getAllInspectionItems(inspectionId, idToken) {
-  try {
-    const params = [{inspectionId}];
-    return await jsonRpcRequest('InspectionItems.GetAllInspectionItems', params, idToken);
-  } catch (error) {
-    console.error('Error fetching inspection items:', error);
-    return [];
-  }
-}
-
-export async function getInspectionItem(itemId, idToken) {
-  try {
-    const params = [itemId];
-    return await jsonRpcRequest('InspectionItems.GetItem', params, idToken);
-  } catch (error) {
-    console.error('Error fetching inspection item:', error);
+    console.error('Unexpected error fetching board:', error);
     return null;
   }
 }

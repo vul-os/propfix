@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Grid, Box, Container, IconButton, Typography, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 import { useTheme } from '@mui/material/styles';
 import { useAuthContext } from '../../contexts/auth';
 import { getAllInspections } from '../../api/inspections/inspections';
 import CreateInspectionDialog from './create-inspection';
-import WidgetSummaryComponent from "../../components/widget-summary"
+import WidgetSummaryComponent from "../../components/widget-summary";
 
 export default function Inspections() {
     const theme = useTheme();
@@ -17,6 +19,7 @@ export default function Inspections() {
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [editingInspection, setEditingInspection] = useState(null);
     const { activeOrganization } = useAuthContext();
+    const navigate = useNavigate();
 
     useEffect(() => {
         if (activeOrganization) {
@@ -49,20 +52,19 @@ export default function Inspections() {
         // Handle delete logic here
     };
 
-    const handleSaveEdit = () => {
-        console.log('Edited Inspection:', editingInspection);
-        // Logic to save edited inspection (e.g., API call)
-        setIsEditDialogOpen(false);
+    const handleNavigateToInspection = (id) => {
+        // Navigate to the inspection page
+        navigate(`/inspections/${id}`);
     };
 
     const columns = [
         { field: 'id', headerName: 'ID', width: 150 },
         { field: 'unit_identifier', headerName: 'Unit Number', width: 200 },
-   
+        // ...other columns
         {
             field: 'actions',
             headerName: 'Actions',
-            width: 150,
+            width: 200, // Adjust width as necessary
             renderCell: (params) => (
                 <>
                     <IconButton color="primary" onClick={() => handleEdit(params.id)}>
@@ -71,10 +73,27 @@ export default function Inspections() {
                     <IconButton color="secondary" onClick={() => handleDelete(params.id)}>
                         <DeleteIcon />
                     </IconButton>
+                    <IconButton color="default" onClick={() => handleNavigateToInspection(params.id)}>
+                        <VisibilityIcon />
+                    </IconButton>
                 </>
-            )
-        }
+            ),
+        },
     ];
+
+    const handleSaveEdit = async () => {
+        try {
+            // Assuming updateInspection is an async function that sends the updated data to the server
+            // const updated = await updateInspection(editingInspection);
+            // if (updated) {
+            //     // Assuming the API call returns the updated inspection, you might want to update the state to reflect this
+            //     setInspections(inspections.map((insp) => (insp.id === updated.id ? updated : insp)));
+            //     setIsEditDialogOpen(false);
+            // }
+        } catch (error) {
+            console.error('Error updating inspection:', error);
+        }
+    };
 
     return (
         <Container maxWidth="xl">

@@ -12,7 +12,7 @@ import Stack from '@mui/material/Stack';
 
 import { useAuthContext } from '../../../contexts/auth'; 
 import { useBoardContext } from '../../../contexts/board'; 
-import { getAllEvents, createEvent } from '../../../api/events';
+import { getAllEvents, createEvent } from '../../../api/job-events';
 import { updateJob, deleteJob, closeJob, reOpenJob } from '../../../api/jobs';
 import { moveJob } from '../../../api/columnJobs';
 import { uploadFile, getFiles, deleteFile } from '../../../api/files';
@@ -89,7 +89,7 @@ export default function PopOver({
       try {
         const res = await closeJob(job.id); // Pass the token to the deleteJob function
         onClosePopOver()
-        if (res?.success) {
+        if (res) {
           const newBoardJobs = { ...board.jobs };
           const currentDateTime = moment().utc().format('YYYY-MM-DDTHH:mm:ss[Z]'); 
 
@@ -128,7 +128,7 @@ export default function PopOver({
         const res = await reOpenJob(job.id); 
         onClosePopOver()
         console.log(res)
-        if (res?.success) {
+        if (res) {
           const newBoardJobs = { ...board.jobs };
 
           const newJ = {...job}
