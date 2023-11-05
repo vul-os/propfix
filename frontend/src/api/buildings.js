@@ -6,7 +6,7 @@ export async function createBuilding(building) {
     const { data, error } = await supabase
       .from('buildings')
       .upsert([building])
-      .single();
+      .select();
 
     if (error) {
       console.error('Error creating building:', error);

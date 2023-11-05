@@ -115,8 +115,8 @@ export default function Buildings() {
     try {
       const createdBuilding = await createBuilding(newBuilding);
       console.log(createdBuilding)
-      if (createdBuilding.id) {
-        setBuildings((prevBuildings) => [...prevBuildings, createdBuilding]);
+      if (createdBuilding?.length) {
+        setBuildings((prevBuildings) => [...prevBuildings, createdBuilding[0]]);
       }
     } catch (error) {
       console.error('Error creating building:', error);
