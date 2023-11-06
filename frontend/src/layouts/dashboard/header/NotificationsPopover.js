@@ -72,7 +72,7 @@ const NotificationsComponent = ({ userId }) => {
             ))}
           </ul>
         ) : (
-          <p>No notifications to display.</p>
+          <p>No notifications to displayed.</p>
         )}
       </Popover>
     </div>
