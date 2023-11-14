@@ -3,22 +3,33 @@ import IconButton from '@mui/material/IconButton';
 import Badge from '@mui/material/Badge';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import Popover from '@mui/material/Popover';
-import { createNotification, getAllNotifications } from '../../../api/notifications';
+import { getAllNotifications } from '../../../api/notifications';
+import { useAuthContext } from '../../../contexts/auth';
 
-const NotificationsComponent = ({ userId }) => {
+const NotificationsComponent = () => {
+  const { getIdToken, userId } = useAuthContext();
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [anchorEl, setAnchorEl] = useState(null);
 
   useEffect(() => {
     const fetchNotifications = async () => {
-      const fetchedNotifications = await getAllNotifications(userId);
-      setNotifications(fetchedNotifications);
-      setUnreadCount(fetchedNotifications.filter(notification => notification.status === 'unread').length);
+      try {
+        const fetchedNotifications = await getAllNotifications();
+        console.log('Fetched Notifications:', fetchedNotifications);
+        setNotifications(fetchedNotifications);
+        setUnreadCount(
+          fetchedNotifications.filter(
+            (notification) => notification.status === 'unread'
+          ).length
+        );
+      } catch (error) {
+        console.error('Error fetching notifications:', error);
+      }
     };
-
+    
     fetchNotifications();
-  }, [userId]); // Fetch notifications when userId changes
+  }, []);
 
   const handleClick = (event) => {
     setAnchorEl(event.currentTarget);
@@ -63,7 +74,7 @@ const NotificationsComponent = ({ userId }) => {
       >
         {notifications.length > 0 ? (
           <ul className="notification-list">
-            {notifications.map(notification => (
+            {notifications.map((notification) => (
               <li key={notification.id} className="notification-item">
                 <strong>{notification.title}</strong>
                 <p>{notification.message}</p>
@@ -72,7 +83,7 @@ const NotificationsComponent = ({ userId }) => {
             ))}
           </ul>
         ) : (
-          <p>No notifications to displayed.</p>
+          <p>No notifications to display.</p>
         )}
       </Popover>
     </div>

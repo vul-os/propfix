@@ -21,21 +21,20 @@ export async function createNotification(notification) {
   }
 }
 
-export async function getAllNotifications(userId) {
+export async function getAllNotifications() {
   try {
     const { data, error } = await supabase
       .from('notifications')
-      .select('*')
-      .eq('user_id', userId);
+      .select('*');
 
     if (error) {
-      console.error('Error fetching notifications for user:', error);
+      console.error('Error fetching notifications:', error);
       return [];
     }
 
     return data || [];
   } catch (error) {
-    console.error('Error fetching notifications for user:', error);
+    console.error('Error fetching notifications:', error);
     return [];
   }
 }
