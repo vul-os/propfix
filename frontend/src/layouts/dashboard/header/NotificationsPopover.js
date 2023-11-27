@@ -69,6 +69,13 @@ const NotificationsComponent = () => {
       ) > 1 ? 's' : ''} ago`;
     }
 
+    // Check if the notification is older than 30 days
+    if (duration.asDays() > 30) {
+      // Format and display the actual date
+      return createdAt.format('MMMM D, YYYY [at] h:mm A');
+    }
+
+    // If not older than 30 days, continue with the regular "time ago" format
     return createdAt.fromNow();
   };
 
@@ -98,9 +105,11 @@ const NotificationsComponent = () => {
         }}
         style={{ width: '200%', maxWidth: '10000%', padding: '40px' }}
       >
-        <Typography variant="h6" style={{ padding: '10px' }}>
-          Notifications
-        </Typography>
+        {notifications.length > 0 && (
+          <Typography variant="h6" style={{ padding: '10px' }}>
+            Notifications
+          </Typography>
+        )}
 
         <List>
           {notifications.length > 0 ? (
@@ -112,7 +121,6 @@ const NotificationsComponent = () => {
                 }`}
                 style={{
                   border: '1px solid #ddd', // Adjust the color as needed
-                  borderRadius: '8px', // Adjust the radius as needed
                   margin: '8px 0', // Add some margin for separation
                   padding: '8px', // Add padding for content spacing
                   transition: 'background-color 0.3s', // Add smooth transition
@@ -123,7 +131,7 @@ const NotificationsComponent = () => {
                     // Use a different color for unread notifications on hover
                     e.currentTarget.style.backgroundColor = '#e0f7fa'; // Adjust the color as needed
                   } else {
-                    e.currentTarget.style.backgroundColor = '#f5f5f5'; // Adjust the color as needed
+                    e.currentTarget.style.backgroundColor = '#e0f7fa'; // Adjust the color as needed
                   }
                 }}
                 onMouseLeave={(e) => {
