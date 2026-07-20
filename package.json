@@ -1,0 +1,19 @@
+{
+  "name": "propfix",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Building maintenance and inspections you actually own. One static binary, one SQLite file.",
+  "license": "MIT",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vul-os/propfix.git"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "docs:sync": "node scripts/sync-docs.mjs",
+    "docs:check": "node scripts/sync-docs.mjs --check"
+  }
+}
