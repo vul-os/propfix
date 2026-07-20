@@ -29,6 +29,14 @@ func (r *Repo) AddFinding(orgID string, f domain.Finding) (domain.Finding, error
 	if err != nil {
 		return domain.Finding{}, err
 	}
+	// A completed inspection is the record a deposit dispute is decided on. If
+	// a finding could still be appended after completion, "complete" would
+	// mean nothing — the legacy handleCompletion() left the door open and this
+	// is the fix (ARCHITECTURE.md §13: a feature that silently does less than
+	// it claims is worse than one that says it is unfinished).
+	if insp.Status == domain.InspectionComplete {
+		return domain.Finding{}, fmt.Errorf("%w: inspection is complete; findings are closed", ErrConflict)
+	}
 	f.OrgID = orgID
 	if f.ID == "" {
 		f.ID = store.NewID()
@@ -111,4 +119,37 @@ func (r *Repo) ListFindings(orgID, inspectionID string) ([]domain.Finding, error
 		out = append(out, f)
 	}
 	return out, rows.Err()
+}
+
+// LatestFindings collapses an inspection's append-only findings to the latest
+// observation per item, which is the read-time rule the append-only design
+// promises (§6/§13 of the docs): a correction is a new row, and "current
+// condition" is whichever row is newest, computed here rather than stored.
+//
+// The dedup key is the template item id when a finding names one, and the
+// finding's own label otherwise — a freeform finding (no template item) has no
+// other stable identity to revise against. Rows are read oldest-first, so a
+// later entry for the same key simply overwrites the earlier one in the map.
+func (r *Repo) LatestFindings(orgID, inspectionID string) ([]domain.Finding, error) {
+	all, err := r.ListFindings(orgID, inspectionID)
+	if err != nil {
+		return nil, err
+	}
+	latest := map[string]domain.Finding{}
+	var order []string
+	for _, f := range all {
+		key := f.ItemID
+		if key == "" {
+			key = "label:" + f.Label
+		}
+		if _, seen := latest[key]; !seen {
+			order = append(order, key)
+		}
+		latest[key] = f
+	}
+	out := make([]domain.Finding, 0, len(order))
+	for _, key := range order {
+		out = append(out, latest[key])
+	}
+	return out, nil
 }

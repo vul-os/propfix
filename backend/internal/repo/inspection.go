@@ -16,13 +16,14 @@ import (
 	"github.com/vul-os/propfix/backend/internal/store"
 )
 
-const inspectionCols = `id, org_id, building_id, unit_id, template_id, kind, status,
+const inspectionCols = `id, org_id, building_id, unit_id, template_id, job_id, kind, status,
 	scheduled_for, performed_at, inspector_party_id, notes, hlc, deleted, created_at`
 
 // InspectionFilter narrows an inspection listing.
 type InspectionFilter struct {
 	BuildingID string
 	UnitID     string
+	JobID      string
 	Kind       string
 	Status     string
 }
@@ -48,6 +49,11 @@ func (r *Repo) CreateInspection(orgID string, i domain.Inspection, unitLabel str
 	}
 	if i.TemplateID != "" {
 		if _, err := r.GetTemplate(orgID, i.TemplateID); err != nil {
+			return domain.Inspection{}, err
+		}
+	}
+	if i.JobID != "" {
+		if _, err := r.GetJob(orgID, i.JobID); err != nil {
 			return domain.Inspection{}, err
 		}
 	}
@@ -77,8 +83,8 @@ func (r *Repo) CreateInspection(orgID string, i domain.Inspection, unitLabel str
 		i.HLC = hlc
 		_, err = tx.Exec(
 			`INSERT INTO inspection (`+inspectionCols+`)
-			 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-			i.ID, i.OrgID, i.BuildingID, nullable(i.UnitID), nullable(i.TemplateID),
+			 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			i.ID, i.OrgID, i.BuildingID, nullable(i.UnitID), nullable(i.TemplateID), nullable(i.JobID),
 			i.Kind, i.Status, i.ScheduledFor, i.PerformedAt, nullable(i.InspectorID),
 			i.Notes, i.HLC, 0, i.CreatedAt)
 		return err
@@ -93,10 +99,21 @@ func (r *Repo) CreateInspection(orgID string, i domain.Inspection, unitLabel str
 // performed_at, because "when was this walked" is the question a deposit
 // dispute turns on and reconstructing it from a findings timestamp months later
 // is not the same answer.
+//
+// A completed inspection is immutable: no further status change is accepted,
+// including a "completed → completed" no-op. The legacy system's
+// handleCompletion() set nothing and rejected nothing, so a completed
+// inspection could still be edited underneath the record that was supposed to
+// be final — which defeats the entire evidentiary point of a move-out capture.
+// The only way PropFix corrects a completed inspection is the same way it
+// corrects a finding: a new inspection, never a mutation of the old one.
 func (r *Repo) SetInspectionStatus(orgID, id, status string) (domain.Inspection, error) {
 	i, err := r.GetInspection(orgID, id)
 	if err != nil {
 		return domain.Inspection{}, err
+	}
+	if i.Status == domain.InspectionComplete {
+		return domain.Inspection{}, fmt.Errorf("%w: inspection is complete and immutable", ErrConflict)
 	}
 	i.Status = status
 	if status == domain.InspectionComplete && i.PerformedAt == "" {
@@ -149,6 +166,10 @@ func (r *Repo) ListInspections(orgID string, f InspectionFilter) ([]domain.Inspe
 		q += " AND unit_id = ?"
 		args = append(args, f.UnitID)
 	}
+	if f.JobID != "" {
+		q += " AND job_id = ?"
+		args = append(args, f.JobID)
+	}
 	if f.Kind != "" {
 		q += " AND kind = ?"
 		args = append(args, f.Kind)
@@ -177,9 +198,9 @@ func (r *Repo) ListInspections(orgID string, f InspectionFilter) ([]domain.Inspe
 
 func scanInspection(sc scanner) (domain.Inspection, error) {
 	var i domain.Inspection
-	var unitID, templateID, inspector sql.NullString
+	var unitID, templateID, jobID, inspector sql.NullString
 	var deleted int
-	err := sc.Scan(&i.ID, &i.OrgID, &i.BuildingID, &unitID, &templateID, &i.Kind, &i.Status,
+	err := sc.Scan(&i.ID, &i.OrgID, &i.BuildingID, &unitID, &templateID, &jobID, &i.Kind, &i.Status,
 		&i.ScheduledFor, &i.PerformedAt, &inspector, &i.Notes, &i.HLC, &deleted, &i.CreatedAt)
 	if err == sql.ErrNoRows {
 		return domain.Inspection{}, ErrNotFound
@@ -189,7 +210,42 @@ func scanInspection(sc scanner) (domain.Inspection, error) {
 	}
 	i.UnitID = nullStr(unitID)
 	i.TemplateID = nullStr(templateID)
+	i.JobID = nullStr(jobID)
 	i.InspectorID = nullStr(inspector)
 	i.Deleted = deleted != 0
 	return i, nil
+}
+
+// MatchingIngoing returns the ingoing inspection this outgoing inspection
+// should be compared against: the most recent ingoing inspection of the same
+// unit that was performed at or before the outgoing one.
+//
+// "Most recent, not-after" is the rule rather than simply "latest ingoing on
+// the unit" because a unit accumulates one ingoing/outgoing pair per tenancy
+// over its life. Pairing an outgoing inspection with whichever ingoing
+// inspection happens to be newest would, for a unit on its third tenant,
+// compare this move-out against next year's move-in the moment that one is
+// captured — silently wrong in a way nobody would notice until the numbers
+// stopped making sense. Ordering on performed_at (falling back to created_at
+// for an inspection that has not been marked performed) keeps each outgoing
+// bound to the ingoing that actually preceded it.
+func (r *Repo) MatchingIngoing(orgID string, outgoing domain.Inspection) (domain.Inspection, error) {
+	if outgoing.Kind != domain.InspectionOutgoing {
+		return domain.Inspection{}, fmt.Errorf("%w: not an outgoing inspection", ErrConflict)
+	}
+	if outgoing.UnitID == "" {
+		return domain.Inspection{}, fmt.Errorf("%w: outgoing inspection has no unit", ErrConflict)
+	}
+	cutoff := outgoing.PerformedAt
+	if cutoff == "" {
+		cutoff = outgoing.CreatedAt
+	}
+	row := r.s.DB().QueryRow(
+		`SELECT `+inspectionCols+` FROM inspection
+		 WHERE org_id = ? AND unit_id = ? AND kind = ? AND deleted = 0
+		   AND COALESCE(NULLIF(performed_at, ''), created_at) <= ?
+		 ORDER BY COALESCE(NULLIF(performed_at, ''), created_at) DESC, id DESC
+		 LIMIT 1`,
+		orgID, outgoing.UnitID, domain.InspectionIngoing, cutoff)
+	return scanInspection(row)
 }
