@@ -8,6 +8,7 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"github.com/vul-os/propfix/backend/internal/domain"
+	"github.com/vul-os/propfix/backend/internal/inspect"
 	"github.com/vul-os/propfix/backend/internal/repo"
 )
 
@@ -64,6 +65,7 @@ func (s *Server) handleListInspections(w http.ResponseWriter, r *http.Request) {
 	list, err := s.Repo.ListInspections(orgOf(r), repo.InspectionFilter{
 		BuildingID: q.Get("building_id"),
 		UnitID:     q.Get("unit_id"),
+		JobID:      q.Get("job_id"),
 		Kind:       q.Get("kind"),
 		Status:     q.Get("status"),
 	})
@@ -79,6 +81,7 @@ type inspectionReq struct {
 	UnitID       string `json:"unit_id"`
 	UnitLabel    string `json:"unit_label"`
 	TemplateID   string `json:"template_id"`
+	JobID        string `json:"job_id"`
 	Kind         string `json:"kind"`
 	ScheduledFor string `json:"scheduled_for"`
 	InspectorID  string `json:"inspector_party_id"`
@@ -92,7 +95,7 @@ func (s *Server) handleCreateInspection(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	i, err := s.Repo.CreateInspection(orgOf(r), domain.Inspection{
-		BuildingID: req.BuildingID, UnitID: req.UnitID, TemplateID: req.TemplateID,
+		BuildingID: req.BuildingID, UnitID: req.UnitID, TemplateID: req.TemplateID, JobID: req.JobID,
 		Kind: req.Kind, ScheduledFor: req.ScheduledFor, InspectorID: req.InspectorID,
 		Notes: req.Notes,
 	}, req.UnitLabel)
@@ -167,4 +170,56 @@ func (s *Server) handleAddFinding(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusCreated, f)
+}
+
+// handleCompareInspection is the headline feature (docs/INSPECTIONS.md §1):
+// given an outgoing inspection, find the ingoing inspection of the same unit
+// it should be measured against and return a per-item condition delta.
+//
+// The path parameter names the OUTGOING inspection. The ingoing counterpart is
+// resolved server-side (repo.MatchingIngoing) rather than accepted as a
+// parameter, for the same reason org scoping is never accepted as a
+// parameter (§11): letting a caller name both sides would let it pair an
+// outgoing inspection with an unrelated unit's ingoing one and manufacture a
+// comparison that never happened.
+func (s *Server) handleCompareInspection(w http.ResponseWriter, r *http.Request) {
+	org := orgOf(r)
+	outgoing, err := s.Repo.GetInspection(org, chi.URLParam(r, "id"))
+	if err != nil {
+		writeErr(w, err)
+		return
+	}
+	ingoing, err := s.Repo.MatchingIngoing(org, outgoing)
+	if err != nil {
+		writeErr(w, err)
+		return
+	}
+
+	ingoingItems, err := s.Repo.ListTemplateItems(org, ingoing.TemplateID)
+	if err != nil {
+		writeServerErr(w, "list ingoing template items", err)
+		return
+	}
+	outgoingItems, err := s.Repo.ListTemplateItems(org, outgoing.TemplateID)
+	if err != nil {
+		writeServerErr(w, "list outgoing template items", err)
+		return
+	}
+	ingoingFindings, err := s.Repo.LatestFindings(org, ingoing.ID)
+	if err != nil {
+		writeServerErr(w, "list ingoing findings", err)
+		return
+	}
+	outgoingFindings, err := s.Repo.LatestFindings(org, outgoing.ID)
+	if err != nil {
+		writeServerErr(w, "list outgoing findings", err)
+		return
+	}
+
+	cmp, err := inspect.Compare(ingoing, outgoing, ingoingItems, outgoingItems, ingoingFindings, outgoingFindings)
+	if err != nil {
+		writeErr(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, cmp)
 }

@@ -129,6 +129,7 @@ func (s *Server) Handler() http.Handler {
 		r.Post("/api/inspections/{id}/status", s.handleSetInspectionStatus)
 		r.Get("/api/inspections/{id}/findings", s.handleListFindings)
 		r.Post("/api/inspections/{id}/findings", s.handleAddFinding)
+		r.Get("/api/inspections/{id}/comparison", s.handleCompareInspection)
 
 		r.Get("/api/reports/buildings", s.handleReportBuildings)
 		r.Get("/api/reports/units", s.handleReportUnits)
