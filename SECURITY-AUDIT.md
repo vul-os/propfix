@@ -32,6 +32,45 @@ be **revoked in the Google Cloud console**, not merely rotated in code:
 If the projects are dormant or abandoned, deleting the service accounts (or
 the projects) is simpler and stronger than key rotation.
 
+### Supabase project (separate system — not covered by GCP deletion)
+
+A second-pass scan for JWT-shaped credentials found a Supabase project
+referenced in the frontend history:
+
+| Project ref | URL | Key role | Issued | Expires |
+|---|---|---|---|---|
+| `tcgmonunzroeujvmqcir` | `https://tcgmonunzroeujvmqcir.supabase.co` | `anon` | 2023-07-04 | 2033-07-04 |
+
+No `service_role` key is present anywhere in the history — only the `anon` key,
+which is public by design and shipped in client bundles.
+
+**However**, an `anon` key is only safe when Row Level Security is enabled and
+correct on every table. Without RLS it grants full read and write access to the
+database. Verify RLS on project `tcgmonunzroeujvmqcir`, or delete/pause the
+project if it is no longer needed. Deleting the GCP projects does **not** affect
+this — Supabase is a separate provider.
+
+## Credentials that were never committed
+
+These live in service settings rather than git history, and survive repository
+deletion:
+
+- **GitHub Actions secrets** — three `firebase-hosting-*` workflows in the
+  frontend consume a `FIREBASE_SERVICE_ACCOUNT_*` repository secret.
+- **Cloud Build** — `backend/cloudbuild.yaml`; check substitutions and any
+  Secret Manager references.
+- **Gitpod** — `.gitpod.yml` in backend and frontend; Gitpod stores workspace
+  environment variables per user and repository.
+- **Deploy keys and webhooks** on the four source repositories.
+
+## Unresolved
+
+Three distinct Firebase Web API keys were found but only two GCP projects were
+identified. Either a third project exists, or one of the keys is a Google
+**Maps** key — an unrestricted Maps key is directly billable by anyone who
+finds it. The key `***REMOVED-GOOGLE-API-KEY***` appeared only once
+and should be traced to its project.
+
 ## What was removed from history
 
 **Service-account keyfiles** — `keyfile.json` and `firebase-keyfile.json`
