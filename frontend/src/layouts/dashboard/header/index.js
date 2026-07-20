@@ -10,13 +10,12 @@ import Iconify from '../../../components/iconify';
 import Searchbar from './Searchbar';
 import AccountPopover from './AccountPopover';
 import OrganizationsPopover from './OrganizationsPopover';
+import NotificationsPopover from './NotificationsPopover';
 
 // ----------------------------------------------------------------------
 
 const NAV_WIDTH = 280;
-
 const HEADER_MOBILE = 64;
-
 const HEADER_DESKTOP = 92;
 
 const StyledRoot = styled(AppBar)(({ theme }) => ({
@@ -34,8 +33,6 @@ const StyledToolbar = styled(Toolbar)(({ theme }) => ({
     padding: theme.spacing(0, 5),
   },
 }));
-
-// ----------------------------------------------------------------------
 
 Header.propTypes = {
   onOpenNav: PropTypes.func,
@@ -67,6 +64,7 @@ export default function Header({ onOpenNav }) {
           }}
         >
           <OrganizationsPopover />
+          <NotificationsPopover />
           <AccountPopover />
         </Stack>
       </StyledToolbar>
