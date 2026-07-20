@@ -23,6 +23,8 @@ import (
 	"github.com/vul-os/propfix/backend/internal/api"
 	"github.com/vul-os/propfix/backend/internal/repo"
 	"github.com/vul-os/propfix/backend/internal/store"
+	"github.com/vul-os/propfix/backend/internal/sync"
+	"github.com/vul-os/propfix/backend/internal/wrap"
 )
 
 // version is the build's version string, overridable at link time.
@@ -35,18 +37,27 @@ func main() {
 		demo    = flag.Bool("demo", false, "run an ephemeral in-memory instance seeded with demo data")
 		origins = flag.String("origins", "", "comma-separated CORS allowlist (default: same-origin only)")
 		secure  = flag.Bool("secure-cookies", false, "mark session cookies Secure (set when served over HTTPS)")
+
+		// Peer sync and WRAP (§7, §8) are both off by default: a fresh
+		// install talks to nothing (§11), and enrolling into a mesh or
+		// speaking to another organisation is a decision an operator makes
+		// explicitly, not something that starts happening on upgrade.
+		syncListen = flag.Bool("sync-listen", false, "serve /api/sync/* so other nodes can pull from and push to this one")
+		syncPeer   = flag.String("sync-peer", "", "comma-separated peer base URLs to sync with on an interval")
+		syncFolder = flag.String("sync-folder", "", "shared folder path for file-transport sync (a synced drive, a NAS mount, a USB stick)")
+		wrapFlag   = flag.Bool("wrap", false, "enable the WRAP trades/v0 binding (github.com/vul-os/wrap) for cross-organisation work")
 	)
 	flag.Parse()
 
 	// The default listen address is loopback, not 0.0.0.0. A fresh install
 	// talks to nothing and is reachable from nothing (§11); exposing it to a
 	// network is a decision someone makes explicitly.
-	if err := run(*dbPath, *addr, *origins, *demo, *secure); err != nil {
+	if err := run(*dbPath, *addr, *origins, *demo, *secure, *syncListen, *syncPeer, *syncFolder, *wrapFlag); err != nil {
 		log.Fatalf("propfix: %v", err)
 	}
 }
 
-func run(dbPath, addr, origins string, demo, secureCookies bool) error {
+func run(dbPath, addr, origins string, demo, secureCookies, syncListen bool, syncPeer, syncFolder string, wrapEnabled bool) error {
 	if demo {
 		// Demo data must never land in a real database. In-memory means the
 		// dataset cannot outlive the process or overwrite anything on disk.
@@ -101,6 +112,55 @@ func run(dbPath, addr, origins string, demo, secureCookies bool) error {
 		mux.Handle("/", app)
 	} else {
 		log.Printf("propfix: no dist/ found; the app is not served (run `npm run build`)")
+	}
+
+	// Peer sync (§7): off unless an operator asks for it, either by serving
+	// requests, dialing peers, or pointing at a shared folder. The pairing
+	// secret is read from the environment rather than a flag, never argv
+	// (§11): a process listing on a shared box must not leak it.
+	bgCtx, bgCancel := context.WithCancel(context.Background())
+	defer bgCancel()
+
+	if syncListen || syncPeer != "" || syncFolder != "" {
+		syncEngine := sync.New(st)
+		syncEngine.SecretFn = func() string { return os.Getenv("PROPFIX_SYNC_SECRET") }
+		syncEngine.AllowSecretFallback = os.Getenv("PROPFIX_SYNC_SECRET_FALLBACK") == "1"
+		if syncFolder != "" {
+			syncEngine.FolderFn = func() string { return syncFolder }
+		}
+
+		if syncListen {
+			// More specific than "/api/", so it is matched first for
+			// /api/sync/* without shadowing the rest of the API (§9 layering:
+			// sync is its own package, not routed through api/).
+			mux.Handle("/api/sync/", syncEngine.Handler())
+			log.Printf("propfix: sync: serving /api/sync/* (node key %s)", syncEngine.NodeID())
+		}
+		if syncPeer != "" || syncFolder != "" {
+			const syncInterval = 60 * time.Second
+			go syncEngine.RunBackground(bgCtx, syncInterval, func() []string {
+				return store.SplitList(syncPeer)
+			})
+			log.Printf("propfix: sync: background round every %s (peers=%q folder=%q)",
+				syncInterval, syncPeer, syncFolder)
+		}
+	}
+
+	// WRAP (§8): the trades/v0 binding. Off by default — in-house
+	// maintenance never touches it. The one endpoint wired at this layer is
+	// the spec's own unauthenticated identity announcement
+	// (github.com/vul-os/wrap 10-transport.md §11.1.1): a public key is not
+	// sensitive, and a peer WRAP node needs to discover it before anything
+	// else — offers, bids and assignments — can happen. Everything past
+	// that (pool client, offer/assignment handling) is designed but not
+	// wired here; see docs/WRAP.md's implementation-status table.
+	if wrapEnabled {
+		mux.HandleFunc("GET /.well-known/wrap/identity", func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			fmt.Fprintf(w, `{"pubkey":%q,"v":%d,"profiles":[%q]}`,
+				st.PublicKeyHex(), wrap.FormatVersion, wrap.ProfileTrades)
+		})
+		log.Printf("propfix: wrap: trades/v0 binding enabled (identity %s)", st.PublicKeyHex())
 	}
 
 	httpSrv := &http.Server{
