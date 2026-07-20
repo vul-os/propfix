@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PropFix</title>
+    <meta
+      name="description"
+      content="Building maintenance and inspections you actually own."
+    />
+    <link rel="icon" type="image/svg+xml" href="/logo-mark.svg" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#faf8f5" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#15130f" />
+    <meta name="color-scheme" content="light dark" />
+    <script>
+      // Resolve the persisted theme before first paint so there is no
+      // light/dark flash. Mirrors src/lib/theme.js.
+      (function () {
+        try {
+          var t = localStorage.getItem('propfix.theme') || 'system'
+          if (t === 'system') {
+            t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+          }
+          document.documentElement.setAttribute('data-theme', t === 'dark' ? 'dark' : 'light')
+        } catch (e) {
+          document.documentElement.setAttribute('data-theme', 'light')
+        }
+      })()
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

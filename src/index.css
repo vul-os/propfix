@@ -1,0 +1,147 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── PropFix design tokens ───────────────────────────────────────────────
+ * Instrument-panel feel: dense, confident, sans for UI chrome, mono for
+ * data (ids, amounts, timestamps, HLCs). Light is the default; dark mirrors
+ * it rather than inverting blindly. The accent (#FF7A29) is the mark's
+ * colour from docs/assets/logo-mark.svg — every other hue here is either a
+ * neutral or a validated data-series/status colour (see report + reports
+ * page for where those are used; UI chrome never borrows a data colour).
+ */
+:root {
+  --bg: #faf8f5;
+  --surface: #fdfcfa;
+  --surface-raised: #ffffff;
+  --surface-sunk: #f2efe9;
+  --ink: #17140f;
+  --ink-muted: #635c50;
+  --ink-faint: #a19a8c;
+  --line: #e6e1d7;
+  --line-strong: #d2cabb;
+
+  --accent: #ff7a29;
+  --accent-hover: #ef6c1c;
+  --accent-press: #d95f16;
+  --accent-tint: #ffece0;
+  --accent-ink: #8a3c0d;
+
+  --good: #0ca30c;
+  --good-bg: #e4f6e2;
+  --warning: #a86a00;
+  --warning-bg: #fdf0d3;
+  --serious: #b3491f;
+  --serious-bg: #fbe6dc;
+  --critical: #d03b3b;
+  --critical-bg: #fbe3e3;
+
+  /* data series — reports timeline (created / closed). Validated with the
+     dataviz skill's palette checker against these surfaces. */
+  --series-a: #2a78d6;
+  --series-b: #1baf7a;
+
+  color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+  --bg: #121110;
+  --surface: #17150f;
+  --surface-raised: #1d1b16;
+  --surface-sunk: #0d0c0a;
+  --ink: #f4f1ea;
+  --ink-muted: #c3bcac;
+  --ink-faint: #8a8375;
+  --line: #322e26;
+  --line-strong: #423d33;
+
+  --accent: #ff9152;
+  --accent-hover: #ffa06a;
+  --accent-press: #ff7a29;
+  --accent-tint: #3a2213;
+  --accent-ink: #ffd2ab;
+
+  --good: #3fcf3f;
+  --good-bg: #123312;
+  --warning: #e0ac2c;
+  --warning-bg: #382a0a;
+  --serious: #ec835a;
+  --serious-bg: #3a2013;
+  --critical: #e66767;
+  --critical-bg: #3a1414;
+
+  --series-a: #3987e5;
+  --series-b: #199e70;
+
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --bg: #121110;
+    --surface: #17150f;
+    --surface-raised: #1d1b16;
+    --surface-sunk: #0d0c0a;
+    --ink: #f4f1ea;
+    --ink-muted: #c3bcac;
+    --ink-faint: #8a8375;
+    --line: #322e26;
+    --line-strong: #423d33;
+    --accent: #ff9152;
+    --accent-hover: #ffa06a;
+    --accent-press: #ff7a29;
+    --accent-tint: #3a2213;
+    --accent-ink: #ffd2ab;
+    --good: #3fcf3f;
+    --good-bg: #123312;
+    --warning: #e0ac2c;
+    --warning-bg: #382a0a;
+    --serious: #ec835a;
+    --serious-bg: #3a2013;
+    --critical: #e66767;
+    --critical-bg: #3a1414;
+    --series-a: #3987e5;
+    --series-b: #199e70;
+    color-scheme: dark;
+  }
+}
+
+html,
+body {
+  background: var(--bg);
+  color: var(--ink);
+}
+
+body {
+  @apply font-sans antialiased;
+  font-feature-settings: 'cv11', 'ss01';
+}
+
+::selection {
+  background: var(--accent-tint);
+  color: var(--accent-ink);
+}
+
+/* Mono everywhere numbers/ids/timestamps land, via the `.tab-num` helper. */
+.tab-num {
+  @apply font-mono tabular-nums;
+}
+
+/* Scrollbar restraint for dense panels. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+}
+
+@keyframes skeleton-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+.skeleton {
+  animation: skeleton-pulse 1.4s ease-in-out infinite;
+}
