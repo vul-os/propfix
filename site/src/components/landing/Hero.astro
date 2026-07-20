@@ -1,90 +1,116 @@
-<section>
-  <div
-    class="mx-auto w-full lg:px-24 max-w-7xl md:px-12 items-center px-8 py-24">
-    <div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PropFix</title>
+  <style>
+    body, a, .hero-buttons a {
+      color: #7A0008 !important;
+    }
+
+    html, body {
+      height: 100%;
+      margin: 0;
+    }
+
+    h2 {
+      opacity: 0; /* Start with zero opacity */
+      margin-top: 16px;
+      color: black;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+      transition: opacity 3s ease;
+    }
+
+    body {
+      background: linear-gradient(to bottom, #F9FAFB);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .custom-bg {
+      background: none;
+      background-color: #EBF2FA;
+    }
+
+    .fade-in {
+      opacity: 1;
+      animation: fadeIn 3s ease forwards; /* Updated animation duration to 3 seconds */
+    }
+
+    @keyframes fadeIn {
+      0% {
+        opacity: 0;
+      }
+      100% {
+        opacity: 1;
+      }
+    }
+
+    .highlight {
+      color: #7A0008;
+    }
+
+    .content-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px 0; /* Adjust the padding to create space between elements */
+    }
+
+    .illustration-animation {
+      animation: moveRight 3s ease-in-out infinite alternate; /* Animation for the illustration */
+    }
+
+    @keyframes moveRight {
+      0% {
+        transform: translateX(0);
+      }
+      100% {
+        transform: translateX(20px); /* Move the illustration 20px to the right */
+      }
+    }
+
+    p {
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+    }
+  </style>
+</head>
+<body>
+  <section class="custom-bg">
+    <div class="mx-auto w-full lg:px-24 max-w-7xl md:px-12 items-center px-8 py-32">
       <div class="text-center max-w-4xl mx-auto">
         <div class="sm:flex sm:justify-center">
-          <div
-            class="relative rounded-full py-1 px-3 text-sm leading-6 text-gray-600 ring-1 ring-gray-900/10 hover:ring-gray-900/20">
-            <a
-              href="https://lexingtonthemes.com/free-templates/"
-              class="font-semibold text-indigo-600"
-              ><span class="absolute inset-0" aria-hidden="true"></span>
-              <span class="block lg:inline">
-                More free & Premium templates <span aria-hidden="true"
-                  >&rarr;</span
-                >
-              </span>
+          <div class="relative rounded-full py-1 px-3 text-sm leading-6 text-gray-600 ring-1 ring-gray-900/10 hover:ring-gray-900/20">
+            <a href="https://propfix.com" class="font-semibold text-indigo-600">
+              <span class="absolute inset-0" aria-hidden="true"></span>
             </a>
           </div>
         </div>
-        <p
-          class="text-black mt-8 font-extrabold lg:text-5xl text-4xl tracking-tight">
-          A starter template built with Astro and Tailwind CSS for your next
-          project
-        </p>
-        <p class="text-gray-500 lg:text-xl max-w-2xl mt-4 mx-auto text-base">
-          Putting together a directory website was a challenge. Superstash lets
-          you focus on the content and makes the entire process effortless.
-        </p>
-      </div>
-      <div class="flex justify-center gap-3 mt-10 flex-col sm:flex-row">
-        <a
-          class="items-center justify-center h-12 font-medium rounded-xl focus-visible:outline-black focus:outline-none inline-flex duration-200 text-black lg:w-auto px-6 py-3 text-center text-black/80 w-full border"
-          href="https://github.com/michael-andreuzza/astrosaas">GitHub</a
-        >
-        <a
-          class="items-center justify-center h-12 font-medium rounded-xl focus-visible:outline-black focus:outline-none inline-flex bg-black border-2 border-black duration-200 focus-visible:ring-black hover:bg-transparent hover:border-black hover:text-black lg:w-auto px-6 py-3 text-center text-white w-full"
-          href="https://lexingtonthemes.com"
-          >Lexington Themes &nbsp; &rarr;
-        </a>
-      </div>
-      <dl
-        class="lg:gap-x-8 lg:grid-cols-3 max-w-4xl mt-8 mx-auto sm:gap-x-6 sm:gap-y-12 sm:grid sm:grid-cols-2 sm:space-y-0 space-y-6 text-center text-sm items-start">
-        <div class="text-gray-500">
-          <strong class="text-gray-700"
-            >Astro, Tailwind CSS and Alpine.js</strong
-          > ━ This are the popular technologies behind Astrosaas.
+        <div class="content-container">
+          <div class="w-full md:w-7/12 mb-4 md:mb-0">
+            <h2 class="text-black font-extrabold lg:text-5xl text-4xl tracking-tighter fade-in">
+              <span style="margin-right: 1rem;">Log -</span>
+              <span style="margin-right: 1rem; color: #7A0008;">Look -</span>
+              <span style="margin-right: 1rem;">List -</span>
+              <span style="color: #7A0008;">Mend</span>
+            </h2>
+            <p class="mt-4 text-lg max-w-xl mx-auto tracking-tight fade-in" style="color: #000000;">
+              Streamline your property management with Prop  Fix. Say goodbye to disorganized workflows, missing information, and repetitive tasks. Say hello to efficiency and seamless management with PropFix.
+            </p>
+          </div>
+          <div class="w-full md:w-5/12 isometric-illustration illustration-animation" style="position: relative; left: 50px;">
+            <img src="public/propfixisometricpic.png" alt="Isometric Illustration" class="w-full rounded-lg shadow-2xl" />
+          </div>
         </div>
-        <div class="text-gray-500">
-          <strong class="text-gray-700">Includes 6 pages</strong> ━ You will find
-          this landing, faq, terms,privacy,sign up and sign in pages.
+        <div class="flex justify-center gap-3 mt-10 flex-col sm:flex-row hero-buttons fade-in">
+          <a class="items-center justify-center h-12 font-medium rounded-xl focus-visible:outline-black focus:outline-none inline-flex duration-200 text-white lg:w-auto px-6 py-3 text-center" href="https://propfix.com" style="background-color: #F9FAFB; color: #7A0008;">
+            Visit PropFix &nbsp; &rarr;
+          </a>
         </div>
-        <div class="text-gray-500">
-          <strong class="text-gray-700">Different section</strong> ━ The starter
-          includes different feature sections, a pricing table, testmionial, CTA
-          and full forms. more.
-        </div>
-      </dl>
-    </div>
-    <div class="relative w-full mx-auto max-w-7xl items-center py-12 pb-12">
-      <div class="bg-gray-100 p-8 rounded-3xl" style="">
-        <img
-          alt=""
-          class="relative w-full border lg:rounded-2xl object-cover rounded shadow-2xl"
-          src="https://linear.app/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fhero%404x.15e3a396.jpg&w=3840&q=75"
-        />
       </div>
     </div>
-    <div class="grid grid-cols-2 gap-0.5 lg:mt-8 md:grid-cols-6 mt-6">
-      <div class="flex justify-center col-span-1 ">
-        <img alt="logo" class="h-8" src="/Figma.svg" />
-      </div>
-      <div class="flex justify-center col-span-1 ">
-        <img alt="logo" class="h-8" src="/Canva.svg" />
-      </div>
-      <div class="flex justify-center col-span-1 ">
-        <img alt="logo" class="h-8" src="/Stripe.svg" />
-      </div>
-      <div class="flex justify-center col-span-1 ">
-        <img alt="logo" class="h-8" src="/Gitlab.svg" />
-      </div>
-      <div class="flex justify-center col-span-1 ">
-        <img alt="logo" class="h-8" src="/Linear.svg" />
-      </div>
-      <div class="flex justify-center col-span-1 ">
-        <img alt="logo" class="h-8" src="/Gumroad.svg" />
-      </div>
-    </div>
-  </div>
-</section>
+  </section>
+</body>
+</html>
