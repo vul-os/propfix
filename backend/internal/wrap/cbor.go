@@ -72,6 +72,138 @@ func tstrBytes(s string) []byte {
 	return append(encodeHead(3, uint64(len(s))), s...)
 }
 
+// encodeFloat writes v as the shortest of IEEE 754 half (2 byte), single
+// (4 byte) or double (8 byte) precision that represents v *exactly* — RFC
+// 8949's preferred serialization, which deterministic encoding requires
+// (03-wire-format.md §4.1: "shortest-form integer encoding" is one instance
+// of the general shortest-form rule; floats are the other). "Exactly" is
+// load-bearing: this is lossless minimisation, never rounding — a value that
+// does not survive narrowing unchanged is encoded at the next width up.
+//
+// This also makes DecodeCBOR's non-canonical check work for floats for free:
+// it decodes to a float64, re-encodes via this function, and compares bytes.
+// A wider-than-necessary encoding (e.g. 1.5 sent as an 8-byte double) fails
+// that comparison and is rejected as ErrNotCanonical, exactly as a
+// non-shortest-form integer is (04-signing.md §5.4 step 1).
+func encodeFloat(buf *bytes.Buffer, v float64) {
+	if bits, ok := float64ToFloat16Bits(v); ok {
+		buf.WriteByte(0xf9)
+		var b [2]byte
+		binary.BigEndian.PutUint16(b[:], bits)
+		buf.Write(b[:])
+		return
+	}
+	if f32 := float32(v); float64(f32) == v {
+		buf.WriteByte(0xfa)
+		var b [4]byte
+		binary.BigEndian.PutUint32(b[:], math.Float32bits(f32))
+		buf.Write(b[:])
+		return
+	}
+	buf.WriteByte(0xfb)
+	var b [8]byte
+	binary.BigEndian.PutUint64(b[:], math.Float64bits(v))
+	buf.Write(b[:])
+}
+
+// float64ToFloat16Bits reports whether v is exactly representable as an IEEE
+// 754 binary16 and, if so, its bit pattern. It is an exactness test, not a
+// rounding conversion: any value whose low mantissa bits would be lost by
+// narrowing returns ok=false so the caller falls through to a wider width.
+//
+// NaN is always reported as the canonical quiet half-precision NaN
+// (0x7e00, no payload) per RFC 8949's requirement that NaNs be normalised to
+// that single bit pattern regardless of the payload or sign the source value
+// happened to carry.
+func float64ToFloat16Bits(v float64) (uint16, bool) {
+	switch {
+	case v == 0:
+		if math.Signbit(v) {
+			return 0x8000, true
+		}
+		return 0, true
+	case math.IsNaN(v):
+		return 0x7e00, true
+	case math.IsInf(v, 1):
+		return 0x7c00, true
+	case math.IsInf(v, -1):
+		return 0xfc00, true
+	}
+
+	sign := uint16(0)
+	av := v
+	if v < 0 {
+		sign = 0x8000
+		av = -v
+	}
+
+	bits64 := math.Float64bits(av)
+	exp64 := int((bits64 >> 52) & 0x7ff)
+	mant64 := bits64 & ((uint64(1) << 52) - 1)
+	if exp64 == 0 {
+		// Double itself is subnormal (|v| < 2^-1022): far smaller than any
+		// half can represent exactly except zero, already handled above.
+		return 0, false
+	}
+	e := exp64 - 1023 // av == 1.mant64 * 2^e
+
+	if e >= -14 && e <= 15 {
+		// Half normal range. The half mantissa keeps the top 10 of the 52
+		// double mantissa bits; the other 42 must be exactly zero.
+		const dropped = 42
+		if mant64&((uint64(1)<<dropped)-1) != 0 {
+			return 0, false
+		}
+		halfMant := uint16(mant64 >> dropped)
+		halfExp := uint16(e + 15)
+		return sign | (halfExp << 10) | halfMant, true
+	}
+	if e >= -24 && e < -14 {
+		// Half subnormal range: value = halfMant/1024 * 2^-14, halfMant in
+		// [1,1023]. With the implicit leading 1 folded in (M = 2^52|mant64,
+		// av = M * 2^(e-52)), halfMant = av * 2^24 = M * 2^(e-28) = M >>
+		// (28-e), exact only if the shifted-out low bits are all zero.
+		M := (uint64(1) << 52) | mant64
+		shift := uint(28 - e)
+		if M&((uint64(1)<<shift)-1) != 0 {
+			return 0, false
+		}
+		halfMant := uint16(M >> shift)
+		if halfMant == 0 || halfMant > 0x3ff {
+			return 0, false
+		}
+		return sign | halfMant, true
+	}
+	return 0, false
+}
+
+// float16BitsToFloat64 widens a binary16 bit pattern to float64. Widening a
+// half to a double is always exact (a double has strictly more range and
+// precision than a half), so this needs no rounding logic.
+func float16BitsToFloat64(bits uint16) float64 {
+	sign := bits&0x8000 != 0
+	exp := int((bits >> 10) & 0x1f)
+	mant := float64(bits & 0x3ff)
+
+	var f float64
+	switch exp {
+	case 0:
+		f = math.Ldexp(mant, -24) // subnormal: mant/1024 * 2^-14
+	case 0x1f:
+		if mant == 0 {
+			f = math.Inf(1)
+		} else {
+			f = math.NaN()
+		}
+	default:
+		f = math.Ldexp(1+mant/1024, exp-15)
+	}
+	if sign {
+		f = -f
+	}
+	return f
+}
+
 // kv is one already-key-encoded map entry, ready to be sorted bytewise and
 // written — the single mechanism behind M, RM and the generic map decode
 // produces (map[any]any), so there is exactly one place that implements
@@ -118,10 +250,7 @@ func encodeValue(buf *bytes.Buffer, v any) error {
 			buf.WriteByte(0xf4)
 		}
 	case float64:
-		buf.WriteByte(0xfb)
-		var b [8]byte
-		binary.BigEndian.PutUint64(b[:], math.Float64bits(x))
-		buf.Write(b[:])
+		encodeFloat(buf, x)
 	case []byte:
 		buf.Write(encodeHead(2, uint64(len(x))))
 		buf.Write(x)
@@ -323,6 +452,18 @@ func (d *decoder) decodeValue() (any, error) {
 			return true, nil
 		case 22:
 			return nil, nil
+		case 25:
+			b, err := d.readN(2)
+			if err != nil {
+				return nil, err
+			}
+			return float16BitsToFloat64(binary.BigEndian.Uint16(b)), nil
+		case 26:
+			b, err := d.readN(4)
+			if err != nil {
+				return nil, err
+			}
+			return float64(math.Float32frombits(binary.BigEndian.Uint32(b))), nil
 		case 27:
 			b, err := d.readN(8)
 			if err != nil {
