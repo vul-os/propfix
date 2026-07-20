@@ -32,6 +32,22 @@ be **revoked in the Google Cloud console**, not merely rotated in code:
 If the projects are dormant or abandoned, deleting the service accounts (or
 the projects) is simpler and stronger than key rotation.
 
+### Mailgun API key and Neon Postgres credentials
+
+Found by GitHub push protection after the first rewrite passes had already been
+run — see *Limitations* below, because this is the most important lesson in
+this document. All were in `backend/internal/server/server.go`, hardcoded in
+`Server()`, across at least five commits.
+
+| Credential | Detail | Action |
+|---|---|---|
+| **Mailgun API key** | prefix `787a7e4f…`, domain `mail.propfix.co`, sender `noreply@mail.propfix.co` | Revoke in Mailgun → Sending → API keys. Check sending logs for abuse; a leaked key sends mail as your domain and burns its reputation. |
+| **Neon Postgres** | host `ep-autumn-math-44120355.us-east-2.aws.neon.tech`, database `neondb`, user `exolutiontech`, **two** distinct passwords over time | Rotate the role password or delete the Neon project. Check for unexpected connections. |
+
+A leaked mail-sending key is worth treating as urgently as a database
+credential: it allows sending authenticated mail as `propfix.co`, which means
+phishing under your own domain and lasting deliverability damage.
+
 ### Supabase project (separate system — not covered by GCP deletion)
 
 A second-pass scan for JWT-shaped credentials found a Supabase project
@@ -120,11 +136,22 @@ markers are present, confirming replacement rather than accidental omission.
 
 Stated so the clean result is not over-read:
 
-- **Pattern-based scanning finds known shapes.** A credential with no
-  distinctive prefix — a bare password in a config value, a base64 blob, a
-  bearer token in a fixture — would not be matched. No commercial scanner
-  (`gitleaks`, `trufflehog`) was available in this environment; installing one
-  and re-running is worthwhile before the repository is made public.
+- **Pattern-based scanning missed real secrets here — three times.** This is
+  documented rather than glossed, because it is the practical lesson:
+  1. The **Supabase anon JWT** survived the first rewrite: it was found by a
+     later scan for JWT shapes, but the rewrite had only been given the
+     Google API keys.
+  2. The **Mailgun API key** was missed because the pattern assumed a `key-`
+     prefix, which Mailgun does not always use.
+  3. The **Neon Postgres password** was missed because the pattern matched
+     URI-style `postgres://user:pass@host` and the code used libpq keyword
+     form, `user=… password=…`.
+
+  The last two were caught only by **GitHub push protection**, which rejected
+  the push. Do not treat the clean result of a hand-rolled scan as evidence of
+  absence. No commercial scanner (`gitleaks`, `trufflehog`) was available in
+  this environment; run one before treating this repository as audited, and
+  leave GitHub secret scanning and push protection enabled.
 - **Blobs over 2 MB were skipped** for performance.
 - **Only reachable objects were scanned.** Anything unreferenced was excluded
   and is in any case dropped by the rewrite.
