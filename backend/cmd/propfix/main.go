@@ -93,26 +93,7 @@ func run(dbPath, addr, origins string, demo, secureCookies, syncListen bool, syn
 		log.Printf("propfix: sign in as %s / %s", creds.Email, creds.Password)
 	}
 
-	mux := http.NewServeMux()
-	mux.Handle("/api/", srv.Handler())
-
-	// The marketing/docs site is optional. A build without it simply does not
-	// register the route rather than failing to start — the API is the
-	// product, the site is a convenience.
-	if site := newSiteHandler(); site != nil {
-		mux.Handle("/site/", http.StripPrefix("/site/", site))
-	} else {
-		log.Printf("propfix: no site/ directory found; /site/ not served")
-	}
-
-	// The app itself. Registered last and at the root so it catches everything
-	// the API and the site did not: /api/ and /site/ are more specific patterns
-	// and win, so mounting here cannot shadow them.
-	if app := newAppHandler(); app != nil {
-		mux.Handle("/", app)
-	} else {
-		log.Printf("propfix: no dist/ found; the app is not served (run `npm run build`)")
-	}
+	mux := buildMux(srv, wrapEnabled, st.PublicKeyHex())
 
 	// Peer sync (§7): off unless an operator asks for it, either by serving
 	// requests, dialing peers, or pointing at a shared folder. The pairing
@@ -146,20 +127,7 @@ func run(dbPath, addr, origins string, demo, secureCookies, syncListen bool, syn
 		}
 	}
 
-	// WRAP (§8): the trades/v0 binding. Off by default — in-house
-	// maintenance never touches it. The one endpoint wired at this layer is
-	// the spec's own unauthenticated identity announcement
-	// (github.com/vul-os/wrap 10-transport.md §11.1.1): a public key is not
-	// sensitive, and a peer WRAP node needs to discover it before anything
-	// else — offers, bids and assignments — can happen. Everything past
-	// that (pool client, offer/assignment handling) is designed but not
-	// wired here; see docs/WRAP.md's implementation-status table.
 	if wrapEnabled {
-		mux.HandleFunc("GET /.well-known/wrap/identity", func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Set("Content-Type", "application/json")
-			fmt.Fprintf(w, `{"pubkey":%q,"v":%d,"profiles":[%q]}`,
-				st.PublicKeyHex(), wrap.FormatVersion, wrap.ProfileTrades)
-		})
 		log.Printf("propfix: wrap: trades/v0 binding enabled (identity %s)", st.PublicKeyHex())
 	}
 
@@ -195,4 +163,63 @@ func run(dbPath, addr, origins string, demo, secureCookies, syncListen bool, syn
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 	return httpSrv.Shutdown(ctx)
+}
+
+// buildMux assembles the routes run serves: the API, the optional site and
+// app bundles, the .well-known namespace, and — when enabled — the WRAP
+// identity route. Split out from run so a test can drive real requests
+// through the exact routing table production uses without opening a socket.
+func buildMux(srv *api.Server, wrapEnabled bool, nodePubKeyHex string) *http.ServeMux {
+	mux := http.NewServeMux()
+	mux.Handle("/api/", srv.Handler())
+
+	// The marketing/docs site is optional. A build without it simply does not
+	// register the route rather than failing to start — the API is the
+	// product, the site is a convenience.
+	if site := newSiteHandler(); site != nil {
+		mux.Handle("/site/", http.StripPrefix("/site/", site))
+	} else {
+		log.Printf("propfix: no site/ directory found; /site/ not served")
+	}
+
+	// The app itself. Registered last and at the root so it catches everything
+	// the API and the site did not: /api/ and /site/ are more specific patterns
+	// and win, so mounting here cannot shadow them.
+	if app := newAppHandler(); app != nil {
+		mux.Handle("/", app)
+	} else {
+		log.Printf("propfix: no dist/ found; the app is not served (run `npm run build`)")
+	}
+
+	// /.well-known/* is a namespace other software probes to discover this
+	// node — the WRAP identity route below is one such path, registered only
+	// when --wrap is on. Without this catch-all, an unregistered .well-known
+	// path (WRAP off, or any path WRAP does not define) falls through to the
+	// SPA handler above, which — like any client-routed app — serves
+	// index.html with a 200 for a path it does not recognise. That is correct
+	// for /jobs/… but wrong here: a prober asking whether this node speaks a
+	// well-known protocol should get an honest 404, not HTML dressed as
+	// success. ServeMux matches the more specific "/.well-known/wrap/identity"
+	// pattern first when it is registered, so registering this general
+	// catch-all does not shadow it — Go's mux prefers the longer, more
+	// specific pattern regardless of registration order.
+	mux.HandleFunc("/.well-known/", http.NotFound)
+
+	// WRAP (§8): the trades/v0 binding. Off by default — in-house
+	// maintenance never touches it. The one endpoint wired at this layer is
+	// the spec's own unauthenticated identity announcement
+	// (github.com/vul-os/wrap 10-transport.md §11.1.1): a public key is not
+	// sensitive, and a peer WRAP node needs to discover it before anything
+	// else — offers, bids and assignments — can happen. Everything past
+	// that (pool client, offer/assignment handling) is designed but not
+	// wired here; see docs/WRAP.md's implementation-status table.
+	if wrapEnabled {
+		mux.HandleFunc("GET /.well-known/wrap/identity", func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			fmt.Fprintf(w, `{"pubkey":%q,"v":%d,"profiles":[%q]}`,
+				nodePubKeyHex, wrap.FormatVersion, wrap.ProfileTrades)
+		})
+	}
+
+	return mux
 }

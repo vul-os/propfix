@@ -6,9 +6,20 @@ package repo
 // (§5): its owning organisation is the single legitimate writer, so a number can
 // be allocated with no coordination, no lock and no round trip. A global
 // sequence would need exactly the consensus this architecture exists to avoid —
-// two offline nodes would both allocate "job 481" and one of them would have to
-// be renumbered after the fact, on paperwork a contractor has already been
-// given.
+// two offline nodes would both allocate "job 481" with no way to know they'd
+// collided until they compared notes.
+//
+// Namespacing per building removes that for the overwhelming common case (one
+// contributing node per building) but does not remove it entirely: "single
+// legitimate writer" is an organisational fact, not a mechanical one, and nothing
+// stops an office node and a field tablet — both belonging to that one
+// organisation — from each raising the FIRST job against a building neither has
+// synced yet, both offline, both minting number 1. That collision is resolved at
+// the point it becomes visible — when the two rows actually meet during
+// sync — by store/migrations/201_job_number_dedupe.sql's trigger, not here: it
+// bumps whichever of the two is causally later to a fresh number the moment
+// both are present in one database, deterministically, on every node that ends
+// up holding both. See docs/SYNC.md "Job numbers under divergence".
 
 import (
 	"database/sql"
@@ -101,7 +112,11 @@ func (r *Repo) CreateJob(orgID string, j domain.Job, unitLabel string) (domain.J
 }
 
 // nextJobNumber allocates the next number for a building inside the caller's
-// transaction. Numbers start at 1 and never repeat for a building.
+// transaction. Numbers start at 1 and never repeat for a building — from this
+// node's own point of view. It has no way to see a number a different,
+// currently-offline node has already allocated for the same building; that is
+// reconciled later, only if it actually happens, by the trigger in
+// store/migrations/201_job_number_dedupe.sql when the two rows meet.
 func nextJobNumber(tx *sql.Tx, buildingID string) (int64, error) {
 	if _, err := tx.Exec(
 		`INSERT INTO job_number_seq (building_id, next) VALUES (?, 1)
