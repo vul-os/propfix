@@ -1,0 +1,133 @@
+# Release: cross-compile the single embedded binary on a v* tag and attach it
+# to a draft GitHub Release.
+#
+# Maintainer flow: bump VERSION, push a matching tag (e.g. v0.1.0). A DRAFT
+# release appears under GitHub -> Releases with generated notes and every
+# platform binary + a checksums file; review and publish it by hand.
+#
+# ── Known gaps at the time this workflow was written (see the repo furniture
+#    report for detail) ──────────────────────────────────────────────────────
+#   - The "Build frontend" step will fail until src/App.jsx and its route
+#     tree land — src/ is mid-build as of this commit. That is a real,
+#     correct failure: this workflow should not (and currently cannot)
+#     produce a release before the app builds. Do not silence it.
+#   - The compiled binary embeds the marketing site (site/ -> /site/) but not
+#     the built app: backend/cmd/propfix has no //go:embed for dist/ yet and
+#     main.go registers no "/" route. dist/ is still staged into the build
+#     context below so that the day that embed lands, this workflow picks it
+#     up with no changes — go tolerates an unreferenced directory under a
+#     package.
+#   - No code signing (macOS notarization / Windows Authenticode) is
+#     configured. All artifacts ship unsigned until that is set up.
+#   - No checksums.txt verification step exists in install.sh — see that
+#     script's header for the same caveat, called out explicitly there.
+
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build (${{ matrix.goos }}/${{ matrix.goarch }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+          - goos: linux
+            goarch: arm64
+          - goos: darwin
+            goarch: amd64
+          - goos: darwin
+            goarch: arm64
+          - goos: windows
+            goarch: amd64
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check tag matches VERSION
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          ver="$(tr -d '[:space:]' < VERSION)"
+          echo "tag=$tag VERSION=$ver"
+          if [ "$tag" != "$ver" ]; then
+            echo "::error::Version mismatch — bump VERSION to ${tag} before tagging (or fix the tag)"
+            exit 1
+          fi
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/go.mod
+          cache: true
+          cache-dependency-path: backend/go.sum
+
+      - run: npm ci
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Build binary
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: "0"
+        run: |
+          rm -rf backend/cmd/propfix/site backend/cmd/propfix/dist
+          cp -R site backend/cmd/propfix/site
+          cp -R dist backend/cmd/propfix/dist
+
+          VERSION="${GITHUB_REF_NAME#v}"
+          EXT=""
+          if [ "$GOOS" = "windows" ]; then EXT=".exe"; fi
+
+          (cd backend && go build -tags embed_frontend \
+            -trimpath \
+            -ldflags "-s -w -X main.version=${VERSION}" \
+            -o "../propfix-${GOOS}-${GOARCH}${EXT}" ./cmd/propfix)
+
+          rm -rf backend/cmd/propfix/site backend/cmd/propfix/dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: propfix-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: propfix-*
+          if-no-files-found: error
+
+  release:
+    name: Draft GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Generate checksums
+        run: |
+          cd artifacts
+          sha256sum propfix-* > checksums.txt
+          cat checksums.txt
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          draft: true
+          generate_release_notes: true
+          name: propfix ${{ github.ref_name }}
+          files: |
+            artifacts/propfix-*
+            artifacts/checksums.txt

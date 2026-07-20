@@ -1,0 +1,64 @@
+# CI: format/vet/build/test the Go backend, and build the frontend.
+#
+# Known gaps at the time this workflow was written (see the repo furniture
+# report for detail — do not "fix" these here without landing the underlying
+# work first):
+#   - The frontend job's `build` step is expected to fail until src/App.jsx
+#     and its route tree land (src/ is mid-build as of this commit). That is
+#     a real, correct failure — it is NOT wrapped in continue-on-error,
+#     because a green frontend job must mean the app actually builds.
+#   - There is no e2e job yet. e2e/ contains a real Playwright harness
+#     (global-setup builds the actual binary), but every spec is currently
+#     skipped: the compiled binary has no //go:embed for the built app and
+#     main.go registers no "/" route, so there is nothing running for
+#     Playwright to drive. Wire a `test-e2e` job in here once that lands.
+#   - No release job lives here — see release.yml, which is tag-triggered.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  go:
+    name: Go (fmt, vet, build, test)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/go.mod
+      - name: Format
+        run: |
+          unformatted="$(gofmt -l .)"
+          if [ -n "$unformatted" ]; then
+            echo "$unformatted"
+            echo "::error::gofmt would reformat the files above — run 'gofmt -w .' in backend/"
+            exit 1
+          fi
+      - name: Vet
+        run: go vet ./...
+      - name: Build
+        run: go build ./...
+      - name: Test
+        run: go test ./...
+
+  frontend:
+    name: Frontend (lint, build)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install
+        run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Build
+        run: npm run build
