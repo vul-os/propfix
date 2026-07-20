@@ -34,3 +34,6 @@ qa-shots/
 # OS
 .DS_Store
 *.swp
+
+# Embedded-site staging copy (scripts/build-embedded.sh) — build input, not source
+backend/cmd/propfix/site/
