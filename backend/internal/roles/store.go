@@ -1,0 +1,212 @@
+package roles
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"time"
+
+	"github.com/exolutionza/propfix-backend-go/internal/authz"
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4/pgxpool"
+)
+
+type Store struct {
+	dbpool *pgxpool.Pool
+}
+
+func NewRoleStore(dbpool *pgxpool.Pool) *Store {
+	return &Store{
+		dbpool: dbpool,
+	}
+}
+
+func (s *Store) CreateRole(role authz.Role) (string, error) {
+	ctx := context.Background()
+	roleID := uuid.New().String()
+	query := `
+		INSERT INTO roles (id, name, description, user_ids, created_at, organization_id)
+		VALUES ($1, $2, $3, $4, $5, $6)
+	`
+
+	_, err := s.dbpool.Exec(ctx, query, roleID, role.Name, role.Description, role.UserIDs, time.Now(), role.OrganizationId)
+	if err != nil {
+		return "", err
+	}
+
+	return roleID, nil
+}
+
+func (s *Store) DeleteRole(roleID string) error {
+	ctx := context.Background()
+	query := `
+		DELETE FROM roles
+		WHERE id = $1
+	`
+	res, err := s.dbpool.Exec(ctx, query, roleID)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected := res.RowsAffected()
+	if rowsAffected == 0 {
+		return errors.New("role not found")
+	}
+
+	return nil
+}
+
+func (s *Store) GetRoleByID(roleID string) (authz.Role, error) {
+	ctx := context.Background()
+	query := `
+		SELECT id, name, description, user_ids, created_at, organization_id
+		FROM roles
+		WHERE id = $1
+	`
+	row := s.dbpool.QueryRow(ctx, query, roleID)
+
+	var role authz.Role
+	err := row.Scan(&role.ID, &role.Name, &role.Description, &role.UserIDs, &role.CreatedAt, &role.OrganizationId)
+	if err != nil {
+		return authz.Role{}, err
+	}
+
+	return role, nil
+}
+
+func (s *Store) GetFirstRoleByUserID(userID string, organizationID string) (*authz.Role, error) {
+	ctx := context.Background()
+	query := `
+		SELECT id, name, description, user_ids, created_at, organization_id
+		FROM roles
+		WHERE $1 = ANY(user_ids) and organization_id = $2
+		ORDER BY name ASC
+		LIMIT 1
+	`
+
+	row := s.dbpool.QueryRow(ctx, query, userID, organizationID)
+
+	var role authz.Role
+	err := row.Scan(&role.ID, &role.Name, &role.Description, &role.UserIDs, &role.CreatedAt, &role.OrganizationId)
+	if err != nil {
+		fmt.Println(role)
+		if err == pgx.ErrNoRows {
+			return nil, nil // No roles found for the user
+		}
+		return nil, err
+	}
+	return &role, nil
+}
+
+func (s *Store) UpdateRole(role authz.Role) error {
+	ctx := context.Background()
+	query := `
+		UPDATE roles
+		SET name = $2, description = $3, user_ids = $4
+		WHERE id = $1
+	`
+	res, err := s.dbpool.Exec(ctx, query, role.ID, role.Name, role.Description, role.UserIDs)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected := res.RowsAffected()
+	if rowsAffected == 0 {
+		return errors.New("role not found")
+	}
+
+	return nil
+}
+
+func (s *Store) AddMember(roleID, userID string) error {
+	ctx := context.Background()
+	query := `
+		UPDATE roles
+		SET user_ids = array_append(user_ids, $2)
+		WHERE id = $1
+	`
+	res, err := s.dbpool.Exec(ctx, query, roleID, userID)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected := res.RowsAffected()
+	if rowsAffected == 0 {
+		return errors.New("role not found")
+	}
+
+	return nil
+}
+
+func (s *Store) ChangeRole(desiredRoleID, userID, organizationID string) error {
+	// Step 1: Get current role of the user
+	currentRole, err := s.GetFirstRoleByUserID(userID, organizationID)
+	if err != nil {
+		return fmt.Errorf("error getting current role of user: %w", err)
+	}
+
+	// If the user has a current role and it's different from the desired role
+	if currentRole != nil && currentRole.ID != desiredRoleID {
+		// Step 2: Remove the user from the current role
+		err := s.RemoveMember(currentRole.ID, userID)
+		if err != nil {
+			return fmt.Errorf("error removing user from current role: %w", err)
+		}
+	}
+
+	// Step 3: Add the user to the new desired role
+	err = s.AddMember(desiredRoleID, userID)
+	if err != nil {
+		return fmt.Errorf("error adding user to desired role: %w", err)
+	}
+
+	return nil
+}
+
+func (s *Store) RemoveMember(roleID, userID string) error {
+	ctx := context.Background()
+	query := `
+		UPDATE roles
+		SET user_ids = array_remove(user_ids, $2)
+		WHERE id = $1
+	`
+	res, err := s.dbpool.Exec(ctx, query, roleID, userID)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected := res.RowsAffected()
+	if rowsAffected == 0 {
+		return errors.New("role not found")
+	}
+
+	return nil
+}
+
+func (s *Store) GetAllRoles(organizationID string) ([]authz.Role, error) {
+	ctx := context.Background()
+	query := `
+		SELECT id, name, description, user_ids, created_at, organization_id
+		FROM roles
+        WHERE organization_id = $1
+    `
+
+	rows, err := s.dbpool.Query(ctx, query, organizationID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	roles := make([]authz.Role, 0)
+	for rows.Next() {
+		var role authz.Role
+		err := rows.Scan(&role.ID, &role.Name, &role.Description, &role.UserIDs, &role.CreatedAt, &role.OrganizationId)
+		if err != nil {
+			return nil, err
+		}
+		roles = append(roles, role)
+	}
+
+	return roles, nil
+}
