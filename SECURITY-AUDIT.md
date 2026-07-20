@@ -68,8 +68,10 @@ deletion:
 Three distinct Firebase Web API keys were found but only two GCP projects were
 identified. Either a third project exists, or one of the keys is a Google
 **Maps** key — an unrestricted Maps key is directly billable by anyone who
-finds it. The key `***REMOVED-GOOGLE-API-KEY***` appeared only once
-and should be traced to its project.
+finds it. The third key (prefix `AIzaSyB0GV…`, suffix `…p1_4I`) appeared only
+once and should be traced to its project. It is fingerprinted rather than
+quoted here: this file is published, and reproducing a possibly-live key in it
+would recreate the exposure the document exists to record.
 
 ## What was removed from history
 
