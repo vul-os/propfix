@@ -374,6 +374,12 @@ const (
 	InspectionOutgoing = "outgoing"
 	InspectionRoutine  = "routine"
 	InspectionSnag     = "snag"
+	// InspectionPeriodic is a scheduled condition check outside a tenancy
+	// change — a body corporate's quarterly walk, a landlord's annual visit.
+	// It compares like a routine inspection: no counterpart it must be paired
+	// against, so no unit requirement, though the API resolves one when a
+	// caller supplies a unit label.
+	InspectionPeriodic = "periodic"
 )
 
 // Inspection statuses.
@@ -386,11 +392,17 @@ const (
 // Inspection is linked to a building and, for unit-level inspections, a unit
 // (§4.2).
 type Inspection struct {
-	ID           string `json:"id"`
-	OrgID        string `json:"org_id"`
-	BuildingID   string `json:"building_id"`
-	UnitID       string `json:"unit_id"`
-	TemplateID   string `json:"template_id"`
+	ID         string `json:"id"`
+	OrgID      string `json:"org_id"`
+	BuildingID string `json:"building_id"`
+	UnitID     string `json:"unit_id"`
+	TemplateID string `json:"template_id"`
+	// JobID optionally links an inspection to the job it verifies or the job
+	// it was raised from — e.g. an inspection scheduled to confirm a repair,
+	// or a job raised against an item a walk found deteriorated (§6 of
+	// INSPECTIONS.md). Empty for a standalone inspection, which is the common
+	// case.
+	JobID        string `json:"job_id"`
 	Kind         string `json:"kind"`
 	Status       string `json:"status"`
 	ScheduledFor string `json:"scheduled_for"`
@@ -418,7 +430,7 @@ func (i Inspection) Validate() error {
 		if i.UnitID == "" {
 			return fmt.Errorf("%s inspection must name a unit", i.Kind)
 		}
-	case InspectionRoutine, InspectionSnag:
+	case InspectionRoutine, InspectionSnag, InspectionPeriodic:
 	default:
 		return fmt.Errorf("unknown inspection kind %q", i.Kind)
 	}
