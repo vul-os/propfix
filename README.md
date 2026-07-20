@@ -61,11 +61,11 @@ than a disagreement.
 </tr>
 <tr>
 <td width="50%"><img src="docs/screenshots/reports.png" alt="Reports" width="400"/><br/><sub><em>Reports — spend and labour per building and per unit, computed from the ledger every time.</em></sub></td>
-<td width="50%"><img src="docs/screenshots/inspections.png" alt="Inspections" width="400"/><br/><sub><em>Inspections — templated condition capture with ingoing/outgoing comparison.</em></sub></td>
+<td width="50%"><img src="docs/screenshots/inspection-comparison.png" alt="Inspection runner" width="400"/><br/><sub><em>Move-out walkthrough — a condition scale per item, not a checkbox, with the ingoing record alongside.</em></sub></td>
 </tr>
 <tr>
+<td width="50%"><img src="docs/screenshots/inspections.png" alt="Inspections" width="400"/><br/><sub><em>Inspections — ingoing and outgoing pairs per unit, scheduled and tracked.</em></sub></td>
 <td width="50%"><img src="docs/screenshots/buildings.png" alt="Buildings" width="400"/><br/><sub><em>Buildings and units — units created on first use, normalised on entry.</em></sub></td>
-<td width="50%"><img src="docs/screenshots/settings.png" alt="Settings" width="400"/><br/><sub><em>Settings — organisation, members and inspection templates.</em></sub></td>
 </tr>
 </table>
 

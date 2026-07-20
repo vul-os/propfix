@@ -45,11 +45,12 @@ const DEMO_PASSWORD = 'demopassword'
 // actually exist in src/App.jsx today. "buildings" is the hero (shot #1 in
 // that list — "building overview").
 const ROUTES = [
-  { name: 'buildings', hash: '/buildings', hero: true },
-  { name: 'jobs-board', hash: '/jobs' },
+  { name: 'jobs-board', hash: '/jobs', hero: true },
   { name: 'job-detail', hash: null }, // resolved at capture time, see below
+  { name: 'inspection-comparison', hash: null }, // ditto
   { name: 'inspections', hash: '/inspections' },
   { name: 'reports', hash: '/reports' },
+  { name: 'buildings', hash: '/buildings' },
   { name: 'settings', hash: '/settings' },
 ]
 
@@ -186,6 +187,16 @@ async function run() {
             await page.goto(`${BASE_URL}/jobs`, { waitUntil: 'networkidle' })
             await page.locator('a[href^="/jobs/"]').first().click()
             await page.waitForURL(/\/jobs\/.+/)
+          } else if (route.name === 'inspection-comparison') {
+            // The ingoing/outgoing diff is the product's differentiator, so it
+            // gets its own shot. Follow the outgoing inspection from the list —
+            // it is the side that has a baseline to compare against.
+            await page.goto(`${BASE_URL}/inspections`, { waitUntil: 'networkidle' })
+            const outgoing = page.locator('a[href^="/inspections/"]').filter({ hasText: /outgoing/i }).first()
+            const link = (await outgoing.count()) ? outgoing : page.locator('a[href^="/inspections/"]').first()
+            await link.click()
+            await page.waitForURL(/\/inspections\/.+/)
+            await sleep(400) // let the comparison fetch settle
           } else {
             await page.goto(`${BASE_URL}${target}`, { waitUntil: 'networkidle' })
           }
