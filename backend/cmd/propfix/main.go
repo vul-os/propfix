@@ -94,6 +94,15 @@ func run(dbPath, addr, origins string, demo, secureCookies bool) error {
 		log.Printf("propfix: no site/ directory found; /site/ not served")
 	}
 
+	// The app itself. Registered last and at the root so it catches everything
+	// the API and the site did not: /api/ and /site/ are more specific patterns
+	// and win, so mounting here cannot shadow them.
+	if app := newAppHandler(); app != nil {
+		mux.Handle("/", app)
+	} else {
+		log.Printf("propfix: no dist/ found; the app is not served (run `npm run build`)")
+	}
+
 	httpSrv := &http.Server{
 		Addr:              addr,
 		Handler:           mux,
