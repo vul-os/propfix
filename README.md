@@ -198,7 +198,8 @@ style preferences and are not.
 
 ## License
 
-[MIT](LICENSE)
+[MIT](LICENSE) — © VulOS. PropFix is a VulOS project;
+source and issues at [github.com/vul-os/propfix](https://github.com/vul-os/propfix).
 
 <div align="center">
 <sub><strong>Built with purpose. Open by design.</strong></sub>
