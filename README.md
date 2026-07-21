@@ -199,10 +199,6 @@ style preferences and are not.
 [MIT](LICENSE-MIT) OR [Apache-2.0](LICENSE-APACHE) — © VulOS. PropFix is a VulOS project;
 source and issues at [github.com/vul-os/propfix](https://github.com/vul-os/propfix).
 
-<div align="center">
-<sub><strong>Built with purpose. Open by design.</strong></sub>
-</div>
-
 ---
 
 <p align="center">
