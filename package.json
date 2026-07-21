@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "description": "Building maintenance and inspections you actually own. One static binary, one SQLite file.",
-  "license": "MIT",
+  "license": "MIT OR Apache-2.0",
   "type": "module",
   "repository": {
     "type": "git",

@@ -14,7 +14,7 @@ external service.
 <sub><img src="docs/assets/vulos-logo.png" height="14" alt="VulOS"> Part of <strong><a href="https://vulos.org">VulOS</a></strong> — the open, self-hostable web OS &amp; app suite. Runs standalone, or as an app hosted by the Vulos OS.</sub>
 
 [![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)](CHANGELOG.md)
-[![License: MIT](https://img.shields.io/badge/License-MIT-FF7A29.svg)](LICENSE)
+[![License: MIT OR Apache-2.0](https://img.shields.io/badge/License-MIT%20OR%20Apache--2.0-FF7A29.svg)](LICENSE-MIT)
 [![Self-hostable](https://img.shields.io/badge/self--hostable-single%20binary-E8871E)](docs/SELFHOST.md)
 [![Offline-first](https://img.shields.io/badge/offline--first-CRDT%20sync-14B8A6)](docs/SYNC.md)
 [![Go](https://img.shields.io/badge/Go-1.25-00ADD8?logo=go&logoColor=white)](https://golang.org)
@@ -198,7 +198,7 @@ style preferences and are not.
 
 ## License
 
-[MIT](LICENSE) — © VulOS. PropFix is a VulOS project;
+[MIT](LICENSE-MIT) OR [Apache-2.0](LICENSE-APACHE) — © VulOS. PropFix is a VulOS project;
 source and issues at [github.com/vul-os/propfix](https://github.com/vul-os/propfix).
 
 <div align="center">
