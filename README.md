@@ -11,8 +11,6 @@ Raise a job against a unit, cost it, close it — and settle move-out damage wit
 **One static binary, one SQLite file.** No cloud account, no subscription, no
 external service.
 
-<sub><img src="docs/assets/vulos-logo.png" height="14" alt="VulOS"> Part of <strong><a href="https://vulos.org">VulOS</a></strong> — the open, self-hostable web OS &amp; app suite. Runs standalone, or as an app hosted by the Vulos OS.</sub>
-
 [![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)](CHANGELOG.md)
 [![License: MIT OR Apache-2.0](https://img.shields.io/badge/License-MIT%20OR%20Apache--2.0-FF7A29.svg)](LICENSE-MIT)
 [![Self-hostable](https://img.shields.io/badge/self--hostable-single%20binary-E8871E)](docs/SELFHOST.md)
@@ -204,3 +202,10 @@ source and issues at [github.com/vul-os/propfix](https://github.com/vul-os/propf
 <div align="center">
 <sub><strong>Built with purpose. Open by design.</strong></sub>
 </div>
+
+---
+
+<p align="center">
+  <a href="https://vulos.org"><img src="docs/assets/vulos-logo.png" alt="vulos" height="20"></a><br>
+  <sub><a href="https://vulos.org"><b>vulos</b></a> — open by design</sub>
+</p>
